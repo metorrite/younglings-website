@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Younglings Website
 
-## Getting Started
+The companion website for the Younglings Discord server. v1 is Discord login + a profile page;
+"who's online" and "upcoming events" are planned next, pulled live from JonnyBot (the Discord bot
+in the sibling `JonnyBot` repo) rather than tracked independently here.
 
-First, run the development server:
+Built with [Next.js](https://nextjs.org) (App Router) + [Tailwind CSS](https://tailwindcss.com) +
+[Auth.js (next-auth)](https://next-auth.js.org) for Discord OAuth2 login.
+
+## One-time setup: registering a Discord OAuth application
+
+Login needs a Discord application with OAuth2 configured. You can either add this to JonnyBot's
+existing Discord application, or create a separate one just for the website — either works, but a
+separate application keeps the bot's token and the website's client secret from being mixed up.
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Create a new application (or open the existing one), name it something like "Younglings
+   Website".
+3. Under **OAuth2 > General**, copy the **Client ID** and **Client Secret**.
+4. Under **OAuth2 > Redirects**, add:
+   - `http://localhost:3000/api/auth/callback/discord` (for local development)
+   - `https://<your-production-domain>/api/auth/callback/discord` (once deployed)
+
+## Local development
 
 ```bash
+npm install
+cp .env.example .env.local
+# then fill in .env.local:
+#   DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET from the step above
+#   NEXTAUTH_SECRET — generate with: openssl rand -base64 32
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Click **Login with Discord** to test the
+OAuth flow end-to-end.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploying
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This is set up to deploy the same way as most Next.js apps — as its own Railway service (or
+Vercel, if you'd rather). Whichever host you use:
 
-## Learn More
+1. Set the same environment variables from `.env.example` in the host's dashboard, with
+   `NEXTAUTH_URL` set to the real production URL.
+2. Add that production callback URL (`https://<domain>/api/auth/callback/discord`) to the Discord
+   application's OAuth2 redirects (step 4 above) — login will fail with a redirect mismatch error
+   until this is added.
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `src/lib/auth.ts` — Auth.js configuration (the Discord provider, session shape).
+- `src/app/api/auth/[...nextauth]/route.ts` — the OAuth callback route Auth.js needs.
+- `src/app/profile/page.tsx` — the v1 profile page; redirects to login if you're not signed in.
+- `src/components/Navbar.tsx`, `LoginButton.tsx` — shared layout/login UI.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## What's next
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- A small private API added to JonnyBot exposing live online-member and scheduled-event data,
+  which this site will call server-side (not exposed to browsers) to fill in the "Who's Online"
+  and "Upcoming Events" cards on the home page.
+- RS3 hiscores/activity tracking is intentionally not part of this site yet — planned once a
+  separate tracking API project is ready.
