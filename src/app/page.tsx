@@ -1,4 +1,10 @@
 import Image from "next/image";
+import { OnlineMembersCard } from "@/components/OnlineMembersCard";
+import { UpcomingEventsCard } from "@/components/UpcomingEventsCard";
+
+// Revalidate this page's data (online members, events) every 30s rather than fetching on every
+// request or caching it forever — "online" status especially would look stale otherwise.
+export const revalidate = 30;
 
 export default function Home() {
   return (
@@ -22,24 +28,9 @@ export default function Home() {
       </section>
 
       <section className="mt-16 grid gap-6 sm:grid-cols-2">
-        <PlaceholderCard
-          title="Who's Online"
-          description="Live member presence from Discord — coming soon, once JonnyBot's internal API is wired up."
-        />
-        <PlaceholderCard
-          title="Upcoming Events"
-          description="Your server's scheduled Discord events, pulled in automatically — coming soon."
-        />
+        <OnlineMembersCard />
+        <UpcomingEventsCard />
       </section>
-    </div>
-  );
-}
-
-function PlaceholderCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-lg border border-surface-border bg-surface p-6">
-      <h2 className="font-semibold text-gold">{title}</h2>
-      <p className="mt-2 text-sm text-muted">{description}</p>
     </div>
   );
 }
