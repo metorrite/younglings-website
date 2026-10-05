@@ -2,7 +2,9 @@ import { getServerSession } from "next-auth";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import Link from "next/link";
 import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
+import { whoAmI } from "@/lib/jonnybot-admin";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
 
 export default async function ProfilePage() {
@@ -13,7 +15,8 @@ export default async function ProfilePage() {
   }
 
   const { user } = session;
-  const member = await getMemberInfo(user.id);
+  const [member, access] = await Promise.all([getMemberInfo(user.id), whoAmI(user.id)]);
+  const isAdmin = access.ok && access.data.allowed;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
@@ -33,6 +36,15 @@ export default async function ProfilePage() {
             <p className="text-sm text-muted">Discord ID: {user.id}</p>
           </div>
         </div>
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="mt-6 inline-block rounded-md border border-gold/40 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/10"
+          >
+            Open the admin dashboard →
+          </Link>
+        )}
 
         {member === null ? (
           <div className="mt-8 rounded-md border border-dashed border-surface-border p-4 text-sm text-muted">
