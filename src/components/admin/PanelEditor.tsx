@@ -21,27 +21,6 @@ const KIND_LABELS: Record<FieldKind, string> = {
   CHECKBOX: "Yes / no checkbox",
 };
 
-export function blankPanel(): PanelDefinition {
-  return {
-    name: "",
-    title: "",
-    description: "",
-    buttonLabel: "Open a Ticket",
-    categoryId: null,
-    channelNameTemplate: "ticket-{number}",
-    welcomeText: "",
-    enabled: true,
-    perUserLimit: 1,
-    defaultPingRoleId: null,
-    helperCap: null,
-    escalationHours: null,
-    defaultEscalateRoleId: null,
-    helperRoleIds: [],
-    staffRoleIds: [],
-    fields: [],
-  };
-}
-
 /** Keys for list rows, so editing or reordering a question doesn't scramble the inputs React keeps for it. */
 let uidCounter = 0;
 const nextUid = () => ++uidCounter;

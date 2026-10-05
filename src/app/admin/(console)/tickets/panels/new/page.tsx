@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireAdmin, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
-import { blankPanel, PanelEditor } from "@/components/admin/PanelEditor";
+import { PanelEditor } from "@/components/admin/PanelEditor";
+import { blankPanel } from "@/lib/panel-defaults";
 
 export const metadata = { title: "New ticket panel — Younglings" };
 
