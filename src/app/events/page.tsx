@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LocalTime } from "@/components/site/LocalTime";
 import { PageHeader, Unavailable } from "@/components/site/blocks";
 import { getEvents, type SiteEvent } from "@/lib/site";
@@ -47,6 +48,9 @@ function Featured({ event }: { event: SiteEvent }) {
             Open in Discord
           </a>
           {event.interestedCount >= 0 && <span className="text-muted">{event.interestedCount} interested</span>}
+          <a href={`/api/events/${event.id}/ics`} className="rounded-md border border-surface-border px-3 py-2 text-muted transition hover:border-gold/50 hover:text-foreground">
+            Add to calendar
+          </a>
         </div>
       </div>
     </article>
@@ -74,7 +78,12 @@ function EventCard({ event }: { event: SiteEvent }) {
           {event.location && <> · {event.location}</>}
         </p>
         {event.description && <p className="line-clamp-3 text-sm whitespace-pre-line text-muted">{event.description}</p>}
-        {event.interestedCount >= 0 && <p className="mt-auto pt-1 text-xs text-muted">{event.interestedCount} interested</p>}
+        <p className="mt-auto flex items-center justify-between pt-1 text-xs text-muted">
+          <span>{event.interestedCount >= 0 ? `${event.interestedCount} interested` : ""}</span>
+          <a href={`/api/events/${event.id}/ics`} className="hover:text-gold">
+            + Calendar
+          </a>
+        </p>
       </div>
     </article>
   );
@@ -86,7 +95,16 @@ export default async function EventsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <PageHeader title="Events" subtitle="What's coming up in the Younglings Discord. Times are shown in your own timezone; click an event to open it in Discord." />
+      <PageHeader title="Events" subtitle="What's coming up in the Younglings Discord. Times are shown in your own timezone; click an event to open it in Discord.">
+        <div className="flex gap-4 text-sm">
+          <Link href="/events/calendar" className="text-gold hover:underline">
+            Calendar view →
+          </Link>
+          <Link href="/signups" className="text-gold hover:underline">
+            Signups →
+          </Link>
+        </div>
+      </PageHeader>
 
       {events === null ? (
         <Unavailable what="Events" />

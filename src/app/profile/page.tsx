@@ -1,173 +1,253 @@
 import { getServerSession } from "next-auth";
 import Image from "next/image";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
 import Link from "next/link";
-import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
+import { redirect } from "next/navigation";
+import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
+import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
+import { authOptions } from "@/lib/auth";
+import { badgesFor } from "@/lib/badges";
 import { whoAmI } from "@/lib/jonnybot-admin";
-import { compact, getMyRsns, getProfile, shortDate } from "@/lib/site";
+import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
+import { memberApi } from "@/lib/member";
+import { compact, getOverview, getProfile, rankColor, shortDate } from "@/lib/site";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
 
-export default async function ProfilePage() {
+export const metadata = { title: "My profile — Younglings" };
+export const dynamic = "force-dynamic";
+
+const TABS = [
+  { id: "overview", label: "Overview", icon: "🏠" },
+  { id: "server", label: "Server profile", icon: "🎭" },
+  { id: "public", label: "Public profile", icon: "🪪" },
+  { id: "goals", label: "Goals", icon: "🎯" },
+  { id: "notifications", label: "Notifications", icon: "🔔" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const session = await getServerSession(authOptions);
+  if (!session) redirect("/api/auth/signin?callbackUrl=%2Fprofile");
 
-  if (!session) {
-    redirect("/api/auth/signin");
-  }
-
+  const query = await searchParams;
+  const tab: TabId = TABS.some((t) => t.id === query.tab) ? (query.tab as TabId) : "overview";
   const { user } = session;
-  // The visitor's own linked RuneScape names — looked up with the id from their verified login, never from the URL.
-  const [member, access, rsns] = await Promise.all([getMemberInfo(user.id), whoAmI(user.id), getMyRsns(user.id)]);
+
+  // Everything below is keyed off the id from the verified session — never from the URL.
+  const [member, settings, access] = await Promise.all([getMemberInfo(user.id), memberApi.settings(user.id), whoAmI(user.id)]);
   const isAdmin = access.ok && access.data.allowed;
-  const mine = rsns && rsns.length > 0 ? await getProfile(rsns[0]) : null;
+  const rsns = settings.ok ? settings.data.rsns : [];
+  const mine = tab === "overview" && rsns.length > 0 ? await getProfile(rsns[0]) : null;
+  const overview = tab === "overview" && mine ? await getOverview() : null;
+  const maxOrder = overview ? Math.max(0, ...overview.ranks.map((r) => r.order)) : 11;
+
+  const goals = tab === "goals" || tab === "overview" ? await memberApi.goals(user.id) : null;
+  const roles = tab === "server" ? await memberApi.roles(user.id) : null;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-      <div className="rounded-lg border border-surface-border bg-surface p-8">
-        <div className="flex items-center gap-4">
-          {user.image && (
-            <Image
-              src={user.image}
-              alt=""
-              width={72}
-              height={72}
-              className="rounded-full ring-2 ring-gold/40"
-            />
-          )}
-          <div>
-            <h1 className="text-2xl font-semibold">{member?.nickname || user.name}</h1>
-            <p className="text-sm text-muted">Discord ID: {user.id}</p>
+    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      {/* Header */}
+      <section className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
+        <div className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-gold opacity-10 blur-3xl" />
+        <div className="relative flex flex-wrap items-center gap-5">
+          {user.image && <Image src={user.image} alt="" width={84} height={84} className="rounded-full ring-2 ring-gold/50" />}
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-2xl font-bold tracking-wide">{member?.nickname || user.name}</h1>
+            <p className="mt-0.5 text-sm text-muted">
+              @{member?.username ?? user.name}
+              {rsns.length > 0 && <> · RuneScape: <span className="text-foreground">{rsns.join(", ")}</span></>}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-sm">
+            {rsns.length > 0 && (
+              <Link href={`/members/${encodeURIComponent(rsns[0])}`} className="rounded-md border border-surface-border px-3 py-1.5 transition hover:border-gold/50">
+                View public profile →
+              </Link>
+            )}
+            {isAdmin && (
+              <Link href="/admin" className="rounded-md border border-gold/40 px-3 py-1.5 text-gold transition hover:bg-gold/10">
+                Admin dashboard →
+              </Link>
+            )}
           </div>
         </div>
+      </section>
 
-        {isAdmin && (
+      {/* Tabs */}
+      <nav className="mt-6 flex gap-1 overflow-x-auto rounded-xl border border-surface-border bg-surface/80 p-1 text-sm" aria-label="Profile sections">
+        {TABS.map((t) => (
           <Link
-            href="/admin"
-            className="mt-6 inline-block rounded-md border border-gold/40 px-3 py-1.5 text-sm text-gold transition hover:bg-gold/10"
+            key={t.id}
+            href={t.id === "overview" ? "/profile" : `/profile?tab=${t.id}`}
+            aria-current={tab === t.id ? "page" : undefined}
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 transition ${tab === t.id ? "bg-gold/15 text-gold" : "text-muted hover:text-foreground"}`}
           >
-            Open the admin dashboard →
+            <span>{t.icon}</span>
+            {t.label}
           </Link>
+        ))}
+      </nav>
+
+      <div className="mt-6 space-y-6">
+        {tab === "overview" && (
+          <>
+            {!settings.ok ? (
+              <Unavailable what="Your profile" />
+            ) : rsns.length === 0 ? (
+              <Panel title="Link your RuneScape name">
+                <p className="text-sm text-muted">
+                  No RuneScape name is linked to your Discord account yet. Use <code className="rounded bg-white/10 px-1">/rs</code> in the Younglings Discord to link yours — then your stats, badges and goals show up here and on your public profile.
+                </p>
+              </Panel>
+            ) : mine === null ? (
+              <Panel title="Your clan profile">
+                <p className="text-sm text-muted">
+                  <strong className="text-foreground">{rsns[0]}</strong> is linked, but isn&apos;t a current clan member, so there&apos;s no clan profile to show yet.
+                </p>
+              </Panel>
+            ) : (
+              <>
+                <Panel
+                  title="Your clan profile"
+                  action={
+                    <Link href={`/members/${encodeURIComponent(mine.rsn)}`} className="text-xs text-muted hover:text-gold">
+                      Open →
+                    </Link>
+                  }
+                >
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <span className="text-lg font-semibold">{mine.rsn}</span>
+                    <RankBadge rank={mine.rank} color={rankColor(mine.rankOrder, maxOrder)} />
+                    <span className="text-sm text-muted">since {shortDate(mine.joined)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <StatTile label="Total level" value={mine.totalLevel ?? "—"} />
+                    <StatTile label="XP this week" value={`+${compact(mine.gains.week)}`} />
+                    <StatTile label="Clan points" value={mine.points} />
+                    <StatTile label="Citadel caps" value={mine.citadel.caps} />
+                  </div>
+                  {mine.nextRank && (
+                    <div className="mt-5">
+                      <ProgressBar value={mine.points} max={mine.nextRank.threshold} />
+                      <p className="mt-1.5 text-xs text-muted">
+                        {mine.promotionNeeded ? `Eligible for ${mine.nextRank.name} — promotion pending.` : `${mine.nextRank.pointsNeeded} points to ${mine.nextRank.name}.`}
+                      </p>
+                    </div>
+                  )}
+                </Panel>
+
+                {(() => {
+                  const badges = badgesFor(mine, overview);
+                  return badges.length > 0 ? (
+                    <Panel title="Your badges" action={<Link href="/hall-of-fame" className="text-xs text-muted hover:text-gold">How to earn more →</Link>}>
+                      <ul className="flex flex-wrap gap-2">
+                        {badges.map((b) => (
+                          <li key={b.id} title={b.description} className="flex items-center gap-1.5 rounded-full border border-surface-border bg-background/60 px-3 py-1.5 text-sm">
+                            <span>{b.icon}</span>
+                            {b.label}
+                          </li>
+                        ))}
+                      </ul>
+                    </Panel>
+                  ) : null;
+                })()}
+              </>
+            )}
+
+            {goals?.ok && goals.data.goals.some((g) => !g.achievedAt) && (
+              <Panel title="Goals in progress" action={<Link href="/profile?tab=goals" className="text-xs text-muted hover:text-gold">Manage →</Link>}>
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {goals.data.goals.filter((g) => !g.achievedAt).slice(0, 4).map((g) => (
+                    <li key={g.id} className="rounded-lg border border-surface-border/60 bg-background/40 p-3">
+                      <p className="text-sm font-medium">
+                        {g.skill} <span className="text-muted">→ {g.targetLevel}</span>
+                      </p>
+                      <div className="mt-2">
+                        <ProgressBar value={g.progress * 100} max={100} />
+                      </div>
+                      <p className="mt-1 text-xs text-muted">{compact(g.xpRemaining)} XP to go</p>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+          </>
         )}
 
-        <section className="mt-8 rounded-lg border border-surface-border bg-background/40 p-5">
-          <h2 className="font-semibold text-gold">Your clan profile</h2>
-          {rsns === null ? (
-            <p className="mt-2 text-sm text-muted">Can&apos;t reach JonnyBot right now, so your clan stats aren&apos;t available.</p>
-          ) : rsns.length === 0 ? (
-            <p className="mt-2 text-sm text-muted">
-              No RuneScape name is linked to your Discord account yet. Use <code className="rounded bg-white/10 px-1">/rs</code> in the Younglings Discord to link yours and your stats will show up here.
-            </p>
-          ) : mine === null ? (
-            <p className="mt-2 text-sm text-muted">
-              <strong className="text-foreground">{rsns[0]}</strong> is linked, but isn&apos;t a current clan member, so there&apos;s no clan profile to show.
-            </p>
-          ) : (
-            <div className="mt-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <Link href={`/members/${encodeURIComponent(mine.rsn)}`} className="text-lg font-semibold hover:text-gold">
-                  {mine.rsn} →
-                </Link>
-                <span className="text-sm text-muted">
-                  {mine.rank} · since {shortDate(mine.joined)}
-                </span>
-              </div>
-              <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                <div>
-                  <dt className="text-xs text-muted">Total level</dt>
-                  <dd className="font-semibold">{mine.totalLevel ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted">XP this week</dt>
-                  <dd className="font-semibold">+{compact(mine.gains.week)}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted">Clan points</dt>
-                  <dd className="font-semibold">{mine.points}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted">Citadel caps</dt>
-                  <dd className="font-semibold">{mine.citadel.caps}</dd>
-                </div>
-              </dl>
-              {mine.nextRank && (
-                <p className="mt-3 text-xs text-muted">
-                  {mine.promotionNeeded ? `Eligible for ${mine.nextRank.name} — promotion pending.` : `${mine.nextRank.pointsNeeded} points to ${mine.nextRank.name}.`}
-                </p>
-              )}
-              {rsns.length > 1 && <p className="mt-2 text-xs text-muted">Also linked: {rsns.slice(1).join(", ")}</p>}
-            </div>
-          )}
-        </section>
-
-        {member === null ? (
-          <div className="mt-8 rounded-md border border-dashed border-surface-border p-4 text-sm text-muted">
-            Not connected to JonnyBot right now, so server nickname/color options aren&apos;t
-            available — just your Discord identity above for now.
-          </div>
-        ) : (
-          <div className="mt-8 space-y-8">
-            <section>
-              <h2 className="font-semibold text-gold">Server Nickname</h2>
-              <p className="mt-1 text-sm text-muted">
-                What Younglings shows for you instead of {member.username}.
-              </p>
-              <form action={updateNicknameAction} className="mt-3 flex gap-2">
-                <input
-                  type="text"
-                  name="nickname"
-                  maxLength={32}
-                  defaultValue={member.nickname ?? ""}
-                  placeholder={member.username}
-                  className="flex-1 rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold"
-                />
-                <button
-                  type="submit"
-                  className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110"
-                >
-                  Save
-                </button>
-              </form>
-              <p className="mt-1 text-xs text-muted">Leave blank to reset to your Discord username.</p>
-            </section>
-
-            <section>
-              <h2 className="font-semibold text-gold">Name Color</h2>
-              <p className="mt-1 text-sm text-muted">
-                Purely cosmetic — picks which color your name shows in this server.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(COLOR_PALETTE).map(([name, hex]) => (
-                  <form action={updateColorRoleAction} key={name}>
-                    <input type="hidden" name="color" value={name} />
-                    <button
-                      type="submit"
-                      title={name}
-                      className="h-9 w-9 rounded-full transition"
-                      style={{
-                        backgroundColor: hex,
-                        outline: member.colorRole === name ? "2px solid var(--color-gold)" : "none",
-                        outlineOffset: "2px",
-                      }}
+        {tab === "server" && (
+          <>
+            {member === null ? (
+              <Unavailable what="Your server profile" />
+            ) : (
+              <>
+                <Panel title="Server nickname" hint={`What Younglings shows for you instead of ${member.username}.`}>
+                  <form action={updateNicknameAction} className="flex gap-2">
+                    <input
+                      type="text"
+                      name="nickname"
+                      maxLength={32}
+                      defaultValue={member.nickname ?? ""}
+                      placeholder={member.username}
+                      className="flex-1 rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold"
                     />
+                    <button type="submit" className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110">
+                      Save
+                    </button>
                   </form>
-                ))}
-                <form action={updateColorRoleAction}>
-                  <input type="hidden" name="color" value="" />
-                  <button
-                    type="submit"
-                    title="Clear"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-surface-border text-xs text-muted transition hover:text-foreground"
-                    style={{
-                      outline: member.colorRole === null ? "2px solid var(--color-gold)" : "none",
-                      outlineOffset: "2px",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </form>
-              </div>
-            </section>
-          </div>
+                  <p className="mt-2 text-xs text-muted">Leave blank to reset to your Discord username.</p>
+                </Panel>
+
+                <Panel title="Name colour" hint="Purely cosmetic — picks which colour your name shows in this server.">
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(COLOR_PALETTE).map(([name, hex]) => (
+                      <form action={updateColorRoleAction} key={name}>
+                        <input type="hidden" name="color" value={name} />
+                        <button
+                          type="submit"
+                          title={name}
+                          aria-label={name}
+                          className="h-9 w-9 rounded-full transition"
+                          style={{ backgroundColor: hex, outline: member.colorRole === name ? "2px solid var(--color-gold)" : "none", outlineOffset: "2px" }}
+                        />
+                      </form>
+                    ))}
+                    <form action={updateColorRoleAction}>
+                      <input type="hidden" name="color" value="" />
+                      <button
+                        type="submit"
+                        title="Clear"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-surface-border text-xs text-muted transition hover:text-foreground"
+                        style={{ outline: member.colorRole === null ? "2px solid var(--color-gold)" : "none", outlineOffset: "2px" }}
+                      >
+                        ✕
+                      </button>
+                    </form>
+                  </div>
+                </Panel>
+              </>
+            )}
+
+            <Panel title="Roles you can pick" hint="Opt in to the roles the server offers — pings, interests and more. Click to add or remove.">
+              {roles === null || !roles.ok ? <Unavailable what="Self-assignable roles" /> : <SelfRoles initial={roles.data.roles} />}
+            </Panel>
+          </>
+        )}
+
+        {tab === "public" && (
+          <Panel title="Your public profile" hint="What everyone sees on your page in the member list.">
+            {settings.ok ? <PublicProfileForm initial={settings.data} /> : <Unavailable what="Your profile settings" />}
+          </Panel>
+        )}
+
+        {tab === "goals" && (
+          <Panel title="Skill goals" hint="Set a target level and track your progress. JonnyBot can DM you when you reach it.">
+            {goals?.ok ? <GoalsManager initial={goals.data.goals} hasLink={rsns.length > 0} /> : <Unavailable what="Your goals" />}
+          </Panel>
+        )}
+
+        {tab === "notifications" && (
+          <Panel title="Notifications" hint="Choose which direct messages JonnyBot may send you.">
+            {settings.ok ? <NotificationsForm initial={settings.data} /> : <Unavailable what="Your notification settings" />}
+          </Panel>
         )}
       </div>
     </div>

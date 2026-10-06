@@ -4,7 +4,8 @@ import { BarChart, RankedBars } from "@/components/charts";
 import { OnlineRail } from "@/components/site/OnlineRail";
 import { Panel, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
-import { compact, getOverview, shortDay } from "@/lib/site";
+import { FeedList } from "@/components/site/FeedList";
+import { compact, getFeed, getOverview, shortDay } from "@/lib/site";
 
 // Live clan numbers: re-fetched from the bot at most every 30 seconds rather than on every request.
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
@@ -12,7 +13,7 @@ import { compact, getOverview, shortDay } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const overview = await getOverview();
+  const [overview, feed] = await Promise.all([getOverview(), getFeed(10)]);
   const clan = overview?.clan;
   const thisWeek = overview?.citadel.weeks.at(-1);
 
@@ -68,6 +69,19 @@ export default async function Home() {
                     }))}
                   />
                 </Panel>
+
+                {feed && feed.length > 0 && (
+                  <Panel
+                    title="Clan activity"
+                    action={
+                      <Link href="/activity" className="text-xs text-muted hover:text-gold">
+                        See all →
+                      </Link>
+                    }
+                  >
+                    <FeedList items={feed} compact />
+                  </Panel>
+                )}
 
                 <Panel
                   title="Citadel — caps and visits per week"
