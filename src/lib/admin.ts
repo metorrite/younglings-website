@@ -43,6 +43,27 @@ export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
   });
 }
 
+/**
+ * The admin context if — and only if — the current visitor is logged in and the bot confirms they're an Admin or
+ * Developer. Unlike {@link requireAdmin} it never redirects or throws: it exists so ordinary pages can *show*
+ * admin controls to admins and nothing to everyone else. Showing is only a convenience — every admin action
+ * re-checks with `requireAdmin()` on the server, so hiding or tampering with the buttons grants nothing.
+ */
+export async function getAdminIfAny(): Promise<AdminContext | null> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+
+  const result = await whoAmI(session.user.id);
+  if (!result.ok || !result.data.allowed || result.data.tier === "NONE") return null;
+
+  return createAdminContext({
+    actorId: session.user.id,
+    displayName: result.data.displayName ?? session.user.name ?? "Admin",
+    avatarUrl: result.data.avatarUrl ?? session.user.image ?? null,
+    tier: result.data.tier,
+  });
+}
+
 /** For page data: the value, a 404 page for "doesn't exist", or an error the /admin error boundary shows. */
 export function unwrap<T>(result: ApiResult<T>): T {
   if (result.ok) return result.data;

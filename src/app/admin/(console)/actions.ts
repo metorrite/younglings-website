@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
+import { throttle } from "@/lib/ratelimit";
 import { adminApi, type ApiResult, type ClanPoints, type NewsChannelConfig, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
 /**
@@ -21,6 +22,8 @@ const wholeNumber = (v: unknown) => (typeof v === "number" && Number.isFinite(v)
 
 export async function saveSelfRolesAction(input: unknown): Promise<ActionResult<SelfRoleConfig[]>> {
   const ctx = await requireAdmin("/admin/roles");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
   if (!Array.isArray(input)) return { ok: false, error: "Those roles couldn't be read." };
 
   const roles = input
@@ -36,6 +39,8 @@ export async function saveSelfRolesAction(input: unknown): Promise<ActionResult<
 
 export async function saveNewsChannelsAction(input: unknown): Promise<ActionResult<NewsChannelConfig[]>> {
   const ctx = await requireAdmin("/admin/news");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
   if (!Array.isArray(input)) return { ok: false, error: "Those channels couldn't be read." };
 
   const channels = input
@@ -51,6 +56,8 @@ export async function saveNewsChannelsAction(input: unknown): Promise<ActionResu
 
 export async function saveClanPointsAction(input: unknown): Promise<ActionResult<ClanPoints>> {
   const ctx = await requireAdmin("/admin/clan");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
   if (typeof input !== "object" || input === null) return { ok: false, error: "Those settings couldn't be read." };
   const s = input as Record<string, unknown>;
 

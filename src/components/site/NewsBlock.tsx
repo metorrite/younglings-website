@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getAdminIfAny } from "@/lib/admin";
 import { discordPath, getEvents, getNews, type NewsEmbed, type NewsPost } from "@/lib/site";
 import { DiscordLink } from "./DiscordLink";
 import { DiscordText } from "./DiscordText";
@@ -100,7 +101,7 @@ function Post({ post }: { post: NewsPost }) {
 
 /** The centre of the home page: upcoming events and the latest announcements, news and event posts from Discord. */
 export async function NewsBlock() {
-  const [posts, events] = await Promise.all([getNews(), getEvents()]);
+  const [posts, events, admin] = await Promise.all([getNews(), getEvents(), getAdminIfAny()]);
   const upcoming = (events ?? []).slice(0, 3);
 
   return (
@@ -113,9 +114,16 @@ export async function NewsBlock() {
           </span>
           From Discord
         </h2>
-        <Link href="/events" className="text-xs text-muted hover:text-gold">
-          All events →
-        </Link>
+        <span className="flex items-center gap-4 text-xs">
+          {admin && (
+            <Link href="/admin/news" className="rounded-full border border-dashed border-gold/40 px-2.5 py-0.5 text-gold hover:bg-gold/10" title="Only admins see this">
+              🛡️ Manage channels
+            </Link>
+          )}
+          <Link href="/events" className="text-muted hover:text-gold">
+            All events →
+          </Link>
+        </span>
       </div>
 
       {upcoming.length > 0 && (

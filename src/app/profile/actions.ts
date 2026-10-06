@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import { setColorRole, setNickname } from "@/lib/jonnybot";
 import { memberApi, type Goal, type MemberSettings, type SelfRole } from "@/lib/member";
+import { throttle } from "@/lib/ratelimit";
 
 /**
  * Every action below sources the target user ID from the server-verified login session — never from the
@@ -26,7 +27,7 @@ const signedOut: ActionResult<never> = { ok: false, error: "Your session has exp
 
 export async function updateNicknameAction(formData: FormData) {
   const userId = await currentUserId();
-  if (!userId) return;
+  if (!userId || throttle(userId, "profile")) return;
 
   const raw = formData.get("nickname");
   const nickname = typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
@@ -37,7 +38,7 @@ export async function updateNicknameAction(formData: FormData) {
 
 export async function updateColorRoleAction(formData: FormData) {
   const userId = await currentUserId();
-  if (!userId) return;
+  if (!userId || throttle(userId, "profile")) return;
 
   const raw = formData.get("color");
   const color = typeof raw === "string" && raw !== "" ? raw : null;
@@ -52,6 +53,8 @@ export async function saveSettingsAction(input: unknown): Promise<ActionResult<M
   const userId = await currentUserId();
   if (!userId) return signedOut;
   if (typeof input !== "object" || input === null) return { ok: false, error: "Those settings couldn't be read." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
   const s = input as Record<string, unknown>;
 
   const pinned = typeof s.pinnedSkill === "number" && Number.isInteger(s.pinnedSkill) ? s.pinnedSkill : null;
@@ -76,6 +79,8 @@ export async function addGoalAction(skillId: number, targetLevel: number): Promi
   const userId = await currentUserId();
   if (!userId) return signedOut;
   if (!Number.isInteger(skillId) || !Number.isInteger(targetLevel)) return { ok: false, error: "Choose a skill and a level." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
 
   const result = await memberApi.addGoal(userId, skillId, targetLevel);
   if (!result.ok) return { ok: false, error: result.error };
@@ -87,6 +92,8 @@ export async function deleteGoalAction(goalId: string): Promise<ActionResult<Goa
   const userId = await currentUserId();
   if (!userId) return signedOut;
   if (!/^\d+$/.test(goalId)) return { ok: false, error: "That isn't a valid goal." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
 
   const result = await memberApi.deleteGoal(userId, goalId);
   if (!result.ok) return { ok: false, error: result.error };
@@ -100,6 +107,8 @@ export async function toggleRoleAction(roleId: string, on: boolean): Promise<Act
   const userId = await currentUserId();
   if (!userId) return signedOut;
   if (!/^\d+$/.test(roleId)) return { ok: false, error: "That isn't a valid role." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
 
   const result = await memberApi.toggleRole(userId, roleId, on === true);
   if (!result.ok) return { ok: false, error: result.error };

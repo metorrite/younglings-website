@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { votePollAction } from "@/app/polls/actions";
 import type { PollSummary } from "@/lib/site";
 import { discordPath, shortDate } from "@/lib/site";
+import { PollAdminBar } from "./AdminTools";
 import { DiscordLink } from "./DiscordLink";
 
 /**
@@ -12,12 +13,13 @@ import { DiscordLink } from "./DiscordLink";
  * numbers when it answers), the leading option is highlighted, your own picks are marked, and an open poll
  * quietly refreshes itself every 15 seconds so other people's votes appear without a reload.
  */
-export function PollCard({ poll, initialMine, loggedIn }: { poll: PollSummary; initialMine: number[]; loggedIn: boolean }) {
+export function PollCard({ poll, initialMine, loggedIn, admin = false }: { poll: PollSummary; initialMine: number[]; loggedIn: boolean; admin?: boolean }) {
   const router = useRouter();
   const [options, setOptions] = useState(poll.options);
   const [mine, setMine] = useState<number[]>(initialMine);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const lastVote = useRef(0);
 
   // Take fresh numbers from the server whenever it re-renders this page (adjusting state during render, not in an effect).
   const [seenOptions, setSeenOptions] = useState(poll.options);
@@ -42,8 +44,11 @@ export function PollCard({ poll, initialMine, loggedIn }: { poll: PollSummary; i
   const total = options.reduce((sum, o) => sum + o.votes, 0);
   const leader = Math.max(0, ...options.map((o) => o.votes));
 
-  function vote(number: number) {
+  function vote(number: number, clickedAt: number) {
     if (!poll.active) return;
+    // Ignore clicks that land right on the heels of the last one — the server limits too, but there's no need to send them.
+    if (clickedAt - lastVote.current < 600) return;
+    lastVote.current = clickedAt;
     if (!loggedIn) {
       setError("Log in with Discord to vote.");
       return;
@@ -105,7 +110,7 @@ export function PollCard({ poll, initialMine, loggedIn }: { poll: PollSummary; i
               <button
                 type="button"
                 disabled={!poll.active || pending}
-                onClick={() => vote(o.number)}
+                onClick={(e) => vote(o.number, e.timeStamp)}
                 aria-pressed={isMine}
                 className={`group relative w-full overflow-hidden rounded-xl border px-4 py-3 text-left transition ${
                   isMine ? "border-gold" : "border-surface-border/70"
@@ -139,6 +144,8 @@ export function PollCard({ poll, initialMine, loggedIn }: { poll: PollSummary; i
           {error}
         </p>
       )}
+
+      {admin && poll.active && <PollAdminBar pollId={poll.id} />}
 
       <footer className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
         <span>
