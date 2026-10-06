@@ -32,6 +32,7 @@ export function CreatePollForm({ channels }: { channels: GuildStructure["channel
   const [anonymous, setAnonymous] = useState(false);
   const [multiple, setMultiple] = useState(false);
   const [channelId, setChannelId] = useState("");
+  const [hours, setHours] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
@@ -40,7 +41,7 @@ export function CreatePollForm({ channels }: { channels: GuildStructure["channel
     setError(null);
     setDone(false);
     start(async () => {
-      const result = await createPollAction({ title, options: options.split(/\r?\n/), anonymous, multiple, channelId });
+      const result = await createPollAction({ title, options: options.split(/\r?\n/), anonymous, multiple, channelId, durationHours: hours || null });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -65,6 +66,13 @@ export function CreatePollForm({ channels }: { channels: GuildStructure["channel
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> Anonymous
           </label>
+          <select className={`${field} max-w-44`} value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label="Closes after">
+            {[[0, "No end time"], [1, "Ends in 1 hour"], [6, "Ends in 6 hours"], [24, "Ends in 1 day"], [72, "Ends in 3 days"], [168, "Ends in 1 week"]].map(([h, label]) => (
+              <option key={h} value={h}>
+                {label}
+              </option>
+            ))}
+          </select>
           <select className={`${field} max-w-xs`} value={channelId} onChange={(e) => setChannelId(e.target.value)} aria-label="Channel to post in">
             <option value="">Post in channel…</option>
             {postable.map((c) => (

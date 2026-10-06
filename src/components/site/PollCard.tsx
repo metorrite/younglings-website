@@ -7,6 +7,7 @@ import type { PollSummary } from "@/lib/site";
 import { discordPath, shortDate } from "@/lib/site";
 import { PollAdminBar } from "./AdminTools";
 import { DiscordLink } from "./DiscordLink";
+import { LocalTime } from "./LocalTime";
 
 /**
  * A poll you can vote in. Bars animate to the new split the moment you click (and settle to the server's real
@@ -90,6 +91,12 @@ export function PollCard({ poll, initialMine, loggedIn, admin = false }: { poll:
           <h2 className="text-xl font-semibold">{poll.title}</h2>
           <p className="mt-1 text-xs text-muted">
             {poll.active ? "Open" : `Closed ${poll.closedAt ? shortDate(poll.closedAt) : ""}`} · started {shortDate(poll.createdAt)}
+            {poll.active && poll.closesAt && (
+              <>
+                {" "}
+                · closes <LocalTime iso={poll.closesAt} mode="relative" />
+              </>
+            )}
             {poll.multiple ? " · pick as many as you like" : " · pick one"}
             {poll.anonymous ? " · anonymous" : ""}
           </p>

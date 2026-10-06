@@ -174,6 +174,8 @@ export interface PollSummary {
   totalVotes: number;
   createdAt: string;
   closedAt: string | null;
+  /** When an open poll will close by itself, if it was given an end time. */
+  closesAt: string | null;
   url: string | null;
   options: { number: number; label: string; votes: number }[];
 }

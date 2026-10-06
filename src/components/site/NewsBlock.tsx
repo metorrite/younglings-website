@@ -58,14 +58,14 @@ function Post({ post }: { post: NewsPost }) {
   const images = post.images.slice(0, 4);
 
   return (
-    <article className="rounded-xl border border-surface-border bg-background/40 p-4 transition hover:border-gold/30">
+    <article className={`rounded-xl border p-4 transition hover:border-gold/40 ${post.pinned ? "border-gold/50 bg-gold/[0.05]" : "border-surface-border bg-background/40"}`}>
       <header className="flex items-center gap-3">
         <Image src={post.avatarUrl} alt="" width={36} height={36} className="rounded-full" />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 text-sm">
             <span className="font-semibold">{post.author}</span>
             <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[11px] font-medium text-gold">{post.channel}</span>
-            {post.pinned && <span title="Pinned in Discord">📌</span>}
+            {post.pinned && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] font-semibold text-gold">📌 Pinned</span>}
           </p>
           <p className="text-xs text-muted">
             <LocalTime iso={post.postedAt} mode="relative" />
@@ -148,7 +148,7 @@ export async function NewsBlock() {
         ) : posts.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted">No announcements to show yet. Admins choose which Discord channels appear here from the dashboard.</p>
         ) : (
-          posts.map((post) => <Post key={`${post.channel}-${post.id}`} post={post} />)
+          [...posts].sort((a, b) => Number(b.pinned) - Number(a.pinned)).map((post) => <Post key={`${post.channel}-${post.id}`} post={post} />)
         )}
       </div>
     </section>

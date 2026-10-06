@@ -19,6 +19,8 @@ const idString = (v: unknown) => (typeof v === "string" && /^\d+$/.test(v) ? v :
 
 const ACTIONS: SignupAdminAction[] = ["pause", "clear", "remove", "skip", "removefirst", "pick", "delete"];
 
+const hoursOrNull = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.trunc(v) : null);
+
 export async function createPollAction(input: unknown): Promise<CommunityResult> {
   const ctx = await requireAdmin("/polls");
   const slow = throttle(ctx.actorId, "admin");
@@ -32,6 +34,7 @@ export async function createPollAction(input: unknown): Promise<CommunityResult>
     anonymous: p.anonymous === true,
     multiple: p.multiple === true,
     channelId: idString(p.channelId),
+    durationHours: hoursOrNull(p.durationHours),
   });
   revalidatePath("/polls");
   return result.ok ? { ok: true, data: undefined } : { ok: false, error: result.problems[0] ?? result.error };
