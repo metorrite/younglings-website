@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
+import { throttle } from "@/lib/ratelimit";
 import { adminApi, type ApiResult, type FieldKind, type PanelDefinition, type PanelField, type TicketSettings } from "@/lib/jonnybot-admin";
 
 /**
@@ -83,6 +84,8 @@ function cleanPanel(input: unknown): PanelDefinition | null {
 /** Creates the panel when `panelId` is null, otherwise replaces it. Returns the saved panel (with its id). */
 export async function savePanelAction(panelId: string | null, input: unknown): Promise<ActionResult<PanelDefinition>> {
   const ctx = await requireAdmin("/admin/tickets");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
   const panel = cleanPanel(input);
   if (!panel) return invalid("That panel couldn't be read.");
   if (panelId !== null && !/^\d+$/.test(panelId)) return invalid("That isn't a valid panel.");
@@ -94,6 +97,8 @@ export async function savePanelAction(panelId: string | null, input: unknown): P
 
 export async function deletePanelAction(panelId: string): Promise<ActionResult> {
   const ctx = await requireAdmin("/admin/tickets");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
   if (!/^\d+$/.test(panelId)) return invalid("That isn't a valid panel.");
 
   const result = await adminApi.deletePanel(ctx, panelId);
@@ -103,6 +108,8 @@ export async function deletePanelAction(panelId: string): Promise<ActionResult> 
 
 export async function postPanelAction(panelId: string, channelId: string): Promise<ActionResult<PanelDefinition>> {
   const ctx = await requireAdmin("/admin/tickets");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
   if (!/^\d+$/.test(panelId) || !/^\d+$/.test(channelId)) return invalid("Choose a channel to post in.");
 
   const result = await adminApi.postPanel(ctx, panelId, channelId);
@@ -113,6 +120,8 @@ export async function postPanelAction(panelId: string, channelId: string): Promi
 
 export async function saveSettingsAction(input: unknown): Promise<ActionResult<TicketSettings>> {
   const ctx = await requireAdmin("/admin/tickets/settings");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
   if (typeof input !== "object" || input === null) return invalid("Those settings couldn't be read.");
   const s = input as Record<string, unknown>;
 

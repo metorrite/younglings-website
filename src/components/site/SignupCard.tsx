@@ -5,12 +5,14 @@ import { useState, useTransition } from "react";
 import { joinSignupAction, leaveSignupAction } from "@/app/signups/actions";
 import type { SignupSheet } from "@/lib/site";
 import { shortDate } from "@/lib/site";
+import type { AdminSignupSheet } from "@/lib/jonnybot-admin";
+import { SignupAdminBar } from "./AdminTools";
 import { ProgressBar } from "./blocks";
 
 const field = "w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold disabled:opacity-50";
 
 /** A signup sheet you can join or leave from the site: a name box, a one-click join, or the sheet's own form. */
-export function SignupCard({ sheet, joined, loggedIn, defaultRsn }: { sheet: SignupSheet; joined: boolean; loggedIn: boolean; defaultRsn: string }) {
+export function SignupCard({ sheet, joined, loggedIn, defaultRsn, adminSheet }: { sheet: SignupSheet; joined: boolean; loggedIn: boolean; defaultRsn: string; adminSheet?: AdminSignupSheet }) {
   const router = useRouter();
   const [rsn, setRsn] = useState(defaultRsn);
   const [answers, setAnswers] = useState<string[]>(() => sheet.fields.map(() => ""));
@@ -64,6 +66,8 @@ export function SignupCard({ sheet, joined, loggedIn, defaultRsn }: { sheet: Sig
           </p>
         </div>
       )}
+
+      {adminSheet && <SignupAdminBar sheet={adminSheet} />}
 
       {/* The action area */}
       <div className="mb-5 rounded-xl border border-surface-border/70 bg-background/40 p-4">

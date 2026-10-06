@@ -139,6 +139,35 @@ export interface SelfRoleConfig {
   safe: boolean;
 }
 
+export interface AdminSignupSheet {
+  id: string;
+  title: string;
+  type: "QUEUE" | "GROUP" | "SUBMISSION";
+  paused: boolean;
+  /** Entries with the Discord id an admin needs to remove one person. */
+  entries: { userId: string; name: string; position: number }[];
+}
+
+export interface NewPoll {
+  title: string;
+  options: string[];
+  anonymous: boolean;
+  multiple: boolean;
+  channelId: string;
+}
+
+export interface NewSignup {
+  type: "QUEUE" | "GROUP" | "SUBMISSION";
+  title: string;
+  note: string;
+  max: number | null;
+  signupChannelId: string;
+  adminChannelId: string;
+  fields: { label: string; type: "TEXT" | "LINK" | "IMAGE"; required: boolean }[];
+}
+
+export type SignupAdminAction = "pause" | "clear" | "remove" | "skip" | "removefirst" | "pick" | "delete";
+
 export interface NewsChannelConfig {
   channelId: string;
   name: string | null;
@@ -254,6 +283,13 @@ export const adminApi = {
   selfRoles: (ctx: AdminContext) => request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "GET", "selfroles"),
   saveSelfRoles: (ctx: AdminContext, roles: { roleId: string; label: string; description: string }[]) =>
     request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "PUT", "selfroles", { roles }),
+
+  adminSignups: (ctx: AdminContext) => request<{ signups: AdminSignupSheet[] }>(ctx.actorId, "GET", "signups"),
+  createPoll: (ctx: AdminContext, poll: NewPoll) => request<{ created: boolean }>(ctx.actorId, "POST", "polls", poll),
+  endPoll: (ctx: AdminContext, id: string) => request<{ ended: boolean }>(ctx.actorId, "POST", `polls/${encodeURIComponent(id)}/end`, {}),
+  createSignup: (ctx: AdminContext, signup: NewSignup) => request<{ created: boolean }>(ctx.actorId, "POST", "signups", signup),
+  signupAction: (ctx: AdminContext, id: string, action: SignupAdminAction, body: { userId?: string } = {}) =>
+    request<{ done: boolean; paused?: boolean; winner?: string }>(ctx.actorId, "POST", `signups/${encodeURIComponent(id)}/${action}`, body),
 
   newsChannels: (ctx: AdminContext) => request<{ channels: NewsChannelConfig[] }>(ctx.actorId, "GET", "news"),
   saveNewsChannels: (ctx: AdminContext, channels: { channelId: string; label: string }[]) =>

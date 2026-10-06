@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import { memberApi } from "@/lib/member";
+import { throttle } from "@/lib/ratelimit";
 
 /**
  * Joining and leaving a signup sheet on behalf of the logged-in member. The member is always the id from the
@@ -22,6 +23,8 @@ export async function joinSignupAction(signupId: string, input: { rsn?: unknown;
   const id = await userId();
   if (!id) return { ok: false, error: "Log in with Discord to sign up." };
   if (!/^\d+$/.test(signupId)) return { ok: false, error: "That isn't a valid signup." };
+  const slow = throttle(id, "signup");
+  if (slow) return { ok: false, error: slow };
 
   const rsn = typeof input.rsn === "string" ? input.rsn : undefined;
   const fields = Array.isArray(input.fields) ? input.fields.map((f) => (typeof f === "string" ? f : "")) : undefined;
@@ -36,6 +39,8 @@ export async function leaveSignupAction(signupId: string): Promise<Result> {
   const id = await userId();
   if (!id) return { ok: false, error: "Log in with Discord first." };
   if (!/^\d+$/.test(signupId)) return { ok: false, error: "That isn't a valid signup." };
+  const slow = throttle(id, "signup");
+  if (slow) return { ok: false, error: slow };
 
   const result = await memberApi.leaveSignup(id, signupId);
   if (!result.ok) return { ok: false, error: result.error };
