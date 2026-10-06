@@ -117,7 +117,36 @@ export interface MemberProfile extends RosterMember {
   skillGains: Record<"day" | "week" | "month", SkillGain[]>;
   history: { date: string; totalXp: number; totalLevel: number }[];
   citadel: { caps: number; visits: number; cappedWeeks: string[] };
+  awards: { type: string; points: number; date: string }[];
   activities: { date: string; text: string; details: string }[];
+}
+
+export interface SkillSeries {
+  skillId: number;
+  skill: string;
+  history: { date: string; xp: number }[];
+}
+
+export interface Leaderboard {
+  month: string;
+  months: string[];
+  totalXp: number;
+  gainers: { rsn: string; xp: number }[];
+  cappers: { rsn: string; weeksCapped: number; totalCaps: number }[];
+  joined: string[];
+  left: string[];
+}
+
+export interface Coffer {
+  donated: number;
+  donations: number;
+  donors: number;
+  held: number;
+  giveaways: number;
+  givenAway: number;
+  weeks: { weekStart: string; donated: number }[];
+  topDonors: { name: string; total: number; donations: number }[];
+  recentGiveaways: { amount: number; description: string | null; at: string }[];
 }
 
 // ---------- fetching ----------
@@ -149,6 +178,14 @@ export async function getEvents(): Promise<SiteEvent[] | null> {
 
 export const getRoster = () => getSite<RosterData>("members", 120);
 export const getOverview = () => getSite<Overview>("overview", 120);
+export const getSkillSeries = (rsn: string, skillId: number) => getSite<SkillSeries>(`member/skill?rsn=${encodeURIComponent(rsn)}&skill=${skillId}`, 300);
+export const getLeaderboard = (month?: string) => getSite<Leaderboard>(`leaderboard${month ? `?month=${encodeURIComponent(month)}` : ""}`, 300);
+export const getCoffer = () => getSite<Coffer>("coffer", 120);
+/** The RuneScape names linked to a Discord user. Only ever call this with the id from the visitor's own verified session. */
+export async function getMyRsns(discordUserId: string): Promise<string[] | null> {
+  const data = await getSite<{ rsns: string[] }>(`me?userId=${encodeURIComponent(discordUserId)}`, 30);
+  return data?.rsns ?? null;
+}
 export const getProfile = (rsn: string) => getSite<MemberProfile>(`member?rsn=${encodeURIComponent(rsn)}`, 120);
 
 // ---------- formatting ----------
@@ -180,6 +217,18 @@ export function shortDate(iso: string): string {
 export function shortDay(iso: string): string {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+/** "2026-09" → "September 2026". */
+export function monthLabel(month: string): string {
+  const d = new Date(`${month}-01T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? month : d.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+/** A human label for a clan-points award type ("DAILY_MEMBERSHIP" → "Daily membership"). */
+export function awardLabel(type: string): string {
+  const text = type.replace(/_/g, " ").toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** The rank tiers' accent colours, low to high — recruits are plain, owners are gold. */

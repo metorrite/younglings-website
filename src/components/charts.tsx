@@ -78,9 +78,9 @@ export interface BarGroup {
 }
 
 /** Grouped vertical bars: one group per label, one bar per series. */
-export function BarChart({ groups, series, height = 200 }: { groups: BarGroup[]; series: { name: string; color: string }[]; height?: number }) {
+export function BarChart({ groups, series, height = 200, format = String }: { groups: BarGroup[]; series: { name: string; color: string }[]; height?: number; format?: (n: number) => string }) {
   const width = 640;
-  const pad = { top: 12, right: 8, bottom: 26, left: 34 };
+  const pad = { top: 12, right: 8, bottom: 26, left: 46 };
   const max = Math.max(1, ...groups.flatMap((g) => g.values));
   const niceMax = Math.ceil(max / 5) * 5 || 5;
   const innerW = width - pad.left - pad.right;
@@ -97,7 +97,7 @@ export function BarChart({ groups, series, height = 200 }: { groups: BarGroup[];
             <g key={t}>
               <line x1={pad.left} x2={width - pad.right} y1={y} y2={y} stroke="currentColor" strokeOpacity="0.08" />
               <text x={pad.left - 6} y={y + 3} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.5">
-                {Math.round(niceMax * t)}
+                {format(Math.round(niceMax * t))}
               </text>
             </g>
           );
@@ -110,7 +110,7 @@ export function BarChart({ groups, series, height = 200 }: { groups: BarGroup[];
                 const h = (value / niceMax) * innerH;
                 return (
                   <rect key={si} x={x0 + si * barW} y={pad.top + innerH - h} width={barW - 2} height={h} rx="3" fill={series[si].color}>
-                    <title>{`${group.label} — ${series[si].name}: ${value}`}</title>
+                    <title>{`${group.label} — ${series[si].name}: ${format(value)}`}</title>
                   </rect>
                 );
               })}
@@ -235,5 +235,76 @@ export function RankedBars({ rows, color = "#d4af37", format = compact, linkBase
       ))}
       {rows.length === 0 && <li className="text-sm text-muted">Nothing recorded yet.</li>}
     </ol>
+  );
+}
+
+// ---------- several lines on one set of axes ----------
+
+export interface LineSeries {
+  name: string;
+  color: string;
+  /** One value per label; `null` for "no data that day" (the line skips it). */
+  values: (number | null)[];
+}
+
+export function MultiLineChart({ labels, series, height = 220, format = compact }: { labels: string[]; series: LineSeries[]; height?: number; format?: (n: number) => string }) {
+  const width = 640;
+  const pad = { top: 14, right: 12, bottom: 26, left: 52 };
+  const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
+  if (labels.length < 2 || all.length < 2) {
+    return <p className="py-8 text-center text-sm text-muted">Not enough history yet — check back after a few more polls.</p>;
+  }
+
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  const span = Math.max(1, max - min);
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const x = (i: number) => pad.left + (i / (labels.length - 1)) * innerW;
+  const y = (v: number) => pad.top + innerH - ((v - min) / span) * innerH;
+  const tickIdx = [0, Math.floor((labels.length - 1) / 2), labels.length - 1];
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="Comparison line chart">
+        {[0, 0.5, 1].map((t) => {
+          const yy = pad.top + innerH * (1 - t);
+          return (
+            <g key={t}>
+              <line x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} stroke="currentColor" strokeOpacity="0.08" />
+              <text x={pad.left - 6} y={yy + 3} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.5">
+                {format(min + span * t)}
+              </text>
+            </g>
+          );
+        })}
+        {series.map((line) => {
+          let d = "";
+          let pen = false;
+          line.values.forEach((v, i) => {
+            if (v === null) {
+              pen = false;
+              return;
+            }
+            d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)} `;
+            pen = true;
+          });
+          return <path key={line.name} d={d} fill="none" stroke={line.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />;
+        })}
+        {tickIdx.map((i) => (
+          <text key={i} x={x(i)} y={height - 8} textAnchor={i === 0 ? "start" : i === labels.length - 1 ? "end" : "middle"} fontSize="10" fill="currentColor" fillOpacity="0.55">
+            {labels[i]}
+          </text>
+        ))}
+      </svg>
+      <ul className="mt-2 flex flex-wrap gap-4 text-xs text-muted">
+        {series.map((line) => (
+          <li key={line.name} className="flex items-center gap-1.5">
+            <span className="h-0.5 w-4 rounded" style={{ backgroundColor: line.color }} />
+            {line.name}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
