@@ -9,7 +9,7 @@ import { badgesFor } from "@/lib/badges";
 import { whoAmI } from "@/lib/jonnybot-admin";
 import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
 import { memberApi } from "@/lib/member";
-import { compact, getOverview, getProfile, rankColor, shortDate } from "@/lib/site";
+import { compact, full, getOverview, getPolls, getProfile, getSignups, rankColor, shortDate } from "@/lib/site";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
 
 export const metadata = { title: "My profile — Younglings" };
@@ -20,6 +20,8 @@ const TABS = [
   { id: "server", label: "Server profile", icon: "🎭" },
   { id: "public", label: "Public profile", icon: "🪪" },
   { id: "goals", label: "Goals", icon: "🎯" },
+  { id: "activity", label: "My activity", icon: "📋" },
+  { id: "coffer", label: "Coffer", icon: "💰" },
   { id: "notifications", label: "Notifications", icon: "🔔" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -42,6 +44,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   const goals = tab === "goals" || tab === "overview" ? await memberApi.goals(user.id) : null;
   const roles = tab === "server" ? await memberApi.roles(user.id) : null;
+
+  // "My activity": open polls I've voted in and signup sheets I'm on.
+  const [polls, myPolls, sheets, mySignups] =
+    tab === "activity" ? await Promise.all([getPolls(), memberApi.myPolls(user.id), getSignups(), memberApi.mySignups(user.id)]) : [null, null, null, null];
+  const myVotes = polls && myPolls?.ok ? polls.filter((p) => p.active).flatMap((p) => { const mine = myPolls.data.polls.find((m) => m.pollId === p.id)?.mine ?? []; return mine.length ? [{ poll: p, picks: p.options.filter((o) => mine.includes(o.number)) }] : []; }) : [];
+  const mySheets = sheets && mySignups?.ok ? sheets.filter((s) => mySignups.data.joined.includes(s.id)) : [];
+  const coffer = tab === "coffer" ? await memberApi.myCoffer(user.id) : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -241,6 +250,90 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         {tab === "goals" && (
           <Panel title="Skill goals" hint="Set a target level and track your progress. JonnyBot can DM you when you reach it.">
             {goals?.ok ? <GoalsManager initial={goals.data.goals} hasLink={rsns.length > 0} /> : <Unavailable what="Your goals" />}
+          </Panel>
+        )}
+
+        {tab === "activity" && (
+          <>
+            <Panel title="Polls you've voted in" action={<Link href="/polls" className="text-xs text-muted hover:text-gold">All polls →</Link>}>
+              {myVotes.length === 0 ? (
+                <p className="text-sm text-muted">You haven&apos;t voted in any open polls.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {myVotes.map(({ poll, picks }) => (
+                    <li key={poll.id} className="rounded-lg border border-surface-border/60 bg-background/40 p-3">
+                      <p className="text-sm font-medium">{poll.title}</p>
+                      <p className="mt-1 text-xs text-muted">You picked: <span className="text-foreground">{picks.map((p) => p.label).join(", ")}</span></p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+            <Panel title="Signups you're on" action={<Link href="/signups" className="text-xs text-muted hover:text-gold">All signups →</Link>}>
+              {mySheets.length === 0 ? (
+                <p className="text-sm text-muted">You aren&apos;t signed up for anything right now.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {mySheets.map((s) => (
+                    <li key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-surface-border/60 bg-background/40 px-3 py-2 text-sm">
+                      <span className="truncate font-medium">{s.title}</span>
+                      <span className="shrink-0 text-xs text-muted">{s.entries.length}{s.max ? ` / ${s.max}` : ""} signed up</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+            <Panel title="Reminders" action={<Link href="/profile?tab=notifications" className="text-xs text-muted hover:text-gold">Change →</Link>}>
+              <p className="text-sm text-muted">
+                Event reminders are <strong className="text-foreground">{settings.ok && settings.data.dmEvents ? "on" : "off"}</strong>; goal-reached messages are{" "}
+                <strong className="text-foreground">{settings.ok && settings.data.dmGoals ? "on" : "off"}</strong>.
+              </p>
+            </Panel>
+          </>
+        )}
+
+        {tab === "coffer" && (
+          <Panel title="Your clan coffer" hint="Donations recorded under your linked RuneScape names, and anything you've been given.">
+            {coffer === null || !coffer.ok ? (
+              <Unavailable what="Your coffer" />
+            ) : !coffer.data.linked ? (
+              <p className="text-sm text-muted">Link your RuneScape name with <code className="rounded bg-white/10 px-1">/rs</code> in Discord and your donations will show up here.</p>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile label="You've donated" value={`${compact(coffer.data.donated)} gp`} sub={`${full(coffer.data.donated)} gp`} />
+                  <StatTile label="Your balance" value={`${compact(coffer.data.balance)} gp`} sub="held for you by the clan" />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs tracking-wider text-muted uppercase">Your donations</p>
+                  {coffer.data.donations.length === 0 ? (
+                    <p className="text-sm text-muted">Nothing recorded yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-surface-border/60 text-sm">
+                      {coffer.data.donations.map((d, i) => (
+                        <li key={i} className="flex items-center justify-between gap-3 py-2">
+                          <span className="text-muted">{shortDate(d.at)}</span>
+                          <span className="font-mono text-gold">{compact(d.amount)} gp</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {coffer.data.giveaways.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-xs tracking-wider text-muted uppercase">Giveaways you received</p>
+                    <ul className="divide-y divide-surface-border/60 text-sm">
+                      {coffer.data.giveaways.map((g, i) => (
+                        <li key={i} className="flex items-center justify-between gap-3 py-2">
+                          <span className="truncate">{g.description || "Giveaway"} <span className="text-xs text-muted">· {shortDate(g.at)}</span></span>
+                          <span className="shrink-0 font-mono text-emerald-300">+{compact(g.amount)} gp</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </Panel>
         )}
 

@@ -56,6 +56,22 @@ export interface MySignups {
   rsns: string[];
 }
 
+export interface MyCoffer {
+  linked: boolean;
+  donated: number;
+  balance: number;
+  donations: { name: string; amount: number; at: string }[];
+  giveaways: { amount: number; description: string | null; at: string }[];
+}
+
+export interface NewMemberPoll {
+  title: string;
+  options: string[];
+  anonymous: boolean;
+  multiple: boolean;
+  durationHours: number | null;
+}
+
 export type MemberResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 
 async function request<T>(method: "GET" | "PUT" | "POST" | "DELETE", path: string, userId: string, body?: Record<string, unknown>): Promise<MemberResult<T>> {
@@ -99,6 +115,8 @@ export const memberApi = {
   toggleRole: (userId: string, roleId: string, on: boolean) => request<{ roles: SelfRole[] }>("POST", "roles", userId, { roleId, on }),
   myPolls: (userId: string) => request<{ polls: MyPoll[] }>("GET", "polls", userId),
   vote: (userId: string, pollId: string, optionNumber: number) => request<{ polls: MyPoll[] }>("POST", "polls/vote", userId, { pollId, optionNumber }),
+  createPoll: (userId: string, poll: NewMemberPoll) => request<{ created: boolean; channel: string }>("POST", "polls", userId, { ...poll }),
+  myCoffer: (userId: string) => request<MyCoffer>("GET", "coffer", userId),
   mySignups: (userId: string) => request<MySignups>("GET", "signups", userId),
   joinSignup: (userId: string, signupId: string, body: { rsn?: string; fields?: string[] }) => request<MySignups>("POST", "signups/join", userId, { signupId, ...body }),
   leaveSignup: (userId: string, signupId: string) => request<MySignups>("POST", "signups/leave", userId, { signupId }),

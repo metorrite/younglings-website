@@ -148,7 +148,24 @@ export interface AdminSignupSheet {
   entries: { userId: string; name: string; position: number }[];
 }
 
+export interface PromotionDue {
+  rsn: string;
+  rank: string;
+  nextRank: string | null;
+  points: number;
+  since: string | null;
+}
+
+export interface TrackingGroupConfig {
+  key: string;
+  source: string;
+  name: string;
+  enabled: boolean;
+  channels: { channelId: string; name: string | null }[];
+}
+
 export interface NewPoll {
+  durationHours: number | null;
   title: string;
   options: string[];
   anonymous: boolean;
@@ -285,6 +302,16 @@ export const adminApi = {
     request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "PUT", "selfroles", { roles }),
 
   adminSignups: (ctx: AdminContext) => request<{ signups: AdminSignupSheet[] }>(ctx.actorId, "GET", "signups"),
+  promotions: (ctx: AdminContext) => request<{ members: PromotionDue[] }>(ctx.actorId, "GET", "promotions"),
+  markPromoted: (ctx: AdminContext, rsn: string) => request<{ members: PromotionDue[] }>(ctx.actorId, "POST", `promotions/${encodeURIComponent(rsn)}/done`, {}),
+  tracking: (ctx: AdminContext) => request<{ groups: TrackingGroupConfig[] }>(ctx.actorId, "GET", "tracking"),
+  saveTracking: (ctx: AdminContext, key: string, body: { enabled: boolean; channelIds: string[] }) =>
+    request<{ groups: TrackingGroupConfig[] }>(ctx.actorId, "PUT", `tracking/${encodeURIComponent(key)}`, body),
+  post: (ctx: AdminContext, body: { text: string; channelId?: string; convert: boolean; dryRun: boolean }) =>
+    request<{ ok: boolean; posted: boolean; warnings: string[] }>(ctx.actorId, "POST", "post", body),
+  community: (ctx: AdminContext) => request<{ pollChannelId: string | null; pollChannelName: string | null }>(ctx.actorId, "GET", "community"),
+  saveCommunity: (ctx: AdminContext, pollChannelId: string | null) =>
+    request<{ pollChannelId: string | null; pollChannelName: string | null }>(ctx.actorId, "PUT", "community", { pollChannelId }),
   createPoll: (ctx: AdminContext, poll: NewPoll) => request<{ created: boolean }>(ctx.actorId, "POST", "polls", poll),
   endPoll: (ctx: AdminContext, id: string) => request<{ ended: boolean }>(ctx.actorId, "POST", `polls/${encodeURIComponent(id)}/end`, {}),
   createSignup: (ctx: AdminContext, signup: NewSignup) => request<{ created: boolean }>(ctx.actorId, "POST", "signups", signup),

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type ClanPoints, type NewsChannelConfig, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type ClanPoints, type NewsChannelConfig, type PromotionDue, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -35,6 +35,54 @@ export async function saveSelfRolesAction(input: unknown): Promise<ActionResult<
   revalidatePath("/admin/roles");
   revalidatePath("/profile");
   return result.ok ? { ok: true, data: result.data.roles } : { ok: false, error: result.problems[0] ?? result.error };
+}
+
+export async function markPromotedAction(rsn: string): Promise<ActionResult<PromotionDue[]>> {
+  const ctx = await requireAdmin("/admin/promotions");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!rsn || rsn.length > 40) return { ok: false, error: "That isn't a valid name." };
+
+  const result = await adminApi.markPromoted(ctx, rsn);
+  revalidatePath("/admin/promotions");
+  return result.ok ? { ok: true, data: result.data.members } : { ok: false, error: result.error };
+}
+
+export async function saveTrackingAction(key: string, enabled: boolean, channelIds: string[]): Promise<ActionResult<undefined>> {
+  const ctx = await requireAdmin("/admin/tracking");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!/^[A-Z_]+$/.test(key)) return { ok: false, error: "That isn't a tracking group." };
+
+  const result = await adminApi.saveTracking(ctx, key, { enabled: enabled === true, channelIds: (Array.isArray(channelIds) ? channelIds : []).filter((c) => /^\d+$/.test(c)) });
+  revalidatePath("/admin/tracking");
+  return result.ok ? { ok: true, data: undefined } : { ok: false, error: result.problems[0] ?? result.error };
+}
+
+export async function postMessageAction(input: unknown): Promise<{ ok: true; data: { warnings: string[] } } | { ok: false; error: string; problems: string[] }> {
+  const ctx = await requireAdmin("/admin/post");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  if (typeof input !== "object" || input === null) return { ok: false, error: "That message couldn't be read.", problems: [] };
+  const p = input as Record<string, unknown>;
+
+  const result = await adminApi.post(ctx, {
+    text: text(p.text),
+    channelId: typeof p.channelId === "string" && /^\d+$/.test(p.channelId) ? p.channelId : undefined,
+    convert: p.convert === true,
+    dryRun: p.dryRun === true,
+  });
+  return result.ok ? { ok: true, data: { warnings: result.data.warnings } } : { ok: false, error: result.error, problems: result.problems };
+}
+
+export async function saveCommunityAction(pollChannelId: string | null): Promise<ActionResult<undefined>> {
+  const ctx = await requireAdmin("/admin/community");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+
+  const result = await adminApi.saveCommunity(ctx, pollChannelId && /^\d+$/.test(pollChannelId) ? pollChannelId : null);
+  revalidatePath("/admin/community");
+  return result.ok ? { ok: true, data: undefined } : { ok: false, error: result.problems[0] ?? result.error };
 }
 
 export async function saveNewsChannelsAction(input: unknown): Promise<ActionResult<NewsChannelConfig[]>> {

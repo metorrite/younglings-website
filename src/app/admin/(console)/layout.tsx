@@ -10,6 +10,10 @@ const SECTIONS = [
   { href: "/admin/tickets/history", label: "Tickets" },
   { href: "/admin/tickets/settings", label: "Ticket settings" },
   { href: "/admin/news", label: "News feed" },
+  { href: "/admin/post", label: "Post" },
+  { href: "/admin/tracking", label: "Tracking" },
+  { href: "/admin/promotions", label: "Promotions" },
+  { href: "/admin/community", label: "Community" },
   { href: "/admin/roles", label: "Self roles" },
   { href: "/admin/clan", label: "Clan points" },
 ];
@@ -29,7 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <Link href="/admin" className="text-lg font-semibold text-gold">
             Admin
           </Link>
-          <nav className="flex gap-4 text-sm text-muted">
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
             {SECTIONS.map((section) => (
               <Link key={section.href} href={section.href} className="transition hover:text-foreground">
                 {section.label}

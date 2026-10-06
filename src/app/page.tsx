@@ -13,7 +13,9 @@ import { compact, getFeed, getOverview, shortDay } from "@/lib/site";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [overview, feed] = await Promise.all([getOverview(), getFeed(10)]);
+  const [overview, feed, milestoneFeed] = await Promise.all([getOverview(), getFeed(10), getFeed(60, "XP_MILESTONE")]);
+  // Big XP milestones only — 100 million and up.
+  const milestones = (milestoneFeed ?? []).filter((m) => Number(m.text.match(/^(\d+)XP/)?.[1] ?? 0) >= 100_000_000).slice(0, 5);
   const clan = overview?.clan;
   const thisWeek = overview?.citadel.weeks.at(-1);
 
@@ -67,6 +69,12 @@ export default async function Home() {
                     }
                   >
                     <FeedList items={feed} compact />
+                  </Panel>
+                )}
+
+                {milestones.length > 0 && (
+                  <Panel title="Milestones" action={<Link href="/hall-of-fame" className="text-xs text-muted hover:text-gold">Hall of Fame →</Link>}>
+                    <FeedList items={milestones} compact />
                   </Panel>
                 )}
 

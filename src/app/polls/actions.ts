@@ -11,6 +11,27 @@ import { throttle } from "@/lib/ratelimit";
  * anything the browser sends — because JonnyBot's internal API trusts the id it's given. The bot itself checks
  * the poll is open and that the voter is a verified clan member.
  */
+/** A verified member starts a poll in the channel the admins chose for member polls. */
+export async function createMemberPollAction(input: unknown): Promise<{ ok: true; channel: string } | { ok: false; error: string }> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { ok: false, error: "Log in with Discord to start a poll." };
+  const slow = throttle(session.user.id, "signup");
+  if (slow) return { ok: false, error: slow };
+  if (typeof input !== "object" || input === null) return { ok: false, error: "That poll couldn't be read." };
+  const p = input as Record<string, unknown>;
+
+  const result = await memberApi.createPoll(session.user.id, {
+    title: typeof p.title === "string" ? p.title : "",
+    options: (Array.isArray(p.options) ? p.options : []).map((o) => (typeof o === "string" ? o : "")),
+    anonymous: p.anonymous === true,
+    multiple: p.multiple === true,
+    durationHours: typeof p.durationHours === "number" && Number.isFinite(p.durationHours) && p.durationHours > 0 ? Math.trunc(p.durationHours) : null,
+  });
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/polls");
+  return { ok: true, channel: result.data.channel };
+}
+
 export async function votePollAction(pollId: string, optionNumber: number): Promise<{ ok: true; mine: number[] } | { ok: false; error: string }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { ok: false, error: "Log in with Discord to vote." };
