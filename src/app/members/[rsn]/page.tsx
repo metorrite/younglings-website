@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { BarChart, DonutChart, LineChart, PALETTE } from "@/components/charts";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
-import { compact, full, getOverview, getProfile, rankColor, shortDate, shortDay, type MemberProfile } from "@/lib/site";
+import { awardLabel, compact, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, type MemberProfile } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
 // so prerendering would bake in an empty "unavailable" page. The fetches themselves are still cached briefly.
@@ -44,10 +44,12 @@ function GainBlock({ profile, period }: { profile: MemberProfile; period: "day" 
   );
 }
 
-export default async function MemberPage({ params }: { params: Promise<{ rsn: string }> }) {
+export default async function MemberPage({ params, searchParams }: { params: Promise<{ rsn: string }>; searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const { rsn: rawRsn } = await params;
   const rsn = decodeURIComponent(rawRsn);
-  const [profile, overview] = await Promise.all([getProfile(rsn), getOverview()]);
+  const query = await searchParams;
+  const skillParam = typeof query.skill === "string" && /^\d{1,2}$/.test(query.skill) ? Number(query.skill) : null;
+  const [profile, overview, skillSeries] = await Promise.all([getProfile(rsn), getOverview(), skillParam !== null ? getSkillSeries(rsn, skillParam) : null]);
 
   if (profile === null) {
     // Either the bot is unreachable or this isn't a current member; tell the two apart with a cheap second call.
@@ -74,9 +76,14 @@ export default async function MemberPage({ params }: { params: Promise<{ rsn: st
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-12 sm:px-6">
-      <Link href="/members" className="text-sm text-muted hover:text-foreground">
-        ← All members
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/members" className="text-sm text-muted hover:text-foreground">
+          ← All members
+        </Link>
+        <Link href={`/compare?a=${encodeURIComponent(profile.rsn)}`} className="rounded-md border border-surface-border px-3 py-1.5 text-sm transition hover:border-gold/50">
+          Compare with another member →
+        </Link>
+      </div>
 
       <section className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
         <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: color }} />
@@ -151,25 +158,83 @@ export default async function MemberPage({ params }: { params: Promise<{ rsn: st
         />
       </Panel>
 
-      <Panel title="Skills">
+      <Panel title="Skills" action={<span className="text-xs text-muted">Click a skill for its XP history</span>}>
         {profile.skills.length === 0 ? (
           <p className="text-sm text-muted">No skill data has been recorded for this member yet.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {profile.skills.map((skill, i) => (
-              <li key={skill.id} className="flex items-center gap-3 rounded-lg border border-surface-border/60 bg-background/40 px-3 py-2">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm font-bold" style={{ backgroundColor: `${PALETTE[i % PALETTE.length]}22`, color: PALETTE[i % PALETTE.length] }}>
-                  {skill.level}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{skill.name}</span>
-                  <span className="block text-xs text-muted">{compact(skill.xp)} XP{skill.rank > 0 ? ` · rank ${full(skill.rank)}` : ""}</span>
-                </span>
+              <li key={skill.id}>
+                <Link
+                  href={`/members/${encodeURIComponent(profile.rsn)}?skill=${skill.id}#skill-chart`}
+                  scroll={false}
+                  className={`flex items-center gap-3 rounded-lg border bg-background/40 px-3 py-2 transition hover:border-gold/50 ${skillParam === skill.id ? "border-gold" : "border-surface-border/60"}`}
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm font-bold" style={{ backgroundColor: `${PALETTE[i % PALETTE.length]}22`, color: PALETTE[i % PALETTE.length] }}>
+                    {skill.level}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{skill.name}</span>
+                    <span className="block text-xs text-muted">{compact(skill.xp)} XP{skill.rank > 0 ? ` · rank ${full(skill.rank)}` : ""}</span>
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
         )}
       </Panel>
+
+      {skillParam !== null && (
+        <section id="skill-chart" className="scroll-mt-6">
+          <Panel title={skillSeries ? `${skillSeries.skill} — XP over the last 90 days` : "Skill history"}>
+            {skillSeries ? (
+              (() => {
+                const h = skillSeries.history;
+                const gains = h.slice(1).map((p, i) => ({ label: shortDay(p.date), value: Math.max(0, p.xp - h[i].xp) })).slice(-14);
+                return (
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <LineChart points={h.map((p) => ({ label: shortDay(p.date), value: p.xp }))} color="#3ecf8e" />
+                    {gains.length > 0 ? (
+                      <BarChart groups={gains.map((g) => ({ label: g.label, values: [g.value] }))} series={[{ name: "XP gained", color: "#3ecf8e" }]} format={compact} />
+                    ) : (
+                      <p className="py-8 text-center text-sm text-muted">Not enough history yet.</p>
+                    )}
+                  </div>
+                );
+              })()
+            ) : (
+              <p className="text-sm text-muted">No history is available for that skill.</p>
+            )}
+          </Panel>
+        </section>
+      )}
+
+      {profile.awards.length > 0 && (
+        <Panel title="Clan points">
+          {(() => {
+            const chronological = [...profile.awards].reverse();
+            const awarded = chronological.reduce((sum, a) => sum + a.points, 0);
+            let running = Math.max(0, profile.points - awarded);
+            const curve = chronological.map((a) => ({ label: shortDay(a.date), value: (running += a.points) }));
+
+            const byType = new Map<string, number>();
+            profile.awards.forEach((a) => byType.set(a.type, (byType.get(a.type) ?? 0) + a.points));
+
+            return (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs text-muted">Points over the last {profile.awards.length} awards</p>
+                  <LineChart points={curve} color="#e0a24a" format={(n) => String(Math.round(n))} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs text-muted">Where recent points came from</p>
+                  <DonutChart slices={[...byType].map(([type, value]) => ({ label: awardLabel(type), value }))} size={150} />
+                </div>
+              </div>
+            );
+          })()}
+        </Panel>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Citadel">

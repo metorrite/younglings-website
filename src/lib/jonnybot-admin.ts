@@ -130,6 +130,18 @@ export interface TicketRow {
   channelDeleted: boolean;
 }
 
+export interface TicketStats {
+  open: number;
+  closed: number;
+  escalated: number;
+  flagged: number;
+  avgHoursToClose: number | null;
+  avgMinutesToFirstHelper: number | null;
+  byPanel: { panel: string; total: number; open: number }[];
+  byWeek: { weekStart: string; opened: number }[];
+  topHelpers: { id: string; name: string | null; tickets: number }[];
+}
+
 export interface TicketDetail extends TicketRow {
   helpers: { id: string; name: string | null }[];
   closedByName: string | null;
@@ -214,6 +226,8 @@ export const adminApi = {
   deletePanel: (ctx: AdminContext, id: string) => request<{ deleted: boolean }>(ctx.actorId, "DELETE", `ticket/panels/${encodeURIComponent(id)}`),
   postPanel: (ctx: AdminContext, id: string, channelId: string) =>
     request<PanelDefinition>(ctx.actorId, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
+
+  ticketStats: (ctx: AdminContext) => request<TicketStats>(ctx.actorId, "GET", "ticket/stats"),
 
   listTickets: (ctx: AdminContext, query: { status?: string; panel?: string; limit?: number; offset?: number }) => {
     const params = new URLSearchParams();

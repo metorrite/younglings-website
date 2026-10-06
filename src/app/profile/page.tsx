@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
 import { whoAmI } from "@/lib/jonnybot-admin";
+import { compact, getMyRsns, getProfile, shortDate } from "@/lib/site";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
 
 export default async function ProfilePage() {
@@ -15,8 +16,10 @@ export default async function ProfilePage() {
   }
 
   const { user } = session;
-  const [member, access] = await Promise.all([getMemberInfo(user.id), whoAmI(user.id)]);
+  // The visitor's own linked RuneScape names — looked up with the id from their verified login, never from the URL.
+  const [member, access, rsns] = await Promise.all([getMemberInfo(user.id), whoAmI(user.id), getMyRsns(user.id)]);
   const isAdmin = access.ok && access.data.allowed;
+  const mine = rsns && rsns.length > 0 ? await getProfile(rsns[0]) : null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
@@ -45,6 +48,56 @@ export default async function ProfilePage() {
             Open the admin dashboard →
           </Link>
         )}
+
+        <section className="mt-8 rounded-lg border border-surface-border bg-background/40 p-5">
+          <h2 className="font-semibold text-gold">Your clan profile</h2>
+          {rsns === null ? (
+            <p className="mt-2 text-sm text-muted">Can&apos;t reach JonnyBot right now, so your clan stats aren&apos;t available.</p>
+          ) : rsns.length === 0 ? (
+            <p className="mt-2 text-sm text-muted">
+              No RuneScape name is linked to your Discord account yet. Use <code className="rounded bg-white/10 px-1">/rs</code> in the Younglings Discord to link yours and your stats will show up here.
+            </p>
+          ) : mine === null ? (
+            <p className="mt-2 text-sm text-muted">
+              <strong className="text-foreground">{rsns[0]}</strong> is linked, but isn&apos;t a current clan member, so there&apos;s no clan profile to show.
+            </p>
+          ) : (
+            <div className="mt-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <Link href={`/members/${encodeURIComponent(mine.rsn)}`} className="text-lg font-semibold hover:text-gold">
+                  {mine.rsn} →
+                </Link>
+                <span className="text-sm text-muted">
+                  {mine.rank} · since {shortDate(mine.joined)}
+                </span>
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                <div>
+                  <dt className="text-xs text-muted">Total level</dt>
+                  <dd className="font-semibold">{mine.totalLevel ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">XP this week</dt>
+                  <dd className="font-semibold">+{compact(mine.gains.week)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">Clan points</dt>
+                  <dd className="font-semibold">{mine.points}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">Citadel caps</dt>
+                  <dd className="font-semibold">{mine.citadel.caps}</dd>
+                </div>
+              </dl>
+              {mine.nextRank && (
+                <p className="mt-3 text-xs text-muted">
+                  {mine.promotionNeeded ? `Eligible for ${mine.nextRank.name} — promotion pending.` : `${mine.nextRank.pointsNeeded} points to ${mine.nextRank.name}.`}
+                </p>
+              )}
+              {rsns.length > 1 && <p className="mt-2 text-xs text-muted">Also linked: {rsns.slice(1).join(", ")}</p>}
+            </div>
+          )}
+        </section>
 
         {member === null ? (
           <div className="mt-8 rounded-md border border-dashed border-surface-border p-4 text-sm text-muted">
