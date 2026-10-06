@@ -138,9 +138,36 @@ export interface ClanHistory {
   closeToPromotion: { rsn: string; rank: string; next: string; points: number; needed: number; promotionNeeded: boolean }[];
 }
 
+export interface NewsEmbed {
+  title: string | null;
+  description: string | null;
+  url: string | null;
+  color: number;
+  image: string | null;
+  thumbnail: string | null;
+  author: string | null;
+  footer: string | null;
+  fields: { name: string; value: string; inline: boolean }[];
+}
+
+export interface NewsPost {
+  id: string;
+  channel: string;
+  author: string;
+  avatarUrl: string;
+  postedAt: string;
+  editedAt: string | null;
+  text: string;
+  images: string[];
+  embeds: NewsEmbed[];
+  pinned: boolean;
+  url: string;
+}
+
 export interface PollSummary {
   id: string;
   title: string;
+  active: boolean;
   status: string;
   anonymous: boolean;
   multiple: boolean;
@@ -148,7 +175,7 @@ export interface PollSummary {
   createdAt: string;
   closedAt: string | null;
   url: string | null;
-  options: { label: string; votes: number }[];
+  options: { number: number; label: string; votes: number }[];
 }
 
 export interface SignupSheet {
@@ -156,8 +183,12 @@ export interface SignupSheet {
   title: string;
   note: string | null;
   max: number | null;
+  type: "QUEUE" | "GROUP" | "SUBMISSION";
+  paused: boolean;
   createdAt: string;
-  entries: { rsn: string; position: number }[];
+  /** For a submission signup, the questions members answer. */
+  fields: { label: string; type: "TEXT" | "LINK" | "IMAGE"; required: boolean }[];
+  entries: { name: string; position: number }[];
 }
 
 export interface Pvm {
@@ -264,6 +295,10 @@ export async function getSignups(): Promise<SignupSheet[] | null> {
   const data = await getSite<{ signups: SignupSheet[] }>("signups", 30);
   return data?.signups ?? null;
 }
+export async function getNews(): Promise<NewsPost[] | null> {
+  const data = await getSite<{ posts: NewsPost[] }>("news", 60);
+  return data?.posts ?? null;
+}
 export const getPvm = () => getSite<Pvm>("pvm", 300);
 export const getDrops = () => getSite<Drops>("drops", 300);
 export const getCoffer = () => getSite<Coffer>("coffer", 120);
@@ -323,6 +358,14 @@ export function etaLabel(xpNeeded: number, xpPerDay: number): string | null {
   if (days < 730) return `~${Math.round(days / 30)} months`;
   return "over 2 years";
 }
+
+/**
+ * A link that opens in the Discord desktop app when it's running, falling back to the web page. `path` is
+ * everything after discord.com/ — e.g. `events/<guild>/<event>` or `channels/<guild>/<channel>/<message>`.
+ */
+export const discordWebUrl = (path: string) => `https://discord.com/${path}`;
+export const discordAppUrl = (path: string) => `discord://-/${path}`;
+export const discordPath = (url: string) => url.replace("https://discord.com/", "");
 
 /** "2026-09" → "September 2026". */
 export function monthLabel(month: string): string {

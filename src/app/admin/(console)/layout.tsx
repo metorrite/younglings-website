@@ -9,6 +9,7 @@ const SECTIONS = [
   { href: "/admin/tickets", label: "Ticket panels" },
   { href: "/admin/tickets/history", label: "Tickets" },
   { href: "/admin/tickets/settings", label: "Ticket settings" },
+  { href: "/admin/news", label: "News feed" },
   { href: "/admin/roles", label: "Self roles" },
   { href: "/admin/clan", label: "Clan points" },
 ];

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PageHeader, Panel, Unavailable } from "@/components/site/blocks";
+import { DiscordLink } from "@/components/site/DiscordLink";
 import { LocalTime } from "@/components/site/LocalTime";
-import { getEvents, monthLabel, type SiteEvent } from "@/lib/site";
+import { discordPath, getEvents, monthLabel, type SiteEvent } from "@/lib/site";
 
 export const metadata = { title: "Event calendar — Younglings" };
 export const dynamic = "force-dynamic";
@@ -72,9 +73,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                       <ul className="mt-1 space-y-1">
                         {dayEvents.map((e) => (
                           <li key={e.id}>
-                            <a href={e.url} target="_blank" rel="noreferrer" className="block truncate rounded bg-gold/15 px-1.5 py-0.5 text-[11px] text-gold hover:bg-gold/25" title={e.name}>
+                            <DiscordLink path={discordPath(e.url)} className="block truncate rounded bg-gold/15 px-1.5 py-0.5 text-[11px] text-gold hover:bg-gold/25" title={e.name}>
                               <LocalTime iso={e.startTime} mode="clock" /> {e.name}
-                            </a>
+                            </DiscordLink>
                           </li>
                         ))}
                       </ul>

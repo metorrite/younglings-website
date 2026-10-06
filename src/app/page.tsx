@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BarChart, RankedBars } from "@/components/charts";
+import { FeedList } from "@/components/site/FeedList";
+import { NewsBlock } from "@/components/site/NewsBlock";
 import { OnlineRail } from "@/components/site/OnlineRail";
 import { Panel, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
-import { FeedList } from "@/components/site/FeedList";
 import { compact, getFeed, getOverview, shortDay } from "@/lib/site";
 
-// Live clan numbers: re-fetched from the bot at most every 30 seconds rather than on every request.
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
 // so prerendering would bake in an empty "unavailable" page. The fetches themselves are still cached briefly.
 export const dynamic = "force-dynamic";
@@ -19,18 +19,15 @@ export default async function Home() {
 
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_65%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[24rem] bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_65%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <section className="flex flex-col items-center gap-5 text-center">
-          <Image src="/clan-logo.png" alt="Younglings" width={104} height={104} className="rounded-full ring-2 ring-gold/50 shadow-[0_0_40px_rgba(212,175,55,0.25)]" />
+      <div className="relative mx-auto max-w-[96rem] px-4 py-10 sm:px-6">
+        <section className="flex flex-col items-center gap-4 text-center">
+          <Image src="/clan-logo.png" alt="Younglings" width={88} height={88} className="rounded-full ring-2 ring-gold/50 shadow-[0_0_40px_rgba(212,175,55,0.25)]" />
           <div>
             <p className="text-xs tracking-[0.3em] text-muted uppercase">Welcome to</p>
             <h1 className="text-4xl font-bold tracking-wide text-gold sm:text-5xl">{clan?.name ?? "Younglings"}</h1>
           </div>
-          <p className="max-w-xl text-sm text-muted">
-            A RuneScape clan on Discord. Browse the roster, follow weekly XP and Citadel caps, and dig into any member&apos;s profile — it all updates live from the clan&apos;s bot.
-          </p>
           <div className="flex flex-wrap justify-center gap-3 text-sm">
             <Link href="/members" className="rounded-md bg-gold px-4 py-2 font-semibold text-background transition hover:brightness-110">
               Browse members
@@ -44,27 +41,17 @@ export default async function Home() {
           </div>
         </section>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-[1fr_20rem] xl:grid-cols-[1fr_22rem]">
-          <div className="min-w-0 space-y-6">
-            {clan ? (
-              <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <StatTile label="Members" value={clan.memberCount} sub={`${clan.verifiedCount} verified on Discord`} href="/members" />
-                <StatTile label="XP today" value={compact(clan.xpToday)} sub="clan-wide, last 24h" href="/stats" />
-                <StatTile label="XP this week" value={compact(clan.xpWeek)} sub={`${compact(clan.xpMonth)} this month`} href="/stats" />
-                <StatTile label="Citadel caps" value={thisWeek?.capped ?? 0} sub={`${thisWeek?.visited ?? 0} visited this week`} href="/stats" />
-              </section>
-            ) : (
-              <Unavailable what="Clan statistics" />
-            )}
-
-            {overview && (
+        {/* Three columns: stats and leaderboards on the left, Discord news in the middle, who's online on the right. */}
+        <div className="mt-10 grid gap-6 lg:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-cols-[21rem_minmax(0,1fr)_21rem]">
+          <div className="order-2 min-w-0 space-y-6 lg:order-none">
+            {overview ? (
               <>
                 <Panel title="Top XP gainers">
                   <Tabbed
                     initial="week"
                     tabs={(["day", "week", "month"] as const).map((period) => ({
                       id: period,
-                      label: period === "day" ? "24 hours" : period === "week" ? "7 days" : "30 days",
+                      label: period === "day" ? "24h" : period === "week" ? "7d" : "30d",
                       content: <RankedBars rows={overview.gains[period].slice(0, 8).map((g) => ({ label: g.rsn, value: g.xp }))} linkBase="/members/" />,
                     }))}
                   />
@@ -84,26 +71,43 @@ export default async function Home() {
                 )}
 
                 <Panel
-                  title="Citadel — caps and visits per week"
+                  title="Citadel"
                   action={
-                    <Link href="/stats" className="text-xs text-muted hover:text-gold">
-                      All stats →
+                    <Link href="/citadel" className="text-xs text-muted hover:text-gold">
+                      Attendance →
                     </Link>
                   }
                 >
                   <BarChart
-                    groups={overview.citadel.weeks.slice(-8).map((w) => ({ label: shortDay(w.weekStart), values: [w.capped, w.visited] }))}
+                    groups={overview.citadel.weeks.slice(-6).map((w) => ({ label: shortDay(w.weekStart), values: [w.capped, w.visited] }))}
                     series={[
                       { name: "Capped", color: "#d4af37" },
                       { name: "Visited", color: "#5aa9e6" },
                     ]}
+                    height={170}
                   />
                 </Panel>
               </>
+            ) : (
+              <Unavailable what="Clan statistics" />
             )}
           </div>
 
-          <OnlineRail />
+          <div className="order-1 min-w-0 space-y-6 lg:order-none">
+            {clan && (
+              <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <StatTile label="Members" value={clan.memberCount} sub={`${clan.verifiedCount} verified on Discord`} href="/members" />
+                <StatTile label="XP today" value={compact(clan.xpToday)} sub="clan-wide, last 24h" href="/stats" />
+                <StatTile label="XP this week" value={compact(clan.xpWeek)} sub={`${compact(clan.xpMonth)} this month`} href="/leaderboards" />
+                <StatTile label="Citadel caps" value={thisWeek?.capped ?? 0} sub={`${thisWeek?.visited ?? 0} visited this week`} href="/citadel" />
+              </section>
+            )}
+            <NewsBlock />
+          </div>
+
+          <div className="order-3 min-w-0 lg:order-none">
+            <OnlineRail />
+          </div>
         </div>
       </div>
     </div>
