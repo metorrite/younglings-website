@@ -8,6 +8,7 @@ import { discordPath, shortDate } from "@/lib/site";
 import { PollAdminBar } from "./AdminTools";
 import { DiscordLink } from "./DiscordLink";
 import { LocalTime } from "./LocalTime";
+import { Tip, TipBody } from "@/components/ui/Tip";
 
 /**
  * A poll you can vote in. Bars animate to the new split the moment you click (and settle to the server's real
@@ -133,7 +134,11 @@ export function PollCard({ poll, initialMine, loggedIn, admin = false }: { poll:
                       {isMine ? "✓" : o.number}
                     </span>
                     <span className="truncate font-medium">{o.label}</span>
-                    {isLeader && poll.active === false && <span title="Winner">🏆</span>}
+                    {isLeader && poll.active === false && (
+                      <Tip content={<TipBody title="Winner" />}>
+                        <span>🏆</span>
+                      </Tip>
+                    )}
                   </span>
                   <span className="shrink-0 text-right">
                     <span className="block text-lg font-semibold tabular-nums">{Math.round(pct)}%</span>

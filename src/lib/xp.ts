@@ -73,11 +73,14 @@ export function xpForLevel(skillId: number, level: number): number {
   return table[Math.max(1, Math.min(level, table.length)) - 1];
 }
 
-/** The level an amount of XP is worth if virtual levels count — up to 126, or 150 for Invention. */
+/** The highest virtual level the clan counts: 120, as in the game itself, even though the maths runs to 126 (150 for Invention). */
+export const VIRTUAL_CAP = 120;
+
+/** The level an amount of XP is worth if virtual levels count, never above 120. */
 export function virtualLevel(skillId: number, xp: number): number {
   const table = tableFor(skillId);
   let level = 1;
-  while (level < table.length && xp >= table[level]) level++;
+  while (level < VIRTUAL_CAP && xp >= table[level]) level++;
   return level;
 }
 

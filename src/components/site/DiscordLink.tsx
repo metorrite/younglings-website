@@ -1,6 +1,7 @@
 "use client";
 
 import type { MouseEvent, ReactNode } from "react";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import { discordAppUrl, discordWebUrl } from "@/lib/site";
 
 /**
@@ -34,8 +35,10 @@ export function DiscordLink({ path, children, className, title }: { path: string
   }
 
   return (
-    <a href={web} target="_blank" rel="noreferrer" onClick={open} className={className} title={title ?? "Opens in the Discord app if it's running"}>
-      {children}
-    </a>
+    <Tip content={<TipBody title={title ?? "Opens in Discord"}>{title ? "Opens in the Discord app if it's running." : "Uses the Discord app if it's running, otherwise your browser."}</TipBody>}>
+      <a href={web} target="_blank" rel="noreferrer" onClick={open} className={className}>
+        {children}
+      </a>
+    </Tip>
   );
 }

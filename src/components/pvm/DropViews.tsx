@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import type { DropCell, DropEntry } from "@/lib/site";
 
 const query = (period: string | null, boss?: string | null) => {
@@ -37,17 +38,29 @@ export function DropGrid({ cells, period, boss, size = 52 }: { cells: DropCell[]
       <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${size + 12}px, 1fr))` }}>
         {cells.map((cell) => {
           const got = cell.count > 0;
-          const title = `${cell.item}${cell.rarity ? ` · ${cell.rarity}` : ""}${got ? ` · received ${cell.count}×${cell.receivers > 1 ? ` by ${cell.receivers} members` : ""}` : cell.tracked ? " · not received yet" : " · not reported by the adventure log"}`;
           return (
             <li key={cell.key}>
+              <Tip
+                content={
+                  <TipBody
+                    icon={<ItemIcon icon={cell.icon} name={cell.item} size={22} />}
+                    title={cell.item}
+                    rows={[
+                      ...(cell.rarity ? ([["Drop rate", cell.rarity]] as [string, string][]) : []),
+                      got ? ["Received", `${cell.count}×${cell.receivers > 1 ? ` by ${cell.receivers} members` : ""}`] : ["Status", cell.tracked ? "Not received yet" : "Not reported by the log"],
+                      ...(cell.top.length > 0 ? ([["Most", `${cell.top[0].rsn} (${cell.top[0].count})`]] as [string, string][]) : []),
+                    ]}
+                  />
+                }
+              >
               <Link
                 href={`/pvm/item/${cell.key}${query(period, boss)}`}
-                title={title}
                 className={`relative flex aspect-square items-center justify-center rounded-lg border bg-background/50 transition hover:border-gold/60 hover:bg-gold/5 ${got ? "border-gold/40" : cell.tracked ? "border-surface-border/60" : "border-dashed border-surface-border/60"}`}
               >
                 <ItemIcon icon={cell.icon} name={cell.item} size={size - 12} className={got ? "" : "opacity-30 grayscale"} />
                 {got && <span className="absolute right-0.5 bottom-0.5 rounded bg-background/90 px-1 text-[11px] leading-tight font-bold text-gold tabular-nums">{cell.count}</span>}
               </Link>
+              </Tip>
             </li>
           );
         })}

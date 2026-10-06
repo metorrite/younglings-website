@@ -5,6 +5,8 @@ import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/componen
 import { Tabbed } from "@/components/site/Tabbed";
 import { badgesFor } from "@/lib/badges";
 import { SkillsGrid } from "@/components/profile/SkillsGrid";
+import { Tip, TipBody } from "@/components/ui/Tip";
+import { SkillIcon } from "@/components/site/SkillIcon";
 import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, shortNumbers, type MemberProfile } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
@@ -32,10 +34,12 @@ function GainBlock({ profile, period }: { profile: MemberProfile; period: "day" 
 
   const top = gains.slice(0, 7);
   const other = gains.slice(7).reduce((sum, g) => sum + g.xp, 0);
-  const slices = [...top.map((g) => ({ label: g.skill, value: g.xp })), ...(other > 0 ? [{ label: "Other skills", value: other, color: "#4b5563" }] : [])];
+  const slices = [...top.map((g) => ({ label: g.skill, value: g.xp, skill: g.skill })), ...(other > 0 ? [{ label: "Other skills", value: other, color: "#4b5563" }] : [])];
   return (
     <DonutChart
       slices={slices}
+      unit=" XP"
+      valueLabel="XP gained"
       center={
         <>
           <span className="text-xl font-bold">{compact(total)}</span>
@@ -126,9 +130,13 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
             {badges.length > 0 && (
               <ul className="mt-4 flex flex-wrap gap-2" aria-label="Badges">
                 {badges.map((b) => (
-                  <li key={b.id} title={b.description} className="flex items-center gap-1.5 rounded-full border border-surface-border bg-background/60 px-2.5 py-1 text-xs">
-                    <span>{b.icon}</span>
-                    {b.label}
+                  <li key={b.id}>
+                    <Tip content={<TipBody title={b.label} icon={<span>{b.icon}</span>}>{b.description}</TipBody>}>
+                      <span className="flex items-center gap-1.5 rounded-full border border-surface-border bg-background/60 px-2.5 py-1 text-xs">
+                        <span>{b.icon}</span>
+                        {b.label}
+                      </span>
+                    </Tip>
                   </li>
                 ))}
               </ul>
@@ -209,7 +217,8 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
               return (
                 <li key={s.id} className="rounded-lg border border-surface-border/60 bg-background/40 p-3">
                   <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-medium">
+                    <span className="flex items-center gap-2 font-medium">
+                      <SkillIcon name={s.name} size={22} />
                       {s.name} <span className="text-muted">{s.level}</span>
                     </span>
                     <span className="text-xs text-muted">{compact(s.xpTo99)} XP to 99</span>
@@ -239,7 +248,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
                   <div className="grid gap-6 lg:grid-cols-2">
                     <LineChart points={h.map((p) => ({ label: shortDay(p.date), value: p.xp }))} color="#3ecf8e" />
                     {gains.length > 0 ? (
-                      <BarChart groups={gains.map((g) => ({ label: g.label, values: [g.value] }))} series={[{ name: "XP gained", color: "#3ecf8e" }]} format={compact} />
+                      <BarChart groups={gains.map((g) => ({ label: g.label, values: [g.value] }))} series={[{ name: "XP gained", color: "#3ecf8e" }]} format="compact" />
                     ) : (
                       <p className="py-8 text-center text-sm text-muted">Not enough history yet.</p>
                     )}
@@ -268,11 +277,11 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
               <div className="grid gap-6 lg:grid-cols-2">
                 <div>
                   <p className="mb-2 text-xs text-muted">Points over the last {profile.awards.length} awards</p>
-                  <LineChart points={curve} color="#e0a24a" format={(n) => String(Math.round(n))} />
+                  <LineChart points={curve} color="#e0a24a" format="integer" />
                 </div>
                 <div>
                   <p className="mb-2 text-xs text-muted">Where recent points came from</p>
-                  <DonutChart slices={[...byType].map(([type, value]) => ({ label: awardLabel(type), value }))} size={150} />
+                  <DonutChart slices={[...byType].map(([type, value]) => ({ label: awardLabel(type), value }))} size={150} format="integer" valueLabel="Points" />
                 </div>
               </div>
             );
@@ -295,11 +304,9 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
           <p className="mt-5 mb-2 text-xs text-muted">Last 12 Citadel weeks (oldest to newest)</p>
           <div className="flex gap-1.5" aria-label="Weeks capped">
             {weeks.map((week) => (
-              <span
-                key={week}
-                title={`Week of ${shortDay(week)} — ${capped.has(week) ? "capped" : "no cap recorded"}`}
-                className={`h-7 flex-1 rounded ${capped.has(week) ? "bg-gold" : "bg-white/10"}`}
-              />
+              <Tip key={week} content={<TipBody title={`Week of ${shortDay(week)}`}>{capped.has(week) ? "Capped the Citadel" : "No cap recorded"}</TipBody>}>
+                <span className={`h-7 flex-1 rounded ${capped.has(week) ? "bg-gold" : "bg-white/10"}`} />
+              </Tip>
             ))}
           </div>
         </Panel>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { OPEN_LINK_EVENT } from "@/components/link/LinkModalHost";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import type { LinkState } from "@/lib/site";
 
 type Item = { href: string; label: string; icon: string };
@@ -31,14 +32,16 @@ const BADGE = {
 function StatusBadge({ state }: { state: "NONE" | "PENDING" }) {
   const { color, label } = BADGE[state];
   return (
-    <span className="absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center" title={label}>
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden className="drop-shadow-[0_0_2px_rgba(0,0,0,0.9)]">
-        <path d="M12 2.5 22.5 21h-21z" fill={color} stroke="#0b0d12" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M12 9v5.5" stroke="#0b0d12" strokeWidth="2.2" strokeLinecap="round" />
-        <circle cx="12" cy="17.6" r="1.2" fill="#0b0d12" />
-      </svg>
-      <span className="sr-only">{label}</span>
-    </span>
+    <Tip content={<TipBody title={state === "NONE" ? "RuneScape name not linked" : "Link request in review"} titleColor={color}>{state === "NONE" ? "Link it from your profile menu to unlock goals, recaps and your member page." : "An admin is looking at it. You'll get a Discord message when it's decided."}</TipBody>}>
+      <span className="absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden className="drop-shadow-[0_0_2px_rgba(0,0,0,0.9)]">
+          <path d="M12 2.5 22.5 21h-21z" fill={color} stroke="#0b0d12" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M12 9v5.5" stroke="#0b0d12" strokeWidth="2.2" strokeLinecap="round" />
+          <circle cx="12" cy="17.6" r="1.2" fill="#0b0d12" />
+        </svg>
+        <span className="sr-only">{label}</span>
+      </span>
+    </Tip>
   );
 }
 
