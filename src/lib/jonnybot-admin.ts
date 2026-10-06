@@ -87,6 +87,8 @@ export interface PanelDefinition {
   categoryId: string | null;
   channelNameTemplate: string;
   welcomeText: string;
+  /** The line above a new ticket's embeds; {user} becomes a mention of whoever opened it. */
+  openingMessage: string;
   enabled: boolean;
   perUserLimit: number;
   defaultPingRoleId: string | null;

@@ -67,6 +67,7 @@ function cleanPanel(input: unknown): PanelDefinition | null {
     categoryId: idOrNull(p.categoryId),
     channelNameTemplate: text(p.channelNameTemplate),
     welcomeText: text(p.welcomeText),
+    openingMessage: text(p.openingMessage),
     enabled: p.enabled !== false,
     perUserLimit: intOrNull(p.perUserLimit) ?? 1,
     defaultPingRoleId: idOrNull(p.defaultPingRoleId),

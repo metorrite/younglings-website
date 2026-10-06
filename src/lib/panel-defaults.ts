@@ -13,6 +13,7 @@ export function blankPanel(): PanelDefinition {
     categoryId: null,
     channelNameTemplate: "ticket-{number}",
     welcomeText: "",
+    openingMessage: "{user} Welcome",
     enabled: true,
     perUserLimit: 1,
     defaultPingRoleId: null,
