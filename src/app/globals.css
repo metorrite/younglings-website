@@ -85,9 +85,24 @@ body {
   to { opacity: 1; transform: none; }
 }
 .nav-pop { animation: nav-pop 0.16s ease-out; }
+/* Info windows are placed with a transform of their own, so their entrance must not touch transform. */
+@keyframes tip-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.tip-in { animation: tip-in 0.12s ease-out; }
+
+/* Jumping to a section from a tile or link: glide there, and give the target a brief gold flash. */
+html { scroll-behavior: smooth; }
+@keyframes target-flash {
+  0% { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.7), 0 0 24px rgba(212, 175, 55, 0.25); }
+  100% { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0), 0 0 24px rgba(212, 175, 55, 0); }
+}
+section[id]:target { animation: target-flash 1.6s ease-out; }
 .hub-in { animation: hub-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) {
-  .nav-pop, .hub-in { animation: none; }
+  .nav-pop, .hub-in, .tip-in, section[id]:target { animation: none; }
+  html { scroll-behavior: auto; }
 }
 
 /* ---------- Maxed skill bars: a moving shine and a few twinkling stars ---------- */

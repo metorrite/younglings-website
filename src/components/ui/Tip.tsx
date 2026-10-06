@@ -16,13 +16,15 @@ const HALF_WIDTH = 132; // half of the window's widest size, so it never runs of
 
 /** A window centred above (or, near the top of the screen, below) the screen point `x`, `y`. */
 export function TipPortal({ x, y, children }: { x: number; y: number; children: ReactNode }) {
+  // Above or below is decided once, when the window first appears, and kept while it stays up. Deciding on every
+  // move would make it hop from one side of the pointer to the other as you cross the threshold.
+  const [below] = useState(() => y < 120);
   if (typeof document === "undefined") return null;
   const left = Math.min(Math.max(x, HALF_WIDTH), window.innerWidth - HALF_WIDTH);
-  const below = y < 120;
   return createPortal(
     <div
       role="tooltip"
-      className="nav-pop pointer-events-none fixed z-[70] w-max max-w-64 rounded-lg border border-surface-border bg-surface p-3 text-xs shadow-2xl"
+      className="tip-in pointer-events-none fixed z-[70] w-max max-w-64 rounded-lg border border-surface-border bg-surface p-3 text-xs shadow-2xl"
       style={{ left, top: below ? y + 18 : y - 12, transform: below ? "translateX(-50%)" : "translate(-50%, -100%)" }}
     >
       {children}

@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 
 /** The page-level building blocks shared by every clan page, so they all feel like one site. */
 
-export function Panel({ title, hint, action, children, className = "" }: { title?: string; hint?: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({ id, title, hint, action, children, className = "" }: { id?: string; title?: string; hint?: ReactNode; action?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-xl border border-surface-border bg-surface/90 p-5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] ${className}`}>
+    <section id={id} className={`scroll-mt-24 rounded-xl border border-surface-border bg-surface/90 p-5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] ${className}`}>
       {(title || action) && (
         <div className={`${hint ? "mb-1" : "mb-4"} flex items-center justify-between gap-3`}>
           {title && <h2 className="text-sm font-semibold tracking-wide text-gold uppercase">{title}</h2>}
