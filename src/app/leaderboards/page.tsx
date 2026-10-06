@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { RankedBars } from "@/components/charts";
 import { PageHeader, Panel, StatTile, Unavailable } from "@/components/site/blocks";
-import { compact, getLeaderboard, monthLabel } from "@/lib/site";
+import { TimeFrame } from "@/components/site/TimeFrame";
+import { compact, getLeaderboard, monthLabel, normalisePeriod } from "@/lib/site";
 
 export const metadata = { title: "Leaderboards — Younglings" };
 // Rendered per request (the bot's data isn't reachable at build time); the fetches are cached for a few minutes.
@@ -10,7 +11,8 @@ export const dynamic = "force-dynamic";
 export default async function LeaderboardsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const query = await searchParams;
   const requested = typeof query.month === "string" && /^\d{4}-\d{2}$/.test(query.month) ? query.month : undefined;
-  const board = await getLeaderboard(requested);
+  const period = normalisePeriod(query.period);
+  const board = await getLeaderboard(requested, period ?? undefined);
 
   if (board === null) {
     return (
@@ -34,7 +36,12 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-12 sm:px-6">
-      <PageHeader title="Leaderboards" subtitle="Month by month: who gained the most XP, who capped the Citadel, and who joined or left. Pick any month with data." />
+      <PageHeader title="Leaderboards" subtitle="Who gained the most XP, who capped the Citadel, and who joined or left — for any month, or any time frame you pick." />
+
+      <TimeFrame current={period ?? (requested ? "" : "month")} label={board.period?.label ?? monthLabel(board.month)} fallback="month" />
+
+      {!period && (
+        <>
 
       <div className="flex flex-wrap items-center gap-2">
         {previous ? (
@@ -69,6 +76,9 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
             </Link>
           ))}
         </nav>
+      )}
+
+        </>
       )}
 
       <section className="grid grid-cols-3 gap-3">

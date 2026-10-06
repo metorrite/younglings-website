@@ -233,6 +233,7 @@ export interface SkillSeries {
 
 export interface Leaderboard {
   month: string;
+  period?: { token: string; label: string; from: string; to: string; toDate: boolean };
   months: string[];
   totalXp: number;
   gainers: { rsn: string; xp: number }[];
@@ -334,7 +335,8 @@ export async function getEvents(): Promise<SiteEvent[] | null> {
 export const getRoster = () => getSite<RosterData>("members", 120);
 export const getOverview = () => getSite<Overview>("overview", 120);
 export const getSkillSeries = (rsn: string, skillId: number) => getSite<SkillSeries>(`member/skill?rsn=${encodeURIComponent(rsn)}&skill=${skillId}`, 300);
-export const getLeaderboard = (month?: string) => getSite<Leaderboard>(`leaderboard${month ? `?month=${encodeURIComponent(month)}` : ""}`, 300);
+export const getLeaderboard = (month?: string, period?: string) =>
+  getSite<Leaderboard>(`leaderboard${period ? `?period=${encodeURIComponent(period)}` : month ? `?month=${encodeURIComponent(month)}` : ""}`, 300);
 export async function getFeed(limit = 40, kind?: string): Promise<FeedItem[] | null> {
   const data = await getSite<{ items: FeedItem[] }>(`feed?limit=${limit}${kind ? `&kind=${encodeURIComponent(kind)}` : ""}`, 30);
   return data?.items ?? null;
@@ -356,6 +358,116 @@ export async function getNews(): Promise<NewsPost[] | null> {
 }
 export const getRecap = (scope: "clan" | "member", period: string, rsn?: string) =>
   getSite<Recap>(`recap?scope=${scope}&period=${encodeURIComponent(period)}${rsn ? `&rsn=${encodeURIComponent(rsn)}` : ""}`, 300);
+
+// ---------- time frames, bosses and the drop log ----------
+
+/** The time-frame presets the picker offers; each is a token the bot understands (see RecapPeriod). */
+export const PERIOD_PRESETS: { token: string; label: string }[] = [
+  { token: "week", label: "This week" },
+  { token: "last-week", label: "Last week" },
+  { token: "last-7d", label: "7 days" },
+  { token: "month", label: "Month to date" },
+  { token: "last-month", label: "Last month" },
+  { token: "last-30d", label: "30 days" },
+  { token: "year", label: "Year to date" },
+  { token: "last-year", label: "Last year" },
+  { token: "all", label: "All time" },
+];
+
+/** A period token from the URL, or null if it isn't one the bot would accept (so a typo falls back to the default). */
+export function normalisePeriod(raw: string | string[] | undefined): string | null {
+  if (typeof raw !== "string") return null;
+  const token = raw.trim().toLowerCase();
+  if (PERIOD_PRESETS.some((p) => p.token === token)) return token;
+  if (/^mtd$|^ytd$|^last-(7|14|30|60|90|180|365)d$|^\d{4}$|^\d{4}-\d{2}$|^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/.test(token)) return token;
+  return null;
+}
+
+export interface PeriodInfo {
+  token: string;
+  label: string;
+  from: string;
+  to: string;
+  toDate: boolean;
+}
+
+export interface BossSummary {
+  key: string;
+  name: string;
+  image: string | null;
+  catalogued: boolean;
+  kills: number;
+  players: number;
+  drops: number;
+  tableSize: number;
+  topKiller: { rsn: string; kills: number } | null;
+}
+export interface BossesData {
+  period: PeriodInfo;
+  bosses: BossSummary[];
+  totals: { kills: number; drops: number; players: number; bosses: number };
+}
+
+export interface DropCell {
+  item: string;
+  key: string;
+  icon: string | null;
+  quantity: string;
+  rarity: string;
+  /** Whether the adventure log is known to report this item. Untracked items can only ever read zero for now. */
+  tracked: boolean;
+  count: number;
+  receivers: number;
+  last: string | null;
+  top: { rsn: string; count: number }[];
+}
+export interface DropEntry {
+  rsn: string;
+  item: string;
+  key: string;
+  icon: string | null;
+  boss: { key: string; name: string; image: string | null } | null;
+  date: string;
+  recordedAt: string;
+}
+export interface BossDetail {
+  period: PeriodInfo;
+  boss: { key: string; name: string; image: string | null; catalogued: boolean; wikiPage: string | null };
+  kills: number;
+  drops: number;
+  players: { rsn: string; kills: number; drops: number }[];
+  killsByDay: { date: string; kills: number }[];
+  grid: DropCell[];
+  list: DropEntry[];
+}
+export interface ItemDetail {
+  period: PeriodInfo;
+  item: { key: string; name: string; icon: string | null; tracked: boolean; rarity: string; quantity: string };
+  total: number;
+  receivers: { rsn: string; count: number; first: string; last: string }[];
+  bosses: { key: string; name: string; image: string | null; rarity: string; count: number }[];
+  byMonth: { month: string; count: number }[];
+  list: DropEntry[];
+}
+export interface DropLog {
+  period: PeriodInfo;
+  bosses: { key: string; name: string }[];
+  total: number;
+  uniqueItems: number;
+  receivers: number;
+  grid: DropCell[];
+  list: DropEntry[];
+}
+
+const withQuery = (path: string, params: Record<string, string | null | undefined>) => {
+  const query = Object.entries(params).filter(([, v]) => v).map(([k, v]) => `${k}=${encodeURIComponent(v as string)}`).join("&");
+  return query ? `${path}?${query}` : path;
+};
+export const getBosses = (period?: string | null) => getSite<BossesData>(withQuery("bosses", { period }), 60);
+export const getBoss = (boss: string, period?: string | null) => getSite<BossDetail>(withQuery("boss", { boss, period }), 60);
+export const getItem = (item: string, period?: string | null, boss?: string | null) => getSite<ItemDetail>(withQuery("item", { item, period, boss }), 60);
+export const getDropLog = (period?: string | null, bosses?: string | null) => getSite<DropLog>(withQuery("drop-log", { period, bosses }), 60);
+
 export const getPvm = () => getSite<Pvm>("pvm", 300);
 export const getDrops = () => getSite<Drops>("drops", 300);
 export const getCoffer = () => getSite<Coffer>("coffer", 120);
