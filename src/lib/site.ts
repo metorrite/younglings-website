@@ -379,6 +379,17 @@ export function compact(n: number): string {
 
 export const full = (n: number) => n.toLocaleString("en-US");
 
+/**
+ * Adventure-log text with whole-million numbers shortened: "200000000XP in Attack" → "200M XP in Attack".
+ * XP milestones past 99 come in whole millions; any other number is left exactly as it was.
+ */
+export function shortNumbers(text: string): string {
+  return text.replace(/(?<![\d,])(\d{1,3}(?:,\d{3}){2,}|\d{7,})(XP)?/g, (match, digits: string, xp?: string) => {
+    const value = Number(digits.replace(/,/g, ""));
+    return value % 1_000_000 === 0 ? `${value / 1_000_000}M${xp ? " XP" : ""}` : match;
+  });
+}
+
 /** A Discord role colour as CSS, or undefined for "no colour" (JDA's sentinel is negative or above 0xFFFFFF). */
 export function discordColor(raw: number | undefined | null): string | undefined {
   if (raw === undefined || raw === null || raw <= 0 || raw > 0xffffff) return undefined;

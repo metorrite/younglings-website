@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ActivityKind, FeedItem } from "@/lib/site";
-import { SKILL_NAMES } from "@/lib/site";
+import { shortNumbers, SKILL_NAMES } from "@/lib/site";
 
 const KIND: Record<ActivityKind, { icon: string; label: string; color: string }> = {
   LEVEL_UP: { icon: "⬆️", label: "Level up", color: "#3ecf8e" },
@@ -20,12 +20,12 @@ export const FEED_KINDS = Object.entries(KIND).map(([id, v]) => ({ id: id as Act
 function sentence(item: FeedItem): string {
   const text = item.text.replace(/\.$/, "");
   const milestone = text.match(/^([\d,]+)XP in (.+)$/);
-  if (milestone) return `reached ${Number(milestone[1].replace(/,/g, "")).toLocaleString("en-US")} XP in ${milestone[2]}`;
+  if (milestone) return `reached ${shortNumbers(`${milestone[1].replace(/,/g, "")}XP`)} in ${milestone[2]}`;
   if (item.kind === "LEVEL_UP") return text.replace(/^Levelled up/, "levelled up").replace(/^levelled up (\w+)$/i, (_m, skill) => `levelled up ${SKILL_NAMES.includes(skill) ? skill : skill}`);
   if (item.kind === "QUEST") return `completed ${text.replace(/^Quest complete: ?/, "")}`;
   if (item.kind === "CITADEL_CAP") return "capped at the Clan Citadel";
   if (item.kind === "BOSS") return text.replace(/^I (killed|defeated)/, "$1").replace(/^killed {2}/, "killed ");
-  return text.replace(/^I /, "");
+  return shortNumbers(text.replace(/^I /, ""));
 }
 
 export function FeedList({ items, compact = false }: { items: FeedItem[]; compact?: boolean }) {
