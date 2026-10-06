@@ -422,6 +422,10 @@ export const adminApi = {
     body: { dailyMembershipPoints: number; citadelVisitPoints: number; citadelCapPoints: number; ranks: { id: string; threshold: number }[] },
   ) => request<ClanPoints>(ctx.actorId, "PUT", "clan/points", body),
 
+  clanWebsite: (ctx: AdminContext) => request<{ websiteUrl: string | null }>(ctx.actorId, "GET", "clan/website"),
+  saveClanWebsite: (ctx: AdminContext, websiteUrl: string | null) => request<{ websiteUrl: string | null }>(ctx.actorId, "PUT", "clan/website", { websiteUrl }),
+  siteOptions: (ctx: AdminContext) => request<{ navEventBubble: boolean }>(ctx.actorId, "GET", "site/options"),
+  saveSiteOptions: (ctx: AdminContext, options: { navEventBubble: boolean }) => request<{ navEventBubble: boolean }>(ctx.actorId, "PUT", "site/options", options),
   roster: (ctx: AdminContext) => request<Roster>(ctx.actorId, "GET", "members"),
   attention: (ctx: AdminContext) => request<Attention>(ctx.actorId, "GET", "attention"),
   health: (ctx: AdminContext) => request<BotHealth>(ctx.actorId, "GET", "health"),

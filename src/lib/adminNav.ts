@@ -46,6 +46,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: "/admin/news", label: "News feed", blurb: "Which Discord channels appear in the middle of the home page." },
       { href: "/admin/community", label: "Community", blurb: "The channel member-created polls are posted in." },
       { href: "/admin/roles", label: "Self roles", blurb: "Roles members can add to or remove from themselves on their profile." },
+      { href: "/admin/site-options", label: "Site options", blurb: "How the site behaves for visitors, such as the bubble on the Events menu." },
     ],
   },
   {
@@ -55,6 +56,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     blurb: "How JonnyBot behaves in Discord.",
     pages: [
       { href: "/admin/clan", label: "Clan points & ranks", blurb: "Points for membership and Citadel activity, and what each rank needs." },
+      { href: "/admin/clan-website", label: "Clan website", blurb: "The address the clan name in Discord links to (same as /configure)." },
       { href: "/admin/tracking", label: "Tracking channels", blurb: "Where drops, quests, boss kills, Citadel, joins and leaves are announced." },
       { href: "/admin/tickets", label: "Ticket panels", blurb: "Create and edit ticket panels and post them to a channel." },
       { href: "/admin/tickets/settings", label: "Ticket settings", blurb: "Transcript log channel, retention, and the close delay." },

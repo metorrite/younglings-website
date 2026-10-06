@@ -4,26 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Notification, NotificationKind } from "@/lib/notifications";
-
-const SEEN_KEY = "younglings.bell.seen";
-const CHANGED = "younglings:bell-changed";
-const DAY = 86_400_000;
+import { isUnread, markBellSeen, readSeen, subscribeSeen } from "@/lib/seen";
 
 const ICON: Record<NotificationKind, string> = { event: "📅", poll: "🗳️", signup: "📝", news: "📣", update: "✨", link: "🔗", goal: "🎯" };
-
-/** When the bell was last opened (ISO), or "" before it ever was; the server render has no way to know, so it reads as "unknown". */
-function readSeen(): string {
-  try {
-    return window.localStorage.getItem(SEEN_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-/** Anything newer than this counts as new: the last time the bell was opened, or — for a first visit — the last three days. */
-function threshold(seen: string): number {
-  return seen ? Date.parse(seen) : Date.now() - 3 * DAY;
-}
 
 function ago(iso: string): string {
   const diff = Date.now() - Date.parse(iso);
@@ -39,7 +22,7 @@ export function NotificationBell({ items }: { items: Notification[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [seenPath, setSeenPath] = useState(pathname);
-  const [highlightFrom, setHighlightFrom] = useState(0);
+  const [highlightSeen, setHighlightSeen] = useState("|");
   const root = useRef<HTMLDivElement>(null);
 
   if (seenPath !== pathname) {
@@ -47,19 +30,8 @@ export function NotificationBell({ items }: { items: Notification[] }) {
     setOpen(false);
   }
 
-  const seen = useSyncExternalStore(
-    (notify) => {
-      window.addEventListener(CHANGED, notify);
-      window.addEventListener("storage", notify);
-      return () => {
-        window.removeEventListener(CHANGED, notify);
-        window.removeEventListener("storage", notify);
-      };
-    },
-    readSeen,
-    () => null,
-  );
-  const unread = seen === null ? 0 : items.filter((i) => Date.parse(i.at) > threshold(seen)).length;
+  const seen = useSyncExternalStore(subscribeSeen, readSeen, () => null);
+  const unread = seen === null ? 0 : items.filter((i) => isUnread(i.kind, i.at, seen)).length;
 
   useEffect(() => {
     if (!open) return;
@@ -80,13 +52,8 @@ export function NotificationBell({ items }: { items: Notification[] }) {
   function toggle() {
     if (!open) {
       // Remember what was new at the moment of opening (so it stays highlighted), then count everything as read.
-      setHighlightFrom(threshold(readSeen()));
-      try {
-        window.localStorage.setItem(SEEN_KEY, new Date().toISOString());
-      } catch {
-        // can't remember; the badge will return next page load
-      }
-      window.dispatchEvent(new Event(CHANGED));
+      setHighlightSeen(readSeen());
+      markBellSeen();
     }
     setOpen(!open);
   }
@@ -122,7 +89,7 @@ export function NotificationBell({ items }: { items: Notification[] }) {
             ) : (
               <ul className="max-h-96 divide-y divide-surface-border/60 overflow-y-auto">
                 {items.map((item) => {
-                  const fresh = Date.parse(item.at) > highlightFrom;
+                  const fresh = isUnread(item.kind, item.at, highlightSeen);
                   const body = (
                     <>
                       <span aria-hidden className="mt-0.5 text-lg">{ICON[item.kind]}</span>
