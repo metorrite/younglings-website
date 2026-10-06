@@ -249,6 +249,57 @@ export interface Coffer {
   recentGiveaways: { amount: number; description: string | null; at: string }[];
 }
 
+export interface Recap {
+  scope: "clan" | "member";
+  period: { token: string; label: string; from: string; to: string; toDate: boolean; days: number };
+  subject: { name: string; memberCount?: number; rank?: string; joined?: string; totalLevel?: number | null; totalXp?: number };
+  xp: {
+    total: number;
+    series: { date: string; xp: number }[];
+    bySeriesUnit: "day" | "week";
+    bestDay: { date: string; xp: number } | null;
+    activeDays: number;
+    perDay: number;
+    busiestWeekday: string | null;
+  };
+  skills: { skillId: number; skill: string; xp: number }[];
+  activity:
+    | { hidden: true }
+    | {
+        hidden: false;
+        bossKills: number;
+        topBosses: { boss: string; kills: number }[];
+        drops: number;
+        topDrops: { item: string; count: number }[];
+        levelUps: number;
+        quests: number;
+        xpMilestones: number;
+        twoHundredM: number;
+        caps: number;
+      };
+  citadel: { capsRecorded: number; capWeeks?: number; topCappers?: { rsn: string; weeksCapped: number; totalCaps: number }[]; weeksCapped?: number; longestStreak?: number };
+  points: number;
+  // clan only
+  activeMembers?: number;
+  topGainers?: { rsn: string; xp: number }[];
+  topKillers?: { rsn: string; kills: number }[];
+  roster?: { joined: number; left: number; newMembers: string[] };
+  // member only
+  levels?: { start: number | null; end: number | null; gained: number | null };
+  ranking?: { inRankings: boolean; rank: number | null; outOf: number; clanAveragePerMember: number; shareOfClan: number; topPercent: number | null };
+}
+
+/** The periods the recap pages and the Discord command offer, in the order they're listed. */
+export const RECAP_PERIODS = [
+  { token: "week", label: "This week" },
+  { token: "last-week", label: "Last week" },
+  { token: "month", label: "This month" },
+  { token: "last-month", label: "Last month" },
+  { token: "year", label: "This year" },
+  { token: "last-year", label: "Last year" },
+  { token: "all", label: "All time" },
+] as const;
+
 // ---------- fetching ----------
 
 async function getSite<T>(path: string, revalidateSeconds: number): Promise<T | null> {
@@ -299,6 +350,8 @@ export async function getNews(): Promise<NewsPost[] | null> {
   const data = await getSite<{ posts: NewsPost[] }>("news", 60);
   return data?.posts ?? null;
 }
+export const getRecap = (scope: "clan" | "member", period: string, rsn?: string) =>
+  getSite<Recap>(`recap?scope=${scope}&period=${encodeURIComponent(period)}${rsn ? `&rsn=${encodeURIComponent(rsn)}` : ""}`, 300);
 export const getPvm = () => getSite<Pvm>("pvm", 300);
 export const getDrops = () => getSite<Drops>("drops", 300);
 export const getCoffer = () => getSite<Coffer>("coffer", 120);

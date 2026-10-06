@@ -88,9 +88,14 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         <Link href="/members" className="text-sm text-muted hover:text-foreground">
           ← All members
         </Link>
-        <Link href={`/compare?a=${encodeURIComponent(profile.rsn)}`} className="rounded-md border border-surface-border px-3 py-1.5 text-sm transition hover:border-gold/50">
-          Compare with another member →
-        </Link>
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Link href={`/recap/member/${encodeURIComponent(profile.rsn)}/month`} className="rounded-md border border-gold/40 px-3 py-1.5 text-gold transition hover:bg-gold/10">
+            ✨ Recap
+          </Link>
+          <Link href={`/compare?a=${encodeURIComponent(profile.rsn)}`} className="rounded-md border border-surface-border px-3 py-1.5 transition hover:border-gold/50">
+            Compare with another member →
+          </Link>
+        </div>
       </div>
 
       <section className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
