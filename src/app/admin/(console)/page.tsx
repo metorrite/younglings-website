@@ -1,40 +1,68 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
+import { ADMIN_GROUPS } from "@/lib/adminNav";
+import { adminApi } from "@/lib/jonnybot-admin";
 
-const TOOLS = [
-  {
-    href: "/admin/tickets",
-    title: "Ticket panels",
-    body: "Create and edit ticket panels — the form, who's pinged, who can help — and post them to a channel.",
-  },
-  { href: "/admin/tickets/history", title: "Tickets", body: "Browse open and closed tickets and read their saved transcripts." },
-  { href: "/admin/tickets/settings", title: "Ticket settings", body: "Transcript log channel, retention, and the close delay." },
-  { href: "/admin/post", title: "Post a message", body: "Write a formatted announcement and post it to any channel, with a check before it goes out." },
-  { href: "/admin/tracking", title: "Tracking channels", body: "Choose which channels get clan events — drops, quests, boss kills, Citadel, joins and leaves, admin logs." },
-  { href: "/admin/promotions", title: "Promotions", body: "Members whose points have reached their next rank — promote in game, then mark them done." },
-  { href: "/admin/community", title: "Community settings", body: "The channel member-created polls are posted in." },
-  { href: "/admin/news", title: "Website news feed", body: "Choose which Discord channels (announcements, news, event posts) appear in the middle of the home page." },
-  { href: "/admin/roles", title: "Self-assignable roles", body: "Choose which roles members can add to or remove from themselves on their profile page." },
-  { href: "/admin/clan", title: "Clan points & ranks", body: "Points awarded for membership and Citadel activity, and the points each rank needs." },
-];
+export const dynamic = "force-dynamic";
+
+const chip = (n: number, good = "text-emerald-400", bad = "text-gold") => (n === 0 ? good : bad);
 
 export default async function AdminHomePage() {
   const admin = await requireAdmin("/admin");
+  const [attention, health] = await Promise.all([adminApi.attention(admin), adminApi.health(admin)]);
+  const a = attention.ok ? attention.data : null;
+  const h = health.ok ? health.data : null;
+
+  const cards = a
+    ? [
+        { label: "Unverified members", n: a.unverified.length, href: "/admin/attention#unverified" },
+        { label: "Stale data", n: a.stale.length, href: "/admin/attention#stale" },
+        { label: "Inactive 30+ days", n: a.inactive.length, href: "/admin/attention#inactive" },
+        { label: "Promotions due", n: a.promotions.length, href: "/admin/promotions" },
+      ]
+    : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold">Welcome, {admin.displayName}</h1>
-        <p className="mt-1 text-sm text-muted">Server admin tools. Everything here is checked against your roles in the Discord server each time.</p>
+        <p className="mt-1 text-sm text-muted">Everything here is checked against your roles in the Discord server each time.</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {TOOLS.map((tool) => (
-          <Link key={tool.href} href={tool.href} className="rounded-lg border border-surface-border bg-surface p-5 transition hover:border-gold/50">
-            <h2 className="font-semibold text-gold">{tool.title}</h2>
-            <p className="mt-1 text-sm text-muted">{tool.body}</p>
+
+      <section aria-label="Right now" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {cards.map((c) => (
+          <Link key={c.label} href={c.href} className="rounded-lg border border-surface-border bg-surface p-4 transition hover:border-gold/50">
+            <p className="text-xs tracking-wider text-muted uppercase">{c.label}</p>
+            <p className={`mt-1 text-2xl font-semibold ${chip(c.n)}`}>{c.n}</p>
           </Link>
         ))}
-      </div>
+        <Link href="/admin/health" className="rounded-lg border border-surface-border bg-surface p-4 transition hover:border-gold/50">
+          <p className="text-xs tracking-wider text-muted uppercase">Bot</p>
+          {h ? (
+            <p className={`mt-1 text-2xl font-semibold ${h.discord.status === "CONNECTED" && h.database.ok ? "text-emerald-400" : "text-red-400"}`}>{h.discord.status === "CONNECTED" && h.database.ok ? "Healthy" : "Check health"}</p>
+          ) : (
+            <p className="mt-1 text-2xl font-semibold text-red-400">Unreachable</p>
+          )}
+        </Link>
+      </section>
+
+      {ADMIN_GROUPS.filter((g) => g.id !== "overview").map((group) => (
+        <section key={group.id} aria-labelledby={`group-${group.id}`}>
+          <h2 id={`group-${group.id}`} className="mb-1 flex items-center gap-2 text-lg font-semibold text-gold">
+            <span aria-hidden>{group.icon}</span>
+            {group.label}
+          </h2>
+          <p className="mb-3 text-sm text-muted">{group.blurb}</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {group.pages.map((page) => (
+              <Link key={page.href} href={page.href} className="rounded-lg border border-surface-border bg-surface p-4 transition hover:border-gold/50">
+                <h3 className="font-semibold">{page.label}</h3>
+                <p className="mt-1 text-sm text-muted">{page.blurb}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
