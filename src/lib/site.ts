@@ -476,6 +476,17 @@ export interface LinkState {
   state: "NONE" | "PENDING" | "LINKED";
   rsns: string[];
   pendingRsn: string | null;
+  /** Personal news from the last two weeks: how a link request ended, goals reached. */
+  notices: PersonalNotice[];
+}
+
+export interface PersonalNotice {
+  id: string;
+  kind: "LINK_APPROVED" | "LINK_REJECTED" | "GOAL_REACHED";
+  rsn: string;
+  at: string;
+  skill?: string;
+  level?: number;
 }
 
 /** The link state for a Discord user. Only ever call this with the id from the visitor's own verified session. */

@@ -13,6 +13,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-skill-progress",
+    date: "2026-10-06",
+    title: "Skill progress bars",
+    body: "Every skill now shows progress towards 99, 110, 120 and 200M XP, plus an Overall tile and a virtual levels switch.",
+  },
+  {
     id: "2026-10-boss-pages",
     date: "2026-10-06",
     title: "Boss pages and a drop log",

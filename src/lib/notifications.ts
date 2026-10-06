@@ -1,7 +1,7 @@
 import { CHANGELOG } from "./changelog";
-import { getEvents, getNews, getPolls, getSignups } from "./site";
+import { getEvents, getNews, getPolls, getSignups, type PersonalNotice } from "./site";
 
-export type NotificationKind = "event" | "poll" | "signup" | "news" | "update";
+export type NotificationKind = "event" | "poll" | "signup" | "news" | "update" | "link" | "goal";
 
 export interface Notification {
   /** Stable, so the bell can tell what you've already seen. */
@@ -23,7 +23,7 @@ const trim = (text: string, n: number) => (text.length > n ? `${text.slice(0, n 
  * What the bell lists: events about to start, polls and signups that opened, the latest Discord announcements, and
  * site updates — newest first. Everything is public clan information, so it is the same for every visitor.
  */
-export async function getNotifications(): Promise<Notification[]> {
+export async function getNotifications(personal: PersonalNotice[] = []): Promise<Notification[]> {
   const now = Date.now();
   const [events, polls, signups, news] = await Promise.all([getEvents(), getPolls(), getSignups(), getNews()]);
   const items: Notification[] = [];
@@ -50,6 +50,17 @@ export async function getNotifications(): Promise<Notification[]> {
   for (const c of CHANGELOG) {
     if (now - Date.parse(c.date) > 30 * DAY) continue;
     items.push({ id: `update:${c.id}`, kind: "update", title: c.title, detail: c.body, href: c.href ?? "/", at: `${c.date}T12:00:00Z` });
+  }
+
+  // Things that happened to this member in particular.
+  for (const n of personal) {
+    if (n.kind === "LINK_APPROVED") {
+      items.push({ id: `me:${n.id}`, kind: "link", title: "Your RuneScape name is linked", detail: `${n.rsn} is now linked to your account.`, href: "/profile", at: n.at });
+    } else if (n.kind === "LINK_REJECTED") {
+      items.push({ id: `me:${n.id}`, kind: "link", title: "Link request declined", detail: `An admin couldn't verify ${n.rsn}. You can request again with the right name.`, href: "/profile", at: n.at });
+    } else if (n.kind === "GOAL_REACHED") {
+      items.push({ id: `me:${n.id}`, kind: "goal", title: `Goal reached: ${n.skill} ${n.level}`, detail: `${n.rsn} hit the level you were aiming for.`, href: "/profile?tab=goals", at: n.at });
+    }
   }
 
   return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 15);

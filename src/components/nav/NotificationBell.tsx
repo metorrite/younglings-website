@@ -9,7 +9,7 @@ const SEEN_KEY = "younglings.bell.seen";
 const CHANGED = "younglings:bell-changed";
 const DAY = 86_400_000;
 
-const ICON: Record<NotificationKind, string> = { event: "📅", poll: "🗳️", signup: "📝", news: "📣", update: "✨" };
+const ICON: Record<NotificationKind, string> = { event: "📅", poll: "🗳️", signup: "📝", news: "📣", update: "✨", link: "🔗", goal: "🎯" };
 
 /** When the bell was last opened (ISO), or "" before it ever was; the server render has no way to know, so it reads as "unknown". */
 function readSeen(): string {
