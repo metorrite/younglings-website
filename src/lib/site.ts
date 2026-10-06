@@ -471,10 +471,21 @@ export const getDropLog = (period?: string | null, bosses?: string | null) => ge
 export const getPvm = () => getSite<Pvm>("pvm", 300);
 export const getDrops = () => getSite<Drops>("drops", 300);
 export const getCoffer = () => getSite<Coffer>("coffer", 120);
+/** Where a Discord user stands on linking a RuneScape name: nothing yet, a request waiting for an admin, or linked. */
+export interface LinkState {
+  state: "NONE" | "PENDING" | "LINKED";
+  rsns: string[];
+  pendingRsn: string | null;
+}
+
+/** The link state for a Discord user. Only ever call this with the id from the visitor's own verified session. */
+export async function getMyLink(discordUserId: string): Promise<LinkState | null> {
+  return getSite<LinkState>(`me?userId=${encodeURIComponent(discordUserId)}`, 10);
+}
+
 /** The RuneScape names linked to a Discord user. Only ever call this with the id from the visitor's own verified session. */
 export async function getMyRsns(discordUserId: string): Promise<string[] | null> {
-  const data = await getSite<{ rsns: string[] }>(`me?userId=${encodeURIComponent(discordUserId)}`, 30);
-  return data?.rsns ?? null;
+  return (await getMyLink(discordUserId))?.rsns ?? null;
 }
 export const getProfile = (rsn: string) => getSite<MemberProfile>(`member?rsn=${encodeURIComponent(rsn)}`, 120);
 

@@ -107,7 +107,18 @@ async function request<T>(method: "GET" | "PUT" | "POST" | "DELETE", path: strin
   return { ok: true, data: json as T };
 }
 
+export interface LinkResult {
+  state: "NONE" | "PENDING" | "LINKED";
+  rsns: string[];
+  pendingRsn: string | null;
+  submitted?: boolean;
+}
+
 export const memberApi = {
+  /** Ask to link a RuneScape name (an admin reviews it, exactly as with /rs in Discord). */
+  submitLink: (userId: string, rsn: string) => request<LinkResult>("POST", "link", userId, { rsn }),
+  /** Withdraw this member's own pending request. */
+  cancelLink: (userId: string) => request<LinkResult>("DELETE", "link", userId),
   settings: (userId: string) => request<MemberSettings>("GET", "settings", userId),
   saveSettings: (userId: string, settings: Omit<MemberSettings, "rsns">) => request<MemberSettings>("PUT", "settings", userId, settings),
   goals: (userId: string) => request<{ goals: Goal[] }>("GET", "goals", userId),
