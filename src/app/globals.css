@@ -30,3 +30,41 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #2a3042 transparent;
 }
+
+/* ---------- Recap ("year in review") animations ---------- */
+@keyframes recap-rise {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes recap-pop {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes recap-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes recap-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes recap-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes recap-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6%, -5%, 0) scale(1.12); }
+}
+.recap-rise { opacity: 0; animation: recap-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: var(--d, 0s); }
+.recap-pop { opacity: 0; animation: recap-pop 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards; animation-delay: var(--d, 0s); }
+.recap-grow-x { transform-origin: left; transform: scaleX(0); animation: recap-grow-x 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: var(--d, 0s); }
+.recap-grow-y { transform-origin: bottom; transform: scaleY(0); animation: recap-grow-y 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: var(--d, 0s); }
+.recap-blob { animation: recap-float 9s ease-in-out infinite; }
+.recap-progress { transform-origin: left; transform: scaleX(0); animation: recap-progress var(--dur, 6.5s) linear forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .recap-rise, .recap-pop { opacity: 1; animation: none; }
+  .recap-grow-x, .recap-grow-y { transform: none; animation: none; }
+  .recap-blob { animation: none; }
+  .recap-progress { transform: scaleX(1); animation: none; }
+}

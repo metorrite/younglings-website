@@ -24,6 +24,7 @@ const GROUPS: { label: string; links: NavLink[] }[] = [
     label: "Stats",
     links: [
       { href: "/stats", label: "Overview" },
+      { href: "/recap", label: "Recaps" },
       { href: "/leaderboards", label: "Leaderboards" },
       { href: "/citadel", label: "Citadel" },
       { href: "/pvm", label: "PvM & drops" },
