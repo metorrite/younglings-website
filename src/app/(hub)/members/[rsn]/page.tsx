@@ -164,21 +164,21 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         </div>
 
         <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label="Total level" value={profile.totalLevel ?? "—"} />
-          <StatTile label="Total XP" value={compact(totalSkillXp)} sub={`${full(totalSkillXp)} · ${compact(profile.totalXp)} earned for the clan`} />
-          <StatTile label="Combat level" value={profile.combatLevel ?? "—"} />
-          <StatTile label="Quests complete" value={profile.questsComplete ?? "—"} />
+          <StatTile label="Total level" value={profile.totalLevel ?? "—"} href="#skills" />
+          <StatTile label="Total XP" value={compact(totalSkillXp)} sub={`${full(totalSkillXp)} · ${compact(profile.totalXp)} earned for the clan`} href="#xp-history" />
+          <StatTile label="Combat level" value={profile.combatLevel ?? "—"} href="#skills" />
+          <StatTile label="Quests complete" value={profile.questsComplete ?? "—"} href="#adventure-log" />
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <StatTile label="Gained · 24 hours" value={`+${compact(profile.gains.day)}`} />
-        <StatTile label="Gained · 7 days" value={`+${compact(profile.gains.week)}`} />
-        <StatTile label="Gained · 30 days" value={`+${compact(profile.gains.month)}`} />
+        <StatTile label="Gained · 24 hours" value={`+${compact(profile.gains.day)}`} href="#xp-breakdown-day" />
+        <StatTile label="Gained · 7 days" value={`+${compact(profile.gains.week)}`} href="#xp-breakdown-week" />
+        <StatTile label="Gained · 30 days" value={`+${compact(profile.gains.month)}`} href="#xp-breakdown-month" />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Total XP — last 90 days">
+        <Panel id="xp-history" title="Total XP — last 90 days">
           <LineChart points={history.map((p) => ({ label: shortDay(p.date), value: p.totalXp }))} />
         </Panel>
         <Panel title="Daily XP gained — last 14 days">
@@ -190,8 +190,9 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         </Panel>
       </div>
 
-      <Panel title="Where the XP went">
+      <Panel id="xp-breakdown" title="Where the XP went">
         <Tabbed
+          anchor="xp-breakdown"
           initial="week"
           tabs={(["day", "week", "month"] as const).map((period) => ({
             id: period,
@@ -201,7 +202,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         />
       </Panel>
 
-      <Panel title="Skills" action={<span className="text-xs text-muted">Click a skill for its XP history</span>}>
+      <Panel id="skills" title="Skills" action={<span className="text-xs text-muted">Click a skill for its XP history</span>}>
         {profile.skills.length === 0 ? (
           <p className="text-sm text-muted">No skill data has been recorded for this member yet.</p>
         ) : (
@@ -311,7 +312,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
           </div>
         </Panel>
 
-        <Panel title="Adventure log">
+        <Panel id="adventure-log" title="Adventure log">
           {profile.adventureLogHidden ? (
             <p className="text-sm text-muted">This member keeps their adventure log private.</p>
           ) : profile.activities.length === 0 ? (
