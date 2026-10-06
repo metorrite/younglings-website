@@ -68,3 +68,18 @@ body {
   .recap-blob { animation: none; }
   .recap-progress { transform: scaleX(1); animation: none; }
 }
+
+/* ---------- Navigation menus and page transitions ---------- */
+@keyframes nav-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hub-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.nav-pop { animation: nav-pop 0.16s ease-out; }
+.hub-in { animation: hub-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .nav-pop, .hub-in { animation: none; }
+}

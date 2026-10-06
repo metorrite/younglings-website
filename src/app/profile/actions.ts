@@ -66,6 +66,7 @@ export async function saveSettingsAction(input: unknown): Promise<ActionResult<M
     hideFromLeaderboards: s.hideFromLeaderboards === true,
     dmGoals: s.dmGoals !== false,
     dmEvents: s.dmEvents === true,
+    hideDiscordLink: s.hideDiscordLink === true,
   });
   if (!result.ok) return { ok: false, error: result.error };
 

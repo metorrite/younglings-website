@@ -104,6 +104,7 @@ export function PublicProfileForm({ initial }: { initial: MemberSettings }) {
       <div className="space-y-3">
         <p className="text-sm font-medium">Privacy</p>
         <Switch checked={s.hideAdventureLog} onChange={(v) => set("hideAdventureLog", v)} label="Keep my adventure log private" hint="Hides your log from your profile, the activity feed, drop log and PvM tallies." />
+        <Switch checked={s.hideDiscordLink} onChange={(v) => set("hideDiscordLink", v)} label="Don't link my Discord name to my profile" hint="In the home page's Who's Online list, your name normally opens your clan profile. Turn this on and it opens your Discord profile instead." />
         <Switch checked={s.hideFromLeaderboards} onChange={(v) => set("hideFromLeaderboards", v)} label="Leave me out of the rankings" hint="You stay on the member list, but not on XP, Citadel or record leaderboards." />
       </div>
 

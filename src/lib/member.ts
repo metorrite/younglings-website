@@ -15,6 +15,8 @@ export interface MemberSettings {
   hideFromLeaderboards: boolean;
   dmGoals: boolean;
   dmEvents: boolean;
+  /** Keep this person's Discord name in "Who's Online" from linking to their clan profile. */
+  hideDiscordLink: boolean;
   rsns: string[];
 }
 

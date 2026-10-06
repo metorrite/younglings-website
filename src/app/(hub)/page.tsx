@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { BarChart, RankedBars } from "@/components/charts";
 import { FeedList } from "@/components/site/FeedList";
@@ -21,30 +20,10 @@ export default async function Home() {
 
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[24rem] bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_65%)]" />
-
-      <div className="relative mx-auto max-w-[96rem] px-4 py-10 sm:px-6">
-        <section className="flex flex-col items-center gap-4 text-center">
-          <Image src="/clan-logo.png" alt="Younglings" width={88} height={88} className="rounded-full ring-2 ring-gold/50 shadow-[0_0_40px_rgba(212,175,55,0.25)]" />
-          <div>
-            <p className="text-xs tracking-[0.3em] text-muted uppercase">Welcome to</p>
-            <h1 className="text-4xl font-bold tracking-wide text-gold sm:text-5xl">{clan?.name ?? "Younglings"}</h1>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 text-sm">
-            <Link href="/members" className="rounded-md bg-gold px-4 py-2 font-semibold text-background transition hover:brightness-110">
-              Browse members
-            </Link>
-            <Link href="/stats" className="rounded-md border border-surface-border px-4 py-2 transition hover:border-gold/50">
-              Clan stats
-            </Link>
-            <Link href="/events" className="rounded-md border border-surface-border px-4 py-2 transition hover:border-gold/50">
-              Events
-            </Link>
-          </div>
-        </section>
+      <div className="relative mx-auto max-w-[96rem] px-4 pt-8 pb-10 sm:px-6">
 
         {/* Three columns: stats and leaderboards on the left, Discord news in the middle, who's online on the right. */}
-        <div className="mt-10 grid gap-6 lg:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-cols-[21rem_minmax(0,1fr)_21rem]">
+        <div className="grid gap-6 lg:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-cols-[21rem_minmax(0,1fr)_21rem]">
           <div className="order-2 min-w-0 space-y-6 lg:order-none">
             {overview ? (
               <>
