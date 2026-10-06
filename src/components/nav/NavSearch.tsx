@@ -92,7 +92,7 @@ export function NavSearch({ items }: { items: SearchItem[] }) {
           aria-label="Search the site"
           className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted"
         />
-        {!open && <kbd className="hidden rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-muted lg:inline">Ctrl K</kbd>}
+        {!open && <kbd className="hidden rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] whitespace-nowrap text-muted xl:inline">Ctrl K</kbd>}
       </div>
 
       {open && (

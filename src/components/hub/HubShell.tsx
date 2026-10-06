@@ -42,7 +42,7 @@ export function HubShell({ clanName, children }: { clanName: string; children: R
         <div className={fold(home)}>
           <div className="overflow-hidden">
             <div className="flex flex-col items-center gap-1 pb-4">
-              <Image src="/clan-logo.png" alt="Younglings" width={88} height={88} className="h-[88px] w-[88px] rounded-full shadow-[0_0_40px_rgba(212,175,55,0.25)] ring-2 ring-gold/50" />
+              <Image src="/clan-logo.png" alt="Younglings" width={88} height={88} className="h-[88px] w-[88px] rounded-full ring-2 ring-gold/50" />
               <p className="mt-3 text-xs tracking-[0.3em] text-muted uppercase">Welcome to</p>
             </div>
           </div>
