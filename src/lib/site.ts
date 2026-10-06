@@ -107,12 +107,81 @@ export interface SkillGain {
   xp: number;
 }
 
+export type ActivityKind = "LEVEL_UP" | "XP_MILESTONE" | "QUEST" | "BOSS" | "DROP" | "PET" | "CITADEL_CAP" | "CLUE" | "CHALLENGE";
+
+export interface FeedItem {
+  rsn: string;
+  kind: ActivityKind;
+  text: string;
+  details: string;
+  date: string;
+  recordedAt: string;
+}
+
+export interface Records {
+  biggestDays: { rsn: string; date: string; xp: number }[];
+  twoHundredClub: { rsn: string; skills: number }[];
+  capStreaks: { rsn: string; longest: number; current: number }[];
+  veterans: { rsn: string; joined: string; joinedExact: boolean }[];
+}
+
+export interface CitadelGrid {
+  weeks: string[];
+  /** Per week: 0 nothing, 1 visited, 2 capped. */
+  members: { rsn: string; weeks: number[] }[];
+}
+
+export interface ClanHistory {
+  memberCount: { date: string; members: number }[];
+  timeline: { type: "JOIN" | "LEAVE" | "RENAME"; rsn: string; from: string | null; at: string }[];
+  ranks: RankInfo[];
+  closeToPromotion: { rsn: string; rank: string; next: string; points: number; needed: number; promotionNeeded: boolean }[];
+}
+
+export interface PollSummary {
+  id: string;
+  title: string;
+  status: string;
+  anonymous: boolean;
+  multiple: boolean;
+  totalVotes: number;
+  createdAt: string;
+  closedAt: string | null;
+  url: string | null;
+  options: { label: string; votes: number }[];
+}
+
+export interface SignupSheet {
+  id: string;
+  title: string;
+  note: string | null;
+  max: number | null;
+  createdAt: string;
+  entries: { rsn: string; position: number }[];
+}
+
+export interface Pvm {
+  totalKills: number;
+  bosses: { boss: string; total: number; killers: { rsn: string; kills: number }[] }[];
+  topKillers: { rsn: string; kills: number }[];
+}
+
+export interface Drops {
+  total: number;
+  recent: { rsn: string; item: string; date: string; recordedAt: string }[];
+  topItems: { item: string; count: number }[];
+}
+
 export interface MemberProfile extends RosterMember {
+  bio: string;
+  accentColor: string | null;
+  pinnedSkill: number | null;
+  adventureLogHidden: boolean;
   firstSeen: string;
   lastPolled: string | null;
   questsComplete: number | null;
   nextRank: { name: string; threshold: number; pointsNeeded: number } | null;
-  skills: { id: number; name: string; level: number; xp: number; rank: number }[];
+  skills: { id: number; name: string; level: number; xp: number; rank: number; xpToNext: number; xpTo99: number; xpTo120: number }[];
   gains: Record<"day" | "week" | "month", number>;
   skillGains: Record<"day" | "week" | "month", SkillGain[]>;
   history: { date: string; totalXp: number; totalLevel: number }[];
@@ -180,6 +249,23 @@ export const getRoster = () => getSite<RosterData>("members", 120);
 export const getOverview = () => getSite<Overview>("overview", 120);
 export const getSkillSeries = (rsn: string, skillId: number) => getSite<SkillSeries>(`member/skill?rsn=${encodeURIComponent(rsn)}&skill=${skillId}`, 300);
 export const getLeaderboard = (month?: string) => getSite<Leaderboard>(`leaderboard${month ? `?month=${encodeURIComponent(month)}` : ""}`, 300);
+export async function getFeed(limit = 40, kind?: string): Promise<FeedItem[] | null> {
+  const data = await getSite<{ items: FeedItem[] }>(`feed?limit=${limit}${kind ? `&kind=${encodeURIComponent(kind)}` : ""}`, 30);
+  return data?.items ?? null;
+}
+export const getRecords = () => getSite<Records>("records", 300);
+export const getCitadelGrid = (weeks = 12) => getSite<CitadelGrid>(`citadel-grid?weeks=${weeks}`, 300);
+export const getHistory = () => getSite<ClanHistory>("history", 300);
+export async function getPolls(): Promise<PollSummary[] | null> {
+  const data = await getSite<{ polls: PollSummary[] }>("polls", 60);
+  return data?.polls ?? null;
+}
+export async function getSignups(): Promise<SignupSheet[] | null> {
+  const data = await getSite<{ signups: SignupSheet[] }>("signups", 30);
+  return data?.signups ?? null;
+}
+export const getPvm = () => getSite<Pvm>("pvm", 300);
+export const getDrops = () => getSite<Drops>("drops", 300);
 export const getCoffer = () => getSite<Coffer>("coffer", 120);
 /** The RuneScape names linked to a Discord user. Only ever call this with the id from the visitor's own verified session. */
 export async function getMyRsns(discordUserId: string): Promise<string[] | null> {
@@ -217,6 +303,25 @@ export function shortDate(iso: string): string {
 export function shortDay(iso: string): string {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
+/** The skill id → name list, matching the bot's catalogue (RuneScape 3 order). */
+export const SKILL_NAMES = [
+  "Attack", "Defence", "Strength", "Constitution", "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting", "Fletching", "Fishing", "Firemaking",
+  "Crafting", "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer", "Farming", "Runecrafting", "Hunter", "Construction", "Summoning",
+  "Dungeoneering", "Divination", "Invention", "Archaeology", "Necromancy",
+];
+
+/** A friendly estimate of when `xpNeeded` will be reached at `xpPerDay`, or null if there's no pace to go on. */
+export function etaLabel(xpNeeded: number, xpPerDay: number): string | null {
+  if (xpNeeded <= 0) return "done";
+  if (xpPerDay <= 0) return null;
+  const days = xpNeeded / xpPerDay;
+  if (days < 1) return "within a day";
+  if (days < 14) return `~${Math.ceil(days)} days`;
+  if (days < 90) return `~${Math.round(days / 7)} weeks`;
+  if (days < 730) return `~${Math.round(days / 30)} months`;
+  return "over 2 years";
 }
 
 /** "2026-09" → "September 2026". */

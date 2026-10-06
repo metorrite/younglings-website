@@ -9,9 +9,16 @@ const noSubscription = () => () => {};
  * the browser, React swaps in the same moment on the reader's own clock (no flash of wrong content — the
  * hydration pass uses the server's text, then re-renders with the local one).
  */
-export function LocalTime({ iso, mode = "datetime" }: { iso: string; mode?: "datetime" | "relative" }) {
-  const utc = new Date(iso).toLocaleString("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
-  const text = useSyncExternalStore(noSubscription, () => (mode === "relative" ? relative(new Date(iso)) : local(new Date(iso))), () => (mode === "relative" ? "" : utc));
+export function LocalTime({ iso, mode = "datetime" }: { iso: string; mode?: "datetime" | "relative" | "clock" }) {
+  const utc =
+    mode === "clock"
+      ? new Date(iso).toLocaleTimeString("en-GB", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" })
+      : new Date(iso).toLocaleString("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " UTC";
+  const text = useSyncExternalStore(
+    noSubscription,
+    () => (mode === "relative" ? relative(new Date(iso)) : mode === "clock" ? new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : local(new Date(iso))),
+    () => (mode === "relative" ? "" : utc),
+  );
 
   return (
     <time dateTime={iso} suppressHydrationWarning>

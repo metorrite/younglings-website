@@ -15,6 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Link-preview images (Discord, social) need absolute URLs, so they're resolved against the site's real address.
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
   title: "Younglings",
   description: "The Younglings clan hub.",
 };

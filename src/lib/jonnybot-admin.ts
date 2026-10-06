@@ -130,6 +130,22 @@ export interface TicketRow {
   channelDeleted: boolean;
 }
 
+export interface SelfRoleConfig {
+  roleId: string;
+  name: string | null;
+  label: string | null;
+  description: string | null;
+  /** False when the role was deleted, moved above JonnyBot's own role, or now carries powerful permissions. */
+  safe: boolean;
+}
+
+export interface ClanPoints {
+  dailyMembershipPoints: number;
+  citadelVisitPoints: number;
+  citadelCapPoints: number;
+  ranks: { id: string; name: string; order: number; threshold: number }[];
+}
+
 export interface TicketStats {
   open: number;
   closed: number;
@@ -226,6 +242,16 @@ export const adminApi = {
   deletePanel: (ctx: AdminContext, id: string) => request<{ deleted: boolean }>(ctx.actorId, "DELETE", `ticket/panels/${encodeURIComponent(id)}`),
   postPanel: (ctx: AdminContext, id: string, channelId: string) =>
     request<PanelDefinition>(ctx.actorId, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
+
+  selfRoles: (ctx: AdminContext) => request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "GET", "selfroles"),
+  saveSelfRoles: (ctx: AdminContext, roles: { roleId: string; label: string; description: string }[]) =>
+    request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "PUT", "selfroles", { roles }),
+
+  clanPoints: (ctx: AdminContext) => request<ClanPoints>(ctx.actorId, "GET", "clan/points"),
+  saveClanPoints: (
+    ctx: AdminContext,
+    body: { dailyMembershipPoints: number; citadelVisitPoints: number; citadelCapPoints: number; ranks: { id: string; threshold: number }[] },
+  ) => request<ClanPoints>(ctx.actorId, "PUT", "clan/points", body),
 
   ticketStats: (ctx: AdminContext) => request<TicketStats>(ctx.actorId, "GET", "ticket/stats"),
 

@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { BarChart, DonutChart, LineChart, PALETTE } from "@/components/charts";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
-import { awardLabel, compact, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, type MemberProfile } from "@/lib/site";
+import { badgesFor } from "@/lib/badges";
+import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, type MemberProfile } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
 // so prerendering would bake in an empty "unavailable" page. The fetches themselves are still cached briefly.
@@ -65,6 +66,13 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
 
   const maxOrder = overview ? Math.max(0, ...overview.ranks.map((r) => r.order)) : 11;
   const color = rankColor(profile.rankOrder, maxOrder);
+  const accent = profile.accentColor ?? color; // the member's own colour for the glow, if they picked one
+  const badges = badgesFor(profile, overview);
+  const pinned = profile.pinnedSkill !== null ? profile.skills.find((s) => s.id === profile.pinnedSkill) : undefined;
+
+  // Pace: XP per day over the last 30 days, per skill — drives the "when will I hit 99" estimates.
+  const pacePerDay = new Map(profile.skillGains.month.map((g) => [g.skillId, g.xp / 30]));
+  const toNinetyNine = profile.skills.filter((s) => s.xpTo99 > 0).sort((a, b) => a.xpTo99 - b.xpTo99).slice(0, 12);
 
   const history = profile.history;
   const dailyGains = history.slice(1).map((p, i) => ({ label: shortDay(p.date), value: Math.max(0, p.totalXp - history[i].totalXp) })).slice(-14);
@@ -86,7 +94,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
       </div>
 
       <section className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
-        <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: color }} />
+        <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: accent }} />
         <div className="relative flex flex-wrap items-start justify-between gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-3">
@@ -98,6 +106,25 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
               {profile.joinedExact ? "Joined the clan" : "In the clan since about"} {shortDate(profile.joined)}
               {profile.lastPolled && <> · stats updated {shortDate(profile.lastPolled)}</>}
             </p>
+            {profile.bio && <p className="mt-3 max-w-xl text-sm whitespace-pre-line text-foreground/90" style={{ borderLeft: `2px solid ${accent}`, paddingLeft: "0.75rem" }}>{profile.bio}</p>}
+            {pinned && (
+              <p className="mt-3 text-sm">
+                <span className="text-muted">Favourite skill:</span>{" "}
+                <span className="font-semibold" style={{ color: accent }}>
+                  {pinned.name} {pinned.level}
+                </span>
+              </p>
+            )}
+            {badges.length > 0 && (
+              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Badges">
+                {badges.map((b) => (
+                  <li key={b.id} title={b.description} className="flex items-center gap-1.5 rounded-full border border-surface-border bg-background/60 px-2.5 py-1 text-xs">
+                    <span>{b.icon}</span>
+                    {b.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="w-full max-w-xs sm:w-72">
@@ -184,6 +211,33 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         )}
       </Panel>
 
+      {toNinetyNine.length > 0 && (
+        <Panel title="Progress to 99" action={<span className="text-xs text-muted">Estimates use the last 30 days&apos; pace</span>}>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {toNinetyNine.map((s) => {
+              const eta = etaLabel(s.xpTo99, pacePerDay.get(s.id) ?? 0);
+              return (
+                <li key={s.id} className="rounded-lg border border-surface-border/60 bg-background/40 p-3">
+                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="font-medium">
+                      {s.name} <span className="text-muted">{s.level}</span>
+                    </span>
+                    <span className="text-xs text-muted">{compact(s.xpTo99)} XP to 99</span>
+                  </div>
+                  <div className="mt-2">
+                    <ProgressBar value={s.xp} max={s.xp + s.xpTo99} color={accent} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted">
+                    {s.xpToNext > 0 ? `${compact(s.xpToNext)} to level ${s.level + 1}` : ""}
+                    {eta ? ` · 99 in ${eta}` : " · no recent XP to estimate from"}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      )}
+
       {skillParam !== null && (
         <section id="skill-chart" className="scroll-mt-6">
           <Panel title={skillSeries ? `${skillSeries.skill} — XP over the last 90 days` : "Skill history"}>
@@ -261,7 +315,9 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         </Panel>
 
         <Panel title="Adventure log">
-          {profile.activities.length === 0 ? (
+          {profile.adventureLogHidden ? (
+            <p className="text-sm text-muted">This member keeps their adventure log private.</p>
+          ) : profile.activities.length === 0 ? (
             <p className="text-sm text-muted">Nothing recorded yet — the log is public only if the player&apos;s RuneMetrics profile is.</p>
           ) : (
             <ol className="max-h-96 space-y-3 overflow-y-auto pr-2">
