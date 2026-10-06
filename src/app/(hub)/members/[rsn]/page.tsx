@@ -4,7 +4,7 @@ import { BarChart, DonutChart, LineChart } from "@/components/charts";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
 import { badgesFor } from "@/lib/badges";
-import { SkillIcon } from "@/components/site/SkillIcon";
+import { SkillsGrid } from "@/components/profile/SkillsGrid";
 import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, shortNumbers, type MemberProfile } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
@@ -69,6 +69,8 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
   const color = rankColor(profile.rankOrder, maxOrder);
   const accent = profile.accentColor ?? color; // the member's own colour for the glow, if they picked one
   const badges = badgesFor(profile, overview);
+  // What the skills add up to — the clan roster's own "total XP" is only what they have earned for the clan.
+  const totalSkillXp = profile.skills.reduce((sum, s) => sum + s.xp, 0);
   const pinned = profile.pinnedSkill !== null ? profile.skills.find((s) => s.id === profile.pinnedSkill) : undefined;
 
   // Pace: XP per day over the last 30 days, per skill — drives the "when will I hit 99" estimates.
@@ -155,7 +157,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
 
         <div className="relative mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatTile label="Total level" value={profile.totalLevel ?? "—"} />
-          <StatTile label="Total XP" value={compact(profile.totalXp)} sub={full(profile.totalXp)} />
+          <StatTile label="Total XP" value={compact(totalSkillXp)} sub={`${full(totalSkillXp)} · ${compact(profile.totalXp)} earned for the clan`} />
           <StatTile label="Combat level" value={profile.combatLevel ?? "—"} />
           <StatTile label="Quests complete" value={profile.questsComplete ?? "—"} />
         </div>
@@ -195,24 +197,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
         {profile.skills.length === 0 ? (
           <p className="text-sm text-muted">No skill data has been recorded for this member yet.</p>
         ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {profile.skills.map((skill) => (
-              <li key={skill.id}>
-                <Link
-                  href={`/members/${encodeURIComponent(profile.rsn)}?skill=${skill.id}#skill-chart`}
-                  scroll={false}
-                  className={`flex items-center gap-3 rounded-lg border bg-background/40 px-3 py-2 transition hover:border-gold/50 ${skillParam === skill.id ? "border-gold" : "border-surface-border/60"}`}
-                >
-                  <SkillIcon name={skill.name} size={32} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">{skill.name}</span>
-                    <span className="block text-xs text-muted">{compact(skill.xp)} XP{skill.rank > 0 ? ` · rank ${full(skill.rank)}` : ""}</span>
-                  </span>
-                  <span className="shrink-0 text-lg font-bold tabular-nums text-gold">{skill.level}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <SkillsGrid rsn={profile.rsn} skills={profile.skills} totalLevel={profile.totalLevel} selected={skillParam} />
         )}
       </Panel>
 

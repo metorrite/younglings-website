@@ -19,7 +19,7 @@ import { ResetTimer } from "./nav/ResetTimer";
  * the page menus, search, and the signed-in person's menu (or the Discord login button).
  */
 export async function Navbar() {
-  const [roster, session, notifications] = await Promise.all([getRoster(), getServerSession(authOptions), getNotifications()]);
+  const [roster, session] = await Promise.all([getRoster(), getServerSession(authOptions)]);
 
   let user: { name: string; image: string | null } | null = null;
   let isAdmin = false;
@@ -30,6 +30,9 @@ export async function Navbar() {
     user = { name: displayName(info?.nickname, info?.username ?? session.user.name), image: session.user.image ?? info?.avatarUrl ?? null };
     isAdmin = admin !== null;
   }
+
+  // The bell lists what's new for everyone, plus what has happened to this member (a link decision, a goal reached).
+  const notifications = await getNotifications(link?.notices ?? []);
 
   const items: SearchItem[] = [
     ...ALL_NAV_LINKS.map((l) => ({ label: l.label, href: l.href, hint: "Page" })),
