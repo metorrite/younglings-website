@@ -6,9 +6,11 @@ import { authOptions } from "@/lib/auth";
 import { getMemberInfo } from "@/lib/jonnybot";
 import { ALL_NAV_LINKS } from "@/lib/nav";
 import { displayName } from "@/lib/names";
-import { getRoster } from "@/lib/site";
+import { getMyLink, getRoster } from "@/lib/site";
+import { getNotifications } from "@/lib/notifications";
 import { NavMenus } from "./nav/NavMenus";
 import { NavSearch, type SearchItem } from "./nav/NavSearch";
+import { NotificationBell } from "./nav/NotificationBell";
 import { ProfileMenu } from "./nav/ProfileMenu";
 import { ResetTimer } from "./nav/ResetTimer";
 
@@ -17,12 +19,14 @@ import { ResetTimer } from "./nav/ResetTimer";
  * the page menus, search, and the signed-in person's menu (or the Discord login button).
  */
 export async function Navbar() {
-  const [roster, session] = await Promise.all([getRoster(), getServerSession(authOptions)]);
+  const [roster, session, notifications] = await Promise.all([getRoster(), getServerSession(authOptions), getNotifications()]);
 
   let user: { name: string; image: string | null } | null = null;
   let isAdmin = false;
+  let link: Awaited<ReturnType<typeof getMyLink>> = null;
   if (session?.user?.id) {
-    const [info, admin] = await Promise.all([getMemberInfo(session.user.id), getAdminIfAny()]);
+    const [info, admin, linkState] = await Promise.all([getMemberInfo(session.user.id), getAdminIfAny(), getMyLink(session.user.id)]);
+    link = linkState;
     user = { name: displayName(info?.nickname, info?.username ?? session.user.name), image: session.user.image ?? info?.avatarUrl ?? null };
     isAdmin = admin !== null;
   }
@@ -49,7 +53,8 @@ export async function Navbar() {
         <div className="flex-1 lg:hidden" />
 
         <NavSearch items={items} />
-        <ProfileMenu user={user} isAdmin={isAdmin} />
+        <NotificationBell items={notifications} />
+        <ProfileMenu user={user} isAdmin={isAdmin} link={link ? { state: link.state, pendingRsn: link.pendingRsn } : null} />
       </div>
 
       {/* Narrower screens: every link in a row of its own that scrolls sideways if it has to. */}

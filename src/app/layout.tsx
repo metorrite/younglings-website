@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 import { Navbar } from "@/components/Navbar";
+import { LinkModalGate } from "@/components/link/LinkModalGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SessionProviderWrapper>
           <Navbar />
           <main className="flex-1">{children}</main>
+          <LinkModalGate />
         </SessionProviderWrapper>
       </body>
     </html>

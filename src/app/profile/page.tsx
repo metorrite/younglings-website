@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LinkRsn } from "@/components/link/LinkRsn";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { authOptions } from "@/lib/auth";
@@ -10,7 +11,7 @@ import { whoAmI } from "@/lib/jonnybot-admin";
 import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
 import { memberApi } from "@/lib/member";
 import { displayName } from "@/lib/names";
-import { compact, full, getOverview, getPolls, getProfile, getSignups, rankColor, shortDate } from "@/lib/site";
+import { compact, full, getMyLink, getOverview, getPolls, getProfile, getSignups, rankColor, shortDate } from "@/lib/site";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
 
 export const metadata = { title: "My profile — Younglings" };
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic";
 const TABS = [
   { id: "overview", label: "Overview", icon: "🏠" },
   { id: "server", label: "Server profile", icon: "🎭" },
-  { id: "public", label: "Public profile", icon: "🪪" },
+  { id: "public", label: "Member page", icon: "🪪" },
   { id: "goals", label: "Goals", icon: "🎯" },
   { id: "activity", label: "My activity", icon: "📋" },
   { id: "coffer", label: "Coffer", icon: "💰" },
@@ -39,6 +40,14 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const [member, settings, access] = await Promise.all([getMemberInfo(user.id), memberApi.settings(user.id), whoAmI(user.id)]);
   const isAdmin = access.ok && access.data.allowed;
   const rsns = settings.ok ? settings.data.rsns : [];
+  const link = (await getMyLink(user.id)) ?? { state: rsns.length > 0 ? ("LINKED" as const) : ("NONE" as const), rsns, pendingRsn: null };
+  const linked = rsns.length > 0;
+  /** What a tab shows in place of its content when it needs a RuneScape name the member hasn't linked yet. */
+  const needsLink = (what: string) => (
+    <Panel title="Link your RuneScape name" hint={`${what} needs your in-game name. Link it once and this unlocks.`}>
+      <LinkRsn state={link.state} pendingRsn={link.pendingRsn} />
+    </Panel>
+  );
   const mine = tab === "overview" && rsns.length > 0 ? await getProfile(rsns[0]) : null;
   const overview = tab === "overview" && mine ? await getOverview() : null;
   const maxOrder = overview ? Math.max(0, ...overview.ranks.map((r) => r.order)) : 11;
@@ -103,10 +112,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             {!settings.ok ? (
               <Unavailable what="Your profile" />
             ) : rsns.length === 0 ? (
-              <Panel title="Link your RuneScape name">
-                <p className="text-sm text-muted">
-                  No RuneScape name is linked to your Discord account yet. Use <code className="rounded bg-white/10 px-1">/rs</code> in the Younglings Discord to link yours — then your stats, badges and goals show up here and on your public profile.
-                </p>
+              <Panel title="Link your RuneScape name" hint="No RuneScape name is linked to your Discord account yet. Link yours and your stats, badges and goals show up here and on your member page.">
+                <LinkRsn state={link.state} pendingRsn={link.pendingRsn} />
               </Panel>
             ) : mine === null ? (
               <Panel title="Your clan profile">
@@ -243,15 +250,19 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         )}
 
         {tab === "public" && (
-          <Panel title="Your public profile" hint="What everyone sees on your page in the member list.">
-            {settings.ok ? <PublicProfileForm initial={settings.data} /> : <Unavailable what="Your profile settings" />}
-          </Panel>
+          !linked ? needsLink("Your member page") : (
+            <Panel title="Your member page" hint="Your page in the clan's member list, the one everyone can open. Edit what it says and how it looks here. (Your server nickname and name colour are on the Server profile tab — those change how you appear in Discord.)">
+              {settings.ok ? <PublicProfileForm initial={settings.data} /> : <Unavailable what="Your profile settings" />}
+            </Panel>
+          )
         )}
 
         {tab === "goals" && (
-          <Panel title="Skill goals" hint="Set a target level and track your progress. JonnyBot can DM you when you reach it.">
-            {goals?.ok ? <GoalsManager initial={goals.data.goals} hasLink={rsns.length > 0} /> : <Unavailable what="Your goals" />}
-          </Panel>
+          !linked ? needsLink("Skill goals") : (
+            <Panel title="Skill goals" hint="Set a target level and track your progress. JonnyBot can DM you when you reach it.">
+              {goals?.ok ? <GoalsManager initial={goals.data.goals} hasLink={rsns.length > 0} /> : <Unavailable what="Your goals" />}
+            </Panel>
+          )
         )}
 
         {tab === "activity" && (
@@ -293,12 +304,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </>
         )}
 
-        {tab === "coffer" && (
+        {tab === "coffer" && !linked && needsLink("Your clan coffer")}
+        {tab === "coffer" && linked && (
           <Panel title="Your clan coffer" hint="Donations recorded under your linked RuneScape names, and anything you've been given.">
             {coffer === null || !coffer.ok ? (
               <Unavailable what="Your coffer" />
             ) : !coffer.data.linked ? (
-              <p className="text-sm text-muted">Link your RuneScape name with <code className="rounded bg-white/10 px-1">/rs</code> in Discord and your donations will show up here.</p>
+              <p className="text-sm text-muted">Link your RuneScape name and your donations will show up here.</p>
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-3">
