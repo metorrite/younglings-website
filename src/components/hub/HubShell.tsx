@@ -31,20 +31,18 @@ export function HubShell({ clanName, children }: { clanName: string; children: R
     });
   }
 
-  // Parts of the welcome fold away smoothly (grid row 1fr → 0fr) rather than snapping in and out.
-  const fold = (open: boolean) => `grid transition-[grid-template-rows,opacity] duration-500 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`;
+  // The logo and caption shrink away (height, size and opacity together) rather than being clipped, so the logo's glow can spill past its box.
+  const fold = (open: boolean) => `origin-top transition-[height,opacity,transform] duration-500 ease-out ${open ? "h-[8.5rem] scale-100 opacity-100" : "pointer-events-none h-0 scale-75 opacity-0"}`;
 
   return (
     <div className="relative">
       <div className={`pointer-events-none absolute inset-x-0 top-0 bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_65%)] transition-[height] duration-700 ease-out ${home ? "h-[26rem]" : "h-48"}`} />
 
       <header className={`relative mx-auto flex max-w-[96rem] flex-col items-center px-4 transition-[padding] duration-500 ease-out sm:px-6 ${home ? "pt-10" : "pt-5"}`}>
-        <div className={fold(home)}>
-          <div className="overflow-hidden">
-            <div className="flex flex-col items-center gap-1 pb-4">
-              <Image src="/clan-logo.png" alt="Younglings" width={88} height={88} className="h-[88px] w-[88px] rounded-full ring-2 ring-gold/50" />
-              <p className="mt-3 text-xs tracking-[0.3em] text-muted uppercase">Welcome to</p>
-            </div>
+        <div className={fold(home)} aria-hidden={!home}>
+          <div className="flex flex-col items-center gap-3">
+            <Image src="/clan-logo.png" alt="Younglings" width={88} height={88} className="h-[88px] w-[88px] rounded-full shadow-[0_0_40px_rgba(212,175,55,0.25)] ring-2 ring-gold/50" />
+            <p className="text-xs tracking-[0.3em] text-muted uppercase">Welcome to</p>
           </div>
         </div>
 
