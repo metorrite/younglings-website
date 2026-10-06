@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { DiscordLink } from "@/components/site/DiscordLink";
 import { LocalTime } from "@/components/site/LocalTime";
 import { PageHeader, Unavailable } from "@/components/site/blocks";
-import { getEvents, type SiteEvent } from "@/lib/site";
+import { discordPath, getEvents, type SiteEvent } from "@/lib/site";
 
 export const metadata = { title: "Events — Younglings" };
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
@@ -34,9 +35,9 @@ function Featured({ event }: { event: SiteEvent }) {
           <StatusPill event={event} />
         </div>
         <h2 className="text-2xl font-bold">
-          <a href={event.url} target="_blank" rel="noreferrer" className="transition hover:text-gold">
+          <DiscordLink path={discordPath(event.url)} className="transition hover:text-gold">
             {event.name} ↗
-          </a>
+          </DiscordLink>
         </h2>
         <p className="text-sm font-medium text-foreground/90">
           <LocalTime iso={event.startTime} />
@@ -44,9 +45,9 @@ function Featured({ event }: { event: SiteEvent }) {
         </p>
         {event.description && <p className="max-w-prose text-sm whitespace-pre-line text-muted">{event.description}</p>}
         <div className="mt-auto flex flex-wrap items-center gap-4 pt-2 text-sm">
-          <a href={event.url} target="_blank" rel="noreferrer" className="rounded-md bg-[#5865F2] px-4 py-2 font-semibold text-white transition hover:bg-[#4752c4]">
+          <DiscordLink path={discordPath(event.url)} className="rounded-md bg-[#5865F2] px-4 py-2 font-semibold text-white transition hover:bg-[#4752c4]">
             Open in Discord
-          </a>
+          </DiscordLink>
           {event.interestedCount >= 0 && <span className="text-muted">{event.interestedCount} interested</span>}
           <a href={`/api/events/${event.id}/ics`} className="rounded-md border border-surface-border px-3 py-2 text-muted transition hover:border-gold/50 hover:text-foreground">
             Add to calendar
@@ -67,9 +68,9 @@ function EventCard({ event }: { event: SiteEvent }) {
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold">
-            <a href={event.url} target="_blank" rel="noreferrer" className="transition hover:text-gold">
+            <DiscordLink path={discordPath(event.url)} className="transition hover:text-gold">
               {event.name} ↗
-            </a>
+            </DiscordLink>
           </h3>
           <StatusPill event={event} />
         </div>

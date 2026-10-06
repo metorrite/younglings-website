@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
-import { adminApi, type ApiResult, type ClanPoints, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type ClanPoints, type NewsChannelConfig, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -32,6 +32,21 @@ export async function saveSelfRolesAction(input: unknown): Promise<ActionResult<
   revalidatePath("/admin/roles");
   revalidatePath("/profile");
   return result.ok ? { ok: true, data: result.data.roles } : { ok: false, error: result.problems[0] ?? result.error };
+}
+
+export async function saveNewsChannelsAction(input: unknown): Promise<ActionResult<NewsChannelConfig[]>> {
+  const ctx = await requireAdmin("/admin/news");
+  if (!Array.isArray(input)) return { ok: false, error: "Those channels couldn't be read." };
+
+  const channels = input
+    .map((raw) => (raw ?? {}) as Record<string, unknown>)
+    .filter((c) => typeof c.channelId === "string" && /^\d+$/.test(c.channelId))
+    .map((c) => ({ channelId: c.channelId as string, label: text(c.label) }));
+
+  const result = await adminApi.saveNewsChannels(ctx, channels);
+  revalidatePath("/admin/news");
+  revalidatePath("/");
+  return result.ok ? { ok: true, data: result.data.channels } : { ok: false, error: result.problems[0] ?? result.error };
 }
 
 export async function saveClanPointsAction(input: unknown): Promise<ActionResult<ClanPoints>> {

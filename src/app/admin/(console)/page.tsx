@@ -9,6 +9,7 @@ const TOOLS = [
   },
   { href: "/admin/tickets/history", title: "Tickets", body: "Browse open and closed tickets and read their saved transcripts." },
   { href: "/admin/tickets/settings", title: "Ticket settings", body: "Transcript log channel, retention, and the close delay." },
+  { href: "/admin/news", title: "Website news feed", body: "Choose which Discord channels (announcements, news, event posts) appear in the middle of the home page." },
   { href: "/admin/roles", title: "Self-assignable roles", body: "Choose which roles members can add to or remove from themselves on their profile page." },
   { href: "/admin/clan", title: "Clan points & ranks", body: "Points awarded for membership and Citadel activity, and the points each rank needs." },
 ];

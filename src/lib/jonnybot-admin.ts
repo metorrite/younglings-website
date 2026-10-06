@@ -139,6 +139,14 @@ export interface SelfRoleConfig {
   safe: boolean;
 }
 
+export interface NewsChannelConfig {
+  channelId: string;
+  name: string | null;
+  label: string | null;
+  /** False if JonnyBot can no longer view the channel or read its history. */
+  readable: boolean;
+}
+
 export interface ClanPoints {
   dailyMembershipPoints: number;
   citadelVisitPoints: number;
@@ -246,6 +254,10 @@ export const adminApi = {
   selfRoles: (ctx: AdminContext) => request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "GET", "selfroles"),
   saveSelfRoles: (ctx: AdminContext, roles: { roleId: string; label: string; description: string }[]) =>
     request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "PUT", "selfroles", { roles }),
+
+  newsChannels: (ctx: AdminContext) => request<{ channels: NewsChannelConfig[] }>(ctx.actorId, "GET", "news"),
+  saveNewsChannels: (ctx: AdminContext, channels: { channelId: string; label: string }[]) =>
+    request<{ channels: NewsChannelConfig[] }>(ctx.actorId, "PUT", "news", { channels }),
 
   clanPoints: (ctx: AdminContext) => request<ClanPoints>(ctx.actorId, "GET", "clan/points"),
   saveClanPoints: (
