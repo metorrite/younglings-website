@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/members", label: "Members" },
   { href: "/events", label: "Events" },
+  { href: "/stats", label: "Stats" },
 ];
 
 export function Navbar() {
