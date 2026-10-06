@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type ClanPoints, type NewsChannelConfig, type PromotionDue, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type ClanPoints, type MemberNote, type NewsChannelConfig, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -122,4 +122,62 @@ export async function saveClanPointsAction(input: unknown): Promise<ActionResult
   });
   revalidatePath("/admin/clan");
   return outcome(result);
+}
+
+// ---------- member notes ----------
+
+export async function loadNotesAction(rsn: string): Promise<ActionResult<MemberNote[]>> {
+  const ctx = await requireAdmin("/admin/members");
+  if (!rsn || rsn.length > 40) return { ok: false, error: "That isn't a valid name." };
+  const result = await adminApi.notes(ctx, rsn);
+  return result.ok ? { ok: true, data: result.data.notes } : { ok: false, error: result.error };
+}
+
+export async function addNoteAction(rsn: string, note: string): Promise<ActionResult<MemberNote[]>> {
+  const ctx = await requireAdmin("/admin/members");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!rsn || rsn.length > 40) return { ok: false, error: "That isn't a valid name." };
+  const result = await adminApi.addNote(ctx, rsn, text(note).slice(0, 2000));
+  if (result.ok) revalidatePath("/admin/members");
+  return result.ok ? { ok: true, data: result.data.notes } : { ok: false, error: result.error };
+}
+
+export async function deleteNoteAction(id: number, rsn: string): Promise<ActionResult<MemberNote[]>> {
+  const ctx = await requireAdmin("/admin/members");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!Number.isInteger(id) || !rsn || rsn.length > 40) return { ok: false, error: "That note couldn't be found." };
+  const result = await adminApi.deleteNote(ctx, id, rsn);
+  if (result.ok) revalidatePath("/admin/members");
+  return result.ok ? { ok: true, data: result.data.notes } : { ok: false, error: result.error };
+}
+
+// ---------- scheduled posts ----------
+
+export async function schedulePostAction(input: unknown): Promise<ActionResult<ScheduledPost[]>> {
+  const ctx = await requireAdmin("/admin/scheduled");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  const raw = (input ?? {}) as Record<string, unknown>;
+  const channelId = text(raw.channelId);
+  if (!/^\d+$/.test(channelId)) return { ok: false, error: "Choose a channel." };
+  const sendAt = text(raw.sendAt);
+  if (Number.isNaN(Date.parse(sendAt))) return { ok: false, error: "Pick when it should be posted." };
+
+  const result = await adminApi.schedulePost(ctx, { text: text(raw.text), channelId, convert: raw.convert === true, sendAt: new Date(sendAt).toISOString() });
+  if (!result.ok) return { ok: false, error: result.problems[0] ?? result.error };
+  revalidatePath("/admin/scheduled");
+  const list = await adminApi.scheduled(ctx);
+  return list.ok ? { ok: true, data: list.data.posts } : { ok: false, error: list.error };
+}
+
+export async function cancelScheduledAction(id: number): Promise<ActionResult<ScheduledPost[]>> {
+  const ctx = await requireAdmin("/admin/scheduled");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!Number.isInteger(id)) return { ok: false, error: "That post couldn't be found." };
+  const result = await adminApi.cancelScheduled(ctx, id);
+  if (result.ok) revalidatePath("/admin/scheduled");
+  return result.ok ? { ok: true, data: result.data.posts } : { ok: false, error: result.error };
 }

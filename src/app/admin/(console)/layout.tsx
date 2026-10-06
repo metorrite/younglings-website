@@ -1,22 +1,8 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { requireAdmin } from "@/lib/admin";
 
 export const metadata = { title: "Admin — Younglings" };
-
-const SECTIONS = [
-  { href: "/admin/tickets", label: "Ticket panels" },
-  { href: "/admin/tickets/history", label: "Tickets" },
-  { href: "/admin/tickets/settings", label: "Ticket settings" },
-  { href: "/admin/news", label: "News feed" },
-  { href: "/admin/post", label: "Post" },
-  { href: "/admin/tracking", label: "Tracking" },
-  { href: "/admin/promotions", label: "Promotions" },
-  { href: "/admin/community", label: "Community" },
-  { href: "/admin/roles", label: "Self roles" },
-  { href: "/admin/clan", label: "Clan points" },
-];
 
 /**
  * The shell for every gated admin page. The check here is for the header (and as a first line of defence);
@@ -27,26 +13,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const admin = await requireAdmin();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-surface-border pb-4">
-        <div className="flex items-center gap-3">
-          <Link href="/admin" className="text-lg font-semibold text-gold">
-            Admin
-          </Link>
-          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-            {SECTIONS.map((section) => (
-              <Link key={section.href} href={section.href} className="transition hover:text-foreground">
-                {section.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted">
-          {admin.avatarUrl && <Image src={admin.avatarUrl} alt="" width={24} height={24} className="rounded-full" />}
-          {admin.displayName}
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">{admin.tier === "ADMIN" ? "Admin" : "Developer"}</span>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <AdminNav name={admin.displayName} avatarUrl={admin.avatarUrl} tier={admin.tier} />
       {children}
     </div>
   );

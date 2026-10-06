@@ -221,6 +221,100 @@ export interface TicketDetail extends TicketRow {
 
 // ---------- plumbing ----------
 
+// ---------- roster view, attention, health, audit, notes, scheduled posts ----------
+
+export interface RosterMember {
+  rsn: string;
+  rank: string;
+  rankOrder: number;
+  points: number;
+  promotionNeeded: boolean;
+  verified: boolean;
+  verificationMethod: string | null;
+  verifiedAt: string | null;
+  discordId: string | null;
+  discordName: string | null;
+  totalLevel: number | null;
+  combatLevel: number | null;
+  totalXp: number;
+  kills: number;
+  joinedAt: string | null;
+  firstSeen: string | null;
+  lastPolled: string | null;
+  /** An estimate: the roster is refreshed once per cycle, so a member is due about one cycle after their last refresh. */
+  nextPoll: string | null;
+  lastActivity: string | null;
+  visitedThisWeek: boolean;
+  cappedThisWeek: boolean;
+  notes: number;
+}
+export interface Roster {
+  members: RosterMember[];
+  pollCycleSeconds: number;
+  autoPoll: boolean;
+  weekStart: string;
+  generatedAt: string;
+}
+
+export interface AttentionItem {
+  rsn: string;
+  detail: string;
+}
+export interface Attention {
+  total: number;
+  weekStart: string;
+  unverified: AttentionItem[];
+  stale: AttentionItem[];
+  inactive: AttentionItem[];
+  promotions: AttentionItem[];
+  notCapped: AttentionItem[];
+}
+
+export interface BotHealth {
+  uptimeSeconds: number;
+  startedAt: string;
+  memoryUsedMb: number;
+  memoryMaxMb: number;
+  discord: { status: string; gatewayPingMs: number; members: number };
+  database: { ok: boolean; pingMs: number };
+  environment: { live: boolean; siteUrlConfigured: boolean; autoPoll: boolean };
+  polling: { rosterSize: number; refreshedRecently: number; stale: number; newestRefresh: string | null; cycleSeconds: number; rateLimitedQueue: number; delaySeconds: number };
+  data: { newestActivity: string | null; firstSnapshot: string | null };
+  scheduledPending: number;
+}
+
+export interface AuditEntry {
+  id: number;
+  actorId: string;
+  actorName: string | null;
+  method: string;
+  path: string;
+  status: number;
+  at: string;
+}
+
+export interface MemberNote {
+  id: number;
+  rsn: string;
+  note: string;
+  authorId: string;
+  authorName: string | null;
+  at: string;
+}
+
+export interface ScheduledPost {
+  id: number;
+  channelId: string;
+  channelName: string | null;
+  text: string;
+  convert: boolean;
+  sendAt: string;
+  status: "PENDING" | "SENT" | "FAILED" | "CANCELLED";
+  createdByName: string | null;
+  createdAt: string;
+  error: string | null;
+}
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; problems: string[] };
@@ -327,6 +421,23 @@ export const adminApi = {
     ctx: AdminContext,
     body: { dailyMembershipPoints: number; citadelVisitPoints: number; citadelCapPoints: number; ranks: { id: string; threshold: number }[] },
   ) => request<ClanPoints>(ctx.actorId, "PUT", "clan/points", body),
+
+  roster: (ctx: AdminContext) => request<Roster>(ctx.actorId, "GET", "members"),
+  attention: (ctx: AdminContext) => request<Attention>(ctx.actorId, "GET", "attention"),
+  health: (ctx: AdminContext) => request<BotHealth>(ctx.actorId, "GET", "health"),
+  audit: (ctx: AdminContext, query: { limit?: number; actor?: string; q?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (query.limit) params.set("limit", String(query.limit));
+    if (query.actor) params.set("actor", query.actor);
+    if (query.q) params.set("q", query.q);
+    return request<{ entries: AuditEntry[] }>(ctx.actorId, "GET", `audit?${params}`);
+  },
+  notes: (ctx: AdminContext, rsn: string) => request<{ notes: MemberNote[] }>(ctx.actorId, "GET", `notes?rsn=${encodeURIComponent(rsn)}`),
+  addNote: (ctx: AdminContext, rsn: string, note: string) => request<{ notes: MemberNote[] }>(ctx.actorId, "POST", "notes", { rsn, note }),
+  deleteNote: (ctx: AdminContext, id: number, rsn: string) => request<{ notes: MemberNote[] }>(ctx.actorId, "DELETE", `notes/${id}?rsn=${encodeURIComponent(rsn)}`),
+  scheduled: (ctx: AdminContext) => request<{ posts: ScheduledPost[] }>(ctx.actorId, "GET", "scheduled"),
+  schedulePost: (ctx: AdminContext, body: { text: string; channelId: string; convert: boolean; sendAt: string }) => request<{ ok: boolean; id: number }>(ctx.actorId, "POST", "scheduled", body),
+  cancelScheduled: (ctx: AdminContext, id: number) => request<{ posts: ScheduledPost[] }>(ctx.actorId, "DELETE", `scheduled/${id}`),
 
   ticketStats: (ctx: AdminContext) => request<TicketStats>(ctx.actorId, "GET", "ticket/stats"),
 
