@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Slide } from "@/lib/recap";
 import { compact, full } from "@/lib/site";
+import { Tip, TipBody } from "@/components/ui/Tip";
 
 const SLIDE_SECONDS = 6.5;
 
@@ -155,12 +156,14 @@ function SlideView({ slide }: { slide: Slide }) {
           </div>
           <div className="flex h-56 items-end gap-[3px]" role="img" aria-label={slide.title}>
             {slide.points.map((p, i) => (
-              <div key={`${p.label}-${i}`} className="flex h-full flex-1 items-end" title={`${p.label}: ${compact(p.value)} XP`}>
+              <Tip key={`${p.label}-${i}`} content={<TipBody title={p.label} rows={[["XP gained", `${compact(p.value)} XP`]]} />}>
+              <div className="flex h-full flex-1 items-end">
                 <div
                   className="recap-grow-y w-full rounded-t-sm"
                   style={{ ...delay(0.4 + (i / Math.max(1, slide.points.length)) * 0.9), height: `${Math.max(2, (p.value / max) * 100)}%`, backgroundColor: p.label === slide.highlight ? "#fff" : slide.accent, opacity: p.label === slide.highlight ? 1 : 0.75 }}
                 />
               </div>
+              </Tip>
             ))}
           </div>
           <div className="recap-rise flex justify-between text-[11px] text-muted" style={delay(1.4)}>

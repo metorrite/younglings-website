@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { compact, full, rankColor, shortDate, type RankInfo, type RosterMember } from "@/lib/site";
 import { RankBadge } from "./blocks";
+import { Tip, TipBody } from "@/components/ui/Tip";
 
 type SortKey = "rank" | "name" | "totalXp" | "totalLevel" | "points" | "joined";
 
@@ -108,8 +109,10 @@ export function MemberTable({ members, ranks }: { members: RosterMember[]; ranks
                   <RankBadge rank={m.rank} color={rankColor(m.rankOrder, maxOrder)} />
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{m.totalLevel ?? "—"}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums" title={full(m.totalXp)}>
-                  {compact(m.totalXp)}
+                <td className="px-4 py-2.5 text-right tabular-nums">
+                  <Tip content={<TipBody title="Earned for the clan" rows={[["XP", full(m.totalXp)]]} />}>
+                    <span>{compact(m.totalXp)}</span>
+                  </Tip>
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{m.points}</td>
                 <td className="px-4 py-2.5 text-right text-muted">{shortDate(m.joined)}</td>

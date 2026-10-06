@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { LinkRsn } from "@/components/link/LinkRsn";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
+import { SkillIcon } from "@/components/site/SkillIcon";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import { authOptions } from "@/lib/auth";
 import { badgesFor } from "@/lib/badges";
 import { whoAmI } from "@/lib/jonnybot-admin";
@@ -158,9 +160,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <Panel title="Your badges" action={<Link href="/hall-of-fame" className="text-xs text-muted hover:text-gold">How to earn more →</Link>}>
                       <ul className="flex flex-wrap gap-2">
                         {badges.map((b) => (
-                          <li key={b.id} title={b.description} className="flex items-center gap-1.5 rounded-full border border-surface-border bg-background/60 px-3 py-1.5 text-sm">
-                            <span>{b.icon}</span>
-                            {b.label}
+                          <li key={b.id}>
+                            <Tip content={<TipBody title={b.label} icon={<span>{b.icon}</span>}>{b.description}</TipBody>}>
+                              <span className="flex items-center gap-1.5 rounded-full border border-surface-border bg-background/60 px-3 py-1.5 text-sm">
+                                <span>{b.icon}</span>
+                                {b.label}
+                              </span>
+                            </Tip>
                           </li>
                         ))}
                       </ul>
@@ -175,7 +181,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {goals.data.goals.filter((g) => !g.achievedAt).slice(0, 4).map((g) => (
                     <li key={g.id} className="rounded-lg border border-surface-border/60 bg-background/40 p-3">
-                      <p className="text-sm font-medium">
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        <SkillIcon name={g.skill} size={22} />
                         {g.skill} <span className="text-muted">→ {g.targetLevel}</span>
                       </p>
                       <div className="mt-2">

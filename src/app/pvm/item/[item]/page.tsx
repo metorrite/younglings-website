@@ -110,7 +110,7 @@ export default async function ItemPage({ params, searchParams }: Props) {
 
       {data.byMonth.length > 1 && (
         <Panel title="Received by month">
-          <BarChart groups={data.byMonth.map((m) => ({ label: monthLabel(m.month).slice(0, 3), values: [m.count] }))} series={[{ name: "Received", color: "#d4af37" }]} height={170} format={full} />
+          <BarChart groups={data.byMonth.map((m) => ({ label: monthLabel(m.month).slice(0, 3), values: [m.count] }))} series={[{ name: "Received", color: "#d4af37" }]} height={170} format="full" />
         </Panel>
       )}
 

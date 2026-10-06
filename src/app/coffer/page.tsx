@@ -33,7 +33,7 @@ export default async function CofferPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <Panel title="Donated per week">
               {coffer.weeks.length > 0 ? (
-                <BarChart groups={coffer.weeks.map((w) => ({ label: shortDay(w.weekStart), values: [w.donated] }))} series={[{ name: "Donated", color: "#d4af37" }]} format={compact} />
+                <BarChart groups={coffer.weeks.map((w) => ({ label: shortDay(w.weekStart), values: [w.donated] }))} series={[{ name: "Donated", color: "#d4af37" }]} format="compact" />
               ) : (
                 <p className="py-8 text-center text-sm text-muted">No donations in the last few months.</p>
               )}

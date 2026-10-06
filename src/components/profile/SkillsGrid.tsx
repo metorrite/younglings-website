@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { SkillIcon } from "@/components/site/SkillIcon";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import { compact, full } from "@/lib/site";
 import { MAX_TOTAL_XP, MAX_XP, SKILL_COUNT, progressFor, realCap, virtualLevel, type Progress } from "@/lib/xp";
 
@@ -96,9 +97,13 @@ function Tile({ icon, name, sub, level, virtualShown, progress, href, selected, 
           <span className="block truncate text-sm font-medium">{name}</span>
           <span className="block text-xs text-muted">{sub}</span>
         </span>
-        <span className={`shrink-0 text-lg font-bold tabular-nums ${virtualShown ? "text-gold/80 italic" : "text-gold"}`} title={virtualShown ? "Virtual level" : undefined}>
-          {level}
-        </span>
+        {virtualShown ? (
+          <Tip content={<TipBody title="Virtual level">Past the skill&apos;s real cap. Counts up to 120.</TipBody>}>
+            <span className="shrink-0 text-lg font-bold tabular-nums text-gold/80 italic">{level}</span>
+          </Tip>
+        ) : (
+          <span className="shrink-0 text-lg font-bold tabular-nums text-gold">{level}</span>
+        )}
       </div>
       <Bar fraction={progress.fraction} color={barColor(progress.target)} maxed={progress.target === null} />
     </>

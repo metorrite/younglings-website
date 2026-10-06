@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ActivityKind, FeedItem } from "@/lib/site";
+import { SkillIcon } from "@/components/site/SkillIcon";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import { shortNumbers, SKILL_NAMES } from "@/lib/site";
 
 const KIND: Record<ActivityKind, { icon: string; label: string; color: string }> = {
@@ -28,6 +30,13 @@ function sentence(item: FeedItem): string {
   return shortNumbers(text.replace(/^I /, ""));
 }
 
+/** The skill a level-up or XP-milestone line is about, so the feed can show its icon instead of a generic one. */
+function skillOf(item: FeedItem): string | null {
+  const text = item.text.replace(/\.$/, "");
+  const name = item.kind === "LEVEL_UP" ? text.match(/^Levelled up (\w+)$/i)?.[1] : item.kind === "XP_MILESTONE" ? text.match(/^[\d,]+XP in (.+)$/)?.[1] : undefined;
+  return name && SKILL_NAMES.some((s) => s.toLowerCase() === name.toLowerCase()) ? name : null;
+}
+
 export function FeedList({ items, compact = false }: { items: FeedItem[]; compact?: boolean }) {
   if (items.length === 0) return <p className="py-6 text-center text-sm text-muted">Nothing to show yet.</p>;
 
@@ -37,9 +46,11 @@ export function FeedList({ items, compact = false }: { items: FeedItem[]; compac
         const kind = KIND[item.kind];
         return (
           <li key={`${item.rsn}-${item.recordedAt}-${i}`} className={`flex items-start gap-3 ${compact ? "py-2" : "py-3"}`}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base" style={{ backgroundColor: `${kind.color}22` }} title={kind.label}>
-              {kind.icon}
-            </span>
+            <Tip content={<TipBody title={kind.label} titleColor={kind.color} />}>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base" style={{ backgroundColor: `${kind.color}22` }}>
+                {skillOf(item) ? <SkillIcon name={skillOf(item) as string} size={22} /> : kind.icon}
+              </span>
+            </Tip>
             <div className="min-w-0 flex-1">
               <p className="text-sm">
                 <Link href={`/members/${encodeURIComponent(item.rsn)}`} className="font-semibold hover:text-gold">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHeader, Panel, Unavailable } from "@/components/site/blocks";
 import { getCitadelGrid, shortDay } from "@/lib/site";
+import { Tip, TipBody } from "@/components/ui/Tip";
 
 export const metadata = { title: "Citadel attendance — Younglings" };
 export const dynamic = "force-dynamic";
@@ -50,7 +51,9 @@ export default async function CitadelPage() {
                     </td>
                     {m.weeks.map((v, i) => (
                       <td key={i}>
-                        <span title={`${m.rsn} — week of ${shortDay(grid.weeks[i])}: ${LABEL[v]}`} className={`block h-5 w-5 rounded ${CELL[v]}`} />
+                        <Tip content={<TipBody title={m.rsn} rows={[["Week of", shortDay(grid.weeks[i])], ["Citadel", LABEL[v]]]} />}>
+                          <span className={`block h-5 w-5 rounded ${CELL[v]}`} />
+                        </Tip>
                       </td>
                     ))}
                     <td className="pl-2 text-muted tabular-nums">{m.weeks.filter((v) => v === 2).length}</td>

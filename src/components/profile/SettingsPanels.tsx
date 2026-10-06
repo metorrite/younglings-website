@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { addGoalAction, deleteGoalAction, saveSettingsAction, toggleRoleAction } from "@/app/profile/actions";
 import { ProgressBar } from "@/components/site/blocks";
+import { SkillIcon } from "@/components/site/SkillIcon";
 import type { Goal, MemberSettings, SelfRole } from "@/lib/member";
 import { SKILL_NAMES, compact, shortDate } from "@/lib/site";
 
@@ -219,7 +220,8 @@ export function GoalsManager({ initial, hasLink }: { initial: Goal[]; hasLink: b
           {active.map((g) => (
             <li key={g.id} className="rounded-lg border border-surface-border/60 bg-background/40 p-4">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-medium">
+                <p className="flex items-center gap-2 font-medium">
+                  <SkillIcon name={g.skill} size={22} />
                   {g.skill} <span className="text-muted">→ {g.targetLevel}</span>
                 </p>
                 <button type="button" className="text-xs text-muted hover:text-red-400" onClick={() => remove(g.id)} disabled={pending} aria-label={`Remove the ${g.skill} goal`}>
@@ -244,7 +246,8 @@ export function GoalsManager({ initial, hasLink }: { initial: Goal[]; hasLink: b
           <ul className="flex flex-wrap gap-2">
             {done.map((g) => (
               <li key={g.id} className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-sm text-emerald-300">
-                🎉 {g.skill} {g.targetLevel}
+                <SkillIcon name={g.skill} size={18} />
+                {g.skill} {g.targetLevel} 🎉
                 <span className="text-xs text-emerald-300/70">{g.achievedAt ? shortDate(g.achievedAt) : ""}</span>
                 <button type="button" className="text-xs text-emerald-300/60 hover:text-red-300" onClick={() => remove(g.id)} aria-label={`Clear the ${g.skill} goal`}>
                   ✕

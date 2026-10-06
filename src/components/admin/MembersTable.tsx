@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { addNoteAction, deleteNoteAction, loadNotesAction } from "@/app/admin/(console)/actions";
+import { Tip, TipBody } from "@/components/ui/Tip";
 import type { MemberNote, Roster, RosterMember } from "@/lib/jonnybot-admin";
 
 // A shared once-a-minute clock for the "5m ago" labels. The server renders no time-relative text, so nothing can mismatch.
@@ -139,26 +140,38 @@ export function MembersTable({ roster }: { roster: Roster }) {
                 <tr onClick={() => toggle(m.rsn)} className={`cursor-pointer transition-colors hover:bg-white/5 ${open === m.rsn ? "bg-white/5" : ""}`}>
                   <td className="px-3 py-2 font-medium">
                     {m.rsn}
-                    {m.notes > 0 && <span className="ml-2 rounded bg-gold/15 px-1.5 text-[11px] text-gold" title={`${m.notes} private note${m.notes === 1 ? "" : "s"}`}>📝 {m.notes}</span>}
+                    {m.notes > 0 && (
+                      <Tip content={<TipBody title={`${m.notes} private note${m.notes === 1 ? "" : "s"}`}>Only staff can see these. Open the row to read them.</TipBody>}>
+                        <span className="ml-2 rounded bg-gold/15 px-1.5 text-[11px] text-gold">📝 {m.notes}</span>
+                      </Tip>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-muted">{m.rank}</td>
                   <td className="px-3 py-2">
                     {m.verified ? (
-                      <span className="text-emerald-400" title={m.verificationMethod ? `Verified by ${m.verificationMethod.toLowerCase()}` : "Verified"}>
-                        ✓ {m.discordName ?? "linked"}
-                      </span>
+                      <Tip content={<TipBody title="Verified" titleColor="#34d399">{m.verificationMethod ? `Linked by ${m.verificationMethod.toLowerCase()}` : "Linked to a Discord account"}{m.verifiedAt ? ` on ${m.verifiedAt.slice(0, 10)}` : ""}.</TipBody>}>
+                        <span className="text-emerald-400">✓ {m.discordName ?? "linked"}</span>
+                      </Tip>
                     ) : (
                       <span className="text-muted">— not linked</span>
                     )}
                   </td>
                   <td className={`px-3 py-2 text-right tabular-nums ${m.promotionNeeded ? "font-semibold text-gold" : ""}`}>
                     {m.points.toLocaleString("en-US")}
-                    {m.promotionNeeded && <span title="Due a promotion"> ⬆</span>}
+                    {m.promotionNeeded && (
+                      <Tip content={<TipBody title="Due a promotion">Enough points for the next rank.</TipBody>}>
+                        <span> ⬆</span>
+                      </Tip>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-muted tabular-nums">{ago(m.lastPolled, now)}</td>
                   <td className="px-3 py-2 text-muted tabular-nums">{roster.autoPoll ? until(m.nextPoll, now) : "off"}</td>
-                  <td className="px-3 py-2 text-center" title={m.cappedThisWeek ? "Capped this week" : m.visitedThisWeek ? "Visited, not capped" : "Not visited this week"}>
-                    <span className={m.visitedThisWeek ? "text-gold" : "text-muted/40"}>●</span> <span className={m.cappedThisWeek ? "text-emerald-400" : "text-muted/40"}>✔</span>
+                  <td className="px-3 py-2 text-center">
+                    <Tip content={<TipBody title="Citadel this week" rows={[["Visited", m.visitedThisWeek ? "Yes" : "No"], ["Capped", m.cappedThisWeek ? "Yes" : "No"]]} />}>
+                      <span>
+                        <span className={m.visitedThisWeek ? "text-gold" : "text-muted/40"}>●</span> <span className={m.cappedThisWeek ? "text-emerald-400" : "text-muted/40"}>✔</span>
+                      </span>
+                    </Tip>
                   </td>
                   <td className="px-3 py-2 text-muted tabular-nums">{ago(m.lastActivity, now)}</td>
                   <td className="px-3 py-2 text-right tabular-nums">{m.totalLevel?.toLocaleString("en-US") ?? "—"}</td>

@@ -25,7 +25,7 @@ export default async function HistoryPage() {
       ) : (
         <>
           <Panel title="Members over time">
-            <LineChart points={history.memberCount.map((p) => ({ label: shortDay(p.date), value: p.members }))} format={(n) => String(Math.round(n))} color="#3ecf8e" />
+            <LineChart points={history.memberCount.map((p) => ({ label: shortDay(p.date), value: p.members }))} format="integer" color="#3ecf8e" />
           </Panel>
 
           <div className="grid gap-6 lg:grid-cols-2">

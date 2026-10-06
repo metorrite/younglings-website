@@ -63,7 +63,7 @@ export function RecapPage({ recap }: { recap: Recap }) {
         <div className="grid gap-6 lg:grid-cols-2">
           {recap.skills.length > 0 && (
             <Panel title="Top skills by XP">
-              <RankedBars rows={recap.skills.map((s) => ({ label: s.skill, value: s.xp }))} color="#e0a24a" />
+              <RankedBars rows={recap.skills.map((s) => ({ label: s.skill, value: s.xp, skill: true }))} color="#e0a24a" />
             </Panel>
           )}
           {clan && recap.topGainers && recap.topGainers.length > 0 && (

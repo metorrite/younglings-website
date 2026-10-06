@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Tip, TipBody } from "@/components/ui/Tip";
 
 const DAY = 86_400_000;
 
@@ -43,15 +44,25 @@ export function ResetTimer() {
   const now = seconds === null ? null : seconds * 1000;
 
   return (
-    <div
-      className="flex items-center gap-2 rounded-full border border-surface-border bg-background/60 px-3 py-1.5 text-xs"
-      title={now === null ? "Weekly game reset" : `Weekly game reset — Wednesday 00:00 UTC (the Citadel week turns over too). Daily reset in ${formatCountdown(nextDailyReset(now) - now)}.`}
+    <Tip
+      content={
+        <TipBody
+          title="Weekly game reset"
+          rows={[
+            ["When", "Wednesday 00:00 UTC"],
+            ["Also", "The Citadel week turns over"],
+            ["Daily reset in", now === null ? "—" : formatCountdown(nextDailyReset(now) - now)],
+          ]}
+        />
+      }
     >
-      <span aria-hidden>⏳</span>
-      <span className="hidden text-muted sm:inline">Weekly reset</span>
-      <span className="font-mono font-semibold text-gold tabular-nums" suppressHydrationWarning>
-        {now === null ? "—" : formatCountdown(nextWeeklyReset(now) - now)}
-      </span>
-    </div>
+      <div className="flex items-center gap-2 rounded-full border border-surface-border bg-background/60 px-3 py-1.5 text-xs">
+        <span aria-hidden>⏳</span>
+        <span className="hidden text-muted sm:inline">Weekly reset</span>
+        <span className="font-mono font-semibold text-gold tabular-nums" suppressHydrationWarning>
+          {now === null ? "—" : formatCountdown(nextWeeklyReset(now) - now)}
+        </span>
+      </div>
+    </Tip>
   );
 }

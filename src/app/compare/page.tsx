@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MultiLineChart } from "@/components/charts";
 import { Panel, RankBadge, Unavailable } from "@/components/site/blocks";
+import { SkillIcon } from "@/components/site/SkillIcon";
 import { compact, full, getProfile, getRoster, rankColor, shortDate, shortDay, type MemberProfile } from "@/lib/site";
 
 export const metadata = { title: "Compare members — Younglings" };
@@ -158,7 +159,12 @@ export default async function ComparePage({ searchParams }: { searchParams: Para
                         <td className={`px-3 py-1.5 text-right tabular-nums ${aXp > bXp ? "font-semibold text-gold" : "text-muted"}`}>
                           {skill.level} <span className="text-xs">· {compact(aXp)}</span>
                         </td>
-                        <td className="px-3 py-1.5 text-center text-xs tracking-wider uppercase">{skill.name}</td>
+                        <td className="px-3 py-1.5 text-center text-xs tracking-wider uppercase">
+                          <span className="inline-flex items-center gap-1.5">
+                            <SkillIcon name={skill.name} size={18} />
+                            {skill.name}
+                          </span>
+                        </td>
                         <td className={`px-3 py-1.5 text-left tabular-nums ${bXp > aXp ? "font-semibold text-gold" : "text-muted"}`}>
                           {other ? <>{other.level} <span className="text-xs">· {compact(bXp)}</span></> : "—"}
                         </td>

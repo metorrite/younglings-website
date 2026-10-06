@@ -120,7 +120,7 @@ export default async function BossPage({ params, searchParams }: Props) {
 
         {days.length > 1 && (
           <Panel title="Kills over time" hint="By the day each kill was recorded (the bot reads the adventure log about hourly).">
-            <BarChart groups={days.map((d) => ({ label: shortDay(d.date), values: [d.kills] }))} series={[{ name: "Kills", color: "#e0627a" }]} height={180} format={full} />
+            <BarChart groups={days.map((d) => ({ label: shortDay(d.date), values: [d.kills] }))} series={[{ name: "Kills", color: "#e0627a" }]} height={180} format="full" />
           </Panel>
         )}
       </div>
