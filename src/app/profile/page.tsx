@@ -9,6 +9,7 @@ import { badgesFor } from "@/lib/badges";
 import { whoAmI } from "@/lib/jonnybot-admin";
 import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
 import { memberApi } from "@/lib/member";
+import { displayName } from "@/lib/names";
 import { compact, full, getOverview, getPolls, getProfile, getSignups, rankColor, shortDate } from "@/lib/site";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
 
@@ -60,7 +61,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <div className="relative flex flex-wrap items-center gap-5">
           {user.image && <Image src={user.image} alt="" width={84} height={84} className="rounded-full ring-2 ring-gold/50" />}
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-2xl font-bold tracking-wide">{member?.nickname || user.name}</h1>
+            <h1 className="truncate text-2xl font-bold tracking-wide">{displayName(member?.nickname, member?.username ?? user.name)}</h1>
             <p className="mt-0.5 text-sm text-muted">
               @{member?.username ?? user.name}
               {rsns.length > 0 && <> · RuneScape: <span className="text-foreground">{rsns.join(", ")}</span></>}

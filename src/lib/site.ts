@@ -15,6 +15,8 @@ export interface OnlineMember {
   avatarUrl: string;
   status: "online" | "idle" | "dnd";
   colorRaw: number;
+  /** Their clan profile, when they have a linked, current-member RuneScape name and haven't opted out of being linked. */
+  rsn: string | null;
   topRole: string | null;
 }
 
