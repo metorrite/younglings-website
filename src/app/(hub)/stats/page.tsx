@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BarChart, DonutChart, RankedBars } from "@/components/charts";
 import { PageHeader, Panel, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
+import { SkillIcon } from "@/components/site/SkillIcon";
 import { compact, full, getOverview, shortDay } from "@/lib/site";
 
 export const metadata = { title: "Clan stats — Younglings" };
@@ -125,7 +126,10 @@ export default async function StatsPage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {o.skillLeaders.map((skill) => (
             <div key={skill.skillId} className="rounded-lg border border-surface-border/60 bg-background/40 p-3">
-              <p className="mb-2 text-sm font-semibold text-gold">{skill.skill}</p>
+              <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-gold">
+                <SkillIcon name={skill.skill} size={24} />
+                {skill.skill}
+              </p>
               <ol className="space-y-1 text-sm">
                 {skill.leaders.map((leader, i) => (
                   <li key={leader.rsn} className="flex items-center justify-between gap-2">

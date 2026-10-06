@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BarChart, DonutChart, LineChart, PALETTE } from "@/components/charts";
+import { BarChart, DonutChart, LineChart } from "@/components/charts";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
 import { badgesFor } from "@/lib/badges";
-import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, type MemberProfile } from "@/lib/site";
+import { SkillIcon } from "@/components/site/SkillIcon";
+import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, shortNumbers, type MemberProfile } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
 // so prerendering would bake in an empty "unavailable" page. The fetches themselves are still cached briefly.
@@ -195,20 +196,19 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
           <p className="text-sm text-muted">No skill data has been recorded for this member yet.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {profile.skills.map((skill, i) => (
+            {profile.skills.map((skill) => (
               <li key={skill.id}>
                 <Link
                   href={`/members/${encodeURIComponent(profile.rsn)}?skill=${skill.id}#skill-chart`}
                   scroll={false}
                   className={`flex items-center gap-3 rounded-lg border bg-background/40 px-3 py-2 transition hover:border-gold/50 ${skillParam === skill.id ? "border-gold" : "border-surface-border/60"}`}
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm font-bold" style={{ backgroundColor: `${PALETTE[i % PALETTE.length]}22`, color: PALETTE[i % PALETTE.length] }}>
-                    {skill.level}
-                  </span>
+                  <SkillIcon name={skill.name} size={32} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{skill.name}</span>
                     <span className="block text-xs text-muted">{compact(skill.xp)} XP{skill.rank > 0 ? ` · rank ${full(skill.rank)}` : ""}</span>
                   </span>
+                  <span className="shrink-0 text-lg font-bold tabular-nums text-gold">{skill.level}</span>
                 </Link>
               </li>
             ))}
@@ -328,7 +328,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
             <ol className="max-h-96 space-y-3 overflow-y-auto pr-2">
               {profile.activities.map((a, i) => (
                 <li key={i} className="border-l-2 border-gold/40 pl-3">
-                  <p className="text-sm font-medium">{a.text}</p>
+                  <p className="text-sm font-medium">{shortNumbers(a.text)}</p>
                   {a.details && <p className="text-xs text-muted">{a.details}</p>}
                   <p className="mt-0.5 text-[11px] text-muted/80">{a.date}</p>
                 </li>
