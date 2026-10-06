@@ -124,6 +124,30 @@ export async function saveClanPointsAction(input: unknown): Promise<ActionResult
   return outcome(result);
 }
 
+// ---------- clan website and site options ----------
+
+export async function saveClanWebsiteAction(websiteUrl: string): Promise<ActionResult<{ websiteUrl: string | null }>> {
+  const ctx = await requireAdmin("/admin/clan-website");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  const value = text(websiteUrl).trim().slice(0, 300);
+  const result = await adminApi.saveClanWebsite(ctx, value === "" ? null : value);
+  if (result.ok) revalidatePath("/admin/clan-website");
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.problems[0] ?? result.error };
+}
+
+export async function saveSiteOptionsAction(navEventBubble: boolean): Promise<ActionResult<{ navEventBubble: boolean }>> {
+  const ctx = await requireAdmin("/admin/site-options");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  const result = await adminApi.saveSiteOptions(ctx, { navEventBubble: navEventBubble === true });
+  if (result.ok) {
+    revalidatePath("/admin/site-options");
+    revalidatePath("/", "layout"); // the navigation bar reads this
+  }
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+}
+
 // ---------- member notes ----------
 
 export async function loadNotesAction(rsn: string): Promise<ActionResult<MemberNote[]>> {

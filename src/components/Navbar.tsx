@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { getMemberInfo } from "@/lib/jonnybot";
 import { ALL_NAV_LINKS } from "@/lib/nav";
 import { displayName } from "@/lib/names";
-import { getMyLink, getRoster } from "@/lib/site";
+import { getMyLink, getRoster, getSiteOptions } from "@/lib/site";
 import { getNotifications } from "@/lib/notifications";
 import { NavMenus } from "./nav/NavMenus";
 import { NavSearch, type SearchItem } from "./nav/NavSearch";
@@ -32,7 +32,7 @@ export async function Navbar() {
   }
 
   // The bell lists what's new for everyone, plus what has happened to this member (a link decision, a goal reached).
-  const notifications = await getNotifications(link?.notices ?? []);
+  const [notifications, options] = await Promise.all([getNotifications(link?.notices ?? []), getSiteOptions()]);
 
   const items: SearchItem[] = [
     ...ALL_NAV_LINKS.map((l) => ({ label: l.label, href: l.href, hint: "Page" })),
@@ -51,7 +51,7 @@ export async function Navbar() {
         <ResetTimer />
 
         <nav className="hidden flex-1 justify-center lg:flex" aria-label="Main">
-          <NavMenus />
+          <NavMenus eventBubble={options.navEventBubble ? notifications.map((n) => ({ id: n.id, kind: n.kind, at: n.at })) : null} />
         </nav>
         <div className="flex-1 lg:hidden" />
 

@@ -34,7 +34,7 @@ function GainBlock({ profile, period }: { profile: MemberProfile; period: "day" 
 
   const top = gains.slice(0, 7);
   const other = gains.slice(7).reduce((sum, g) => sum + g.xp, 0);
-  const slices = [...top.map((g) => ({ label: g.skill, value: g.xp, skill: g.skill })), ...(other > 0 ? [{ label: "Other skills", value: other, color: "#4b5563" }] : [])];
+  const slices = [...top.map((g) => ({ label: g.skill, value: g.xp, skill: g.skill })), ...(other > 0 ? [{ label: "Other skills", value: other, color: "#4b5563", skill: "Overall" }] : [])];
   return (
     <DonutChart
       slices={slices}

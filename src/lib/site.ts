@@ -325,6 +325,11 @@ async function getSite<T>(path: string, revalidateSeconds: number): Promise<T | 
   }
 }
 
+/** How the public site should behave, as the admins set it. If the bot can't be asked, everything is off. */
+export async function getSiteOptions(): Promise<{ navEventBubble: boolean }> {
+  return (await getSite<{ navEventBubble: boolean }>("options", 30)) ?? { navEventBubble: false };
+}
+
 export const getOnline = () => getSite<OnlineData>("online", 30);
 
 export async function getEvents(): Promise<SiteEvent[] | null> {
