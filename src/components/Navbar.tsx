@@ -35,7 +35,7 @@ export async function Navbar() {
 
   return (
     <header className="relative z-40 border-b border-surface-border bg-surface/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[96rem] items-center gap-3 px-4 sm:px-6">
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Younglings — home">
           <Image src="/clan-logo.png" alt="" width={32} height={32} className="rounded-full" />
           <span className="hidden font-semibold tracking-wide text-gold sm:inline">YOUNGLINGS</span>
@@ -53,7 +53,7 @@ export async function Navbar() {
       </div>
 
       {/* Narrower screens: every link in a row of its own that scrolls sideways if it has to. */}
-      <nav className="mx-auto flex max-w-[96rem] gap-5 overflow-x-auto border-t border-surface-border/60 px-4 py-2.5 text-sm text-muted sm:px-6 lg:hidden" aria-label="Main (compact)">
+      <nav className="flex gap-5 overflow-x-auto border-t border-surface-border/60 px-4 py-2.5 text-sm text-muted sm:px-6 lg:hidden" aria-label="Main (compact)">
         {ALL_NAV_LINKS.map((link) => (
           <Link key={link.href} href={link.href} className="shrink-0 transition hover:text-foreground">
             {link.label}

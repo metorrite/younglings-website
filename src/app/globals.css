@@ -20,6 +20,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  /* Keeps the page width the same whether or not it scrolls, so switching pages never nudges the navbar sideways. */
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -75,11 +81,11 @@ body {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes hub-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0.35; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 .nav-pop { animation: nav-pop 0.16s ease-out; }
-.hub-in { animation: hub-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.hub-in { animation: hub-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) {
   .nav-pop, .hub-in { animation: none; }
 }
