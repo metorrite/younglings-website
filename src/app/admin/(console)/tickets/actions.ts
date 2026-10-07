@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type FieldKind, type PanelDefinition, type PanelField, type TicketSettings } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type FieldKind, type PanelDefaults, type PanelDefinition, type PanelField, type TicketSettings } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the ticket dashboard. Each one starts with `requireAdmin()`: Server Actions can be
@@ -68,6 +68,8 @@ function cleanPanel(input: unknown): PanelDefinition | null {
     channelNameTemplate: text(p.channelNameTemplate),
     welcomeText: text(p.welcomeText),
     openingMessage: text(p.openingMessage),
+    closeByRequester: p.closeByRequester !== false,
+    closeByHelpers: p.closeByHelpers !== false,
     enabled: p.enabled !== false,
     perUserLimit: intOrNull(p.perUserLimit) ?? 1,
     defaultPingRoleId: idOrNull(p.defaultPingRoleId),
@@ -76,7 +78,31 @@ function cleanPanel(input: unknown): PanelDefinition | null {
     defaultEscalateRoleId: idOrNull(p.defaultEscalateRoleId),
     helperRoleIds: idList(p.helperRoleIds),
     staffRoleIds: idList(p.staffRoleIds),
+    closeRoleIds: idList(p.closeRoleIds),
     fields,
+  };
+}
+
+/** The shared settings a new panel starts with, rebuilt from untrusted input the same way. */
+function cleanDefaults(input: unknown): PanelDefaults | null {
+  const panel = cleanPanel(input);
+  if (!panel) return null;
+  return {
+    buttonLabel: panel.buttonLabel,
+    categoryId: panel.categoryId,
+    channelNameTemplate: panel.channelNameTemplate,
+    welcomeText: panel.welcomeText,
+    openingMessage: panel.openingMessage,
+    perUserLimit: panel.perUserLimit,
+    defaultPingRoleId: panel.defaultPingRoleId,
+    helperCap: panel.helperCap,
+    escalationHours: panel.escalationHours,
+    defaultEscalateRoleId: panel.defaultEscalateRoleId,
+    closeByRequester: panel.closeByRequester,
+    closeByHelpers: panel.closeByHelpers,
+    helperRoleIds: panel.helperRoleIds,
+    staffRoleIds: panel.staffRoleIds,
+    closeRoleIds: panel.closeRoleIds,
   };
 }
 
@@ -133,5 +159,17 @@ export async function saveSettingsAction(input: unknown): Promise<ActionResult<T
     transcriptRetentionDays: intOrNull(s.transcriptRetentionDays),
   });
   revalidatePath("/admin/tickets/settings");
+  return outcome(result);
+}
+
+export async function savePanelDefaultsAction(input: unknown): Promise<ActionResult<PanelDefaults>> {
+  const ctx = await requireAdmin("/admin/tickets/defaults");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  const defaults = cleanDefaults(input);
+  if (!defaults) return invalid("Those defaults couldn't be read.");
+
+  const result = await adminApi.savePanelDefaults(ctx, defaults);
+  revalidatePath("/admin/tickets/defaults");
   return outcome(result);
 }

@@ -8,7 +8,7 @@ export const metadata = { title: "New ticket panel — Younglings" };
 
 export default async function NewPanelPage() {
   const admin = await requireAdmin("/admin/tickets/panels/new");
-  const structure = unwrap(await adminApi.structure(admin));
+  const [structure, defaults] = await Promise.all([adminApi.structure(admin).then(unwrap), adminApi.getPanelDefaults(admin).then(unwrap)]);
 
   return (
     <div className="space-y-6">
@@ -17,8 +17,15 @@ export default async function NewPanelPage() {
           ← Ticket panels
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">New panel</h1>
+        <p className="mt-1 text-sm text-muted">
+          Starts with your{" "}
+          <Link href="/admin/tickets/defaults" className="text-gold hover:underline">
+            panel defaults
+          </Link>
+          ; change anything below for just this panel.
+        </p>
       </div>
-      <PanelEditor initial={blankPanel()} structure={structure} />
+      <PanelEditor initial={blankPanel(defaults)} structure={structure} />
     </div>
   );
 }

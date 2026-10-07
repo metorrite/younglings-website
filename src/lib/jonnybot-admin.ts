@@ -87,8 +87,12 @@ export interface PanelDefinition {
   categoryId: string | null;
   channelNameTemplate: string;
   welcomeText: string;
-  /** The line above a new ticket's embeds; {user} becomes a mention of whoever opened it. */
+  /** The plain-text line above a new ticket's embeds. Placeholders such as {user} and {ping} are filled in when the ticket opens. */
   openingMessage: string;
+  /** Whether the person who opened a ticket may press Close on it. */
+  closeByRequester: boolean;
+  /** Whether helpers who joined a ticket may press Close on it. */
+  closeByHelpers: boolean;
   enabled: boolean;
   perUserLimit: number;
   defaultPingRoleId: string | null;
@@ -99,8 +103,30 @@ export interface PanelDefinition {
   postedMessageId?: string | null;
   helperRoleIds: string[];
   staffRoleIds: string[];
+  /** Roles that may close any ticket on the panel (staff roles and admins always can). */
+  closeRoleIds: string[];
   fields: PanelField[];
 }
+
+/** What a new panel starts with: the shared settings, never a panel's own name, title, description or questions. */
+export type PanelDefaults = Pick<
+  PanelDefinition,
+  | "buttonLabel"
+  | "categoryId"
+  | "channelNameTemplate"
+  | "welcomeText"
+  | "openingMessage"
+  | "perUserLimit"
+  | "defaultPingRoleId"
+  | "helperCap"
+  | "escalationHours"
+  | "defaultEscalateRoleId"
+  | "closeByRequester"
+  | "closeByHelpers"
+  | "helperRoleIds"
+  | "staffRoleIds"
+  | "closeRoleIds"
+>;
 
 export interface PanelSummary {
   id: string;
@@ -392,6 +418,9 @@ export const adminApi = {
   deletePanel: (ctx: AdminContext, id: string) => request<{ deleted: boolean }>(ctx.actorId, "DELETE", `ticket/panels/${encodeURIComponent(id)}`),
   postPanel: (ctx: AdminContext, id: string, channelId: string) =>
     request<PanelDefinition>(ctx.actorId, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
+
+  getPanelDefaults: (ctx: AdminContext) => request<PanelDefaults>(ctx.actorId, "GET", "ticket/defaults"),
+  savePanelDefaults: (ctx: AdminContext, defaults: PanelDefaults) => request<PanelDefaults>(ctx.actorId, "PUT", "ticket/defaults", defaults),
 
   selfRoles: (ctx: AdminContext) => request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "GET", "selfroles"),
   saveSelfRoles: (ctx: AdminContext, roles: { roleId: string; label: string; description: string }[]) =>

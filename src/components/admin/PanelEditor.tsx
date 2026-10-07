@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { deletePanelAction, postPanelAction, savePanelAction } from "@/app/admin/(console)/tickets/actions";
 import type { FieldKind, GuildStructure, PanelDefinition, PanelField, PanelOption } from "@/lib/jonnybot-admin";
 import { CategorySelect, ChannelSelect, RoleMultiSelect, RoleSelect } from "./pickers";
+import { ClosingFields, MessageFields } from "./TicketSharedFields";
 import { Card, dangerButton, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
 
 const MAX_FIELDS = 5; // Discord forms hold at most 5 inputs
@@ -175,39 +176,17 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
             />
           </FormField>
         </div>
-        <FormField label="Opening message" hint="The line posted above every new ticket. {user} becomes a mention of whoever opened it. Leave it empty for “{user} Welcome”.">
-          <input className={inputClass} value={panel.openingMessage} maxLength={500} placeholder="{user} Welcome" onChange={(e) => set("openingMessage", e.target.value)} />
-        </FormField>
-        <FormField label="Support message" hint="The text in the first embed of every ticket. Leave it empty for the standard “Support will be with you shortly” text.">
-          <textarea className={`${inputClass} min-h-20`} value={panel.welcomeText} maxLength={1000} placeholder={"Support will be with you shortly.\nTo close this press the close button."} onChange={(e) => set("welcomeText", e.target.value)} />
-        </FormField>
+      </Card>
 
-        <div>
-          <p className="mb-2 text-sm font-medium">How a new ticket will look</p>
-          <div className="space-y-2 rounded-lg border border-surface-border bg-background/60 p-3 text-sm">
-            <p>
-              {(panel.openingMessage.trim() || "{user} Welcome").split("{user}").flatMap((part, i, all) => (i < all.length - 1 ? [part, <span key={i} className="rounded bg-[#5865f2]/30 px-1 text-[#c9cdfb]">@Member</span>] : [part]))}
-            </p>
-            <div className="rounded border-l-4 border-gold bg-surface p-3">
-              <p className="whitespace-pre-wrap">{panel.welcomeText.trim() || "Support will be with you shortly.\nTo close this press the close button."}</p>
-              <p className="mt-2 text-xs text-muted">Opened by @Member · Ticket #0001</p>
-            </div>
-            {panel.fields.length > 0 && (
-              <div className="space-y-2 rounded border-l-4 border-gold bg-surface p-3">
-                {panel.fields.slice(0, 3).map((field, i) => (
-                  <div key={i}>
-                    <p className="font-semibold">{field.label || "Question"}</p>
-                    <p className="mt-1 rounded bg-black/30 px-2 py-1 font-mono text-xs text-muted">their answer appears here</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2 pt-1">
-              <span className="rounded bg-emerald-600/80 px-3 py-1 text-xs font-medium text-white">Join as helper</span>
-              <span className="rounded bg-red-600/80 px-3 py-1 text-xs font-medium text-white">Close</span>
-            </div>
-          </div>
-        </div>
+      <Card title="The ticket message" hint="What a member sees at the top of the private channel their ticket opens in. Laid out like Ticket Tool's.">
+        <MessageFields
+          value={{ openingMessage: panel.openingMessage, welcomeText: panel.welcomeText }}
+          onChange={(change) => setPanel((p) => ({ ...p, ...change }))}
+          panelTitle={panel.title}
+          questions={panel.fields.map((f) => f.label)}
+          pingsRole={panel.defaultPingRoleId !== null || panel.fields.some((f) => f.options.some((o) => o.pingRoleId !== null))}
+          usesHelpers={panel.helperCap !== null}
+        />
       </Card>
 
       <Card
@@ -280,6 +259,17 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
             )}
           </div>
         </div>
+      </Card>
+
+      <Card
+        title="Who can close a ticket"
+        hint="The Close button sits at the bottom of every ticket. Staff roles and admins can always use it."
+      >
+        <ClosingFields
+          value={{ closeByRequester: panel.closeByRequester, closeByHelpers: panel.closeByHelpers, closeRoleIds: panel.closeRoleIds }}
+          onChange={(change) => setPanel((p) => ({ ...p, ...change }))}
+          roles={roles}
+        />
       </Card>
 
       <Card title="The form" hint={`Questions asked when someone opens a ticket (up to ${MAX_FIELDS}). Their answers are shown in the ticket.`}>

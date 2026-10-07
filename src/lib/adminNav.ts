@@ -59,6 +59,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: "/admin/clan-website", label: "Clan website", blurb: "The address the clan name in Discord links to (same as /configure)." },
       { href: "/admin/tracking", label: "Tracking channels", blurb: "Where drops, quests, boss kills, Citadel, joins and leaves are announced." },
       { href: "/admin/tickets", label: "Ticket panels", blurb: "Create and edit ticket panels and post them to a channel." },
+      { href: "/admin/tickets/defaults", label: "Panel defaults", blurb: "What every new ticket panel starts with: staff roles, who can close, limits and wording." },
       { href: "/admin/tickets/settings", label: "Ticket settings", blurb: "Transcript log channel, retention, and the close delay." },
     ],
   },
