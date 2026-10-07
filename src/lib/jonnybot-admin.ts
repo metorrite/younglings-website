@@ -65,8 +65,12 @@ export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";
 /** Which part of the PvM Help system a panel belongs to; NONE is an ordinary ticket panel. */
 export type HelpKind = "NONE" | "PVM" | "CA";
 
-/** What a question means to the PvM Help rules: the tier picked, or the requester's earlier attempts. */
-export type FieldPurpose = "NONE" | "TIER" | "ATTEMPTS";
+/**
+ * What a question means to the PvM Help rules: the boss, the tier, the one achievement they want help with, or whether they have already made
+ * attempts. A help panel with a boss question is filled in step by step in Discord (boss, tier and achievement chosen from the achievement
+ * catalogue), then a small form with the rest.
+ */
+export type FieldPurpose = "NONE" | "BOSS" | "TIER" | "ACHIEVEMENT" | "ATTEMPTS";
 
 export interface PanelOption {
   label: string;
@@ -138,6 +142,15 @@ export type PanelDefaults = Pick<
   | "closeRoleIds"
 >;
 
+/** A PvM Help or CA Help ticket panel, as listed on the PvM Help page. */
+export interface HelpPanelSummary {
+  id: string;
+  name: string;
+  helpKind: HelpKind;
+  categoryId: string | null;
+  postedChannelId: string | null;
+}
+
 /** The PvM Help system's settings for the server. Hours of null mean "never escalate". */
 export interface HelpSettings {
   helperRoleId: string | null;
@@ -154,6 +167,11 @@ export interface HelpSettings {
   guestHighTierNeedsAttempts: boolean;
   highTierLabels: string;
   postedChannelId: string | null;
+  /** The help panels that exist (PvM Help and CA Help). */
+  panels: HelpPanelSummary[];
+  /** Set only on the response to creating the standard panels: which were made and which were already there. */
+  createdPanels?: string[];
+  existingPanels?: string[];
 }
 
 export interface PanelSummary {
@@ -448,8 +466,9 @@ export const adminApi = {
     request<PanelDefinition>(ctx.actorId, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
   helpSettings: (ctx: AdminContext) => request<HelpSettings>(ctx.actorId, "GET", "help/settings"),
-  saveHelpSettings: (ctx: AdminContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId">>) =>
+  saveHelpSettings: (ctx: AdminContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     request<HelpSettings>(ctx.actorId, "PUT", "help/settings", settings),
+  createHelpPanels: (ctx: AdminContext) => request<HelpSettings>(ctx.actorId, "POST", "help/panels", {}),
   postHelpGuidelines: (ctx: AdminContext, channelId: string) => request<HelpSettings>(ctx.actorId, "POST", "help/guidelines/post", { channelId }),
 
   getPanelDefaults: (ctx: AdminContext) => request<PanelDefaults>(ctx.actorId, "GET", "ticket/defaults"),

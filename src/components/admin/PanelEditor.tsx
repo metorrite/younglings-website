@@ -30,9 +30,18 @@ const HELP_KIND_LABELS: Record<HelpKind, string> = {
 
 const PURPOSE_LABELS: Record<FieldPurpose, string> = {
   NONE: "Nothing special",
+  BOSS: "The boss (chosen from a list)",
   TIER: "The tier they pick",
-  ATTEMPTS: "Their earlier attempts",
+  ACHIEVEMENT: "A specific achievement (chosen from a list)",
+  ATTEMPTS: "Whether they have made attempts",
 };
+
+/** Which parts of the help rules a question of this kind can stand for. */
+function purposesFor(kind: FieldKind): FieldPurpose[] {
+  if (kind === "SELECT") return ["TIER"];
+  if (kind === "CHECKBOX") return ["ATTEMPTS"];
+  return ["BOSS", "ACHIEVEMENT", "ATTEMPTS"];
+}
 
 /** Keys for list rows, so editing or reordering a question doesn't scramble the inputs React keeps for it. */
 let uidCounter = 0;
@@ -388,15 +397,18 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
               )}
             </div>
 
-            {panel.helpKind !== "NONE" && (field.kind === "SELECT" || field.kind === "SHORT" || field.kind === "PARAGRAPH") && (
+            {panel.helpKind !== "NONE" && (
               <FormField
                 label="Part in the help rules"
-                hint={field.kind === "SELECT" ? "Mark the dropdown where they pick Easy, Medium, Master and so on." : "Mark the question where they describe what they have already tried."}
+                hint="A panel with a boss question is asked for step by step in Discord: members pick the boss, the tier and an optional achievement from lists, then answer the other questions in a small form. The boss, tier and achievement questions only say where those answers are filed."
               >
                 <select className={inputClass} value={field.purpose} onChange={(e) => setField(field.uid, { purpose: e.target.value as FieldPurpose })}>
                   <option value="NONE">{PURPOSE_LABELS.NONE}</option>
-                  {field.kind === "SELECT" && <option value="TIER">{PURPOSE_LABELS.TIER}</option>}
-                  {field.kind !== "SELECT" && <option value="ATTEMPTS">{PURPOSE_LABELS.ATTEMPTS}</option>}
+                  {purposesFor(field.kind).map((purpose) => (
+                    <option key={purpose} value={purpose}>
+                      {PURPOSE_LABELS[purpose]}
+                    </option>
+                  ))}
                 </select>
               </FormField>
             )}

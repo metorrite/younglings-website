@@ -31,7 +31,7 @@ function invalid(error: string): ActionResult<never> {
 
 const KINDS: FieldKind[] = ["SHORT", "PARAGRAPH", "SELECT", "CHECKBOX"];
 const HELP_KINDS: HelpKind[] = ["NONE", "PVM", "CA"];
-const PURPOSES: FieldPurpose[] = ["NONE", "TIER", "ATTEMPTS"];
+const PURPOSES: FieldPurpose[] = ["NONE", "BOSS", "TIER", "ACHIEVEMENT", "ATTEMPTS"];
 
 const text = (v: unknown): string => (typeof v === "string" ? v : "");
 const idOrNull = (v: unknown): string | null => (typeof v === "string" && /^\d+$/.test(v) ? v : null);

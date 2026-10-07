@@ -44,6 +44,17 @@ export async function saveHelpSettingsAction(input: unknown): Promise<HelpAction
   return outcome(result);
 }
 
+export async function createHelpPanelsAction(): Promise<HelpActionResult<HelpSettings>> {
+  const ctx = await requireAdmin("/admin/pvm-help");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+
+  const result = await adminApi.createHelpPanels(ctx);
+  revalidatePath("/admin/pvm-help");
+  revalidatePath("/admin/tickets");
+  return outcome(result);
+}
+
 export async function postHelpGuidelinesAction(channelId: string): Promise<HelpActionResult<HelpSettings>> {
   const ctx = await requireAdmin("/admin/pvm-help");
   const slow = throttle(ctx.actorId, "admin");
