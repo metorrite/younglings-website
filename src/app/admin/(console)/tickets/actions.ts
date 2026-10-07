@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type FieldKind, type PanelDefaults, type PanelDefinition, type PanelField, type TicketSettings } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type FieldKind, type FieldPurpose, type HelpKind, type PanelDefaults, type PanelDefinition, type PanelField, type TicketSettings } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the ticket dashboard. Each one starts with `requireAdmin()`: Server Actions can be
@@ -30,6 +30,8 @@ function invalid(error: string): ActionResult<never> {
 // ---------- rebuilding untrusted input ----------
 
 const KINDS: FieldKind[] = ["SHORT", "PARAGRAPH", "SELECT", "CHECKBOX"];
+const HELP_KINDS: HelpKind[] = ["NONE", "PVM", "CA"];
+const PURPOSES: FieldPurpose[] = ["NONE", "TIER", "ATTEMPTS"];
 
 const text = (v: unknown): string => (typeof v === "string" ? v : "");
 const idOrNull = (v: unknown): string | null => (typeof v === "string" && /^\d+$/.test(v) ? v : null);
@@ -49,6 +51,7 @@ function cleanPanel(input: unknown): PanelDefinition | null {
       required: f.required !== false,
       placeholder: text(f.placeholder) || null,
       maxLength: intOrNull(f.maxLength),
+      purpose: PURPOSES.includes(f.purpose as FieldPurpose) ? (f.purpose as FieldPurpose) : "NONE",
       options:
         kind === "SELECT" && Array.isArray(f.options)
           ? f.options.map((rawOption) => {
@@ -70,6 +73,7 @@ function cleanPanel(input: unknown): PanelDefinition | null {
     openingMessage: text(p.openingMessage),
     closeByRequester: p.closeByRequester !== false,
     closeByHelpers: p.closeByHelpers !== false,
+    helpKind: HELP_KINDS.includes(p.helpKind as HelpKind) ? (p.helpKind as HelpKind) : "NONE",
     enabled: p.enabled !== false,
     perUserLimit: intOrNull(p.perUserLimit) ?? 1,
     defaultPingRoleId: idOrNull(p.defaultPingRoleId),

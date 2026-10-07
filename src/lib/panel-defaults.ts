@@ -16,6 +16,7 @@ export function blankPanel(defaults?: PanelDefaults): PanelDefinition {
     openingMessage: "{user} Welcome",
     closeByRequester: true,
     closeByHelpers: true,
+    helpKind: "NONE",
     enabled: true,
     perUserLimit: 1,
     defaultPingRoleId: null,
