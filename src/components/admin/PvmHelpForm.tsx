@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { postHelpGuidelinesAction, saveHelpSettingsAction } from "@/app/admin/(console)/pvm-help/actions";
+import Link from "next/link";
+import { createHelpPanelsAction, postHelpGuidelinesAction, saveHelpSettingsAction } from "@/app/admin/(console)/pvm-help/actions";
 import type { GuildStructure, HelpSettings } from "@/lib/jonnybot-admin";
 import { ChannelSelect, RoleSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -71,6 +72,25 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
       setSettings(result.data);
       setSavedHelperRoleId(result.data.helperRoleId);
       setNotice("Saved. If the guidelines message is already posted, it now shows the saved text.");
+    });
+  }
+
+  function createPanels() {
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const result = await createHelpPanelsAction();
+      if (!result.ok) {
+        setError({ message: result.error, problems: result.problems });
+        return;
+      }
+      setSettings(result.data);
+      const made = result.data.createdPanels ?? [];
+      setNotice(
+        made.length > 0
+          ? `Created ${made.join(" and ")}. Open each one below to set its category, staff and the channel it is posted in.`
+          : "Both panels already exist, so nothing was changed.",
+      );
     });
   }
 
@@ -147,6 +167,37 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
           </button>
         </div>
         {!savedHelperRoleId && <p className="text-xs text-muted">Choose and save the PVM Helper role first. The button on that message hands it out.</p>}
+      </Card>
+
+      <Card
+        title="Help ticket panels"
+        hint="The PvM Help and CA Help panels members open tickets from. Creating them sets up the questions (boss, tier, an optional achievement, whether they have made attempts) and uses the helper roles saved above. Then open each panel to choose its category and staff roles and post it in a channel."
+      >
+        {settings.panels.length > 0 ? (
+          <ul className="space-y-2 text-sm">
+            {settings.panels.map((panel) => {
+              const channel = structure.channels.find((c) => c.id === panel.postedChannelId);
+              return (
+                <li key={panel.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-surface-border bg-background/40 px-3 py-2">
+                  <span>
+                    <span className="font-medium">{panel.name}</span>{" "}
+                    <span className="text-xs text-muted">
+                      {panel.helpKind === "CA" ? "CA Help" : "PvM Help"} · {panel.postedChannelId ? `posted in ${channel ? `#${channel.name}` : "a channel"}` : "not posted yet"}
+                    </span>
+                  </span>
+                  <Link href={`/admin/tickets/panels/${panel.id}`} className="text-gold hover:underline">
+                    Edit and post
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted">No help panels yet.</p>
+        )}
+        <button type="button" className={ghostButton} disabled={pending} onClick={createPanels}>
+          Create the PvM Help and CA Help panels
+        </button>
       </Card>
 
       <Card
