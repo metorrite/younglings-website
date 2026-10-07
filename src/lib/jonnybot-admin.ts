@@ -65,8 +65,12 @@ export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";
 /** Which part of the PvM Help system a panel belongs to; NONE is an ordinary ticket panel. */
 export type HelpKind = "NONE" | "PVM" | "CA";
 
-/** What a question means to the PvM Help rules: the tier picked, or the requester's earlier attempts. */
-export type FieldPurpose = "NONE" | "TIER" | "ATTEMPTS";
+/**
+ * What a question means to the PvM Help rules: the boss, the tier, the one achievement they want help with, or whether they have already made
+ * attempts. A help panel with a boss question is filled in step by step in Discord (boss, tier and achievement chosen from the achievement
+ * catalogue), then a small form with the rest.
+ */
+export type FieldPurpose = "NONE" | "BOSS" | "TIER" | "ACHIEVEMENT" | "ATTEMPTS";
 
 export interface PanelOption {
   label: string;
