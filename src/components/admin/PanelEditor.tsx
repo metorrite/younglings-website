@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePanelAction, postPanelAction, savePanelAction } from "@/app/admin/(console)/tickets/actions";
-import type { FieldKind, GuildStructure, PanelDefinition, PanelField, PanelOption } from "@/lib/jonnybot-admin";
+import type { FieldKind, FieldPurpose, GuildStructure, HelpKind, PanelDefinition, PanelField, PanelOption } from "@/lib/jonnybot-admin";
 import { CategorySelect, ChannelSelect, RoleMultiSelect, RoleSelect } from "./pickers";
 import { ClosingFields, MessageFields } from "./TicketSharedFields";
 import { Card, dangerButton, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -20,6 +20,18 @@ const KIND_LABELS: Record<FieldKind, string> = {
   PARAGRAPH: "Long answer",
   SELECT: "Dropdown",
   CHECKBOX: "Yes / no checkbox",
+};
+
+const HELP_KIND_LABELS: Record<HelpKind, string> = {
+  NONE: "Ordinary ticket",
+  PVM: "PvM Help",
+  CA: "CA Help",
+};
+
+const PURPOSE_LABELS: Record<FieldPurpose, string> = {
+  NONE: "Nothing special",
+  TIER: "The tier they pick",
+  ATTEMPTS: "Their earlier attempts",
 };
 
 /** Keys for list rows, so editing or reordering a question doesn't scramble the inputs React keeps for it. */
@@ -55,7 +67,7 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
   const addField = () =>
     setPanel((p) => ({
       ...p,
-      fields: [...p.fields, { uid: nextUid(), label: "", kind: "SHORT", required: true, placeholder: null, maxLength: null, options: [] }],
+      fields: [...p.fields, { uid: nextUid(), label: "", kind: "SHORT", required: true, placeholder: null, maxLength: null, purpose: "NONE", options: [] }],
     }));
   const moveField = (index: number, by: -1 | 1) =>
     setPanel((p) => {
@@ -77,6 +89,7 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
         required: field.required,
         placeholder: field.placeholder,
         maxLength: field.maxLength,
+        purpose: field.purpose,
         options: field.options.map((option) => ({ label: option.label, pingRoleId: option.pingRoleId, escalateRoleId: option.escalateRoleId })),
       })),
     };
@@ -145,6 +158,27 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
           }
         >
           <textarea className={`${inputClass} min-h-32`} value={panel.description} maxLength={2500} onChange={(e) => set("description", e.target.value)} />
+        </FormField>
+        <FormField
+          label="Help type"
+          hint={
+            <>
+              PvM Help and CA Help tickets follow the <a className="text-gold hover:underline" href="/admin/pvm-help">PvM Help rules</a>: members ping helpers and escalate, guests ping nobody, and a
+              guest asking for Master or Grandmaster must describe earlier attempts. A CA Help panel also needs a required dropdown marked as the tier below.
+            </>
+          }
+        >
+          <select className={inputClass} value={panel.helpKind} onChange={(e) => {
+              const helpKind = e.target.value as HelpKind;
+              // Marks only mean something on a help panel, so an ordinary panel clears them.
+              setPanel((p) => ({ ...p, helpKind, fields: helpKind === "NONE" ? p.fields.map((f) => ({ ...f, purpose: "NONE" })) : p.fields }));
+            }}>
+            {(Object.keys(HELP_KIND_LABELS) as HelpKind[]).map((kind) => (
+              <option key={kind} value={kind}>
+                {HELP_KIND_LABELS[kind]}
+              </option>
+            ))}
+          </select>
         </FormField>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Button label">
@@ -310,7 +344,7 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
                 <select
                   className={inputClass}
                   value={field.kind}
-                  onChange={(e) => setField(field.uid, { kind: e.target.value as FieldKind })}
+                  onChange={(e) => setField(field.uid, { kind: e.target.value as FieldKind, purpose: "NONE" })}
                 >
                   {(Object.keys(KIND_LABELS) as FieldKind[]).map((kind) => (
                     <option key={kind} value={kind}>
@@ -353,6 +387,19 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
                 </>
               )}
             </div>
+
+            {panel.helpKind !== "NONE" && (field.kind === "SELECT" || field.kind === "SHORT" || field.kind === "PARAGRAPH") && (
+              <FormField
+                label="Part in the help rules"
+                hint={field.kind === "SELECT" ? "Mark the dropdown where they pick Easy, Medium, Master and so on." : "Mark the question where they describe what they have already tried."}
+              >
+                <select className={inputClass} value={field.purpose} onChange={(e) => setField(field.uid, { purpose: e.target.value as FieldPurpose })}>
+                  <option value="NONE">{PURPOSE_LABELS.NONE}</option>
+                  {field.kind === "SELECT" && <option value="TIER">{PURPOSE_LABELS.TIER}</option>}
+                  {field.kind !== "SELECT" && <option value="ATTEMPTS">{PURPOSE_LABELS.ATTEMPTS}</option>}
+                </select>
+              </FormField>
+            )}
 
             {field.kind === "SELECT" && (
               <div className="space-y-2 border-t border-surface-border pt-3">

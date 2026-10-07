@@ -62,6 +62,12 @@ export interface TicketSettings {
 
 export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";
 
+/** Which part of the PvM Help system a panel belongs to; NONE is an ordinary ticket panel. */
+export type HelpKind = "NONE" | "PVM" | "CA";
+
+/** What a question means to the PvM Help rules: the tier picked, or the requester's earlier attempts. */
+export type FieldPurpose = "NONE" | "TIER" | "ATTEMPTS";
+
 export interface PanelOption {
   label: string;
   pingRoleId: string | null;
@@ -74,6 +80,8 @@ export interface PanelField {
   required: boolean;
   placeholder: string | null;
   maxLength: number | null;
+  /** The part this question plays in the PvM Help rules (only meaningful on a PvM Help or CA Help panel). */
+  purpose: FieldPurpose;
   options: PanelOption[];
 }
 
@@ -93,6 +101,8 @@ export interface PanelDefinition {
   closeByRequester: boolean;
   /** Whether helpers who joined a ticket may press Close on it. */
   closeByHelpers: boolean;
+  /** Whether the PvM Help rules (member and guest pings, the Master+ attempts rule) apply to this panel's tickets. */
+  helpKind: HelpKind;
   enabled: boolean;
   perUserLimit: number;
   defaultPingRoleId: string | null;
@@ -127,6 +137,24 @@ export type PanelDefaults = Pick<
   | "staffRoleIds"
   | "closeRoleIds"
 >;
+
+/** The PvM Help system's settings for the server. Hours of null mean "never escalate". */
+export interface HelpSettings {
+  helperRoleId: string | null;
+  helperPlusRoleId: string | null;
+  /** The text members see; the built-in draft until an admin edits it. */
+  guidelines: string;
+  guidelinesAreDefault: boolean;
+  defaultGuidelines: string;
+  memberPingOnOpen: boolean;
+  memberEscalationHours: number | null;
+  guestPingsEnabled: boolean;
+  guestPingOnOpen: boolean;
+  guestEscalationHours: number | null;
+  guestHighTierNeedsAttempts: boolean;
+  highTierLabels: string;
+  postedChannelId: string | null;
+}
 
 export interface PanelSummary {
   id: string;
@@ -418,6 +446,11 @@ export const adminApi = {
   deletePanel: (ctx: AdminContext, id: string) => request<{ deleted: boolean }>(ctx.actorId, "DELETE", `ticket/panels/${encodeURIComponent(id)}`),
   postPanel: (ctx: AdminContext, id: string, channelId: string) =>
     request<PanelDefinition>(ctx.actorId, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
+
+  helpSettings: (ctx: AdminContext) => request<HelpSettings>(ctx.actorId, "GET", "help/settings"),
+  saveHelpSettings: (ctx: AdminContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId">>) =>
+    request<HelpSettings>(ctx.actorId, "PUT", "help/settings", settings),
+  postHelpGuidelines: (ctx: AdminContext, channelId: string) => request<HelpSettings>(ctx.actorId, "POST", "help/guidelines/post", { channelId }),
 
   getPanelDefaults: (ctx: AdminContext) => request<PanelDefaults>(ctx.actorId, "GET", "ticket/defaults"),
   savePanelDefaults: (ctx: AdminContext, defaults: PanelDefaults) => request<PanelDefaults>(ctx.actorId, "PUT", "ticket/defaults", defaults),
