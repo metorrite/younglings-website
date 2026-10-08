@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { FEED_KINDS, FeedList } from "@/components/site/FeedList";
 import { PageHeader, Panel, Unavailable } from "@/components/site/blocks";
@@ -25,7 +26,8 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
             href={`/activity?kind=${k.id}`}
             className={`rounded-full border px-3 py-1 ${kind === k.id ? "border-gold bg-gold/15 text-gold" : "border-surface-border text-muted hover:text-foreground"}`}
           >
-            {k.icon} {k.label}
+            {k.image ? <Image src={k.image} alt="" width={16} height={16} className="mr-1 inline-block align-[-3px]" unoptimized /> : <>{k.icon} </>}
+            {k.label}
           </Link>
         ))}
       </nav>

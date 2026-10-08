@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ActivityKind, FeedItem } from "@/lib/site";
 import { SkillIcon } from "@/components/site/SkillIcon";
+import { activityPicture, kindImage } from "@/lib/activityIcon";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import { shortNumbers, SKILL_NAMES } from "@/lib/site";
 
@@ -16,7 +18,8 @@ const KIND: Record<ActivityKind, { icon: string; label: string; color: string }>
   CHALLENGE: { icon: "🏆", label: "Challenge", color: "#c084fc" },
 };
 
-export const FEED_KINDS = Object.entries(KIND).map(([id, v]) => ({ id: id as ActivityKind, ...v }));
+/** Every kind with its label and colour, and its picture (the bot's) where it has one of its own. */
+export const FEED_KINDS = Object.entries(KIND).map(([id, v]) => ({ id: id as ActivityKind, ...v, image: kindImage(id as ActivityKind) }));
 
 /** A readable one-liner for an adventure-log entry, e.g. "reached 200M XP in Necromancy". */
 function sentence(item: FeedItem): string {
@@ -44,11 +47,18 @@ export function FeedList({ items, compact = false }: { items: FeedItem[]; compac
     <ul className="divide-y divide-surface-border/60">
       {items.map((item, i) => {
         const kind = KIND[item.kind];
+        const picture = activityPicture(item.kind, item.text, skillOf(item));
         return (
           <li key={`${item.rsn}-${item.recordedAt}-${i}`} className={`flex items-start gap-3 ${compact ? "py-2" : "py-3"}`}>
             <Tip content={<TipBody title={kind.label} titleColor={kind.color} />}>
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base" style={{ backgroundColor: `${kind.color}22` }}>
-                {skillOf(item) ? <SkillIcon name={skillOf(item) as string} size={22} /> : kind.icon}
+                {picture?.kind === "skill" ? (
+                  <SkillIcon name={picture.name} size={22} />
+                ) : picture ? (
+                  <Image src={picture.src} alt="" width={22} height={22} className="shrink-0 object-contain" unoptimized />
+                ) : (
+                  kind.icon
+                )}
               </span>
             </Tip>
             <div className="min-w-0 flex-1">
