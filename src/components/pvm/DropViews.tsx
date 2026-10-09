@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { RsChathead } from "@/components/site/RsChathead";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import type { DropCell, DropEntry } from "@/lib/site";
 
@@ -83,6 +84,7 @@ export function DropList({ entries, showBoss = true, empty = "No drops recorded 
                 {d.item}
               </Link>{" "}
               <span className="text-muted">·</span>{" "}
+              <RsChathead rsn={d.rsn} size={18} className="mr-1 inline-block align-text-bottom" />
               <Link href={`/members/${encodeURIComponent(d.rsn)}`} className="hover:text-gold">
                 {d.rsn}
               </Link>

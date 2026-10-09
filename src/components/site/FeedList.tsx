@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ActivityKind, FeedItem } from "@/lib/site";
+import { RsChathead } from "@/components/site/RsChathead";
 import { SkillIcon } from "@/components/site/SkillIcon";
 import { activityPicture, kindImage } from "@/lib/activityIcon";
 import { Tip, TipBody } from "@/components/ui/Tip";
@@ -63,6 +64,7 @@ export function FeedList({ items, compact = false }: { items: FeedItem[]; compac
             </Tip>
             <div className="min-w-0 flex-1">
               <p className="text-sm">
+                <RsChathead rsn={item.rsn} size={18} className="mr-1.5 inline-block align-text-bottom" />
                 <Link href={`/members/${encodeURIComponent(item.rsn)}`} className="font-semibold hover:text-gold">
                   {item.rsn}
                 </Link>{" "}

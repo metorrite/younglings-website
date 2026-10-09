@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RsChathead } from "@/components/site/RsChathead";
 import { SkillIcon } from "@/components/site/SkillIcon";
 import { compact } from "@/lib/site";
 
@@ -38,6 +39,7 @@ export function RankedBars({ rows, color = "#d4af37", format = compact, linkBase
             <span className="flex min-w-0 items-center gap-2">
               <span className="w-5 shrink-0 text-xs text-muted">{i + 1}</span>
               {row.skill && <SkillIcon name={row.label} size={20} />}
+              {linkBase && !row.skill && <RsChathead rsn={row.label} size={22} />}
               {linkBase ? (
                 <Link href={`${linkBase}${encodeURIComponent(row.label)}`} className="truncate font-medium hover:text-gold">
                   {row.label}
