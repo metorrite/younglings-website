@@ -332,9 +332,25 @@ export async function getSiteOptions(): Promise<{ navEventBubble: boolean }> {
 
 export const getOnline = () => getSite<OnlineData>("online", 30);
 
+/**
+ * Discord's CDN serves a 128px-wide thumbnail of an event cover unless the URL asks for a size, which is what made covers look blurry.
+ * Covers are at most about 800px wide, so asking for 1024 gets the original, never an upscale.
+ */
+export function fullSizeDiscordImage(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "cdn.discordapp.com" || parsed.searchParams.has("size")) return url;
+    parsed.searchParams.set("size", "1024");
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export async function getEvents(): Promise<SiteEvent[] | null> {
   const data = await getSite<{ events: SiteEvent[] }>("events", 60);
-  return data?.events ?? null;
+  return data?.events.map((event) => ({ ...event, imageUrl: fullSizeDiscordImage(event.imageUrl) })) ?? null;
 }
 
 export const getRoster = () => getSite<RosterData>("members", 120);
