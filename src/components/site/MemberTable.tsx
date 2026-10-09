@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { compact, full, rankColor, shortDate, type RankInfo, type RosterMember } from "@/lib/site";
 import { RankBadge } from "./blocks";
+import { RsChathead } from "./RsChathead";
 import { Tip, TipBody } from "@/components/ui/Tip";
 
 type SortKey = "rank" | "name" | "totalXp" | "totalLevel" | "points" | "joined";
@@ -99,11 +100,16 @@ export function MemberTable({ members, ranks }: { members: RosterMember[]; ranks
           <tbody className="divide-y divide-surface-border/60">
             {rows.map((m) => (
               <tr key={m.rsn} className="transition hover:bg-white/5">
-                <td className="px-4 py-2.5">
-                  <Link href={`/members/${encodeURIComponent(m.rsn)}`} className="font-medium hover:text-gold">
-                    {m.rsn}
-                  </Link>
-                  {m.verified && <span title="Linked to a Discord member" className="ml-2 text-xs text-emerald-400">✓</span>}
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2.5">
+                    <RsChathead rsn={m.rsn} size={28} />
+                    <span>
+                      <Link href={`/members/${encodeURIComponent(m.rsn)}`} className="font-medium hover:text-gold">
+                        {m.rsn}
+                      </Link>
+                      {m.verified && <span title="Linked to a Discord member" className="ml-2 text-xs text-emerald-400">✓</span>}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-2.5">
                   <RankBadge rank={m.rank} color={rankColor(m.rankOrder, maxOrder)} />

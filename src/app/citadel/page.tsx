@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHeader, Panel, Unavailable } from "@/components/site/blocks";
+import { RsChathead } from "@/components/site/RsChathead";
 import { getCitadelGrid, shortDay } from "@/lib/site";
 import { Tip, TipBody } from "@/components/ui/Tip";
 
@@ -45,9 +46,12 @@ export default async function CitadelPage() {
                 {grid.members.map((m) => (
                   <tr key={m.rsn}>
                     <td className="sticky left-0 bg-surface pr-3 whitespace-nowrap">
-                      <Link href={`/members/${encodeURIComponent(m.rsn)}`} className="hover:text-gold">
-                        {m.rsn}
-                      </Link>
+                      <span className="flex items-center gap-2">
+                        <RsChathead rsn={m.rsn} size={20} />
+                        <Link href={`/members/${encodeURIComponent(m.rsn)}`} className="hover:text-gold">
+                          {m.rsn}
+                        </Link>
+                      </span>
                     </td>
                     {m.weeks.map((v, i) => (
                       <td key={i}>

@@ -7,6 +7,7 @@ import { badgesFor } from "@/lib/badges";
 import { SkillsGrid } from "@/components/profile/SkillsGrid";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import { SkillIcon } from "@/components/site/SkillIcon";
+import { RsChathead } from "@/components/site/RsChathead";
 import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, shortNumbers, type MemberProfile } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
@@ -108,9 +109,11 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
       <section className="relative overflow-hidden rounded-2xl border border-surface-border bg-surface p-6 sm:p-8">
         <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full opacity-20 blur-3xl" style={{ backgroundColor: accent }} />
         <div className="relative flex flex-wrap items-start justify-between gap-6">
-          <div>
+          <div className="flex items-start gap-4 sm:gap-5">
+            <RsChathead rsn={profile.rsn} size={80} sizeClassName="h-14 w-14 sm:h-20 sm:w-20" className="rounded-xl border border-surface-border" />
+            <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-wide">{profile.rsn}</h1>
+              <h1 className="text-2xl font-bold tracking-wide sm:text-3xl">{profile.rsn}</h1>
               <RankBadge rank={profile.rank} color={color} />
               {profile.verified && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300">✓ Verified on Discord</span>}
             </div>
@@ -141,6 +144,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
                 ))}
               </ul>
             )}
+            </div>
           </div>
 
           <div className="w-full max-w-xs sm:w-72">

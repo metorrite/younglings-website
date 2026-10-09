@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BarChart, DonutChart, RankedBars } from "@/components/charts";
 import { PageHeader, Panel, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
+import { RsChathead } from "@/components/site/RsChathead";
 import { SkillIcon } from "@/components/site/SkillIcon";
 import { compact, full, getOverview, shortDay } from "@/lib/site";
 
@@ -135,6 +136,7 @@ export default async function StatsPage() {
                   <li key={leader.rsn} className="flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="w-4 text-xs text-muted">{i + 1}</span>
+                      <RsChathead rsn={leader.rsn} size={20} />
                       <Link href={`/members/${encodeURIComponent(leader.rsn)}`} className="truncate hover:text-gold">
                         {leader.rsn}
                       </Link>
