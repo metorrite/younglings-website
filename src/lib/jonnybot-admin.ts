@@ -465,9 +465,6 @@ export interface ServerSetup {
   clanName: string | null;
   clanEnabled: boolean;
   clanActive: boolean;
-  adminRoleId: string | null;
-  supportRoleId: string | null;
-  developerRoleId: string | null;
   verificationReviewChannelId: string | null;
   renameAlertChannelId: string | null;
   verifiedClanRoleId: string | null;
@@ -476,6 +473,26 @@ export interface ServerSetup {
   onboardingRoleId: string | null;
 }
 
+
+/** A named set of server roles that works as one permission level. Admin, Support and Developer always exist; the rest are the server's own. */
+export interface PermissionGroupConfig {
+  key: string;
+  name: string;
+  builtin: boolean;
+  /** Anyone holding a role ranked above the lowest of these counts too. */
+  includeHigher: boolean;
+  roleIds: string[];
+}
+
+export interface PermissionGroups {
+  groups: PermissionGroupConfig[];
+  maxCustomGroups: number;
+  maxRolesPerGroup: number;
+  maxNameLength: number;
+}
+
+/** What the editor sends: `key` is null for a group being created. */
+export type PermissionGroupDraft = Omit<PermissionGroupConfig, "key" | "builtin"> & { key: string | null };
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -586,6 +603,9 @@ export const adminApi = {
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
   createHelpPanels: (ctx: ApiContext) => call<HelpSettings>(ctx, "POST", "help/panels", {}),
   postHelpGuidelines: (ctx: ApiContext, channelId: string) => call<HelpSettings>(ctx, "POST", "help/guidelines/post", { channelId }),
+
+  permissions: (ctx: ApiContext) => call<PermissionGroups>(ctx, "GET", "permissions"),
+  savePermissions: (ctx: ApiContext, groups: PermissionGroupDraft[]) => call<PermissionGroups>(ctx, "PUT", "permissions", { groups }),
 
   serverSetup: (ctx: ApiContext) => call<ServerSetup>(ctx, "GET", "setup"),
   saveServerSetup: (ctx: ApiContext, setup: ServerSetup) => call<ServerSetup>(ctx, "PUT", "setup", setup),

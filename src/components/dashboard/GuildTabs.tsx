@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { path: "", label: "Overview" },
   { path: "/setup", label: "Server setup" },
+  { path: "/permissions", label: "Roles & permissions" },
   { path: "/tracking", label: "Tracking channels" },
   { path: "/welcome", label: "Welcome message" },
 ];

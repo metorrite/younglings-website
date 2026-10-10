@@ -8,20 +8,17 @@ import type { GuildStructure, ServerSetup, WelcomeActionResult } from "@/lib/jon
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
 
 /**
- * A server's basic setup: its clan, who counts as staff, where link requests are reviewed, and the roles verification
- * hands out. The same settings as `/configure` in Discord, which is where a freshly installed server has to start.
+ * A server's basic setup: its clan, where link requests are reviewed, and the roles verification hands out. Who counts as
+ * staff is on the Roles & permissions page. The same settings as `/configure` in Discord, which is where a freshly installed server has to start.
  * Everything is checked by the bot before anything is saved, so a refused save changes nothing and says why.
  */
 export function ServerSetupForm({
   initial,
   structure,
-  canEditStaff,
   save,
 }: {
   initial: ServerSetup;
   structure: GuildStructure;
-  /** Only the Admin tier may change who counts as staff; the Developer tier sees the choices but can't edit them. */
-  canEditStaff: boolean;
   save: (setup: ServerSetup) => Promise<WelcomeActionResult<ServerSetup>>;
 }) {
   const [setup, setSetup] = useState<ServerSetup>(initial);
@@ -69,23 +66,6 @@ export function ServerSetupForm({
           To set or change the clan you must be an Admin (or higher) of that clan in game, with your RuneScape name linked to your Discord account. If you
           haven&apos;t linked it yet, run <code className="rounded bg-white/10 px-1">/rs</code> in the server first.
         </p>
-      </Card>
-
-      <Card
-        title="Staff roles"
-        hint={canEditStaff ? "Who may use JonnyBot's admin tools and this dashboard. Anyone with Administrator or Manage Server permission always can." : "Only an Admin can change these."}
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          <FormField label="Admin role" hint="Full access to the dashboard and the admin tools.">
-            <RoleSelect roles={structure.roles} value={setup.adminRoleId} onChange={(id) => change({ adminRoleId: id })} none="No Admin role" disabled={!canEditStaff} />
-          </FormField>
-          <FormField label="Developer role" hint="The dashboard, but not the staff roles.">
-            <RoleSelect roles={structure.roles} value={setup.developerRoleId} onChange={(id) => change({ developerRoleId: id })} none="No Developer role" disabled={!canEditStaff} />
-          </FormField>
-          <FormField label="Support role" hint="Ticket staff.">
-            <RoleSelect roles={structure.roles} value={setup.supportRoleId} onChange={(id) => change({ supportRoleId: id })} none="No Support role" disabled={!canEditStaff} />
-          </FormField>
-        </div>
       </Card>
 
       <Card title="Link requests" hint="When a member asks to link a RuneScape name, a card with Approve and Reject buttons is posted for your staff.">

@@ -21,9 +21,6 @@ function setupFrom(input: unknown): ServerSetup | null {
     clanName: clan === "" ? null : clan,
     clanEnabled: s.clanEnabled === true,
     clanActive: false, // derived by the bot, ignored on save
-    adminRoleId: id(s.adminRoleId),
-    supportRoleId: id(s.supportRoleId),
-    developerRoleId: id(s.developerRoleId),
     verificationReviewChannelId: id(s.verificationReviewChannelId),
     renameAlertChannelId: id(s.renameAlertChannelId),
     verifiedClanRoleId: id(s.verifiedClanRoleId),
