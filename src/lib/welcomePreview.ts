@@ -18,6 +18,7 @@ export const WELCOME_VARIABLES: { token: string; meaning: string }[] = [
   { token: "{#channel}", meaning: "Link a channel by name" },
   { token: "{everyone}", meaning: "Shows @everyone without pinging" },
   { token: "{here}", meaning: "Shows @here without pinging" },
+  { token: "{rs_button}", meaning: "Where the link button goes (Container messages only)" },
 ];
 
 export interface PreviewSample {

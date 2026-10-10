@@ -1,4 +1,4 @@
-import type { WelcomeDraft, WelcomeMessageType } from "@/lib/jonnybot-admin";
+import type { LinkButtonStyle, WelcomeDraft, WelcomeMessageType } from "@/lib/jonnybot-admin";
 
 /**
  * Rebuilds the welcome draft the browser sent into exactly the shape the bot expects. Anything unexpected is dropped or
@@ -9,7 +9,8 @@ import type { WelcomeDraft, WelcomeMessageType } from "@/lib/jonnybot-admin";
 const text = (v: unknown, max: number): string => (typeof v === "string" ? v.slice(0, max) : "");
 const flag = (v: unknown): boolean => v === true;
 const idOrNull = (v: unknown): string | null => (typeof v === "string" && /^\d{1,20}$/.test(v) ? v : null);
-const TYPES: WelcomeMessageType[] = ["MESSAGE", "EMBED", "EMBED_TEXT"];
+const TYPES: WelcomeMessageType[] = ["MESSAGE", "EMBED", "EMBED_TEXT", "CONTAINER"];
+const BUTTON_STYLES: LinkButtonStyle[] = ["primary", "secondary", "success", "danger"];
 
 export function welcomeDraftFrom(input: unknown): WelcomeDraft | null {
   if (typeof input !== "object" || input === null) return null;
@@ -40,5 +41,6 @@ export function welcomeDraftFrom(input: unknown): WelcomeDraft | null {
     fields,
     linkButton: flag(s.linkButton),
     linkButtonLabel: text(s.linkButtonLabel, 120),
+    linkButtonStyle: BUTTON_STYLES.find((b) => b === s.linkButtonStyle) ?? "primary",
   };
 }
