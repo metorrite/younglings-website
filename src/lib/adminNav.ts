@@ -59,6 +59,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: "/admin/clan-website", label: "Clan website", blurb: "The address the clan name in Discord links to (same as /configure)." },
       { href: "/admin/tracking", label: "Tracking channels", blurb: "Where drops, quests, boss kills, Citadel, joins and leaves are announced." },
       { href: "/admin/pvm-help", label: "PvM Help", blurb: "The PVM Helper roles and guidelines, and when help tickets ping helpers for members and guests." },
+      { href: "/dashboard", label: "Bot dashboard (beta)", blurb: "The dashboard other Discord servers will use to install and set up JonnyBot. Only clan admins can open it for now." },
       { href: "/admin/welcome", label: "Welcome message", blurb: "Greet new members with text and an embed in a channel, and by DM too if you like." },
       { href: "/admin/tickets", label: "Ticket panels", blurb: "Create and edit ticket panels and post them to a channel." },
       { href: "/admin/tickets/defaults", label: "Panel defaults", blurb: "What every new ticket panel starts with: staff roles, who can close, limits and wording." },
