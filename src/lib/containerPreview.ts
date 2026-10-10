@@ -41,12 +41,25 @@ export function splitAtButton(text: string): Pieces {
   };
 }
 
-function styled(text: string, prefix: string): string {
-  if (!prefix) return text;
+/** Text put before and after each line: `-# ` for small grey text, `**` either side for bold. */
+interface Wrap {
+  before: string;
+  after: string;
+}
+const NO_WRAP: Wrap = { before: "", after: "" };
+
+function footerWrap(style: string): Wrap {
+  if (style === "normal") return NO_WRAP;
+  if (style === "bold") return { before: "**", after: "**" };
+  return { before: "-# ", after: "" };
+}
+
+function styled(text: string, wrap: Wrap): string {
+  if (wrap === NO_WRAP) return text;
   return text
     .split(/\r?\n/)
     .filter((l) => l.trim() !== "")
-    .map((l) => prefix + l.trim())
+    .map((l) => wrap.before + l.trim() + wrap.after)
     .join("\n");
 }
 
@@ -56,7 +69,7 @@ export function containerBlocks(draft: WelcomeDraft, plain: (template: string) =
   const wantButton = () => draft.linkButton && !placed;
 
   /** Adds `text` as blocks; where it holds the marker (and the button is wanted and not yet placed) that line gets the button beside it. */
-  function blocks(text: string, withButton: boolean, thumbnail: string | null, prefix: string) {
+  function blocks(text: string, withButton: boolean, thumbnail: string | null, wrap: Wrap) {
     if (!text.trim()) return;
     const pieces = withButton ? splitAtButton(text) : { before: text.split(BUTTON_MARKER).join("").trim(), line: "", after: "", hasButton: false };
     let thumbnailUsed = thumbnail === null;
@@ -69,13 +82,13 @@ export function containerBlocks(draft: WelcomeDraft, plain: (template: string) =
     };
 
     if (!pieces.hasButton) {
-      addText(styled(pieces.before, prefix), thumbnail);
+      addText(styled(pieces.before, wrap), thumbnail);
       return;
     }
     placed = true;
-    if (pieces.before.trim()) addText(styled(pieces.before, prefix), thumbnail);
-    out.push({ kind: "button", text: pieces.line ? styled(pieces.line, prefix) : BLANK });
-    if (pieces.after.trim()) addText(styled(pieces.after, prefix), null);
+    if (pieces.before.trim()) addText(styled(pieces.before, wrap), thumbnail);
+    out.push({ kind: "button", text: pieces.line ? styled(pieces.line, wrap) : BLANK });
+    if (pieces.after.trim()) addText(styled(pieces.after, wrap), null);
     if (!thumbnailUsed && thumbnail !== null) addText(BLANK, thumbnail);
   }
 
@@ -88,7 +101,7 @@ export function containerBlocks(draft: WelcomeDraft, plain: (template: string) =
   if (title) header += `## ${isWebAddress(titleUrl) ? `[${title}](${titleUrl})` : title}\n`;
   header += draft.description.trim();
   const thumbnail = plain(draft.thumbnailUrl);
-  blocks(header.trim(), wantButton(), isWebAddress(thumbnail) ? thumbnail : null, "");
+  blocks(header.trim(), wantButton(), isWebAddress(thumbnail) ? thumbnail : null, NO_WRAP);
 
   // fields, stacked; neighbours with no button between them share one block
   let fields = "";
@@ -98,15 +111,15 @@ export function containerBlocks(draft: WelcomeDraft, plain: (template: string) =
     if (!name || !value) continue;
     const block = `**${name}**\n${value}`;
     if (block.includes(BUTTON_MARKER) && wantButton()) {
-      blocks(fields.trim(), false, null, "");
+      blocks(fields.trim(), false, null, NO_WRAP);
       fields = "";
-      blocks(block, true, null, "");
+      blocks(block, true, null, NO_WRAP);
     } else {
       if (fields) fields += "\n\n";
       fields += block.split(BUTTON_MARKER).join("");
     }
   }
-  blocks(fields.trim(), false, null, "");
+  blocks(fields.trim(), false, null, NO_WRAP);
 
   // image
   const image = plain(draft.imageUrl);
@@ -116,7 +129,7 @@ export function containerBlocks(draft: WelcomeDraft, plain: (template: string) =
   const footer = draft.footerText.trim();
   if (footer) {
     if (out.length > 0) out.push({ kind: "gap" });
-    blocks(footer, wantButton(), null, "-# ");
+    blocks(footer, wantButton(), null, footerWrap(draft.footerStyle));
   }
 
   if (draft.linkButton && !placed) out.push({ kind: "row" });

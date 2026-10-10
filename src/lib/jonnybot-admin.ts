@@ -504,6 +504,8 @@ export interface ScheduledPost {
 /** CONTAINER is a newer kind of message built from blocks, which is what lets the link button sit inside it. */
 export type WelcomeMessageType = "MESSAGE" | "EMBED" | "EMBED_TEXT" | "CONTAINER";
 export type LinkButtonStyle = "primary" | "secondary" | "success" | "danger";
+/** How a container shows its footer: small and grey like an embed's, as bright as the rest of the text, or bold. */
+export type FooterStyle = "small" | "normal" | "bold";
 
 export interface WelcomeField {
   name: string;
@@ -534,6 +536,7 @@ export interface WelcomeConfig {
   linkButton: boolean;
   linkButtonLabel: string;
   linkButtonStyle: LinkButtonStyle;
+  footerStyle: FooterStyle;
   serverName: string;
   memberCount: number;
   serverIconUrl: string | null;
