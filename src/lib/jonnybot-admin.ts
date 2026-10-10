@@ -389,6 +389,44 @@ export interface ScheduledPost {
   error: string | null;
 }
 
+export type WelcomeMessageType = "MESSAGE" | "EMBED" | "EMBED_TEXT";
+
+export interface WelcomeField {
+  name: string;
+  value: string;
+  inline: boolean;
+}
+
+/** The welcome message for new members. The server name, member count and icon only feed the editor's preview. */
+export interface WelcomeConfig {
+  enabled: boolean;
+  messageType: WelcomeMessageType;
+  channelId: string | null;
+  channelName: string | null;
+  alsoDm: boolean;
+  content: string;
+  /** 0xRRGGBB, or null for no colour bar. */
+  color: number | null;
+  title: string;
+  titleUrl: string;
+  description: string;
+  authorName: string;
+  authorIconUrl: string;
+  thumbnailUrl: string;
+  imageUrl: string;
+  footerText: string;
+  footerIconUrl: string;
+  fields: WelcomeField[];
+  linkButton: boolean;
+  linkButtonLabel: string;
+  serverName: string;
+  memberCount: number;
+  serverIconUrl: string | null;
+}
+
+/** What the browser may change; the preview-only fields come back from the bot but are never sent. */
+export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; problems: string[] };
@@ -470,6 +508,11 @@ export const adminApi = {
     request<HelpSettings>(ctx.actorId, "PUT", "help/settings", settings),
   createHelpPanels: (ctx: AdminContext) => request<HelpSettings>(ctx.actorId, "POST", "help/panels", {}),
   postHelpGuidelines: (ctx: AdminContext, channelId: string) => request<HelpSettings>(ctx.actorId, "POST", "help/guidelines/post", { channelId }),
+
+  welcome: (ctx: AdminContext) => request<WelcomeConfig>(ctx.actorId, "GET", "welcome"),
+  saveWelcome: (ctx: AdminContext, draft: WelcomeDraft) => request<WelcomeConfig>(ctx.actorId, "PUT", "welcome", draft),
+  testWelcome: (ctx: AdminContext, draft: WelcomeDraft) =>
+    request<{ sent: boolean; channelName: string; dmSent: boolean }>(ctx.actorId, "POST", "welcome/test", draft),
 
   getPanelDefaults: (ctx: AdminContext) => request<PanelDefaults>(ctx.actorId, "GET", "ticket/defaults"),
   savePanelDefaults: (ctx: AdminContext, defaults: PanelDefaults) => request<PanelDefaults>(ctx.actorId, "PUT", "ticket/defaults", defaults),

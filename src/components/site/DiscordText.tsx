@@ -6,14 +6,16 @@ import type { ReactNode } from "react";
  * and only http(s) links are made clickable, so a post can't smuggle anything onto the page.
  */
 
-const INLINE = /(\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|`[^`\n]+`|\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>)]+|<t:\d+(?::[a-zA-Z])?>|\*[^*\n]+\*|_[^_\n]+_)/g;
+const INLINE = /(\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|`[^`\n]+`|\[[^\]\n]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s<>)]+|<t:\d+(?::[a-zA-Z])?>|<(?:@&|@|#)\d+>|\*[^*\n]+\*|_[^_\n]+_)/g;
 
 function timestamp(seconds: number): string {
   const d = new Date(seconds * 1000);
   return `${d.toLocaleString("en-GB", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })} UTC`;
 }
 
-function inline(text: string, keyPrefix = "i"): ReactNode[] {
+type Mentions = Record<string, string>;
+
+function inline(text: string, keyPrefix = "i", mentions?: Mentions): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0;
   let n = 0;
@@ -23,16 +25,28 @@ function inline(text: string, keyPrefix = "i"): ReactNode[] {
     if (start > last) out.push(text.slice(last, start));
     const key = `${keyPrefix}-${n++}`;
 
-    if (token.startsWith("**")) out.push(<strong key={key}>{inline(token.slice(2, -2), key)}</strong>);
-    else if (token.startsWith("__")) out.push(<u key={key}>{inline(token.slice(2, -2), key)}</u>);
-    else if (token.startsWith("~~")) out.push(<s key={key}>{inline(token.slice(2, -2), key)}</s>);
-    else if (token.startsWith("`")) out.push(<code key={key} className="rounded bg-white/10 px-1 py-0.5 text-[0.85em]">{token.slice(1, -1)}</code>);
+    if (token.startsWith("**")) out.push(<strong key={key}>{inline(token.slice(2, -2), key, mentions)}</strong>);
+    else if (token.startsWith("__")) out.push(<u key={key}>{inline(token.slice(2, -2), key, mentions)}</u>);
+    else if (token.startsWith("~~")) out.push(<s key={key}>{inline(token.slice(2, -2), key, mentions)}</s>);
+    else if (token.startsWith("<@") || token.startsWith("<#")) {
+      // a mention: drawn as a pill only when the caller says what to call it (the welcome preview does); otherwise left as typed
+      const label = mentions?.[token];
+      out.push(
+        label ? (
+          <span key={key} className="rounded bg-[#5865f2]/30 px-1 text-[#c9cdfb]">
+            {label}
+          </span>
+        ) : (
+          token
+        ),
+      );
+    } else if (token.startsWith("`")) out.push(<code key={key} className="rounded bg-white/10 px-1 py-0.5 text-[0.85em]">{token.slice(1, -1)}</code>);
     else if (token.startsWith("[")) {
       const m = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
       out.push(m ? <ExternalLink key={key} href={m[2]}>{m[1]}</ExternalLink> : token);
     } else if (token.startsWith("http")) out.push(<ExternalLink key={key} href={token}>{token.length > 48 ? `${token.slice(0, 46)}…` : token}</ExternalLink>);
     else if (token.startsWith("<t:")) out.push(<span key={key} className="text-foreground">{timestamp(Number(token.match(/\d+/)![0]))}</span>);
-    else out.push(<em key={key}>{inline(token.slice(1, -1), key)}</em>);
+    else out.push(<em key={key}>{inline(token.slice(1, -1), key, mentions)}</em>);
 
     last = start + token.length;
   }
@@ -48,7 +62,8 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
   );
 }
 
-export function DiscordText({ text, className = "" }: { text: string; className?: string }) {
+/** `mentions` maps a mention as written (like `<@123>`) to the label to draw for it; any mention not listed stays as typed. */
+export function DiscordText({ text, className = "", mentions }: { text: string; className?: string; mentions?: Mentions }) {
   const lines = text.split(/\r?\n/);
   const blocks: ReactNode[] = [];
   let list: ReactNode[] = [];
@@ -69,7 +84,7 @@ export function DiscordText({ text, className = "" }: { text: string; className?
     const line = raw.trimEnd();
     const bullet = line.match(/^\s*(?:[-*•])\s+(.*)$/);
     if (bullet) {
-      list.push(<li key={`b${k++}`}>{inline(bullet[1])}</li>);
+      list.push(<li key={`b${k++}`}>{inline(bullet[1], "i", mentions)}</li>);
       continue;
     }
     flushList();
@@ -79,25 +94,25 @@ export function DiscordText({ text, className = "" }: { text: string; className?
       const size = heading[1].length === 1 ? "text-lg" : heading[1].length === 2 ? "text-base" : "text-sm";
       blocks.push(
         <p key={`h${k++}`} className={`${size} mt-2 font-semibold text-foreground`}>
-          {inline(heading[2])}
+          {inline(heading[2], "i", mentions)}
         </p>,
       );
     } else if (line.startsWith("-# ")) {
       blocks.push(
         <p key={`s${k++}`} className="text-xs text-muted">
-          {inline(line.slice(3))}
+          {inline(line.slice(3), "i", mentions)}
         </p>,
       );
     } else if (line.startsWith("> ")) {
       blocks.push(
         <blockquote key={`q${k++}`} className="my-1 border-l-2 border-gold/50 pl-3 text-muted">
-          {inline(line.slice(2))}
+          {inline(line.slice(2), "i", mentions)}
         </blockquote>,
       );
     } else if (line.trim() === "") {
       blocks.push(<div key={`e${k++}`} className="h-2" />);
     } else {
-      blocks.push(<p key={`p${k++}`}>{inline(line)}</p>);
+      blocks.push(<p key={`p${k++}`}>{inline(line, "i", mentions)}</p>);
     }
   }
   flushList();
