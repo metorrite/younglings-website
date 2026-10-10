@@ -44,12 +44,13 @@ const PATHS: { id: Path; title: string; time: string; blurb: string }[] = [
  * (pick the parts first). Every step saves as it goes and starts from the server's current settings, so it can be left and picked up
  * again, run a second time, or used to change one part. A step can always be skipped.
  */
-export function SetupWizard({ guildId, guildName, data, quick, full }: { guildId: string; guildName: string; data: WizardData; quick: QuickActions; full: FullActions }) {
+export function SetupWizard({ guildId, guildName, data, quick, full, initialPath = null }: { guildId: string; guildName: string; data: WizardData; quick: QuickActions; full: FullActions; initialPath?: Path | null }) {
   const router = useRouter();
-  const [path, setPath] = useState<Path | null>(null);
+  const [path, setPath] = useState<Path | null>(initialPath);
   const [depth, setDepth] = useState<Depth>("quick");
   const [picked, setPicked] = useState<Set<FeatureId>>(new Set(["permissions", "clan"]));
-  const [started, setStarted] = useState(false);
+  // Quick and full have nothing to choose first; custom starts on its pick-the-parts screen.
+  const [started, setStarted] = useState(initialPath === "quick" || initialPath === "full");
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
 
@@ -103,7 +104,7 @@ export function SetupWizard({ guildId, guildName, data, quick, full }: { guildId
             </li>
             <li>Move JonnyBot&apos;s role above the roles it should hand out, in Server Settings, Roles.</li>
             <li>
-              Look over each command on the <Link className="text-gold underline" href={`/dashboard/${guildId}/hub`}>Hub</Link> to decide who can use it and where.
+              Look over each command on the <Link className="text-gold underline" href={`/dashboard/${guildId}/commands`}>Commands</Link> page to decide who can use it and where.
             </li>
           </ul>
         </Card>

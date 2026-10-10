@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, FormField, Notice, primaryButton } from "@/components/admin/ui";
+import { FormField, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { ChannelListPicker, RolePicker } from "@/components/dashboard/pickers";
 import { choicesOf, type GuildStructure, type HubCommandConfig, type HubCommandDraft, type HubConfig, type WelcomeActionResult } from "@/lib/jonnybot-admin";
@@ -11,7 +11,7 @@ type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | 
 const ROLE = "role:";
 
 /**
- * One command's card: switch it on or off, say who may use it and where, and, for Signups, fix its admin channel and limit where its
+ * One command's row: collapsed it shows whether it is on and who and where it is open to; open, switch it on or off, say who may use it and where, and, for Signups, fix its admin channel and limit where its
  * public panel can go. Each card saves on its own. Admins always keep access and are never held to the channel limit, so a card can't
  * lock them out.
  */
@@ -36,6 +36,7 @@ function HubCard({
   const [channelIds, setChannelIds] = useState(command.channelIds);
   const [signup, setSignup] = useState(command.signup);
   const [outcome, setOutcome] = useState<Outcome>(null);
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
   const dirty = () => setOutcome(null);
@@ -58,20 +59,35 @@ function HubCard({
     });
   }
 
+  const accessLabel = !customAccess ? "Usual access" : "Custom access";
+  const placeLabel = channelIds.length === 0 ? "Anywhere" : `${channelIds.length} channel${channelIds.length === 1 ? "" : "s"}`;
+
   return (
-    <Card>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="font-semibold text-gold">
-            {command.title} <code className="ml-1 rounded bg-white/10 px-1.5 py-0.5 text-xs font-normal text-foreground">/{command.slashName}</code>
-          </h2>
-          <p className="mt-1 text-sm text-muted">{command.description}</p>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); dirty(); }} />
-          Turned on
-        </label>
-      </div>
+    <section className="rounded-lg border border-surface-border bg-surface">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="flex w-full flex-wrap items-center justify-between gap-3 p-4 text-left"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="font-semibold">{command.title}</span>
+          <code className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-xs text-foreground">/{command.slashName}</code>
+          <span className="mt-0.5 block text-sm text-muted">{command.description}</span>
+        </span>
+        <span className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
+          <span className={`rounded-full px-2.5 py-1 font-medium ${enabled ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{enabled ? "On" : "Off"}</span>
+          {enabled && <span className="rounded-full bg-white/10 px-2.5 py-1 text-muted">{accessLabel}</span>}
+          {enabled && <span className="rounded-full bg-white/10 px-2.5 py-1 text-muted">{placeLabel}</span>}
+          <span aria-hidden="true" className="text-muted">{open ? "▴" : "▾"}</span>
+        </span>
+      </button>
+      {open && (
+        <div className="space-y-4 border-t border-surface-border p-6">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); dirty(); }} />
+            Turned on
+          </label>
       {!enabled && <p className="text-xs text-amber-300">While this is off, nobody in the server can use /{command.slashName}, admins included.</p>}
 
       <div className="space-y-3 border-t border-surface-border pt-4">
@@ -194,11 +210,13 @@ function HubCard({
           {pending ? "Saving…" : "Save"}
         </button>
       </div>
-    </Card>
+        </div>
+      )}
+    </section>
   );
 }
 
-/** The Hub: a card for every command that stands on its own. */
+/** The Commands page: a row for every command that stands on its own, opening to its settings. */
 export function HubEditor({
   hub,
   structure,
@@ -211,7 +229,7 @@ export function HubEditor({
   save: (key: string, draft: HubCommandDraft) => Promise<WelcomeActionResult<HubCommandConfig>>;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {hub.commands.map((command) => (
         <HubCard key={command.key} command={command} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
       ))}
