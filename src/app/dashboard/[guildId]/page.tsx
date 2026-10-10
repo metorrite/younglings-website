@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
-import { dashboardApi } from "@/lib/jonnybot-admin";
+import { adminApi, dashboardApi } from "@/lib/jonnybot-admin";
 
 /** What is still only set up in Discord with /configure, or not yet possible for this server. Each moves onto the dashboard as it is built. */
 const NOT_YET = [
-  { name: "Clan setup", note: "Pick the RuneScape clan to track and the roles for members and guests. Use /configure in Discord for now." },
-  { name: "Verification", note: "Where link requests are reviewed, and who reviews them. Use /configure in Discord for now." },
-  { name: "Tracking channels", note: "Where drops, quests, kills and joins are announced." },
   { name: "Tickets", note: "Ticket panels and their wording." },
   { name: "Polls and signups", note: "Where member-created polls are posted." },
 ];
@@ -14,10 +11,29 @@ const NOT_YET = [
 export default async function GuildOverview({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const welcome = dashboardData(await dashboardApi.welcome(guild));
+  const [welcome, setup] = await Promise.all([dashboardApi.welcome(guild).then(dashboardData), adminApi.serverSetup(guild).then(dashboardData)]);
 
   return (
     <div className="space-y-6">
+      <section className="rounded-lg border border-surface-border bg-surface p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-gold">Server setup</h2>
+            <p className="mt-1 text-sm text-muted">
+              {setup.clanActive
+                ? `Tracking the clan ${setup.clanName}.`
+                : setup.clanName
+                  ? `${setup.clanName} is saved but clan features are switched off.`
+                  : "No clan set yet. Start here: a new server begins empty."}{" "}
+              {setup.verificationReviewChannelId ? "Link requests have a review channel." : "No review channel for link requests yet."}
+            </p>
+          </div>
+          <Link href={`/dashboard/${guildId}/setup`} className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110">
+            {setup.clanName ? "Edit" : "Set up"}
+          </Link>
+        </div>
+      </section>
+
       <section className="rounded-lg border border-surface-border bg-surface p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
