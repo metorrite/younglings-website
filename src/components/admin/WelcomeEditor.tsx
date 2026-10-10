@@ -15,9 +15,9 @@ const MAX = { content: 1800, title: 256, description: 3900, author: 256, footer:
 
 const TYPES: { id: WelcomeMessageType; label: string; hint: string }[] = [
   { id: "MESSAGE", label: "Message", hint: "Just a line of text." },
-  { id: "EMBED", label: "Embed", hint: "Just the boxed embed." },
-  { id: "EMBED_TEXT", label: "Embed and text", hint: "A line of text above the embed." },
-  { id: "CONTAINER", label: "Container", hint: "Embed-like, with the button inside it and links anywhere." },
+  { id: "EMBED", label: "Embed", hint: "The classic boxed message. A button can only sit underneath it." },
+  { id: "EMBED_TEXT", label: "Embed and text", hint: "A line of text above the classic embed." },
+  { id: "CONTAINER", label: "Container", hint: "The newer look: the button can sit inside, the footer can be bright, links work in every part." },
 ];
 
 const FOOTER_LOOKS: { id: FooterStyle; label: string; hint: string }[] = [
@@ -115,13 +115,72 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
     fields: initial.fields.length > 0,
   }));
 
+  // What the editor did on its own (switching to a container), told to the person so it is never a surprise.
+  const [autoNote, setAutoNote] = useState<string | null>(null);
+
+  /**
+   * Switches to the Container type for something only a container can do, and says so. A container has no line of text above it, so
+   * that line is moved to the top of the description rather than silently dropped.
+   */
+  function toContainer(reason: string, patch: Partial<WelcomeDraft> = {}) {
+    setOutcome(null);
+    let next: WelcomeDraft = { ...draft, ...patch, messageType: "CONTAINER" };
+    let note = `Switched to Container: ${reason}.`;
+    if (draft.messageType === "EMBED_TEXT" && draft.content.trim()) {
+      next = { ...next, description: [draft.content.trim(), next.description.trim()].filter(Boolean).join("\n\n"), content: "" };
+      note += " A container has no separate line of text above it, so that line was moved to the top of the description.";
+    }
+    setDraft(next);
+    setAutoNote(note);
+  }
+
+  /** Whether a classic embed is being asked for something only a container does. */
+  const needsContainer = (type: WelcomeMessageType) => type === "EMBED" || type === "EMBED_TEXT";
+
   function set<K extends keyof WelcomeDraft>(key: K, value: WelcomeDraft[K]) {
+    if (needsContainer(draft.messageType) && (key === "description" || key === "footerText") && typeof value === "string" && value.includes(BUTTON_MARKER)) {
+      toContainer(`${BUTTON_MARKER} puts the button inside the message`, { [key]: value, linkButton: true });
+      return;
+    }
     setDraft((d) => ({ ...d, [key]: value }));
     setOutcome(null);
   }
 
   function setField(index: number, patch: Partial<WelcomeField>) {
-    set("fields", draft.fields.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+    const fields = draft.fields.map((f, i) => (i === index ? { ...f, ...patch } : f));
+    const changed = fields[index];
+    if (needsContainer(draft.messageType)) {
+      if (changed.value.includes(BUTTON_MARKER)) return toContainer(`${BUTTON_MARKER} puts the button inside the message`, { fields, linkButton: true });
+      if (/\]\(https?:\/\//i.test(changed.name)) return toContainer("a link in a field's name only works in a container", { fields });
+    }
+    set("fields", fields);
+  }
+
+  /** The type picker, by hand. Leaving Container takes {rs_button} out of the text (an embed can't hold the button) and says so. */
+  function chooseType(type: WelcomeMessageType) {
+    setOutcome(null);
+    setAutoNote(null);
+    if (type === "CONTAINER" || draft.messageType !== "CONTAINER") {
+      setDraft((d) => ({ ...d, messageType: type }));
+      return;
+    }
+    const strip = (t: string) => t.split(BUTTON_MARKER).join("").trim();
+    const had = [draft.description, draft.footerText, ...draft.fields.map((f) => f.value)].some((t) => t.includes(BUTTON_MARKER));
+    setDraft((d) => ({ ...d, messageType: type, description: strip(d.description), footerText: strip(d.footerText), fields: d.fields.map((f) => ({ ...f, value: strip(f.value) })) }));
+    if (had) setAutoNote(`${BUTTON_MARKER} was taken out of the text: an ${type === "MESSAGE" ? "plain message" : "embed"} can't hold the button inside it, so it sits underneath.`);
+  }
+
+  /** Puts the button in the footer or after the description, switching to a container if it isn't one yet. */
+  function placeButton(where: "footer" | "description") {
+    const patch: Partial<WelcomeDraft> =
+      where === "footer"
+        ? { footerText: `${draft.footerText.replace(BUTTON_MARKER, "").trim()} ${BUTTON_MARKER}`.trim(), linkButton: true }
+        : { description: `${draft.description.replace(BUTTON_MARKER, "").trimEnd()}\n${BUTTON_MARKER}`, linkButton: true };
+    if (needsContainer(draft.messageType)) toContainer("the button can only sit inside the message in a container", patch);
+    else {
+      setDraft((d) => ({ ...d, ...patch }));
+      setOutcome(null);
+    }
   }
 
   const container = draft.messageType === "CONTAINER";
@@ -177,17 +236,28 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
 
           <fieldset>
             <legend className="text-sm font-medium">Message type</legend>
+            <p className="mt-0.5 text-xs text-muted">
+              Not sure? Start with Embed and use what you need: the editor switches to Container by itself when you ask for something only a container can do, such as the button inside the message or a brighter footer.
+            </p>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {TYPES.map((t) => (
                 <label key={t.id} className={`flex cursor-pointer flex-col rounded-md border px-3 py-2 text-sm ${draft.messageType === t.id ? "border-gold bg-gold/10" : "border-surface-border bg-background/40"}`}>
                   <span className="flex items-center gap-2 font-medium">
-                    <input type="radio" name="welcome-type" className="accent-[var(--color-gold)]" checked={draft.messageType === t.id} onChange={() => set("messageType", t.id)} />
+                    <input type="radio" name="welcome-type" className="accent-[var(--color-gold)]" checked={draft.messageType === t.id} onChange={() => chooseType(t.id)} />
                     {t.label}
                   </span>
                   <span className="mt-0.5 text-xs text-muted">{t.hint}</span>
                 </label>
               ))}
             </div>
+            {autoNote && (
+              <div role="status" className="mt-3 flex items-start justify-between gap-3 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-xs">
+                <span>{autoNote}</span>
+                <button type="button" className="shrink-0 text-muted hover:text-foreground" aria-label="Dismiss" onClick={() => setAutoNote(null)}>
+                  ✕
+                </button>
+              </div>
+            )}
           </fieldset>
 
           <FormField label="Welcome channel" hint="Only channels JonnyBot can post in are listed.">
@@ -232,21 +302,28 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                   </div>
                 </FormField>
               </div>
-              {container ? (
-                <p className="text-xs text-muted">
-                  Write <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description, a field&apos;s value or the footer to put the button on that line, with that line&apos;s text beside it.
-                  Leave it out and the button goes at the bottom. Put it in the footer in <strong>Grey</strong> for a quiet look.
-                  <span className="mt-2 flex flex-wrap gap-2">
-                    <button type="button" className={ghostButton} onClick={() => set("footerText", `${draft.footerText.replace(BUTTON_MARKER, "").trim()} ${BUTTON_MARKER}`.trim())}>
-                      Put it in the footer
-                    </button>
-                    <button type="button" className={ghostButton} onClick={() => set("description", `${draft.description.replace(BUTTON_MARKER, "").trimEnd()}\n${BUTTON_MARKER}`)}>
-                      Put it after the description
-                    </button>
-                  </span>
-                </p>
-              ) : (
-                <p className="text-xs text-muted">With an embed or a plain message the button sits underneath it: Discord can&apos;t put a button inside an embed. Choose <strong>Container</strong> above to place it inside.</p>
+              <p className="text-xs text-muted">
+                {container ? (
+                  <>
+                    Write <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description, a field&apos;s value or the footer to put the button on that line, with that line&apos;s text beside it.
+                    Leave it out and the button goes at the bottom. Put it in the footer in <strong>Grey</strong> for a quiet look.
+                  </>
+                ) : (
+                  <>
+                    The button sits underneath the message: Discord can&apos;t put a button inside an embed. To place it inside, use one of these, or write{" "}
+                    <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description or footer, and the message switches to a Container for you.
+                  </>
+                )}
+              </p>
+              {draft.messageType !== "MESSAGE" && (
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className={ghostButton} onClick={() => placeButton("footer")}>
+                    Put it in the footer
+                  </button>
+                  <button type="button" className={ghostButton} onClick={() => placeButton("description")}>
+                    Put it after the description
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -336,8 +413,16 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                   <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
                   {container ? <LinkInserter onInsert={(md) => set("footerText", draft.footerText ? `${draft.footerText} ${md}` : md)} /> : <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />}
                 </FormField>
-                {container && (
-                  <FormField label="Footer look" as="group" hint="An embed's footer is always small and grey: Discord fixes that. In a container the footer is ordinary text, so it can be brighter.">
+                {
+                  <FormField
+                    label="Footer look"
+                    as="group"
+                    hint={
+                      container
+                        ? "In a container the footer is ordinary text, so it can be as bright as the rest or bold."
+                        : "A classic embed's footer is always small and grey: Discord fixes that. Choosing Normal or Bold switches this message to a Container, where the footer is ordinary text."
+                    }
+                  >
                     <div className="flex flex-wrap gap-2">
                       {FOOTER_LOOKS.map((look) => (
                         <button
@@ -345,7 +430,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                           type="button"
                           aria-pressed={draft.footerStyle === look.id}
                           title={look.hint}
-                          onClick={() => set("footerStyle", look.id)}
+                          onClick={() => (look.id !== "small" && needsContainer(draft.messageType) ? toContainer("a normal or bold footer only works in a container", { footerStyle: look.id }) : set("footerStyle", look.id))}
                           className={`rounded-md border px-3 py-1.5 text-sm transition ${draft.footerStyle === look.id ? "border-gold bg-gold/10" : "border-surface-border text-muted hover:text-foreground"}`}
                         >
                           {look.label}
@@ -353,7 +438,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                       ))}
                     </div>
                   </FormField>
-                )}
+                }
                 {!container && (
                   <FormField label="Footer icon" hint="Needs footer text.">
                     <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
@@ -371,7 +456,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                       <input
                         aria-label={`Field ${i + 1} name`}
                         className={inputClass}
-                        placeholder={container ? "Field name (a link works: [Website](https://example.com))" : "Field name"}
+                        placeholder={container ? "Field name (a link works: [Website](https://example.com))" : "Field name (a link here switches to a Container)"}
                         value={field.name}
                         onChange={(e) => setField(i, { name: e.target.value })}
                       />
@@ -382,7 +467,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                         </label>
                       )}
                     </div>
-                    <textarea aria-label={`Field ${i + 1} value`} className={`${inputClass} min-h-16`} rows={2} placeholder="Field value" value={field.value} onChange={(e) => setField(i, { value: e.target.value })} />
+                    <textarea aria-label={`Field ${i + 1} value`} className={`${inputClass} min-h-16`} rows={2} placeholder={container ? "Field value (optional: a name alone is a single line)" : "Field value"} value={field.value} onChange={(e) => setField(i, { value: e.target.value })} />
                     <button type="button" className={ghostButton} onClick={() => set("fields", draft.fields.filter((_, j) => j !== i))}>
                       Remove field
                     </button>
