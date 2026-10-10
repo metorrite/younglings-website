@@ -9,7 +9,8 @@ import { ghostButton, inputClass } from "./ui";
 const UPLOAD_PATIENCE_MS = 45_000;
 
 export interface ImageUploads {
-  upload: (slot: string, form: FormData) => Promise<UploadResult>;
+  /** Where a picture is posted: `{url}/{slot}`. */
+  url: string;
   remove: (slot: string) => Promise<WelcomeActionResult<{ removed: boolean }>>;
 }
 
@@ -35,15 +36,24 @@ export function ImageUrlField({ id, slot, value, onChange, uploads }: { id: stri
     try {
       const form = new FormData();
       form.set("file", file);
-      // A Server Action can't be cancelled, but the person shouldn't be left watching "Working…" if the site or the bot stalls.
-      const result = await Promise.race([
-        uploads.upload(slot, form),
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), UPLOAD_PATIENCE_MS)),
-      ]);
-      if (result.ok) onChange(result.data.url);
-      else setError(result.error);
+      // A plain request, so a failure shows as the status it really was, and a stalled one can be given up on.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), UPLOAD_PATIENCE_MS);
+      let response: Response;
+      try {
+        response = await fetch(`${uploads.url}/${slot}`, { method: "POST", body: form, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      const result: UploadResult | null = await response.json().catch(() => null);
+      if (result?.ok) onChange(result.data.url);
+      else setError(result && !result.ok ? result.error : `The site answered ${response.status} ${response.statusText}`.trim() + ". Try again.");
     } catch (e) {
-      setError(e instanceof Error && e.message === "timeout" ? "That's taking too long. JonnyBot may be restarting: wait a minute and try again." : "The upload didn't go through. Try again.");
+      setError(
+        e instanceof DOMException && e.name === "AbortError"
+          ? "That's taking too long. JonnyBot may be restarting: wait a minute and try again."
+          : "Couldn't reach the site. Check your connection and try again.",
+      );
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = "";

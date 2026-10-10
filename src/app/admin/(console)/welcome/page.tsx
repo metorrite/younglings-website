@@ -1,7 +1,7 @@
 import { requireAdmin, unwrap } from "@/lib/admin";
 import { adminApi, choicesOf } from "@/lib/jonnybot-admin";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
-import { removeWelcomeImageAction, saveWelcomeAction, testWelcomeAction, uploadWelcomeImageAction } from "./actions";
+import { removeWelcomeImageAction, saveWelcomeAction, testWelcomeAction } from "./actions";
 
 export const metadata = { title: "Welcome message — Younglings" };
 
@@ -17,7 +17,7 @@ export default async function WelcomePage() {
           Greets each new member in a channel, as text, an embed, or both. It can also send them a copy by DM when their DMs are open. Bots are never welcomed.
         </p>
       </div>
-      <WelcomeEditor initial={welcome} {...choicesOf(structure)} actions={{ save: saveWelcomeAction, test: testWelcomeAction, uploadImage: uploadWelcomeImageAction, removeImage: removeWelcomeImageAction }} />
+      <WelcomeEditor initial={welcome} {...choicesOf(structure)} actions={{ save: saveWelcomeAction, test: testWelcomeAction, imageUploadUrl: "/api/admin-images/welcome", removeImage: removeWelcomeImageAction }} />
     </div>
   );
 }
