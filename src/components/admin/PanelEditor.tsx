@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePanelAction, postPanelAction, savePanelAction } from "@/app/admin/(console)/tickets/actions";
+import { choicesOf } from "@/lib/jonnybot-admin";
 import type { FieldKind, FieldPurpose, GuildStructure, HelpKind, PanelDefinition, PanelField, PanelOption } from "@/lib/jonnybot-admin";
 import { CategorySelect, ChannelSelect, RoleMultiSelect, RoleSelect } from "./pickers";
 import { ClosingFields, MessageFields } from "./TicketSharedFields";
@@ -236,10 +237,10 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
         title="Who handles tickets"
         hint="Helpers can see every ticket on this panel and join to help. Staff can also close any ticket and don't count against the helper limit."
       >
-        <FormField label="Helper roles">
+        <FormField as="group" label="Helper roles">
           <RoleMultiSelect roles={roles} value={panel.helperRoleIds} onChange={(ids) => set("helperRoleIds", ids)} />
         </FormField>
-        <FormField label="Staff roles">
+        <FormField as="group" label="Staff roles">
           <RoleMultiSelect roles={roles} value={panel.staffRoleIds} onChange={(ids) => set("staffRoleIds", ids)} />
         </FormField>
         <FormField label="Role pinged when a ticket opens" hint="Used when the dropdown choice doesn't name its own role.">
@@ -499,7 +500,7 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
           <div className="flex flex-wrap items-end gap-3">
             <div className="min-w-64 flex-1">
               <FormField label="Channel">
-                <ChannelSelect channels={structure.channels} value={postChannel} onChange={setPostChannel} none="Choose a channel…" onlyPostable />
+                <ChannelSelect {...choicesOf(structure)} value={postChannel} onChange={setPostChannel} none="Choose a channel…" onlyPostable />
               </FormField>
             </div>
             <button type="button" className={primaryButton} disabled={pending || !postChannel} onClick={post}>

@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createPollAction, createSignupAction, endPollAction, signupAdminAction } from "@/app/community/actions";
-import type { AdminSignupSheet, GuildStructure } from "@/lib/jonnybot-admin";
+import { ChannelSelect } from "@/components/admin/pickers";
+import type { AdminSignupSheet, ForumInfo, ForumThread, GuildStructure } from "@/lib/jonnybot-admin";
 
 const field = "w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold disabled:opacity-50";
 const primary = "rounded-md bg-gold px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-50";
@@ -24,9 +25,8 @@ export function AdminFrame({ title, children }: { title: string; children: React
 
 // ---------- polls ----------
 
-export function CreatePollForm({ channels }: { channels: GuildStructure["channels"] }) {
+export function CreatePollForm({ channels, forums, threads }: { channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
   const router = useRouter();
-  const postable = channels.filter((c) => c.canPost);
   const [title, setTitle] = useState("");
   const [options, setOptions] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -73,14 +73,9 @@ export function CreatePollForm({ channels }: { channels: GuildStructure["channel
               </option>
             ))}
           </select>
-          <select className={`${field} max-w-xs`} value={channelId} onChange={(e) => setChannelId(e.target.value)} aria-label="Channel to post in">
-            <option value="">Post in channel…</option>
-            {postable.map((c) => (
-              <option key={c.id} value={c.id}>
-                #{c.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-64">
+            <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={channelId || null} onChange={(id) => setChannelId(id ?? "")} none="Post in channel…" />
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button type="button" className={primary} disabled={pending || !channelId || !title.trim()} onClick={submit}>

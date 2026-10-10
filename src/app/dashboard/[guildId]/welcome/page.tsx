@@ -1,6 +1,6 @@
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
-import { dashboardApi } from "@/lib/jonnybot-admin";
+import { choicesOf, dashboardApi } from "@/lib/jonnybot-admin";
 import { saveGuildWelcomeAction, testGuildWelcomeAction } from "./actions";
 
 export default async function GuildWelcomePage({ params }: { params: Promise<{ guildId: string }> }) {
@@ -15,7 +15,7 @@ export default async function GuildWelcomePage({ params }: { params: Promise<{ g
       </p>
       <WelcomeEditor
         initial={welcome}
-        channels={structure.channels}
+        {...choicesOf(structure)}
         actions={{ save: saveGuildWelcomeAction.bind(null, guildId), test: testGuildWelcomeAction.bind(null, guildId) }}
       />
     </div>

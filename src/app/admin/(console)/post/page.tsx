@@ -1,5 +1,5 @@
 import { requireAdmin, unwrap } from "@/lib/admin";
-import { adminApi } from "@/lib/jonnybot-admin";
+import { adminApi, choicesOf } from "@/lib/jonnybot-admin";
 import { PostTool } from "@/components/admin/AdminExtras";
 
 export const metadata = { title: "Post a message — Younglings" };
@@ -14,7 +14,7 @@ export default async function PostPage() {
         <h1 className="text-2xl font-semibold">Post a message</h1>
         <p className="mt-1 text-sm text-muted">A formatted announcement, posted by JonnyBot.</p>
       </div>
-      <PostTool channels={structure.channels} />
+      <PostTool {...choicesOf(structure)} />
     </div>
   );
 }

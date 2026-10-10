@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Card, FormField, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { ChannelListPicker, RolePicker } from "@/components/dashboard/pickers";
-import type { GuildStructure, HubCommandConfig, HubCommandDraft, HubConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { choicesOf, type GuildStructure, type HubCommandConfig, type HubCommandDraft, type HubConfig, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
 
@@ -138,7 +138,7 @@ function HubCard({
       <div className="space-y-2 border-t border-surface-border pt-4">
         <p className="text-sm font-medium">Where members can use it</p>
         <ChannelListPicker
-          channels={structure.channels}
+          {...choicesOf(structure)}
           value={channelIds}
           max={maxList}
           empty="Anywhere in the server. Add channels to limit it to those. Admins can always use it anywhere."
@@ -151,7 +151,9 @@ function HubCard({
           <p className="text-sm font-medium">Signup channels</p>
           <FormField label="Admin channel" hint="Where each signup's admin controls are posted.">
             <ChannelSelect
-              channels={structure.channels.filter((c) => c.canPost)}
+              channels={structure.channels}
+              onlyPostable
+              allowForums={false}
               value={signup.adminChannelId}
               none="Whichever channel the person picks"
               onChange={(id) => { setSignup({ ...signup, adminChannelId: id, lockAdminChannel: id ? signup.lockAdminChannel : false }); dirty(); }}
@@ -175,6 +177,7 @@ function HubCard({
             <div className="mt-2">
               <ChannelListPicker
                 channels={structure.channels}
+                allowForums={false}
                 value={signup.publicChannelIds}
                 max={maxList}
                 empty="Any channel. Add channels to limit it to those."

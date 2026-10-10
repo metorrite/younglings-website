@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { cancelScheduledAction, schedulePostAction } from "@/app/admin/(console)/actions";
-import type { GuildStructure, ScheduledPost } from "@/lib/jonnybot-admin";
+import type { ForumInfo, ForumThread, GuildStructure, ScheduledPost } from "@/lib/jonnybot-admin";
+import { ChannelSelect } from "./pickers";
 import { Card, dangerButton, FormField, inputClass, Notice, primaryButton } from "./ui";
 
 const STATUS: Record<ScheduledPost["status"], { label: string; tone: string }> = {
@@ -12,8 +13,7 @@ const STATUS: Record<ScheduledPost["status"], { label: string; tone: string }> =
   CANCELLED: { label: "Cancelled", tone: "text-muted" },
 };
 
-export function ScheduledPosts({ initial, channels }: { initial: ScheduledPost[]; channels: GuildStructure["channels"] }) {
-  const postable = channels.filter((c) => c.canPost);
+export function ScheduledPosts({ initial, channels, forums, threads }: { initial: ScheduledPost[]; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
   const [posts, setPosts] = useState(initial);
   const [text, setText] = useState("");
   const [channelId, setChannelId] = useState("");
@@ -47,15 +47,7 @@ export function ScheduledPosts({ initial, channels }: { initial: ScheduledPost[]
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Channel">
-            <select className={inputClass} value={channelId} onChange={(e) => setChannelId(e.target.value)}>
-              <option value="">Choose a channel…</option>
-              {postable.map((c) => (
-                <option key={c.id} value={c.id}>
-                  #{c.name}
-                  {c.category ? ` — ${c.category}` : ""}
-                </option>
-              ))}
-            </select>
+            <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={channelId || null} onChange={(id) => setChannelId(id ?? "")} none="Choose a channel…" />
           </FormField>
           <FormField label="Post at (your local time)">
             <input type="datetime-local" className={inputClass} value={when} onChange={(e) => setWhen(e.target.value)} />

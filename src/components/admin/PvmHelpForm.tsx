@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { createHelpPanelsAction, postHelpGuidelinesAction, saveHelpSettingsAction } from "@/app/admin/(console)/pvm-help/actions";
+import { choicesOf } from "@/lib/jonnybot-admin";
 import type { GuildStructure, HelpSettings } from "@/lib/jonnybot-admin";
 import { ChannelSelect, RoleSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -159,7 +160,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-64 flex-1">
             <FormField label="Channel">
-              <ChannelSelect channels={structure.channels} value={postChannel} onChange={setPostChannel} none="Choose a channel…" onlyPostable />
+              <ChannelSelect {...choicesOf(structure)} value={postChannel} onChange={setPostChannel} none="Choose a channel…" onlyPostable />
             </FormField>
           </div>
           <button type="button" className={primaryButton} disabled={pending || !postChannel || !savedHelperRoleId} onClick={post}>

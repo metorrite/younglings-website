@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
-import type { GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
+import type { ForumInfo, ForumThread, GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
+import { ChannelSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
 
 // Discord's limits, as the bot enforces them (WelcomeValidator), so the counters turn red before a save would be refused.
@@ -36,7 +37,7 @@ export interface WelcomeActions {
   test: (draft: WelcomeDraft) => Promise<WelcomeActionResult<{ sent: boolean; channelName: string; dmSent: boolean }>>;
 }
 
-export function WelcomeEditor({ initial, channels, actions }: { initial: WelcomeConfig; channels: GuildStructure["channels"]; actions: WelcomeActions }) {
+export function WelcomeEditor({ initial, channels, forums, threads, actions }: { initial: WelcomeConfig; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; actions: WelcomeActions }) {
   const [draft, setDraft] = useState<WelcomeDraft>(() => toDraft(initial));
   const [meta, setMeta] = useState({ serverName: initial.serverName, memberCount: initial.memberCount });
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -125,16 +126,7 @@ export function WelcomeEditor({ initial, channels, actions }: { initial: Welcome
           </fieldset>
 
           <FormField label="Welcome channel" hint="Only channels JonnyBot can post in are listed.">
-            <select id="welcome-channel" className={inputClass} value={draft.channelId ?? ""} onChange={(e) => set("channelId", e.target.value || null)}>
-              <option value="">Choose a channel…</option>
-              {draft.channelId && !channel && <option value={draft.channelId}>{initial.channelName ? `#${initial.channelName} (JonnyBot can't post here now)` : "A channel that no longer exists"}</option>}
-              {channels.filter((c) => c.canPost).map((c) => (
-                <option key={c.id} value={c.id}>
-                  #{c.name}
-                  {c.category ? ` (${c.category})` : ""}
-                </option>
-              ))}
-            </select>
+            <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={draft.channelId} onChange={(id) => set("channelId", id)} none="Choose a channel…" />
           </FormField>
 
           <label className="flex items-start gap-3">

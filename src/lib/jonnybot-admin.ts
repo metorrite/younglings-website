@@ -79,10 +79,40 @@ export interface GuildRole {
   position: number;
 }
 
+export interface ForumInfo {
+  id: string;
+  name: string;
+  category: string | null;
+  canPost: boolean;
+}
+
+/** One post in a forum. JonnyBot posts in a thread, never in the forum itself, so the thread is what gets saved. */
+export interface ForumThread {
+  id: string;
+  name: string;
+  forumId: string;
+  archived: boolean;
+  canPost: boolean;
+}
+
 export interface GuildStructure {
   roles: GuildRole[];
   categories: { id: string; name: string }[];
   channels: { id: string; name: string; category: string | null; canPost: boolean }[];
+  /** Sent by the bot since forum support; absent from an older bot. */
+  forums?: ForumInfo[];
+  threads?: ForumThread[];
+}
+
+/** The channels a picker offers: text and announcement channels, plus forums with their threads. Spread it onto a picker: `{...choicesOf(structure)}`. */
+export interface ChannelChoices {
+  channels: GuildStructure["channels"];
+  forums: ForumInfo[];
+  threads: ForumThread[];
+}
+
+export function choicesOf(structure: GuildStructure): ChannelChoices {
+  return { channels: structure.channels, forums: structure.forums ?? [], threads: structure.threads ?? [] };
 }
 
 export interface TicketSettings {

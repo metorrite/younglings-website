@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { saveSettingsAction } from "@/app/admin/(console)/tickets/actions";
+import { choicesOf } from "@/lib/jonnybot-admin";
 import type { GuildStructure, TicketSettings } from "@/lib/jonnybot-admin";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, inputClass, Notice, primaryButton } from "./ui";
@@ -36,7 +37,7 @@ export function SettingsForm({ initial, structure }: { initial: TicketSettings; 
       <Card title="Transcripts" hint="Every closed ticket's full conversation is saved, so it can be read here later.">
         <FormField label="Log channel" hint="A copy of each transcript is posted here. Leave empty to only store it.">
           <ChannelSelect
-            channels={structure.channels}
+            {...choicesOf(structure)}
             value={settings.logChannelId}
             onChange={(id) => setSettings((s) => ({ ...s, logChannelId: id }))}
             none="No log channel"

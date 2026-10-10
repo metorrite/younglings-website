@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { markPromotedAction, postMessageAction, saveCommunityAction, saveTrackingAction } from "@/app/admin/(console)/actions";
-import type { GuildStructure, PromotionDue, TrackingGroupConfig } from "@/lib/jonnybot-admin";
+import type { ChannelChoices, ForumInfo, ForumThread, GuildStructure, PromotionDue, TrackingGroupConfig } from "@/lib/jonnybot-admin";
+import { ChannelSelect } from "./pickers";
+import { ChannelListPicker } from "@/components/dashboard/pickers";
 import { Card, dangerButton, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
 
 // ---------- promotions ----------
@@ -49,22 +51,18 @@ export function PromotionsList({ initial }: { initial: PromotionDue[] }) {
 /** Saves one tracking group; the clan console's own action by default, a server-bound one on the bot dashboard. */
 type SaveTracking = (key: string, enabled: boolean, channelIds: string[]) => Promise<{ ok: true; data: undefined } | { ok: false; error: string }>;
 
-function TrackingGroupCard({ group, channels, save: saveGroup }: { group: TrackingGroupConfig; channels: GuildStructure["channels"]; save: SaveTracking }) {
+function TrackingGroupCard({ group, choices, save: saveGroup }: { group: TrackingGroupConfig; choices: ChannelChoices; save: SaveTracking }) {
   const [enabled, setEnabled] = useState(group.enabled);
-  const [chosen, setChosen] = useState(group.channels);
-  const [adding, setAdding] = useState("");
+  const [chosen, setChosen] = useState(group.channels.map((c) => c.channelId));
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, start] = useTransition();
-
-  const have = new Set(chosen.map((c) => c.channelId));
-  const available = channels.filter((c) => !have.has(c.id) && c.canPost);
 
   function save() {
     setError(null);
     setSaved(false);
     start(async () => {
-      const result = await saveGroup(group.key, enabled, chosen.map((c) => c.channelId));
+      const result = await saveGroup(group.key, enabled, chosen);
       if (!result.ok) setError(result.error);
       else setSaved(true);
     });
@@ -78,39 +76,8 @@ function TrackingGroupCard({ group, channels, save: saveGroup }: { group: Tracki
           <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); setSaved(false); }} /> Enabled
         </label>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {chosen.length === 0 && <span className="text-xs text-muted">No channels — this feed isn&apos;t posted anywhere.</span>}
-        {chosen.map((c) => (
-          <span key={c.channelId} className="flex items-center gap-1.5 rounded-full border border-surface-border px-2.5 py-1 text-xs">
-            #{c.name ?? "(deleted)"}
-            <button type="button" aria-label={`Remove #${c.name}`} className="text-muted hover:text-red-400" onClick={() => { setChosen((all) => all.filter((x) => x.channelId !== c.channelId)); setSaved(false); }}>
-              ✕
-            </button>
-          </span>
-        ))}
-      </div>
+      <ChannelListPicker {...choices} value={chosen} max={5} empty="No channels. This feed isn't posted anywhere." onChange={(ids) => { setChosen(ids); setSaved(false); }} />
       <div className="flex flex-wrap items-center gap-2">
-        <select className={`${inputClass} max-w-xs`} value={adding} onChange={(e) => setAdding(e.target.value)} aria-label={`Add a channel for ${group.name}`}>
-          <option value="">Add a channel…</option>
-          {available.map((c) => (
-            <option key={c.id} value={c.id}>
-              #{c.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className={ghostButton}
-          disabled={!adding || chosen.length >= 5}
-          onClick={() => {
-            const channel = channels.find((c) => c.id === adding);
-            if (channel) setChosen((all) => [...all, { channelId: channel.id, name: channel.name }]);
-            setAdding("");
-            setSaved(false);
-          }}
-        >
-          + Add
-        </button>
         <button type="button" className={primaryButton} disabled={pending} onClick={save}>
           {pending ? "Saving…" : "Save"}
         </button>
@@ -121,7 +88,8 @@ function TrackingGroupCard({ group, channels, save: saveGroup }: { group: Tracki
   );
 }
 
-export function TrackingEditor({ groups, channels, save = saveTrackingAction }: { groups: TrackingGroupConfig[]; channels: GuildStructure["channels"]; save?: SaveTracking }) {
+export function TrackingEditor({ groups, channels, forums, threads, save = saveTrackingAction }: { groups: TrackingGroupConfig[]; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; save?: SaveTracking }) {
+  const choices: ChannelChoices = { channels, forums: forums ?? [], threads: threads ?? [] };
   const sources = [...new Set(groups.map((g) => g.source))];
   return (
     <div className="space-y-6">
@@ -129,7 +97,7 @@ export function TrackingEditor({ groups, channels, save = saveTrackingAction }: 
         <Card key={source} title={source}>
           <div className="grid gap-3 lg:grid-cols-2">
             {groups.filter((g) => g.source === source).map((g) => (
-              <TrackingGroupCard key={g.key} group={g} channels={channels} save={save} />
+              <TrackingGroupCard key={g.key} group={g} choices={choices} save={save} />
             ))}
           </div>
         </Card>
@@ -140,8 +108,7 @@ export function TrackingEditor({ groups, channels, save = saveTrackingAction }: 
 
 // ---------- post a message ----------
 
-export function PostTool({ channels }: { channels: GuildStructure["channels"] }) {
-  const postable = channels.filter((c) => c.canPost);
+export function PostTool({ channels, forums, threads }: { channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
   const [text, setText] = useState("");
   const [channelId, setChannelId] = useState("");
   const [convert, setConvert] = useState(false);
@@ -175,15 +142,7 @@ export function PostTool({ channels }: { channels: GuildStructure["channels"] })
           <input type="checkbox" checked={convert} onChange={(e) => setConvert(e.target.checked)} /> Tidy plain text into headings and lists first
         </label>
         <FormField label="Channel">
-          <select className={inputClass} value={channelId} onChange={(e) => setChannelId(e.target.value)}>
-            <option value="">Choose a channel…</option>
-            {postable.map((c) => (
-              <option key={c.id} value={c.id}>
-                #{c.name}
-                {c.category ? ` — ${c.category}` : ""}
-              </option>
-            ))}
-          </select>
+          <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={channelId || null} onChange={(id) => setChannelId(id ?? "")} none="Choose a channel…" />
         </FormField>
         <div className="flex flex-wrap gap-3">
           <button type="button" className={ghostButton} disabled={pending || !text.trim()} onClick={() => run(true)}>
@@ -205,7 +164,7 @@ export function PostTool({ channels }: { channels: GuildStructure["channels"] })
 
 // ---------- community settings ----------
 
-export function CommunitySettingsForm({ pollChannelId, channels }: { pollChannelId: string | null; channels: GuildStructure["channels"] }) {
+export function CommunitySettingsForm({ pollChannelId, channels, forums, threads }: { pollChannelId: string | null; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
   const [value, setValue] = useState(pollChannelId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -225,15 +184,7 @@ export function CommunitySettingsForm({ pollChannelId, channels }: { pollChannel
     <div className="space-y-6">
       <Card title="Member polls" hint="Verified members can start polls from the website. They're posted in this channel. Leave it empty to turn member polls off (admins can still post polls anywhere).">
         <FormField label="Channel for member polls">
-          <select className={inputClass} value={value} onChange={(e) => { setValue(e.target.value); setSaved(false); }}>
-            <option value="">None — member polls are off</option>
-            {channels.filter((c) => c.canPost).map((c) => (
-              <option key={c.id} value={c.id}>
-                #{c.name}
-                {c.category ? ` — ${c.category}` : ""}
-              </option>
-            ))}
-          </select>
+          <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={value || null} onChange={(id) => { setValue(id ?? ""); setSaved(false); }} none="None — member polls are off" />
         </FormField>
       </Card>
       {error && <Notice tone="error" title={error} />}

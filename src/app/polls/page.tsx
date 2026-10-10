@@ -5,7 +5,7 @@ import { MemberPollForm } from "@/components/site/MemberPollForm";
 import { PollCard } from "@/components/site/PollCard";
 import { getAdminIfAny } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
-import { adminApi } from "@/lib/jonnybot-admin";
+import { adminApi, choicesOf } from "@/lib/jonnybot-admin";
 import { memberApi } from "@/lib/member";
 import { getPolls } from "@/lib/site";
 
@@ -21,7 +21,7 @@ export default async function PollsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-6">
       <PageHeader title="Polls" subtitle="Vote right here — your vote shows up on the Discord poll too, and the other way round. Verified clan members can vote." />
-      {admin && structure?.ok ? <CreatePollForm channels={structure.data.channels} /> : session ? <MemberPollForm /> : null}
+      {admin && structure?.ok ? <CreatePollForm {...choicesOf(structure.data)} /> : session ? <MemberPollForm /> : null}
       {polls === null ? (
         <Unavailable what="Polls" />
       ) : polls.length === 0 ? (

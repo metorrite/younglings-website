@@ -40,10 +40,10 @@ export function PanelDefaultsForm({ initial, structure }: { initial: PanelDefaul
   return (
     <div className="space-y-6">
       <Card title="Staff and helpers" hint="Added to every new panel. Staff roles can close any ticket and don't count against the helper limit; helpers can see every ticket and join.">
-        <FormField label="Staff roles" hint="For example Owner, Admin, Support and Mod.">
+        <FormField as="group" label="Staff roles" hint="For example Owner, Admin, Support and Mod.">
           <RoleMultiSelect roles={roles} value={defaults.staffRoleIds} onChange={(ids) => set("staffRoleIds", ids)} />
         </FormField>
-        <FormField label="Helper roles">
+        <FormField as="group" label="Helper roles">
           <RoleMultiSelect roles={roles} value={defaults.helperRoleIds} onChange={(ids) => set("helperRoleIds", ids)} />
         </FormField>
         <FormField label="Role pinged when a ticket opens" hint="Used when the dropdown choice doesn't name its own role.">
