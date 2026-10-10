@@ -669,6 +669,21 @@ function call<T>(ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", pat
   return request<T>(ctx.actorId, method, path, body, "guildId" in ctx ? ctx.guildId : undefined);
 }
 
+/** A picture a server uploaded, by its token, or null if there isn't one (or the bot can't be reached). For the public route that serves it to Discord. */
+export async function fetchUploadedImage(token: string): Promise<{ contentType: string; data: ArrayBuffer } | null> {
+  const baseUrl = process.env.JONNYBOT_INTERNAL_API_URL;
+  const secret = process.env.JONNYBOT_INTERNAL_API_SECRET;
+  if (!baseUrl || !secret) return null;
+
+  try {
+    const response = await fetch(`${baseUrl}/internal/image/${token}`, { headers: { "X-Internal-Secret": secret }, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+    if (!response.ok) return null;
+    return { contentType: response.headers.get("content-type") ?? "application/octet-stream", data: await response.arrayBuffer() };
+  } catch {
+    return null;
+  }
+}
+
 /** Asks the bot who this Discord user is and whether they may use the dashboard. Used only by `requireAdmin()`. */
 export function whoAmI(actorId: string, guildId?: string): Promise<ApiResult<WhoAmI>> {
   return request<WhoAmI>(actorId, "GET", "whoami", undefined, guildId);
@@ -686,11 +701,20 @@ export const dashboardApi = {
   saveWelcome: (g: GuildContext, draft: WelcomeDraft) => request<WelcomeConfig>(g.actorId, "PUT", "welcome", draft, g.guildId),
   testWelcome: (g: GuildContext, draft: WelcomeDraft) =>
     request<{ sent: boolean; channelName: string; dmSent: boolean }>(g.actorId, "POST", "welcome/test", draft, g.guildId),
+
+  /** Stores a picture for one place in the welcome embed, replacing the one there. */
+  uploadWelcomeImage: (g: GuildContext, slot: string, base64: string) =>
+    request<{ token: string; version: number }>(g.actorId, "PUT", `images/welcome/${encodeURIComponent(slot)}`, { data: base64 }, g.guildId),
+  removeWelcomeImage: (g: GuildContext, slot: string) => request<{ removed: boolean }>(g.actorId, "DELETE", `images/welcome/${encodeURIComponent(slot)}`, undefined, g.guildId),
 };
 
 // ---------- the dashboard's calls (each needs a verified AdminContext) ----------
 
 export const adminApi = {
+  uploadWelcomeImage: (ctx: ApiContext, slot: string, base64: string) =>
+    call<{ token: string; version: number }>(ctx, "PUT", `images/welcome/${encodeURIComponent(slot)}`, { data: base64 }),
+  removeWelcomeImage: (ctx: ApiContext, slot: string) => call<{ removed: boolean }>(ctx, "DELETE", `images/welcome/${encodeURIComponent(slot)}`),
+
   structure: (ctx: ApiContext) => call<GuildStructure>(ctx, "GET", "structure"),
 
   getSettings: (ctx: ApiContext) => call<TicketSettings>(ctx, "GET", "ticket/settings"),
