@@ -108,8 +108,9 @@ export function containerBlocks(draft: WelcomeDraft, plain: (template: string) =
   for (const f of draft.fields) {
     const name = f.name.trim();
     const value = f.value.trim();
-    if (!name || !value) continue;
-    const block = `**${name}**\n${value}`;
+    if (!name && !value) continue;
+    // a container needs only one of the two: a name alone is a single bold line (a link on its own, say), a value alone is plain text
+    const block = !name ? value : !value ? `**${name}**` : `**${name}**\n${value}`;
     if (block.includes(BUTTON_MARKER) && wantButton()) {
       blocks(fields.trim(), false, null, NO_WRAP);
       fields = "";
