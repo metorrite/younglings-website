@@ -407,6 +407,36 @@ export interface Attention {
   notCapped: AttentionItem[];
 }
 
+export interface PollJobStatus {
+  name: string;
+  priority: string;
+  periodSeconds: number;
+  spreadSeconds: number;
+  lastRunAt: string | null;
+  lastSubmitted: number;
+}
+
+/** The bot's poll coordinator: what is waiting for a RuneMetrics request, how fast it may go, and what it has saved. */
+export interface PollQueueStatus {
+  queued: number;
+  queuedByPriority: Record<string, number>;
+  inFlight: string | null;
+  oldestWaitingSeconds: number;
+  requestBudget: number;
+  burst: number;
+  secondsPerRequest: number;
+  slowdown: number;
+  requestsLastMinute: number;
+  requestsLast10Minutes: number;
+  polled: number;
+  skippedAsRecent: number;
+  mergedDuplicates: number;
+  rateLimited: number;
+  gaveUp: number;
+  failed: number;
+  jobs: PollJobStatus[];
+}
+
 export interface BotHealth {
   uptimeSeconds: number;
   startedAt: string;
@@ -415,7 +445,7 @@ export interface BotHealth {
   discord: { status: string; gatewayPingMs: number; members: number };
   database: { ok: boolean; pingMs: number };
   environment: { live: boolean; siteUrlConfigured: boolean; autoPoll: boolean };
-  polling: { rosterSize: number; refreshedRecently: number; stale: number; newestRefresh: string | null; cycleSeconds: number; rateLimitedQueue: number; delaySeconds: number };
+  polling: { rosterSize: number; refreshedRecently: number; stale: number; newestRefresh: string | null; cycleSeconds: number; rateLimitedQueue: number; delaySeconds: number; queue?: PollQueueStatus };
   data: { newestActivity: string | null; firstSnapshot: string | null };
   scheduledPending: number;
 }

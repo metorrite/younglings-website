@@ -38,6 +38,7 @@ export default async function HealthPage() {
 
   const h = result.data;
   const p = h.polling;
+  const q = p.queue;
   return (
     <div className="space-y-6">
       <div>
@@ -50,7 +51,11 @@ export default async function HealthPage() {
         <Check ok={h.database.ok} label={h.database.ok ? "Database: reachable" : "Database: not answering"} detail={h.database.ok ? `Round trip ${h.database.pingMs} ms` : undefined} />
         <Check ok={h.environment.autoPoll} label={h.environment.autoPoll ? "Automatic updates: on" : "Automatic updates: off"} detail={h.environment.autoPoll ? `Roster refreshed every ${Math.round(p.cycleSeconds / 3600)} hours` : "RUNESCAPE_AUTO_POLL_ENABLED is off, so data only updates when someone asks for it."} />
         <Check ok={p.stale === 0} label={p.stale === 0 ? "Every member's data is fresh" : `${p.stale} members have stale data`} detail={`${p.refreshedRecently} of ${p.rosterSize} refreshed within the last cycle${p.newestRefresh ? ` · newest refresh ${p.newestRefresh.slice(11, 16)} UTC` : ""}`} />
-        <Check ok={p.rateLimitedQueue === 0} label={p.rateLimitedQueue === 0 ? "RuneMetrics: not rate limiting us" : `${p.rateLimitedQueue} players waiting out a rate limit`} detail={`Polls are spaced at least ${p.delaySeconds}s apart`} />
+        <Check
+          ok={p.rateLimitedQueue === 0}
+          label={p.rateLimitedQueue === 0 ? "RuneMetrics: not rate limiting us" : `${p.rateLimitedQueue} players waiting while the bot slows down`}
+          detail={q ? `Up to one request every ${q.secondsPerRequest}s${q.slowdown > 1 ? ` (slowed ${q.slowdown}x after a rate limit)` : ""}, bursts of ${q.burst}` : `Polls are spaced about ${p.delaySeconds}s apart`}
+        />
         <Check ok={h.environment.siteUrlConfigured} label={h.environment.siteUrlConfigured ? "Website address: set" : "Website address: not set"} detail={h.environment.siteUrlConfigured ? "/wrapped can fetch recap cards." : "Set SITE_URL on the bot so /wrapped can fetch recap cards."} />
       </section>
 
@@ -69,6 +74,63 @@ export default async function HealthPage() {
           </div>
         ))}
       </section>
+
+      {q && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Poll queue</h2>
+          <p className="text-sm text-muted">
+            Every RuneMetrics request goes through one queue. A player who was polled recently enough is skipped instead of polled again, and a person pressing
+            Update goes to the front.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Waiting", String(q.queued)],
+              ["Clan players waiting", String(q.queuedByPriority.CLAN ?? 0)],
+              ["Other linked waiting", String(q.queuedByPriority.LINKED ?? 0)],
+              ["Being polled now", q.inFlight ?? "—"],
+              ["Requests, last minute", String(q.requestsLastMinute)],
+              ["Requests, last 10 min", String(q.requestsLast10Minutes)],
+              ["Budget in hand", `${q.requestBudget} of ${q.burst}`],
+              ["Longest wait", q.oldestWaitingSeconds > 0 ? duration(q.oldestWaitingSeconds) : "—"],
+              ["Polled since start", String(q.polled)],
+              ["Skipped as recent", String(q.skippedAsRecent)],
+              ["Duplicates merged", String(q.mergedDuplicates)],
+              ["Rate limited / gave up", `${q.rateLimited} / ${q.gaveUp}`],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-surface-border bg-surface p-4">
+                <p className="text-xs tracking-wider text-muted uppercase">{label}</p>
+                <p className="mt-1 text-lg font-semibold break-words">{value}</p>
+              </div>
+            ))}
+          </div>
+          {q.jobs.length > 0 && (
+            <div className="overflow-x-auto rounded-lg border border-surface-border bg-surface">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs tracking-wider text-muted uppercase">
+                  <tr>
+                    <th className="p-3">Recurring job</th>
+                    <th className="p-3">Priority</th>
+                    <th className="p-3">Every</th>
+                    <th className="p-3">Last run</th>
+                    <th className="p-3">Queued then</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {q.jobs.map((job) => (
+                    <tr key={job.name} className="border-t border-surface-border">
+                      <td className="p-3 font-medium">{job.name}</td>
+                      <td className="p-3">{job.priority.toLowerCase().replace("_", " ")}</td>
+                      <td className="p-3">{duration(job.periodSeconds)}</td>
+                      <td className="p-3">{job.lastRunAt ? new Date(job.lastRunAt).toLocaleString() : "not yet"}</td>
+                      <td className="p-3">{job.lastRunAt ? job.lastSubmitted : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
