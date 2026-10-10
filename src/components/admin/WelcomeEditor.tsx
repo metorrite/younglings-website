@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
+import { hasBold, toBold, toPlain } from "@/lib/unicodeStyle";
 import { ImageUrlField } from "./ImageUrlField";
 import type { ForumInfo, ForumThread, GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
@@ -28,6 +29,21 @@ function toDraft(c: WelcomeConfig): WelcomeDraft {
 
 function Counter({ value, max }: { value: string; max: number }) {
   return <span className={`text-xs tabular-nums ${value.length > max ? "text-red-400" : "text-muted"}`}>{value.length}/{max}</span>;
+}
+
+/** Bold for the plain-text places (footer, author): swaps the letters for bold ones, and back. See lib/unicodeStyle. */
+function BoldToggle({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const bold = hasBold(value);
+  return (
+    <div className="mt-2 flex gap-2">
+      <button type="button" className={ghostButton} disabled={!value || bold} onClick={() => onChange(toBold(value))}>
+        <strong>Bold</strong>
+      </button>
+      <button type="button" className={ghostButton} disabled={!bold} onClick={() => onChange(toPlain(value))}>
+        Plain
+      </button>
+    </div>
+  );
 }
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
@@ -205,8 +221,9 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.author}>
               <summary className="cursor-pointer text-sm font-medium">Author</summary>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Author name">
+                <FormField label="Author name" hint="Shown beside the author icon. Like the footer, it can't use **markdown**; use Bold instead.">
                   <input id="welcome-author" className={inputClass} value={draft.authorName} onChange={(e) => set("authorName", e.target.value)} />
+                  <BoldToggle value={draft.authorName} onChange={(v) => set("authorName", v)} />
                 </FormField>
                 <FormField label="Author icon" hint="A picture address. Needs an author name.">
                   <ImageUrlField id="welcome-author-icon" slot="author_icon" value={draft.authorIconUrl} onChange={(v) => set("authorIconUrl", v)} uploads={uploads} />
@@ -229,8 +246,9 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.footer}>
               <summary className="cursor-pointer text-sm font-medium">Footer</summary>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Footer text">
+                <FormField label="Footer text" hint="Discord doesn't format footer text, so **stars** would show as stars. Use Bold to make it stand out.">
                   <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
+                  <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />
                 </FormField>
                 <FormField label="Footer icon" hint="Needs footer text.">
                   <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
