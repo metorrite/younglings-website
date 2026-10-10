@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
 import { ImageUrlField } from "./ImageUrlField";
 import type { ForumInfo, ForumThread, GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
-import type { UploadResult } from "@/lib/uploadLimits";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -37,8 +36,8 @@ type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | 
 export interface WelcomeActions {
   save: (draft: WelcomeDraft) => Promise<WelcomeActionResult<WelcomeConfig>>;
   test: (draft: WelcomeDraft) => Promise<WelcomeActionResult<{ sent: boolean; channelName: string; dmSent: boolean }>>;
-  /** Uploading a picture for one of the embed's places (replacing the one there), and deleting it. Without them the picture fields are just addresses. */
-  uploadImage?: (slot: string, form: FormData) => Promise<UploadResult>;
+  /** Where pictures for the embed's places are posted (`{url}/{slot}`; a new one replaces the old), and the action that deletes one. Without both the picture fields are just addresses. */
+  imageUploadUrl?: string;
   removeImage?: (slot: string) => Promise<WelcomeActionResult<{ removed: boolean }>>;
 }
 
@@ -47,7 +46,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
   const [meta, setMeta] = useState({ serverName: initial.serverName, memberCount: initial.memberCount });
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
-  const uploads = actions.uploadImage && actions.removeImage ? { upload: actions.uploadImage, remove: actions.removeImage } : undefined;
+  const uploads = actions.imageUploadUrl && actions.removeImage ? { url: actions.imageUploadUrl, remove: actions.removeImage } : undefined;
 
   // which detail sections start open: the ones that already have something in them
   const [open] = useState(() => ({

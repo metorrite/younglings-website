@@ -1,7 +1,7 @@
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { choicesOf, dashboardApi } from "@/lib/jonnybot-admin";
-import { removeGuildWelcomeImageAction, saveGuildWelcomeAction, testGuildWelcomeAction, uploadGuildWelcomeImageAction } from "./actions";
+import { removeGuildWelcomeImageAction, saveGuildWelcomeAction, testGuildWelcomeAction } from "./actions";
 
 export default async function GuildWelcomePage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
@@ -19,7 +19,7 @@ export default async function GuildWelcomePage({ params }: { params: Promise<{ g
         actions={{
           save: saveGuildWelcomeAction.bind(null, guildId),
           test: testGuildWelcomeAction.bind(null, guildId),
-          uploadImage: uploadGuildWelcomeImageAction.bind(null, guildId),
+          imageUploadUrl: `/api/guild-images/${guildId}/welcome`,
           removeImage: removeGuildWelcomeImageAction.bind(null, guildId),
         }}
       />

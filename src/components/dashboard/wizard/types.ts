@@ -1,4 +1,3 @@
-import type { UploadResult } from "@/lib/uploadLimits";
 import type {
   GuildStructure,
   HubCommandConfig,
@@ -43,7 +42,7 @@ export interface FullActions {
   tracking: (key: string, enabled: boolean, channelIds: string[]) => Promise<{ ok: true; data: undefined } | { ok: false; error: string }>;
   welcome: (draft: WelcomeDraft) => Promise<WelcomeActionResult<WelcomeConfig>>;
   welcomeTest: (draft: WelcomeDraft) => Promise<WelcomeActionResult<{ sent: boolean; channelName: string; dmSent: boolean }>>;
-  welcomeUpload: (slot: string, form: FormData) => Promise<UploadResult>;
+  welcomeUploadUrl: string;
   welcomeRemoveImage: (slot: string) => Promise<WelcomeActionResult<{ removed: boolean }>>;
   hub: (key: string, draft: HubCommandDraft) => Promise<WelcomeActionResult<HubCommandConfig>>;
 }
