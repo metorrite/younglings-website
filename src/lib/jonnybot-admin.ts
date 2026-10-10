@@ -27,6 +27,36 @@ export function createAdminContext(actor: Omit<AdminContext, typeof adminContext
   return actor as AdminContext;
 }
 
+declare const guildContextBrand: unique symbol;
+
+/**
+ * Proof that the current request's user may manage one particular Discord server through the bot dashboard. Like
+ * {@link AdminContext} it can only be made by `requireGuild()` in `lib/dashboard.ts`, which asks the bot about *that
+ * server* on every call; every dashboard API call needs one, so a page can never be pointed at a server the user
+ * hasn't been checked against.
+ */
+export interface GuildContext {
+  readonly [guildContextBrand]: true;
+  readonly actorId: string;
+  readonly guildId: string;
+  readonly displayName: string;
+  readonly avatarUrl: string | null;
+  readonly tier: "ADMIN" | "DEVELOPER";
+}
+
+export function createGuildContext(guild: Omit<GuildContext, typeof guildContextBrand>): GuildContext {
+  return guild as GuildContext;
+}
+
+/** A server the signed-in user may manage and JonnyBot is in. */
+export interface ManagedGuild {
+  id: string;
+  name: string;
+  iconUrl: string | null;
+  memberCount: number;
+  tier: "ADMIN" | "DEVELOPER";
+}
+
 // ---------- shapes the bot returns ----------
 
 export interface WhoAmI {
@@ -35,6 +65,9 @@ export interface WhoAmI {
   id?: string;
   displayName?: string;
   avatarUrl?: string;
+  /** The server the answer is about; only present when the user is allowed in. */
+  guildName?: string;
+  guildIconUrl?: string | null;
 }
 
 export interface GuildRole {
@@ -439,11 +472,16 @@ export const UNREACHABLE: ApiResult<never> = {
   problems: [],
 };
 
+/** What a welcome Server Action answers, for both the clan admin console and the bot dashboard. */
+export type WelcomeActionResult<T> = { ok: true; data: T } | { ok: false; error: string; problems: string[] };
+
 async function request<T>(
   actorId: string | null,
   method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
+  /** The Discord server the call is about. Left out, it is the bot's home server, which is what the clan's own admin console wants. */
+  guildId?: string,
 ): Promise<ApiResult<T>> {
   const baseUrl = process.env.JONNYBOT_INTERNAL_API_URL;
   const secret = process.env.JONNYBOT_INTERNAL_API_SECRET;
@@ -451,6 +489,7 @@ async function request<T>(
 
   const headers: Record<string, string> = { "X-Internal-Secret": secret };
   if (actorId) headers["X-Actor-Id"] = actorId;
+  if (guildId) headers["X-Guild-Id"] = guildId;
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
   let response: Response;
@@ -481,9 +520,23 @@ async function request<T>(
 }
 
 /** Asks the bot who this Discord user is and whether they may use the dashboard. Used only by `requireAdmin()`. */
-export function whoAmI(actorId: string): Promise<ApiResult<WhoAmI>> {
-  return request<WhoAmI>(actorId, "GET", "whoami");
+export function whoAmI(actorId: string, guildId?: string): Promise<ApiResult<WhoAmI>> {
+  return request<WhoAmI>(actorId, "GET", "whoami", undefined, guildId);
 }
+
+// ---------- the bot dashboard's calls (each needs a GuildContext, or just the verified user for the server list) ----------
+
+export const dashboardApi = {
+  /** The servers this user may manage where JonnyBot is installed. */
+  guilds: (actorId: string) => request<{ guilds: ManagedGuild[] }>(actorId, "GET", "guilds"),
+
+  structure: (g: GuildContext) => request<GuildStructure>(g.actorId, "GET", "structure", undefined, g.guildId),
+
+  welcome: (g: GuildContext) => request<WelcomeConfig>(g.actorId, "GET", "welcome", undefined, g.guildId),
+  saveWelcome: (g: GuildContext, draft: WelcomeDraft) => request<WelcomeConfig>(g.actorId, "PUT", "welcome", draft, g.guildId),
+  testWelcome: (g: GuildContext, draft: WelcomeDraft) =>
+    request<{ sent: boolean; channelName: string; dmSent: boolean }>(g.actorId, "POST", "welcome/test", draft, g.guildId),
+};
 
 // ---------- the dashboard's calls (each needs a verified AdminContext) ----------
 

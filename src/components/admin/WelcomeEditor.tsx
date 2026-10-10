@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveWelcomeAction, testWelcomeAction } from "@/app/admin/(console)/welcome/actions";
 import { DiscordText } from "@/components/site/DiscordText";
-import type { GuildStructure, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
+import type { GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
 
@@ -31,7 +30,13 @@ function Counter({ value, max }: { value: string; max: number }) {
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
 
-export function WelcomeEditor({ initial, channels }: { initial: WelcomeConfig; channels: GuildStructure["channels"] }) {
+/** The two things the editor does on the server. The page passes the Server Actions for whichever server it manages, so this one editor serves the clan's admin console and the bot dashboard alike. */
+export interface WelcomeActions {
+  save: (draft: WelcomeDraft) => Promise<WelcomeActionResult<WelcomeConfig>>;
+  test: (draft: WelcomeDraft) => Promise<WelcomeActionResult<{ sent: boolean; channelName: string; dmSent: boolean }>>;
+}
+
+export function WelcomeEditor({ initial, channels, actions }: { initial: WelcomeConfig; channels: GuildStructure["channels"]; actions: WelcomeActions }) {
   const [draft, setDraft] = useState<WelcomeDraft>(() => toDraft(initial));
   const [meta, setMeta] = useState({ serverName: initial.serverName, memberCount: initial.memberCount });
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -68,7 +73,7 @@ export function WelcomeEditor({ initial, channels }: { initial: WelcomeConfig; c
   function save() {
     setOutcome(null);
     start(async () => {
-      const result = await saveWelcomeAction(draft);
+      const result = await actions.save(draft);
       if (!result.ok) {
         setOutcome({ tone: "error", title: result.error, items: result.problems });
         return;
@@ -82,7 +87,7 @@ export function WelcomeEditor({ initial, channels }: { initial: WelcomeConfig; c
   function sendTest() {
     setOutcome(null);
     start(async () => {
-      const result = await testWelcomeAction(draft);
+      const result = await actions.test(draft);
       if (!result.ok) {
         setOutcome({ tone: "error", title: result.error, items: result.problems });
         return;
