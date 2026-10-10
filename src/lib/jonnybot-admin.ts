@@ -634,7 +634,7 @@ export const adminApi = {
   postHelpGuidelines: (ctx: ApiContext, channelId: string) => call<HelpSettings>(ctx, "POST", "help/guidelines/post", { channelId }),
 
   hub: (ctx: ApiContext) => call<HubConfig>(ctx, "GET", "hub"),
-  saveHubCommand: (ctx: ApiContext, key: string, draft: HubCommandDraft) => call<HubCommandConfig>(ctx, "PUT", `hub/${encodeURIComponent(key)}`, draft),
+  saveHubCommand: (ctx: ApiContext, key: string, draft: Partial<HubCommandDraft>) => call<HubCommandConfig>(ctx, "PUT", `hub/${encodeURIComponent(key)}`, draft),
 
   permissions: (ctx: ApiContext) => call<PermissionGroups>(ctx, "GET", "permissions"),
   savePermissions: (ctx: ApiContext, groups: PermissionGroupDraft[]) => call<PermissionGroups>(ctx, "PUT", "permissions", { groups }),

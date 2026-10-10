@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 /** The sections of one server's dashboard. Add a feature's page here as it moves onto the dashboard. */
 const TABS = [
   { path: "", label: "Overview" },
+  { path: "/wizard", label: "Setup guide" },
   { path: "/setup", label: "Server setup" },
   { path: "/permissions", label: "Roles & permissions" },
   { path: "/hub", label: "Hub" },
