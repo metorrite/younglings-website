@@ -10,15 +10,17 @@ export function RoleSelect({
   value,
   onChange,
   none = "None",
+  disabled = false,
 }: {
   roles: GuildRole[];
   value: string | null;
   onChange: (id: string | null) => void;
   none?: string;
+  disabled?: boolean;
 }) {
   const missing = value !== null && !roles.some((r) => r.id === value);
   return (
-    <select className={inputClass} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
+    <select className={inputClass} value={value ?? ""} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">{none}</option>
       {missing && <option value={value}>(deleted role)</option>}
       {roles.map((role) => (

@@ -46,7 +46,10 @@ export function PromotionsList({ initial }: { initial: PromotionDue[] }) {
 
 // ---------- tracking channels ----------
 
-function TrackingGroupCard({ group, channels }: { group: TrackingGroupConfig; channels: GuildStructure["channels"] }) {
+/** Saves one tracking group; the clan console's own action by default, a server-bound one on the bot dashboard. */
+type SaveTracking = (key: string, enabled: boolean, channelIds: string[]) => Promise<{ ok: true; data: undefined } | { ok: false; error: string }>;
+
+function TrackingGroupCard({ group, channels, save: saveGroup }: { group: TrackingGroupConfig; channels: GuildStructure["channels"]; save: SaveTracking }) {
   const [enabled, setEnabled] = useState(group.enabled);
   const [chosen, setChosen] = useState(group.channels);
   const [adding, setAdding] = useState("");
@@ -61,7 +64,7 @@ function TrackingGroupCard({ group, channels }: { group: TrackingGroupConfig; ch
     setError(null);
     setSaved(false);
     start(async () => {
-      const result = await saveTrackingAction(group.key, enabled, chosen.map((c) => c.channelId));
+      const result = await saveGroup(group.key, enabled, chosen.map((c) => c.channelId));
       if (!result.ok) setError(result.error);
       else setSaved(true);
     });
@@ -118,7 +121,7 @@ function TrackingGroupCard({ group, channels }: { group: TrackingGroupConfig; ch
   );
 }
 
-export function TrackingEditor({ groups, channels }: { groups: TrackingGroupConfig[]; channels: GuildStructure["channels"] }) {
+export function TrackingEditor({ groups, channels, save = saveTrackingAction }: { groups: TrackingGroupConfig[]; channels: GuildStructure["channels"]; save?: SaveTracking }) {
   const sources = [...new Set(groups.map((g) => g.source))];
   return (
     <div className="space-y-6">
@@ -126,7 +129,7 @@ export function TrackingEditor({ groups, channels }: { groups: TrackingGroupConf
         <Card key={source} title={source}>
           <div className="grid gap-3 lg:grid-cols-2">
             {groups.filter((g) => g.source === source).map((g) => (
-              <TrackingGroupCard key={g.key} group={g} channels={channels} />
+              <TrackingGroupCard key={g.key} group={g} channels={channels} save={save} />
             ))}
           </div>
         </Card>

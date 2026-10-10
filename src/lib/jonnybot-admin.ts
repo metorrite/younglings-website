@@ -460,6 +460,23 @@ export interface WelcomeConfig {
 /** What the browser may change; the preview-only fields come back from the bot but are never sent. */
 export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
 
+/** A server's basic setup: the same settings as /configure in Discord. Ids are Discord ids as strings, null when unset. */
+export interface ServerSetup {
+  clanName: string | null;
+  clanEnabled: boolean;
+  clanActive: boolean;
+  adminRoleId: string | null;
+  supportRoleId: string | null;
+  developerRoleId: string | null;
+  verificationReviewChannelId: string | null;
+  renameAlertChannelId: string | null;
+  verifiedClanRoleId: string | null;
+  verifiedNonClanRoleId: string | null;
+  unverifiedRoleId: string | null;
+  onboardingRoleId: string | null;
+}
+
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; problems: string[] };
@@ -519,6 +536,14 @@ async function request<T>(
   return { ok: true, data: json as T };
 }
 
+/** Either kind of verified user: the clan console's admin (always the home server) or a dashboard user checked against one server. */
+export type ApiContext = AdminContext | GuildContext;
+
+/** One admin call made for a verified user; a {@link GuildContext} also names the server it is about. */
+function call<T>(ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
+  return request<T>(ctx.actorId, method, path, body, "guildId" in ctx ? ctx.guildId : undefined);
+}
+
 /** Asks the bot who this Discord user is and whether they may use the dashboard. Used only by `requireAdmin()`. */
 export function whoAmI(actorId: string, guildId?: string): Promise<ApiResult<WhoAmI>> {
   return request<WhoAmI>(actorId, "GET", "whoami", undefined, guildId);
@@ -541,98 +566,101 @@ export const dashboardApi = {
 // ---------- the dashboard's calls (each needs a verified AdminContext) ----------
 
 export const adminApi = {
-  structure: (ctx: AdminContext) => request<GuildStructure>(ctx.actorId, "GET", "structure"),
+  structure: (ctx: ApiContext) => call<GuildStructure>(ctx, "GET", "structure"),
 
-  getSettings: (ctx: AdminContext) => request<TicketSettings>(ctx.actorId, "GET", "ticket/settings"),
-  saveSettings: (ctx: AdminContext, settings: Omit<TicketSettings, "nextNumber">) =>
-    request<TicketSettings>(ctx.actorId, "PUT", "ticket/settings", settings),
+  getSettings: (ctx: ApiContext) => call<TicketSettings>(ctx, "GET", "ticket/settings"),
+  saveSettings: (ctx: ApiContext, settings: Omit<TicketSettings, "nextNumber">) =>
+    call<TicketSettings>(ctx, "PUT", "ticket/settings", settings),
 
-  listPanels: (ctx: AdminContext) => request<{ panels: PanelSummary[] }>(ctx.actorId, "GET", "ticket/panels"),
-  getPanel: (ctx: AdminContext, id: string) => request<PanelDefinition>(ctx.actorId, "GET", `ticket/panels/${encodeURIComponent(id)}`),
-  createPanel: (ctx: AdminContext, panel: PanelDefinition) => request<PanelDefinition>(ctx.actorId, "POST", "ticket/panels", panel),
-  updatePanel: (ctx: AdminContext, id: string, panel: PanelDefinition) =>
-    request<PanelDefinition>(ctx.actorId, "PUT", `ticket/panels/${encodeURIComponent(id)}`, panel),
-  deletePanel: (ctx: AdminContext, id: string) => request<{ deleted: boolean }>(ctx.actorId, "DELETE", `ticket/panels/${encodeURIComponent(id)}`),
-  postPanel: (ctx: AdminContext, id: string, channelId: string) =>
-    request<PanelDefinition>(ctx.actorId, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
+  listPanels: (ctx: ApiContext) => call<{ panels: PanelSummary[] }>(ctx, "GET", "ticket/panels"),
+  getPanel: (ctx: ApiContext, id: string) => call<PanelDefinition>(ctx, "GET", `ticket/panels/${encodeURIComponent(id)}`),
+  createPanel: (ctx: ApiContext, panel: PanelDefinition) => call<PanelDefinition>(ctx, "POST", "ticket/panels", panel),
+  updatePanel: (ctx: ApiContext, id: string, panel: PanelDefinition) =>
+    call<PanelDefinition>(ctx, "PUT", `ticket/panels/${encodeURIComponent(id)}`, panel),
+  deletePanel: (ctx: ApiContext, id: string) => call<{ deleted: boolean }>(ctx, "DELETE", `ticket/panels/${encodeURIComponent(id)}`),
+  postPanel: (ctx: ApiContext, id: string, channelId: string) =>
+    call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
-  helpSettings: (ctx: AdminContext) => request<HelpSettings>(ctx.actorId, "GET", "help/settings"),
-  saveHelpSettings: (ctx: AdminContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
-    request<HelpSettings>(ctx.actorId, "PUT", "help/settings", settings),
-  createHelpPanels: (ctx: AdminContext) => request<HelpSettings>(ctx.actorId, "POST", "help/panels", {}),
-  postHelpGuidelines: (ctx: AdminContext, channelId: string) => request<HelpSettings>(ctx.actorId, "POST", "help/guidelines/post", { channelId }),
+  helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
+  saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
+    call<HelpSettings>(ctx, "PUT", "help/settings", settings),
+  createHelpPanels: (ctx: ApiContext) => call<HelpSettings>(ctx, "POST", "help/panels", {}),
+  postHelpGuidelines: (ctx: ApiContext, channelId: string) => call<HelpSettings>(ctx, "POST", "help/guidelines/post", { channelId }),
 
-  welcome: (ctx: AdminContext) => request<WelcomeConfig>(ctx.actorId, "GET", "welcome"),
-  saveWelcome: (ctx: AdminContext, draft: WelcomeDraft) => request<WelcomeConfig>(ctx.actorId, "PUT", "welcome", draft),
-  testWelcome: (ctx: AdminContext, draft: WelcomeDraft) =>
-    request<{ sent: boolean; channelName: string; dmSent: boolean }>(ctx.actorId, "POST", "welcome/test", draft),
+  serverSetup: (ctx: ApiContext) => call<ServerSetup>(ctx, "GET", "setup"),
+  saveServerSetup: (ctx: ApiContext, setup: ServerSetup) => call<ServerSetup>(ctx, "PUT", "setup", setup),
 
-  getPanelDefaults: (ctx: AdminContext) => request<PanelDefaults>(ctx.actorId, "GET", "ticket/defaults"),
-  savePanelDefaults: (ctx: AdminContext, defaults: PanelDefaults) => request<PanelDefaults>(ctx.actorId, "PUT", "ticket/defaults", defaults),
+  welcome: (ctx: ApiContext) => call<WelcomeConfig>(ctx, "GET", "welcome"),
+  saveWelcome: (ctx: ApiContext, draft: WelcomeDraft) => call<WelcomeConfig>(ctx, "PUT", "welcome", draft),
+  testWelcome: (ctx: ApiContext, draft: WelcomeDraft) =>
+    call<{ sent: boolean; channelName: string; dmSent: boolean }>(ctx, "POST", "welcome/test", draft),
 
-  selfRoles: (ctx: AdminContext) => request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "GET", "selfroles"),
-  saveSelfRoles: (ctx: AdminContext, roles: { roleId: string; label: string; description: string }[]) =>
-    request<{ roles: SelfRoleConfig[] }>(ctx.actorId, "PUT", "selfroles", { roles }),
+  getPanelDefaults: (ctx: ApiContext) => call<PanelDefaults>(ctx, "GET", "ticket/defaults"),
+  savePanelDefaults: (ctx: ApiContext, defaults: PanelDefaults) => call<PanelDefaults>(ctx, "PUT", "ticket/defaults", defaults),
 
-  adminSignups: (ctx: AdminContext) => request<{ signups: AdminSignupSheet[] }>(ctx.actorId, "GET", "signups"),
-  promotions: (ctx: AdminContext) => request<{ members: PromotionDue[] }>(ctx.actorId, "GET", "promotions"),
-  markPromoted: (ctx: AdminContext, rsn: string) => request<{ members: PromotionDue[] }>(ctx.actorId, "POST", `promotions/${encodeURIComponent(rsn)}/done`, {}),
-  tracking: (ctx: AdminContext) => request<{ groups: TrackingGroupConfig[] }>(ctx.actorId, "GET", "tracking"),
-  saveTracking: (ctx: AdminContext, key: string, body: { enabled: boolean; channelIds: string[] }) =>
-    request<{ groups: TrackingGroupConfig[] }>(ctx.actorId, "PUT", `tracking/${encodeURIComponent(key)}`, body),
-  post: (ctx: AdminContext, body: { text: string; channelId?: string; convert: boolean; dryRun: boolean }) =>
-    request<{ ok: boolean; posted: boolean; warnings: string[] }>(ctx.actorId, "POST", "post", body),
-  community: (ctx: AdminContext) => request<{ pollChannelId: string | null; pollChannelName: string | null }>(ctx.actorId, "GET", "community"),
-  saveCommunity: (ctx: AdminContext, pollChannelId: string | null) =>
-    request<{ pollChannelId: string | null; pollChannelName: string | null }>(ctx.actorId, "PUT", "community", { pollChannelId }),
-  createPoll: (ctx: AdminContext, poll: NewPoll) => request<{ created: boolean }>(ctx.actorId, "POST", "polls", poll),
-  endPoll: (ctx: AdminContext, id: string) => request<{ ended: boolean }>(ctx.actorId, "POST", `polls/${encodeURIComponent(id)}/end`, {}),
-  createSignup: (ctx: AdminContext, signup: NewSignup) => request<{ created: boolean }>(ctx.actorId, "POST", "signups", signup),
-  signupAction: (ctx: AdminContext, id: string, action: SignupAdminAction, body: { userId?: string } = {}) =>
-    request<{ done: boolean; paused?: boolean; winner?: string }>(ctx.actorId, "POST", `signups/${encodeURIComponent(id)}/${action}`, body),
+  selfRoles: (ctx: ApiContext) => call<{ roles: SelfRoleConfig[] }>(ctx, "GET", "selfroles"),
+  saveSelfRoles: (ctx: ApiContext, roles: { roleId: string; label: string; description: string }[]) =>
+    call<{ roles: SelfRoleConfig[] }>(ctx, "PUT", "selfroles", { roles }),
 
-  newsChannels: (ctx: AdminContext) => request<{ channels: NewsChannelConfig[] }>(ctx.actorId, "GET", "news"),
-  saveNewsChannels: (ctx: AdminContext, channels: { channelId: string; label: string }[]) =>
-    request<{ channels: NewsChannelConfig[] }>(ctx.actorId, "PUT", "news", { channels }),
+  adminSignups: (ctx: ApiContext) => call<{ signups: AdminSignupSheet[] }>(ctx, "GET", "signups"),
+  promotions: (ctx: ApiContext) => call<{ members: PromotionDue[] }>(ctx, "GET", "promotions"),
+  markPromoted: (ctx: ApiContext, rsn: string) => call<{ members: PromotionDue[] }>(ctx, "POST", `promotions/${encodeURIComponent(rsn)}/done`, {}),
+  tracking: (ctx: ApiContext) => call<{ groups: TrackingGroupConfig[] }>(ctx, "GET", "tracking"),
+  saveTracking: (ctx: ApiContext, key: string, body: { enabled: boolean; channelIds: string[] }) =>
+    call<{ groups: TrackingGroupConfig[] }>(ctx, "PUT", `tracking/${encodeURIComponent(key)}`, body),
+  post: (ctx: ApiContext, body: { text: string; channelId?: string; convert: boolean; dryRun: boolean }) =>
+    call<{ ok: boolean; posted: boolean; warnings: string[] }>(ctx, "POST", "post", body),
+  community: (ctx: ApiContext) => call<{ pollChannelId: string | null; pollChannelName: string | null }>(ctx, "GET", "community"),
+  saveCommunity: (ctx: ApiContext, pollChannelId: string | null) =>
+    call<{ pollChannelId: string | null; pollChannelName: string | null }>(ctx, "PUT", "community", { pollChannelId }),
+  createPoll: (ctx: ApiContext, poll: NewPoll) => call<{ created: boolean }>(ctx, "POST", "polls", poll),
+  endPoll: (ctx: ApiContext, id: string) => call<{ ended: boolean }>(ctx, "POST", `polls/${encodeURIComponent(id)}/end`, {}),
+  createSignup: (ctx: ApiContext, signup: NewSignup) => call<{ created: boolean }>(ctx, "POST", "signups", signup),
+  signupAction: (ctx: ApiContext, id: string, action: SignupAdminAction, body: { userId?: string } = {}) =>
+    call<{ done: boolean; paused?: boolean; winner?: string }>(ctx, "POST", `signups/${encodeURIComponent(id)}/${action}`, body),
 
-  clanPoints: (ctx: AdminContext) => request<ClanPoints>(ctx.actorId, "GET", "clan/points"),
+  newsChannels: (ctx: ApiContext) => call<{ channels: NewsChannelConfig[] }>(ctx, "GET", "news"),
+  saveNewsChannels: (ctx: ApiContext, channels: { channelId: string; label: string }[]) =>
+    call<{ channels: NewsChannelConfig[] }>(ctx, "PUT", "news", { channels }),
+
+  clanPoints: (ctx: ApiContext) => call<ClanPoints>(ctx, "GET", "clan/points"),
   saveClanPoints: (
-    ctx: AdminContext,
+    ctx: ApiContext,
     body: { dailyMembershipPoints: number; citadelVisitPoints: number; citadelCapPoints: number; ranks: { id: string; threshold: number }[] },
-  ) => request<ClanPoints>(ctx.actorId, "PUT", "clan/points", body),
+  ) => call<ClanPoints>(ctx, "PUT", "clan/points", body),
 
-  clanWebsite: (ctx: AdminContext) => request<{ websiteUrl: string | null }>(ctx.actorId, "GET", "clan/website"),
-  saveClanWebsite: (ctx: AdminContext, websiteUrl: string | null) => request<{ websiteUrl: string | null }>(ctx.actorId, "PUT", "clan/website", { websiteUrl }),
-  siteOptions: (ctx: AdminContext) => request<{ navEventBubble: boolean }>(ctx.actorId, "GET", "site/options"),
-  saveSiteOptions: (ctx: AdminContext, options: { navEventBubble: boolean }) => request<{ navEventBubble: boolean }>(ctx.actorId, "PUT", "site/options", options),
-  roster: (ctx: AdminContext) => request<Roster>(ctx.actorId, "GET", "members"),
-  attention: (ctx: AdminContext) => request<Attention>(ctx.actorId, "GET", "attention"),
-  health: (ctx: AdminContext) => request<BotHealth>(ctx.actorId, "GET", "health"),
-  audit: (ctx: AdminContext, query: { limit?: number; actor?: string; q?: string } = {}) => {
+  clanWebsite: (ctx: ApiContext) => call<{ websiteUrl: string | null }>(ctx, "GET", "clan/website"),
+  saveClanWebsite: (ctx: ApiContext, websiteUrl: string | null) => call<{ websiteUrl: string | null }>(ctx, "PUT", "clan/website", { websiteUrl }),
+  siteOptions: (ctx: ApiContext) => call<{ navEventBubble: boolean }>(ctx, "GET", "site/options"),
+  saveSiteOptions: (ctx: ApiContext, options: { navEventBubble: boolean }) => call<{ navEventBubble: boolean }>(ctx, "PUT", "site/options", options),
+  roster: (ctx: ApiContext) => call<Roster>(ctx, "GET", "members"),
+  attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
+  health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
+  audit: (ctx: ApiContext, query: { limit?: number; actor?: string; q?: string } = {}) => {
     const params = new URLSearchParams();
     if (query.limit) params.set("limit", String(query.limit));
     if (query.actor) params.set("actor", query.actor);
     if (query.q) params.set("q", query.q);
-    return request<{ entries: AuditEntry[] }>(ctx.actorId, "GET", `audit?${params}`);
+    return call<{ entries: AuditEntry[] }>(ctx, "GET", `audit?${params}`);
   },
-  notes: (ctx: AdminContext, rsn: string) => request<{ notes: MemberNote[] }>(ctx.actorId, "GET", `notes?rsn=${encodeURIComponent(rsn)}`),
-  addNote: (ctx: AdminContext, rsn: string, note: string) => request<{ notes: MemberNote[] }>(ctx.actorId, "POST", "notes", { rsn, note }),
-  deleteNote: (ctx: AdminContext, id: number, rsn: string) => request<{ notes: MemberNote[] }>(ctx.actorId, "DELETE", `notes/${id}?rsn=${encodeURIComponent(rsn)}`),
-  scheduled: (ctx: AdminContext) => request<{ posts: ScheduledPost[] }>(ctx.actorId, "GET", "scheduled"),
-  schedulePost: (ctx: AdminContext, body: { text: string; channelId: string; convert: boolean; sendAt: string }) => request<{ ok: boolean; id: number }>(ctx.actorId, "POST", "scheduled", body),
-  cancelScheduled: (ctx: AdminContext, id: number) => request<{ posts: ScheduledPost[] }>(ctx.actorId, "DELETE", `scheduled/${id}`),
+  notes: (ctx: ApiContext, rsn: string) => call<{ notes: MemberNote[] }>(ctx, "GET", `notes?rsn=${encodeURIComponent(rsn)}`),
+  addNote: (ctx: ApiContext, rsn: string, note: string) => call<{ notes: MemberNote[] }>(ctx, "POST", "notes", { rsn, note }),
+  deleteNote: (ctx: ApiContext, id: number, rsn: string) => call<{ notes: MemberNote[] }>(ctx, "DELETE", `notes/${id}?rsn=${encodeURIComponent(rsn)}`),
+  scheduled: (ctx: ApiContext) => call<{ posts: ScheduledPost[] }>(ctx, "GET", "scheduled"),
+  schedulePost: (ctx: ApiContext, body: { text: string; channelId: string; convert: boolean; sendAt: string }) => call<{ ok: boolean; id: number }>(ctx, "POST", "scheduled", body),
+  cancelScheduled: (ctx: ApiContext, id: number) => call<{ posts: ScheduledPost[] }>(ctx, "DELETE", `scheduled/${id}`),
 
-  ticketStats: (ctx: AdminContext) => request<TicketStats>(ctx.actorId, "GET", "ticket/stats"),
+  ticketStats: (ctx: ApiContext) => call<TicketStats>(ctx, "GET", "ticket/stats"),
 
-  listTickets: (ctx: AdminContext, query: { status?: string; panel?: string; limit?: number; offset?: number }) => {
+  listTickets: (ctx: ApiContext, query: { status?: string; panel?: string; limit?: number; offset?: number }) => {
     const params = new URLSearchParams();
     if (query.status) params.set("status", query.status);
     if (query.panel) params.set("panel", query.panel);
     if (query.limit) params.set("limit", String(query.limit));
     if (query.offset) params.set("offset", String(query.offset));
-    return request<{ tickets: TicketRow[]; hasMore: boolean }>(ctx.actorId, "GET", `ticket/tickets?${params}`);
+    return call<{ tickets: TicketRow[]; hasMore: boolean }>(ctx, "GET", `ticket/tickets?${params}`);
   },
-  getTicket: (ctx: AdminContext, id: string) => request<TicketDetail>(ctx.actorId, "GET", `ticket/tickets/${encodeURIComponent(id)}`),
+  getTicket: (ctx: ApiContext, id: string) => call<TicketDetail>(ctx, "GET", `ticket/tickets/${encodeURIComponent(id)}`),
 };
 
 /** A role's color as CSS, or undefined for the "no color" sentinel. */
