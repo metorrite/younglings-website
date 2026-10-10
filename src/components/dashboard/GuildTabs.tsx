@@ -8,6 +8,7 @@ const TABS = [
   { path: "", label: "Overview" },
   { path: "/setup", label: "Server setup" },
   { path: "/permissions", label: "Roles & permissions" },
+  { path: "/hub", label: "Hub" },
   { path: "/tracking", label: "Tracking channels" },
   { path: "/welcome", label: "Welcome message" },
 ];

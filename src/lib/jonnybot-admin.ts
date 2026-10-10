@@ -494,6 +494,35 @@ export interface PermissionGroups {
 /** What the editor sends: `key` is null for a group being created. */
 export type PermissionGroupDraft = Omit<PermissionGroupConfig, "key" | "builtin"> & { key: string | null };
 
+/** One slash command's card on the Hub. */
+export interface HubCommandConfig {
+  key: string;
+  title: string;
+  slashName: string;
+  description: string;
+  /** Plain English for who may use it when nothing has been changed. */
+  defaultAccess: string;
+  enabled: boolean;
+  /** false: the command's own rule. true: only admins plus {@link allowedRefs}. */
+  customAccess: boolean;
+  /** `group:<key>` or `role:<id>`. */
+  allowedRefs: string[];
+  /** Where members may use it; empty means anywhere. */
+  channelIds: string[];
+  /** Only the Signups card has these. */
+  signup?: { adminChannelId: string | null; lockAdminChannel: boolean; publicChannelIds: string[] };
+}
+
+export interface HubConfig {
+  commands: HubCommandConfig[];
+  /** The permission groups a "who can use it" list can name. */
+  groups: { ref: string; name: string; builtin: boolean }[];
+  maxList: number;
+}
+
+/** What a card sends on save (the fields it doesn't send keep their value). */
+export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup">;
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; problems: string[] };
@@ -603,6 +632,9 @@ export const adminApi = {
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
   createHelpPanels: (ctx: ApiContext) => call<HelpSettings>(ctx, "POST", "help/panels", {}),
   postHelpGuidelines: (ctx: ApiContext, channelId: string) => call<HelpSettings>(ctx, "POST", "help/guidelines/post", { channelId }),
+
+  hub: (ctx: ApiContext) => call<HubConfig>(ctx, "GET", "hub"),
+  saveHubCommand: (ctx: ApiContext, key: string, draft: HubCommandDraft) => call<HubCommandConfig>(ctx, "PUT", `hub/${encodeURIComponent(key)}`, draft),
 
   permissions: (ctx: ApiContext) => call<PermissionGroups>(ctx, "GET", "permissions"),
   savePermissions: (ctx: ApiContext, groups: PermissionGroupDraft[]) => call<PermissionGroups>(ctx, "PUT", "permissions", { groups }),
