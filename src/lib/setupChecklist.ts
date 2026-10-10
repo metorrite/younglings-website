@@ -44,8 +44,8 @@ export function setupChecklist(input: {
     },
     {
       id: "feeds",
-      label: "Clan event feeds",
-      detail: feedsOn > 0 ? `${feedsOn} kind${feedsOn === 1 ? "" : "s"} of event announced.` : "Nothing is announced yet.",
+      label: "Clan activity feeds",
+      detail: feedsOn > 0 ? `${feedsOn} kind${feedsOn === 1 ? "" : "s"} of clan activity announced.` : "Nothing is announced yet.",
       done: feedsOn > 0,
       page: "tracking",
     },

@@ -162,7 +162,7 @@ export function ClosingFields({ value, onChange, roles }: { value: Closing; onCh
         <input type="checkbox" checked={value.closeByHelpers} onChange={(e) => onChange({ closeByHelpers: e.target.checked })} />
         Helpers who joined the ticket
       </label>
-      <FormField label="Also these roles" hint="They can close any ticket on the panel, and they can see its tickets.">
+      <FormField as="group" label="Also these roles" hint="They can close any ticket on the panel, and they can see its tickets.">
         <RoleMultiSelect roles={roles} value={value.closeRoleIds} onChange={(ids) => onChange({ closeRoleIds: ids })} />
       </FormField>
     </>

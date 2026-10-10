@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Card, FormField, inputClass, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect, RoleSelect } from "@/components/admin/pickers";
-import type { GuildStructure, ServerSetup, WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { choicesOf, type GuildStructure, type ServerSetup, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
 
@@ -32,7 +32,6 @@ export function ServerSetupForm({
   };
   // roles the bot gives out can't be ones an integration owns
   const giveable = structure.roles.filter((role) => !role.managed);
-  const postable = structure.channels.filter((channel) => channel.canPost);
 
   function submit() {
     setOutcome(null);
@@ -71,10 +70,10 @@ export function ServerSetupForm({
       <Card title="Link requests" hint="When a member asks to link a RuneScape name, a card with Approve and Reject buttons is posted for your staff.">
         <div className="grid gap-4 md:grid-cols-2">
           <FormField label="Review channel" hint="Where link requests are posted. JonnyBot needs permission to send messages there.">
-            <ChannelSelect channels={postable} value={setup.verificationReviewChannelId} onChange={(id) => change({ verificationReviewChannelId: id })} none="No review channel" />
+            <ChannelSelect {...choicesOf(structure)} onlyPostable value={setup.verificationReviewChannelId} onChange={(id) => change({ verificationReviewChannelId: id })} none="No review channel" />
           </FormField>
           <FormField label="Rename alerts" hint="Where possible RuneScape name changes are flagged for staff.">
-            <ChannelSelect channels={postable} value={setup.renameAlertChannelId} onChange={(id) => change({ renameAlertChannelId: id })} none="No rename alerts" />
+            <ChannelSelect {...choicesOf(structure)} onlyPostable value={setup.renameAlertChannelId} onChange={(id) => change({ renameAlertChannelId: id })} none="No rename alerts" />
           </FormField>
         </div>
       </Card>

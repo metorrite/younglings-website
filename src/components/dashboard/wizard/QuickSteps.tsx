@@ -5,6 +5,7 @@ import { FormField, inputClass, Notice, primaryButton } from "@/components/admin
 import { ChannelSelect } from "@/components/admin/pickers";
 import { RolePicker } from "@/components/dashboard/pickers";
 import { WELCOME_VARIABLES } from "@/lib/welcomePreview";
+import { choicesOf } from "@/lib/jonnybot-admin";
 import type { QuickActions, WizardData } from "./types";
 
 type Outcome = { title: string; items?: string[] } | null;
@@ -77,7 +78,7 @@ export function QuickPermissions({ data, actions, onSaved }: QuickStepProps) {
 
   return (
     <div className="space-y-6">
-      <FormField label="Which roles are your server's admins?" hint="Anyone with one of these roles can use JonnyBot's admin tools and this dashboard. Pick as many roles as you like.">
+      <FormField as="group" required label="Which roles are your server's admins?" hint="Anyone with one of these roles can use JonnyBot's admin tools and this dashboard. Pick as many roles as you like.">
         <RolePicker roles={data.structure.roles} value={adminRoles} max={max} disabled={false} onChange={(ids) => { setAdminRoles(ids); clear(); }} />
       </FormField>
       <YesNo
@@ -88,7 +89,7 @@ export function QuickPermissions({ data, actions, onSaved }: QuickStepProps) {
         onChange={(v) => { setHasSupport(v); clear(); }}
       />
       {hasSupport && (
-        <FormField label="Which roles are Support?">
+        <FormField as="group" label="Which roles are Support?">
           <RolePicker roles={data.structure.roles} value={supportRoles} max={max} disabled={false} onChange={(ids) => { setSupportRoles(ids); clear(); }} />
         </FormField>
       )}
@@ -98,7 +99,7 @@ export function QuickPermissions({ data, actions, onSaved }: QuickStepProps) {
         disabled={adminRoles.length === 0}
         onClick={() => run(() => actions.permissions({ adminRoleIds: adminRoles, supportRoleIds: hasSupport ? supportRoles : [] }))}
       />
-      {adminRoles.length === 0 && <p className="text-xs text-muted">Choose at least one admin role to continue, or skip this step.</p>}
+      {adminRoles.length === 0 && <p className="text-xs text-red-300">Choose at least one admin role to continue. JonnyBot can&apos;t be managed without one.</p>}
     </div>
   );
 }
@@ -111,7 +112,6 @@ export function QuickClan({ data, actions, onSaved }: QuickStepProps) {
   const [links, setLinks] = useState(data.setup.verificationReviewChannelId !== null);
   const [reviewChannel, setReviewChannel] = useState(data.setup.verificationReviewChannelId);
   const { outcome, pending, run, clear } = useStepSave(onSaved);
-  const postable = data.structure.channels.filter((c) => c.canPost);
 
   return (
     <div className="space-y-6">
@@ -136,7 +136,7 @@ export function QuickClan({ data, actions, onSaved }: QuickStepProps) {
       />
       {links && (
         <FormField label="Where should link requests be posted for your staff?" hint="JonnyBot needs permission to send messages in that channel.">
-          <ChannelSelect channels={postable} value={reviewChannel} onChange={(c) => { setReviewChannel(c); clear(); }} none="Choose a channel" />
+          <ChannelSelect {...choicesOf(data.structure)} onlyPostable value={reviewChannel} onChange={(c) => { setReviewChannel(c); clear(); }} none="Choose a channel" />
         </FormField>
       )}
       <StepFooter
@@ -156,7 +156,6 @@ export function QuickTracking({ data, actions, onSaved }: QuickStepProps) {
   const [announce, setAnnounce] = useState(current !== null);
   const [channel, setChannel] = useState<string | null>(current);
   const { outcome, pending, run, clear } = useStepSave(onSaved);
-  const postable = data.structure.channels.filter((c) => c.canPost);
 
   return (
     <div className="space-y-6">
@@ -165,14 +164,14 @@ export function QuickTracking({ data, actions, onSaved }: QuickStepProps) {
       )}
       <YesNo
         name="announce"
-        question="Announce your clan's events in Discord?"
-        hint="Drops, quest completions, boss kills, Citadel visits, and members joining or leaving."
+        question="Announce your clan's activity in Discord?"
+        hint="What your members do in game, from their adventure logs: drops, quests, boss kills and Citadel visits. Also members joining and leaving the clan."
         value={announce}
         onChange={(v) => { setAnnounce(v); clear(); }}
       />
       {announce && (
-        <FormField label="Which channel should they go in?" hint="Every kind of event is announced there. The full setup lets you give each kind its own channels.">
-          <ChannelSelect channels={postable} value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
+        <FormField label="Which channel should they go in?" hint="Every kind of activity is announced there. The full setup lets you give each kind its own channels.">
+          <ChannelSelect {...choicesOf(data.structure)} onlyPostable value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
         </FormField>
       )}
       <StepFooter pending={pending} outcome={outcome} disabled={announce && !channel} onClick={() => run(() => actions.tracking({ channelId: announce ? channel : null }))} />
@@ -192,14 +191,13 @@ export function QuickWelcome({ data, actions, onSaved }: QuickStepProps) {
   const [replace, setReplace] = useState(!already);
   const [text, setText] = useState(existing.messageType === "MESSAGE" && existing.content ? existing.content : DEFAULT_WELCOME);
   const { outcome, pending, run, clear } = useStepSave(onSaved);
-  const postable = data.structure.channels.filter((c) => c.canPost);
 
   return (
     <div className="space-y-6">
       <YesNo name="greet" question="Greet new members when they join?" hint="JonnyBot posts a message in a channel for each new member." value={greet} onChange={(v) => { setGreet(v); clear(); }} />
       {greet && (
         <FormField label="Which channel should the greeting go in?">
-          <ChannelSelect channels={postable} value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
+          <ChannelSelect {...choicesOf(data.structure)} onlyPostable value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
         </FormField>
       )}
       {greet && already && (

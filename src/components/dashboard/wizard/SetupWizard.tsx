@@ -9,6 +9,7 @@ import { Card, ghostButton, primaryButton } from "@/components/admin/ui";
 import { HubEditor } from "@/components/dashboard/HubEditor";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
+import { choicesOf } from "@/lib/jonnybot-admin";
 import { setupChecklist } from "@/lib/setupChecklist";
 import { QuickClan, QuickCommands, QuickPermissions, QuickTracking, QuickWelcome, type QuickStepProps } from "./QuickSteps";
 import type { FullActions, QuickActions, WizardData } from "./types";
@@ -27,7 +28,7 @@ interface Feature {
 const FEATURES: Feature[] = [
   { id: "permissions", title: "Admins & staff", blurb: "Who runs JonnyBot in your server. The one thing it can't do without.", quick: (p) => <QuickPermissions {...p} /> },
   { id: "clan", title: "Clan & link requests", blurb: "Track a RuneScape clan, and let members link their names with staff approval.", quick: (p) => <QuickClan {...p} /> },
-  { id: "tracking", title: "Clan event feeds", blurb: "Announce drops, quests, boss kills, Citadel visits, joins and leaves.", quick: (p) => <QuickTracking {...p} /> },
+  { id: "tracking", title: "Clan activity feeds", blurb: "Announce your clan's adventure log activity: drops, quests, boss kills and Citadel visits, plus members joining and leaving.", quick: (p) => <QuickTracking {...p} /> },
   { id: "welcome", title: "Welcome message", blurb: "Greet each new member in a channel.", quick: (p) => <QuickWelcome {...p} /> },
   { id: "commands", title: "Commands", blurb: "Signups, polls, recap cards and the combat achievement lookup.", quick: (p) => <QuickCommands {...p} /> },
 ];
@@ -189,8 +190,8 @@ export function SetupWizard({ guildId, guildName, data, quick, full }: { guildId
   const fullBody: Record<FeatureId, ReactNode> = {
     permissions: <PermissionGroupsEditor initial={data.permissions} roles={data.structure.roles} canEdit={data.isAdmin} save={full.permissions} />,
     clan: <ServerSetupForm initial={data.setup} structure={data.structure} save={full.setup} />,
-    tracking: <TrackingEditor groups={data.tracking} channels={data.structure.channels} save={full.tracking} />,
-    welcome: <WelcomeEditor initial={data.welcome} channels={data.structure.channels} actions={{ save: full.welcome, test: full.welcomeTest }} />,
+    tracking: <TrackingEditor groups={data.tracking} {...choicesOf(data.structure)} save={full.tracking} />,
+    welcome: <WelcomeEditor initial={data.welcome} {...choicesOf(data.structure)} actions={{ save: full.welcome, test: full.welcomeTest }} />,
     commands: <HubEditor hub={data.hub} structure={data.structure} canEditAccess={data.isAdmin} save={full.hub} />,
   };
 
@@ -217,6 +218,9 @@ export function SetupWizard({ guildId, guildName, data, quick, full }: { guildId
           <button type="button" className={primaryButton} onClick={() => go(index + 1)}>
             {index + 1 === steps.length ? "Finish" : "Next step"}
           </button>
+        ) : step.id === "permissions" && data.isAdmin ? (
+          // the admin roles are the one thing JonnyBot can't work without, so this step can't be skipped
+          <span className="text-xs text-muted">This step can&apos;t be skipped: JonnyBot needs at least one admin role.</span>
         ) : (
           <button type="button" className={ghostButton} onClick={() => go(index + 1)}>
             Skip this step

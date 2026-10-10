@@ -1,5 +1,5 @@
 import { requireAdmin, unwrap } from "@/lib/admin";
-import { adminApi } from "@/lib/jonnybot-admin";
+import { adminApi, choicesOf } from "@/lib/jonnybot-admin";
 import { CommunitySettingsForm } from "@/components/admin/AdminExtras";
 
 export const metadata = { title: "Community settings — Younglings" };
@@ -14,7 +14,7 @@ export default async function CommunityPage() {
         <h1 className="text-2xl font-semibold">Community settings</h1>
         <p className="mt-1 text-sm text-muted">Settings for what members can do from the website.</p>
       </div>
-      <CommunitySettingsForm pollChannelId={settings.pollChannelId} channels={structure.channels} />
+      <CommunitySettingsForm pollChannelId={settings.pollChannelId} {...choicesOf(structure)} />
     </div>
   );
 }

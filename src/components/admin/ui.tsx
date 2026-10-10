@@ -21,13 +21,28 @@ export function Card({ title, hint, children }: { title?: string; hint?: ReactNo
   );
 }
 
-export function FormField({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium">{label}</span>
+/**
+ * A labelled question. A plain input or select goes in the default `label` form, so clicking the label focuses it. Anything with
+ * buttons in it (a list of removable roles or channels, say) must use `as="group"`: inside a `label`, a click on any blank space
+ * is passed on to the first button, which for a removable pill means removing it.
+ */
+export function FormField({ label, hint, required = false, as = "label", children }: { label: string; hint?: ReactNode; required?: boolean; as?: "label" | "group"; children: ReactNode }) {
+  const body = (
+    <>
+      <span className="text-sm font-medium">
+        {label}
+        {required && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">Required</span>}
+      </span>
       {hint && <span className="mt-0.5 block text-xs text-muted">{hint}</span>}
       <span className="mt-1 block">{children}</span>
-    </label>
+    </>
+  );
+  return as === "group" ? (
+    <div role="group" aria-label={label} className="block">
+      {body}
+    </div>
+  ) : (
+    <label className="block">{body}</label>
   );
 }
 
