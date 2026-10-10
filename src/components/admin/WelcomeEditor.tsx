@@ -5,7 +5,7 @@ import { DiscordText } from "@/components/site/DiscordText";
 import { BUTTON_MARKER, containerBlocks } from "@/lib/containerPreview";
 import { hasBold, toBold, toPlain } from "@/lib/unicodeStyle";
 import { ImageUrlField } from "./ImageUrlField";
-import type { ForumInfo, ForumThread, GuildStructure, LinkButtonStyle, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
+import type { FooterStyle, ForumInfo, ForumThread, GuildStructure, LinkButtonStyle, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -18,6 +18,12 @@ const TYPES: { id: WelcomeMessageType; label: string; hint: string }[] = [
   { id: "EMBED", label: "Embed", hint: "Just the boxed embed." },
   { id: "EMBED_TEXT", label: "Embed and text", hint: "A line of text above the embed." },
   { id: "CONTAINER", label: "Container", hint: "Embed-like, with the button inside it and links anywhere." },
+];
+
+const FOOTER_LOOKS: { id: FooterStyle; label: string; hint: string }[] = [
+  { id: "small", label: "Small grey", hint: "Like an embed's footer." },
+  { id: "normal", label: "Normal", hint: "As bright as the rest of the text." },
+  { id: "bold", label: "Bold", hint: "Bold and bright, like Dyno's." },
 ];
 
 const BUTTON_COLOURS: { id: LinkButtonStyle; label: string; bg: string }[] = [
@@ -330,6 +336,24 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                   <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
                   {container ? <LinkInserter onInsert={(md) => set("footerText", draft.footerText ? `${draft.footerText} ${md}` : md)} /> : <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />}
                 </FormField>
+                {container && (
+                  <FormField label="Footer look" as="group" hint="An embed's footer is always small and grey: Discord fixes that. In a container the footer is ordinary text, so it can be brighter.">
+                    <div className="flex flex-wrap gap-2">
+                      {FOOTER_LOOKS.map((look) => (
+                        <button
+                          key={look.id}
+                          type="button"
+                          aria-pressed={draft.footerStyle === look.id}
+                          title={look.hint}
+                          onClick={() => set("footerStyle", look.id)}
+                          className={`rounded-md border px-3 py-1.5 text-sm transition ${draft.footerStyle === look.id ? "border-gold bg-gold/10" : "border-surface-border text-muted hover:text-foreground"}`}
+                        >
+                          {look.label}
+                        </button>
+                      ))}
+                    </div>
+                  </FormField>
+                )}
                 {!container && (
                   <FormField label="Footer icon" hint="Needs footer text.">
                     <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
