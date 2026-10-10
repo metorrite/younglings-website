@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { prepareImage } from "@/lib/imagePrep";
 import { MAX_UPLOAD_BYTES, UPLOAD_PATH, type UploadResult } from "@/lib/uploadLimits";
 import { ghostButton, inputClass } from "./ui";
 
@@ -28,14 +29,18 @@ export function ImageUrlField({ id, slot, value, onChange, uploads }: { id: stri
   async function choose(file: File | undefined) {
     if (!file || !uploads) return;
     setError(null);
-    if (file.size > MAX_UPLOAD_BYTES) {
+    setBusy(true);
+    // Shrunk first: a smaller upload is quicker, far less likely to stall, and the picture is only ever shown small.
+    const prepared = await prepareImage(file, slot);
+    if (prepared.size > MAX_UPLOAD_BYTES) {
+      setBusy(false);
       setError(`That picture is too big. Keep it under ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB.`);
+      if (fileInput.current) fileInput.current.value = "";
       return;
     }
-    setBusy(true);
     try {
       const form = new FormData();
-      form.set("file", file);
+      form.set("file", prepared);
       // A plain request, so a failure shows as the status it really was, and a stalled one can be given up on.
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), UPLOAD_PATIENCE_MS);
