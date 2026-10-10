@@ -501,7 +501,9 @@ export interface ScheduledPost {
   error: string | null;
 }
 
-export type WelcomeMessageType = "MESSAGE" | "EMBED" | "EMBED_TEXT";
+/** CONTAINER is a newer kind of message built from blocks, which is what lets the link button sit inside it. */
+export type WelcomeMessageType = "MESSAGE" | "EMBED" | "EMBED_TEXT" | "CONTAINER";
+export type LinkButtonStyle = "primary" | "secondary" | "success" | "danger";
 
 export interface WelcomeField {
   name: string;
@@ -531,6 +533,7 @@ export interface WelcomeConfig {
   fields: WelcomeField[];
   linkButton: boolean;
   linkButtonLabel: string;
+  linkButtonStyle: LinkButtonStyle;
   serverName: string;
   memberCount: number;
   serverIconUrl: string | null;

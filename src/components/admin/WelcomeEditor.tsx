@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
+import { BUTTON_MARKER, containerBlocks } from "@/lib/containerPreview";
 import { hasBold, toBold, toPlain } from "@/lib/unicodeStyle";
 import { ImageUrlField } from "./ImageUrlField";
-import type { ForumInfo, ForumThread, GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
+import type { ForumInfo, ForumThread, GuildStructure, LinkButtonStyle, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -16,6 +17,14 @@ const TYPES: { id: WelcomeMessageType; label: string; hint: string }[] = [
   { id: "MESSAGE", label: "Message", hint: "Just a line of text." },
   { id: "EMBED", label: "Embed", hint: "Just the boxed embed." },
   { id: "EMBED_TEXT", label: "Embed and text", hint: "A line of text above the embed." },
+  { id: "CONTAINER", label: "Container", hint: "Embed-like, with the button inside it and links anywhere." },
+];
+
+const BUTTON_COLOURS: { id: LinkButtonStyle; label: string; bg: string }[] = [
+  { id: "primary", label: "Blue", bg: "#5865f2" },
+  { id: "secondary", label: "Grey", bg: "#4e5058" },
+  { id: "success", label: "Green", bg: "#248046" },
+  { id: "danger", label: "Red", bg: "#da373c" },
 ];
 
 function toDraft(c: WelcomeConfig): WelcomeDraft {
@@ -43,6 +52,34 @@ function BoldToggle({ value, onChange }: { value: string; onChange: (value: stri
         Plain
       </button>
     </div>
+  );
+}
+
+/** Adds a `[text](address)` link to the end of a text. Discord shows those as clickable words wherever it formats text. */
+function LinkInserter({ onInsert }: { onInsert: (markdown: string) => void }) {
+  const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
+  const ready = text.trim() !== "" && /^https?:\/\//i.test(url.trim());
+  return (
+    <details className="mt-2 text-sm">
+      <summary className="cursor-pointer text-xs text-muted">Add a link</summary>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input aria-label="Link text" className={`${inputClass} max-w-48`} placeholder="Link text" value={text} onChange={(e) => setText(e.target.value)} />
+        <input aria-label="Link address" className={`${inputClass} max-w-64`} placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <button
+          type="button"
+          className={ghostButton}
+          disabled={!ready}
+          onClick={() => {
+            onInsert(`[${text.trim()}](${url.trim()})`);
+            setText("");
+            setUrl("");
+          }}
+        >
+          Add
+        </button>
+      </div>
+    </details>
   );
 }
 
@@ -81,7 +118,8 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
     set("fields", draft.fields.map((f, i) => (i === index ? { ...f, ...patch } : f)));
   }
 
-  const hasText = draft.messageType !== "EMBED";
+  const container = draft.messageType === "CONTAINER";
+  const hasText = draft.messageType === "MESSAGE" || draft.messageType === "EMBED_TEXT";
   const hasEmbed = draft.messageType !== "MESSAGE";
   const channel = channels.find((c) => c.id === draft.channelId);
   const sample: PreviewSample = {
@@ -133,7 +171,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
 
           <fieldset>
             <legend className="text-sm font-medium">Message type</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
               {TYPES.map((t) => (
                 <label key={t.id} className={`flex cursor-pointer flex-col rounded-md border px-3 py-2 text-sm ${draft.messageType === t.id ? "border-gold bg-gold/10" : "border-surface-border bg-background/40"}`}>
                   <span className="flex items-center gap-2 font-medium">
@@ -166,9 +204,45 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             </span>
           </label>
           {draft.linkButton && (
-            <FormField label="Button label">
-              <input id="welcome-button-label" className={inputClass} value={draft.linkButtonLabel} maxLength={80} onChange={(e) => set("linkButtonLabel", e.target.value)} />
-            </FormField>
+            <div className="space-y-3">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Button label" hint={container ? "Beside a line of text (like the footer) a long label squeezes the text, so keep it short there, such as Link RS name." : undefined}>
+                  <input id="welcome-button-label" className={inputClass} value={draft.linkButtonLabel} maxLength={80} onChange={(e) => set("linkButtonLabel", e.target.value)} />
+                </FormField>
+                <FormField label="Button colour" as="group">
+                  <div className="flex flex-wrap gap-2">
+                    {BUTTON_COLOURS.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={draft.linkButtonStyle === c.id}
+                        onClick={() => set("linkButtonStyle", c.id)}
+                        className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition ${draft.linkButtonStyle === c.id ? "border-gold bg-gold/10" : "border-surface-border text-muted hover:text-foreground"}`}
+                      >
+                        <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ backgroundColor: c.bg }} />
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </FormField>
+              </div>
+              {container ? (
+                <p className="text-xs text-muted">
+                  Write <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description, a field&apos;s value or the footer to put the button on that line, with that line&apos;s text beside it.
+                  Leave it out and the button goes at the bottom. Put it in the footer in <strong>Grey</strong> for a quiet look.
+                  <span className="mt-2 flex flex-wrap gap-2">
+                    <button type="button" className={ghostButton} onClick={() => set("footerText", `${draft.footerText.replace(BUTTON_MARKER, "").trim()} ${BUTTON_MARKER}`.trim())}>
+                      Put it in the footer
+                    </button>
+                    <button type="button" className={ghostButton} onClick={() => set("description", `${draft.description.replace(BUTTON_MARKER, "").trimEnd()}\n${BUTTON_MARKER}`)}>
+                      Put it after the description
+                    </button>
+                  </span>
+                </p>
+              ) : (
+                <p className="text-xs text-muted">With an embed or a plain message the button sits underneath it: Discord can&apos;t put a button inside an embed. Choose <strong>Container</strong> above to place it inside.</p>
+              )}
+            </div>
           )}
         </Card>
 
@@ -184,7 +258,10 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
         )}
 
         {hasEmbed && (
-          <Card title="Embed" hint="Every part is optional.">
+          <Card
+            title={container ? "Container" : "Embed"}
+            hint={container ? "Every part is optional. Everything here is text Discord formats, so **bold** and [links](https://example.com) work in every part, and the footer is small grey text. Inline fields and the author and footer icons don't exist in a container." : "Every part is optional."}
+          >
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium">Colour</span>
               <input
@@ -216,18 +293,21 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             <FormField label="Description">
               <textarea id="welcome-description" className={`${inputClass} min-h-32`} rows={6} value={draft.description} onChange={(e) => set("description", e.target.value)} />
               <Counter value={draft.description} max={MAX.description} />
+              <LinkInserter onInsert={(md) => set("description", draft.description ? `${draft.description.trimEnd()} ${md}` : md)} />
             </FormField>
 
             <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.author}>
               <summary className="cursor-pointer text-sm font-medium">Author</summary>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Author name" hint="Shown beside the author icon. Like the footer, it can't use **markdown**; use Bold instead.">
+                <FormField label="Author name" hint={container ? "Shown as small grey text above the title. Markdown works." : "Shown beside the author icon. Like the footer, it can't use **markdown**; use Bold instead."}>
                   <input id="welcome-author" className={inputClass} value={draft.authorName} onChange={(e) => set("authorName", e.target.value)} />
-                  <BoldToggle value={draft.authorName} onChange={(v) => set("authorName", v)} />
+                  {!container && <BoldToggle value={draft.authorName} onChange={(v) => set("authorName", v)} />}
                 </FormField>
-                <FormField label="Author icon" hint="A picture address. Needs an author name.">
-                  <ImageUrlField id="welcome-author-icon" slot="author_icon" value={draft.authorIconUrl} onChange={(v) => set("authorIconUrl", v)} uploads={uploads} />
-                </FormField>
+                {!container && (
+                  <FormField label="Author icon" hint="A picture address. Needs an author name.">
+                    <ImageUrlField id="welcome-author-icon" slot="author_icon" value={draft.authorIconUrl} onChange={(v) => set("authorIconUrl", v)} uploads={uploads} />
+                  </FormField>
+                )}
               </div>
             </details>
 
@@ -246,13 +326,15 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.footer}>
               <summary className="cursor-pointer text-sm font-medium">Footer</summary>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Footer text" hint="Discord doesn't format footer text, so **stars** would show as stars. Use Bold to make it stand out.">
+                <FormField label="Footer text" hint={container ? "Shown as small grey text at the bottom. Markdown works, so **bold** and [links](https://example.com) do." : "Discord doesn't format footer text, so **stars** would show as stars. Use Bold to make it stand out."}>
                   <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
-                  <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />
+                  {container ? <LinkInserter onInsert={(md) => set("footerText", draft.footerText ? `${draft.footerText} ${md}` : md)} /> : <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />}
                 </FormField>
-                <FormField label="Footer icon" hint="Needs footer text.">
-                  <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
-                </FormField>
+                {!container && (
+                  <FormField label="Footer icon" hint="Needs footer text.">
+                    <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
+                  </FormField>
+                )}
               </div>
             </details>
 
@@ -261,12 +343,20 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
               <div className="mt-3 space-y-3">
                 {draft.fields.map((field, i) => (
                   <div key={i} className="space-y-2 rounded-md border border-surface-border p-3">
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                      <input aria-label={`Field ${i + 1} name`} className={inputClass} placeholder="Field name" value={field.name} onChange={(e) => setField(i, { name: e.target.value })} />
-                      <label className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" className="accent-[var(--color-gold)]" checked={field.inline} onChange={(e) => setField(i, { inline: e.target.checked })} />
-                        Inline
-                      </label>
+                    <div className={container ? "" : "grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"}>
+                      <input
+                        aria-label={`Field ${i + 1} name`}
+                        className={inputClass}
+                        placeholder={container ? "Field name (a link works: [Website](https://example.com))" : "Field name"}
+                        value={field.name}
+                        onChange={(e) => setField(i, { name: e.target.value })}
+                      />
+                      {!container && (
+                        <label className="flex items-center gap-2 text-sm" title="Inline fields sit side by side, up to three to a row, instead of one under another.">
+                          <input type="checkbox" className="accent-[var(--color-gold)]" checked={field.inline} onChange={(e) => setField(i, { inline: e.target.checked })} />
+                          Inline
+                        </label>
+                      )}
                     </div>
                     <textarea aria-label={`Field ${i + 1} value`} className={`${inputClass} min-h-16`} rows={2} placeholder="Field value" value={field.value} onChange={(e) => setField(i, { value: e.target.value })} />
                     <button type="button" className={ghostButton} onClick={() => set("fields", draft.fields.filter((_, j) => j !== i))}>
@@ -325,7 +415,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
       <div className="min-w-0">
         <div className="xl:sticky xl:top-4">
           <Card title="Preview" hint="Roughly how it will look in Discord, for an example member called PvmRyan.">
-            <Preview draft={draft} sample={sample} hasText={hasText} hasEmbed={hasEmbed} />
+            <Preview draft={draft} sample={sample} hasText={hasText} hasEmbed={hasEmbed} container={container} />
             {draft.alsoDm && <p className="text-xs text-muted">A copy is also sent to the member by DM, without the button.</p>}
           </Card>
         </div>
@@ -338,7 +428,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
 
 const isWebAddress = (url: string) => /^https?:\/\//i.test(url);
 
-function Preview({ draft, sample, hasText, hasEmbed }: { draft: WelcomeDraft; sample: PreviewSample; hasText: boolean; hasEmbed: boolean }) {
+function Preview({ draft, sample, hasText, hasEmbed, container }: { draft: WelcomeDraft; sample: PreviewSample; hasText: boolean; hasEmbed: boolean; container: boolean }) {
   const content = fillPreview(draft.content, sample);
   const plain = (t: string) => fillPreview(t, sample, true).text.trim();
   const title = plain(draft.title);
@@ -354,7 +444,8 @@ function Preview({ draft, sample, hasText, hasEmbed }: { draft: WelcomeDraft; sa
 
   const embedHasContent = !!(title || description.text.trim() || author || thumbnail || image || footer || fields.length > 0);
   const showText = hasText && content.text.trim() !== "";
-  const showEmbed = hasEmbed && embedHasContent;
+  const showEmbed = hasEmbed && embedHasContent && !container;
+  const showContainer = container && embedHasContent;
 
   return (
     <div className="rounded-md bg-[#313338] p-4 text-[#dbdee1]">
@@ -425,15 +516,73 @@ function Preview({ draft, sample, hasText, hasEmbed }: { draft: WelcomeDraft; sa
             </div>
           )}
 
-          {!showText && !showEmbed && <p className="text-sm text-[#949ba4]">Nothing to show yet. Add some text or an embed.</p>}
+          {showContainer && <ContainerPreview draft={draft} sample={sample} plain={plain} />}
+
+          {!showText && !showEmbed && !showContainer && <p className="text-sm text-[#949ba4]">Nothing to show yet. Add some text or an embed.</p>}
 
           {draft.linkButton && (showText || showEmbed) && (
             <p className="mt-2">
-              <span className="inline-block rounded bg-[#5865f2] px-4 py-1.5 text-sm font-medium text-white">{draft.linkButtonLabel.trim() || "Link your RuneScape name"}</span>
+              <LinkButton draft={draft} />
             </p>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The link button as Discord draws it, in the colour chosen. */
+function LinkButton({ draft }: { draft: WelcomeDraft }) {
+  const colour = BUTTON_COLOURS.find((c) => c.id === draft.linkButtonStyle) ?? BUTTON_COLOURS[0];
+  return (
+    <span className="inline-block rounded px-4 py-1.5 text-sm font-medium text-white" style={{ backgroundColor: colour.bg }}>
+      {draft.linkButtonLabel.trim() || "Link your RuneScape name"}
+    </span>
+  );
+}
+
+/** A Container welcome: the same blocks the bot builds, with the button where {rs_button} puts it. */
+function ContainerPreview({ draft, sample, plain }: { draft: WelcomeDraft; sample: PreviewSample; plain: (t: string) => string }) {
+  const blocks = containerBlocks(draft, plain, isWebAddress);
+  const text = (t: string) => {
+    const filled = fillPreview(t, sample);
+    return <DiscordText text={filled.text} mentions={filled.mentions} className="text-[#dbdee1]" />;
+  };
+
+  return (
+    <div className="mt-1 max-w-[26rem] space-y-2 overflow-hidden rounded border-l-4 bg-[#2b2d31] p-3" style={{ borderLeftColor: draft.color === null ? "#1e1f22" : colorToHex(draft.color) }}>
+      {blocks.map((b, i) => {
+        switch (b.kind) {
+          case "text":
+            return <div key={i}>{text(b.text)}</div>;
+          case "thumb":
+            return (
+              <div key={i} className="flex gap-3">
+                <div className="min-w-0 flex-1">{text(b.text)}</div>
+                {/* eslint-disable-next-line @next/next/no-img-element -- a preview of an address the admin typed; it can be any host */}
+                <img src={b.thumbnail} alt="" className="h-16 w-16 shrink-0 rounded object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+              </div>
+            );
+          case "button":
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">{text(b.text)}</div>
+                <LinkButton draft={draft} />
+              </div>
+            );
+          case "gallery":
+            // eslint-disable-next-line @next/next/no-img-element -- a preview of an address the admin typed; it can be any host
+            return <img key={i} src={b.url} alt="" className="max-h-72 w-full rounded object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />;
+          case "gap":
+            return <div key={i} className="h-1" />;
+          case "row":
+            return (
+              <div key={i}>
+                <LinkButton draft={draft} />
+              </div>
+            );
+        }
+      })}
     </div>
   );
 }
