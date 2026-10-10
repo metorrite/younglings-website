@@ -5,6 +5,9 @@ import type { WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { MAX_UPLOAD_BYTES, UPLOAD_PATH, type UploadResult } from "@/lib/uploadLimits";
 import { ghostButton, inputClass } from "./ui";
 
+/** How long to wait for an upload before saying so. */
+const UPLOAD_PATIENCE_MS = 45_000;
+
 export interface ImageUploads {
   upload: (slot: string, form: FormData) => Promise<UploadResult>;
   remove: (slot: string) => Promise<WelcomeActionResult<{ removed: boolean }>>;
@@ -32,11 +35,15 @@ export function ImageUrlField({ id, slot, value, onChange, uploads }: { id: stri
     try {
       const form = new FormData();
       form.set("file", file);
-      const result = await uploads.upload(slot, form);
+      // A Server Action can't be cancelled, but the person shouldn't be left watching "Working…" if the site or the bot stalls.
+      const result = await Promise.race([
+        uploads.upload(slot, form),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), UPLOAD_PATIENCE_MS)),
+      ]);
       if (result.ok) onChange(result.data.url);
       else setError(result.error);
-    } catch {
-      setError("The upload didn't go through. Try again.");
+    } catch (e) {
+      setError(e instanceof Error && e.message === "timeout" ? "That's taking too long. JonnyBot may be restarting: wait a minute and try again." : "The upload didn't go through. Try again.");
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = "";
