@@ -6,7 +6,7 @@ import { saveHubCommandAction } from "../commands/actions";
 import { savePermissionGroupsAction } from "../permissions/actions";
 import { saveServerSetupAction } from "../settings/actions";
 import { saveGuildTrackingAction } from "../tracking/actions";
-import { saveGuildWelcomeAction, testGuildWelcomeAction } from "../welcome/actions";
+import { removeGuildWelcomeImageAction, saveGuildWelcomeAction, testGuildWelcomeAction, uploadGuildWelcomeImageAction } from "../welcome/actions";
 import { quickSaveClanAction, quickSaveCommandsAction, quickSavePermissionsAction, quickSaveTrackingAction, quickSaveWelcomeAction } from "./actions";
 
 export default async function SetupWizardPage({ params, searchParams }: { params: Promise<{ guildId: string }>; searchParams: Promise<{ mode?: string }> }) {
@@ -38,6 +38,8 @@ export default async function SetupWizardPage({ params, searchParams }: { params
     tracking: saveGuildTrackingAction.bind(null, guildId),
     welcome: saveGuildWelcomeAction.bind(null, guildId),
     welcomeTest: testGuildWelcomeAction.bind(null, guildId),
+    welcomeUpload: uploadGuildWelcomeImageAction.bind(null, guildId),
+    welcomeRemoveImage: removeGuildWelcomeImageAction.bind(null, guildId),
     hub: saveHubCommandAction.bind(null, guildId),
   };
 

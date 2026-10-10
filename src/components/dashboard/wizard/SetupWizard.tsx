@@ -192,7 +192,7 @@ export function SetupWizard({ guildId, guildName, data, quick, full, initialPath
     permissions: <PermissionGroupsEditor initial={data.permissions} roles={data.structure.roles} canEdit={data.isAdmin} save={full.permissions} />,
     clan: <ServerSetupForm initial={data.setup} structure={data.structure} save={full.setup} />,
     tracking: <TrackingEditor groups={data.tracking} {...choicesOf(data.structure)} save={full.tracking} />,
-    welcome: <WelcomeEditor initial={data.welcome} {...choicesOf(data.structure)} actions={{ save: full.welcome, test: full.welcomeTest }} />,
+    welcome: <WelcomeEditor initial={data.welcome} {...choicesOf(data.structure)} actions={{ save: full.welcome, test: full.welcomeTest, uploadImage: full.welcomeUpload, removeImage: full.welcomeRemoveImage }} />,
     commands: <HubEditor hub={data.hub} structure={data.structure} canEditAccess={data.isAdmin} save={full.hub} />,
   };
 

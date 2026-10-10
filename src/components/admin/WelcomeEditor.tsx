@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
+import { ImageUrlField } from "./ImageUrlField";
 import type { ForumInfo, ForumThread, GuildStructure, WelcomeActionResult, WelcomeConfig, WelcomeDraft, WelcomeField, WelcomeMessageType } from "@/lib/jonnybot-admin";
+import type { UploadResult } from "@/lib/uploadLimits";
 import { colorToHex, fillPreview, hexToColor, WELCOME_VARIABLES, type PreviewSample } from "@/lib/welcomePreview";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
@@ -35,6 +37,9 @@ type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | 
 export interface WelcomeActions {
   save: (draft: WelcomeDraft) => Promise<WelcomeActionResult<WelcomeConfig>>;
   test: (draft: WelcomeDraft) => Promise<WelcomeActionResult<{ sent: boolean; channelName: string; dmSent: boolean }>>;
+  /** Uploading a picture for one of the embed's places (replacing the one there), and deleting it. Without them the picture fields are just addresses. */
+  uploadImage?: (slot: string, form: FormData) => Promise<UploadResult>;
+  removeImage?: (slot: string) => Promise<WelcomeActionResult<{ removed: boolean }>>;
 }
 
 export function WelcomeEditor({ initial, channels, forums, threads, actions }: { initial: WelcomeConfig; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; actions: WelcomeActions }) {
@@ -42,6 +47,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
   const [meta, setMeta] = useState({ serverName: initial.serverName, memberCount: initial.memberCount });
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
+  const uploads = actions.uploadImage && actions.removeImage ? { upload: actions.uploadImage, remove: actions.removeImage } : undefined;
 
   // which detail sections start open: the ones that already have something in them
   const [open] = useState(() => ({
@@ -204,7 +210,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                   <input id="welcome-author" className={inputClass} value={draft.authorName} onChange={(e) => set("authorName", e.target.value)} />
                 </FormField>
                 <FormField label="Author icon" hint="A picture address. Needs an author name.">
-                  <input id="welcome-author-icon" className={inputClass} value={draft.authorIconUrl} placeholder="https://" onChange={(e) => set("authorIconUrl", e.target.value)} />
+                  <ImageUrlField id="welcome-author-icon" slot="author_icon" value={draft.authorIconUrl} onChange={(v) => set("authorIconUrl", v)} uploads={uploads} />
                 </FormField>
               </div>
             </details>
@@ -213,10 +219,10 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
               <summary className="cursor-pointer text-sm font-medium">Image and thumbnail</summary>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
                 <FormField label="Thumbnail" hint="The small picture top right. {avatar} uses the new member's.">
-                  <input id="welcome-thumbnail" className={inputClass} value={draft.thumbnailUrl} placeholder="https://" onChange={(e) => set("thumbnailUrl", e.target.value)} />
+                  <ImageUrlField id="welcome-thumbnail" slot="thumbnail" value={draft.thumbnailUrl} onChange={(v) => set("thumbnailUrl", v)} uploads={uploads} />
                 </FormField>
                 <FormField label="Image" hint="The large picture at the bottom.">
-                  <input id="welcome-image" className={inputClass} value={draft.imageUrl} placeholder="https://" onChange={(e) => set("imageUrl", e.target.value)} />
+                  <ImageUrlField id="welcome-image" slot="image" value={draft.imageUrl} onChange={(v) => set("imageUrl", v)} uploads={uploads} />
                 </FormField>
               </div>
             </details>
@@ -228,7 +234,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                   <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
                 </FormField>
                 <FormField label="Footer icon" hint="Needs footer text.">
-                  <input id="welcome-footer-icon" className={inputClass} value={draft.footerIconUrl} placeholder="https://" onChange={(e) => set("footerIconUrl", e.target.value)} />
+                  <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
                 </FormField>
               </div>
             </details>
