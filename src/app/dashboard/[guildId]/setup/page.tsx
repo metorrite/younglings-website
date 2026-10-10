@@ -13,7 +13,7 @@ export default async function ServerSetupPage({ params }: { params: Promise<{ gu
       <p className="text-sm text-muted">
         The basics JonnyBot needs to work in this server. Nothing here is set up for you: a new server starts empty, so begin with your clan if you have one.
       </p>
-      <ServerSetupForm initial={setup} structure={structure} canEditStaff={guild.tier === "ADMIN"} save={saveServerSetupAction.bind(null, guildId)} />
+      <ServerSetupForm initial={setup} structure={structure} save={saveServerSetupAction.bind(null, guildId)} />
     </div>
   );
 }
