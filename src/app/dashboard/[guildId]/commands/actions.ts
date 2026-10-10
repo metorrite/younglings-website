@@ -6,7 +6,7 @@ import { adminApi, type HubCommandConfig, type HubCommandDraft, type WelcomeActi
 import { throttle } from "@/lib/ratelimit";
 
 /**
- * Saves one Hub command's settings. Like every dashboard action it starts by checking the signed-in user against *that* server, and
+ * Saves one command's settings. Like every dashboard action it starts by checking the signed-in user against *that* server, and
  * the bot then refuses a change to who may use a command from anyone below the Admin tier.
  */
 
@@ -40,6 +40,6 @@ export async function saveHubCommandAction(guildId: string, key: string, input: 
   if (!draft) return { ok: false, error: "Those settings couldn't be read.", problems: [] };
 
   const result = await adminApi.saveHubCommand(guild, key, draft);
-  revalidatePath(`/dashboard/${guildId}/hub`);
+  revalidatePath(`/dashboard/${guildId}`, "layout");
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
 }

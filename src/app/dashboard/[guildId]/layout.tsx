@@ -1,12 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GuildTabs } from "@/components/dashboard/GuildTabs";
+import { NoticeBanners } from "@/components/dashboard/overview/NoticeBanners";
 import { requireGuild } from "@/lib/dashboard";
+import { adminApi } from "@/lib/jonnybot-admin";
 
 /** One server's dashboard. Like every dashboard page it is checked for *this* server before anything is shown. */
 export default async function GuildLayout({ children, params }: { children: ReactNode; params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
+  // A failed lookup just means no banners: the dashboard works without them.
+  const notices = await adminApi.notices(guild);
 
   return (
     <div className="space-y-6">
@@ -25,6 +29,7 @@ export default async function GuildLayout({ children, params }: { children: Reac
           )}
           <h1 className="text-2xl font-semibold">{guild.guildName}</h1>
         </div>
+        {notices.ok && <NoticeBanners notices={notices.data.notices} />}
         <GuildTabs guildId={guildId} />
       </div>
       {children}

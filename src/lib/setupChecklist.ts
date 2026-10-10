@@ -33,14 +33,14 @@ export function setupChecklist(input: {
       label: "Clan",
       detail: input.setup.clanActive ? `Tracking ${input.setup.clanName}.` : input.setup.clanName ? `${input.setup.clanName} is saved but switched off.` : "No clan set. Skip this if it isn't a clan server.",
       done: input.setup.clanActive,
-      page: "setup",
+      page: "settings",
     },
     {
       id: "links",
       label: "Link requests",
       detail: input.setup.verificationReviewChannelId ? "Requests to link a RuneScape name have a review channel." : "No review channel, so link requests have nowhere to go.",
       done: input.setup.verificationReviewChannelId !== null,
-      page: "setup",
+      page: "settings",
     },
     {
       id: "feeds",

@@ -2,15 +2,17 @@ import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import type { FullActions, QuickActions, WizardData } from "@/components/dashboard/wizard/types";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
-import { saveHubCommandAction } from "../hub/actions";
+import { saveHubCommandAction } from "../commands/actions";
 import { savePermissionGroupsAction } from "../permissions/actions";
-import { saveServerSetupAction } from "../setup/actions";
+import { saveServerSetupAction } from "../settings/actions";
 import { saveGuildTrackingAction } from "../tracking/actions";
 import { saveGuildWelcomeAction, testGuildWelcomeAction } from "../welcome/actions";
 import { quickSaveClanAction, quickSaveCommandsAction, quickSavePermissionsAction, quickSaveTrackingAction, quickSaveWelcomeAction } from "./actions";
 
-export default async function SetupWizardPage({ params }: { params: Promise<{ guildId: string }> }) {
+export default async function SetupWizardPage({ params, searchParams }: { params: Promise<{ guildId: string }>; searchParams: Promise<{ mode?: string }> }) {
   const { guildId } = await params;
+  const { mode } = await searchParams;
+  const initialPath = mode === "quick" || mode === "full" || mode === "custom" ? mode : null;
   const guild = await requireGuild(guildId);
 
   const [structure, setup, permissions, tracking, welcome, hub] = await Promise.all([
@@ -39,5 +41,5 @@ export default async function SetupWizardPage({ params }: { params: Promise<{ gu
     hub: saveHubCommandAction.bind(null, guildId),
   };
 
-  return <SetupWizard guildId={guildId} guildName={guild.guildName} data={data} quick={quick} full={full} />;
+  return <SetupWizard initialPath={initialPath} guildId={guildId} guildName={guild.guildName} data={data} quick={quick} full={full} />;
 }

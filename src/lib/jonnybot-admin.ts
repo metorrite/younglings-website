@@ -407,6 +407,25 @@ export interface Attention {
   notCapped: AttentionItem[];
 }
 
+export interface BotNotice {
+  id: string;
+  severity: "info" | "warning" | "issue";
+  body: string;
+  createdAt: string;
+}
+
+/** What the dashboard's Overview shows for one server, in one call. */
+export interface Overview {
+  members: { rosterSize: number; linked: number; unverified: number; stale: number; inactive: number; promotionsDue: number; discordMembers: number };
+  community: { openSignups: number; openPolls: number };
+  /** Absent for a server that has never used tickets. */
+  tickets?: { open: number; escalated: number; flagged: number };
+  health: { ok: boolean; problems: string[]; uptimeSeconds: number; autoPoll: boolean };
+  notices: BotNotice[];
+  /** Whether the person asking owns the bot itself (not just this server), and so may post notices. */
+  isOwner: boolean;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -748,6 +767,10 @@ export const adminApi = {
   roster: (ctx: ApiContext) => call<Roster>(ctx, "GET", "members"),
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
+  overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  notices: (ctx: ApiContext) => call<{ notices: BotNotice[] }>(ctx, "GET", "notices"),
+  addNotice: (ctx: ApiContext, severity: BotNotice["severity"], body: string) => call<{ notices: BotNotice[] }>(ctx, "POST", "notices", { severity, body }),
+  removeNotice: (ctx: ApiContext, id: string) => call<{ notices: BotNotice[] }>(ctx, "DELETE", `notices/${encodeURIComponent(id)}`),
   audit: (ctx: ApiContext, query: { limit?: number; actor?: string; q?: string } = {}) => {
     const params = new URLSearchParams();
     if (query.limit) params.set("limit", String(query.limit));
