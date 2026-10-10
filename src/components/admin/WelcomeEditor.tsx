@@ -289,10 +289,20 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             <button type="button" className={primaryButton} disabled={pending} onClick={save}>
               {pending ? "Working…" : "Save"}
             </button>
-            <button type="button" className={ghostButton} disabled={pending || !draft.channelId} onClick={sendTest}>
+            <button
+              type="button"
+              className={ghostButton}
+              disabled={pending || !draft.channelId}
+              title={draft.channelId ? undefined : "Choose a welcome channel first"}
+              onClick={sendTest}
+            >
               Send test
             </button>
-            <span className="text-xs text-muted">The test posts a real message in the welcome channel as if you had just joined. It uses what&apos;s on screen, saved or not.</span>
+            <span className="text-xs text-muted">
+              {draft.channelId
+                ? "The test posts a real message in the welcome channel as if you had just joined. It uses what's on screen, saved or not, and works while the welcome is switched off."
+                : "Choose a welcome channel above to send a test. The welcome itself can stay switched off: a test works either way."}
+            </span>
           </div>
           {outcome && <Notice tone={outcome.tone} title={outcome.title} items={outcome.items} />}
         </div>
