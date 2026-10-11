@@ -32,22 +32,27 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: "Members",
+    items: [
+      { label: "Welcome message", icon: "smile", path: "/welcome" },
+      { label: "Goodbye message", icon: "door", path: "/goodbye" },
+      { label: "Autoroles", icon: "tag", path: "/autoroles" },
+      { label: "Role panels", icon: "toggle", path: "/role-panels" },
+    ],
+  },
+  {
     title: "Features",
     items: [
       { label: "Commands", icon: "terminal", path: "/commands" },
       { label: "Activity announcements", icon: "bell", path: "/tracking" },
-      { label: "Welcome message", icon: "smile", path: "/welcome" },
-      { label: "Goodbye message", icon: "door", path: "/goodbye" },
-      { label: "Autoroles", icon: "tag", path: "/autoroles" },
       { label: "Starboard", icon: "star", path: "/starboard" },
-      { label: "Role panels", icon: "toggle", path: "/role-panels" },
       { label: "Polls & signups", icon: "poll", path: "/community" },
+      { label: "Tickets", icon: "ticket", path: "/tickets" },
     ],
   },
   {
     title: "Messages",
     items: [
-      { label: "Tickets", icon: "ticket", path: "/tickets" },
       { label: "Post a message", icon: "send", path: "/post" },
       { label: "Scheduled posts", icon: "clock", path: "/scheduled" },
     ],
@@ -65,12 +70,12 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Whether the page at `pathname` belongs to `item`, for highlighting. */
 /** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, and any group that leaves empty. */
 export function groupsFor(hasClan: boolean): NavGroup[] {
   return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasClan || !item.clanOnly) })).filter((group) => group.items.length > 0);
 }
 
+/** Whether the page at `pathname` belongs to `item`, for highlighting. */
 export function isActive(item: NavItem, base: string, pathname: string): boolean {
   if (item.path === undefined) return false;
   if (item.path === "") return pathname === base;
