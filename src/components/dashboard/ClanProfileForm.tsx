@@ -146,7 +146,7 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               />
             </div>
             <p className="mt-2 text-xs text-muted">
-              A clan Owner, Deputy Owner or Overseer does this: link your RuneScape name with /rs in this server first, and JonnyBot checks your rank on the clan
+              A clan Owner or Deputy Owner does this: link your RuneScape name with /rs in this server first, and JonnyBot checks your rank on the clan
               roster. Verification lasts as long as the clan set for this server stays the same.
             </p>
             {verifyProblem && (
