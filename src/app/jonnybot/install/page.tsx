@@ -1,3 +1,4 @@
+import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
 import { installUrl } from "@/lib/dashboard";
@@ -16,6 +17,8 @@ const PERMISSIONS: [string, string][] = [
 ];
 
 export default async function InstallPage() {
+  const gated = await gateJonnyBot();
+  if (gated) return gated;
   const site = await currentSite();
   const install = installUrl();
 

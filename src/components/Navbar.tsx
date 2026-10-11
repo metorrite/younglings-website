@@ -5,6 +5,7 @@ import { getAdminIfAny } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { getMemberInfo } from "@/lib/jonnybot";
 import { ALL_NAV_LINKS } from "@/lib/nav";
+import { canSeeJonnyBot } from "@/lib/jonnybotAccess";
 import { jonnybotHref, type SiteInfo } from "@/lib/siteHosts";
 import { displayName } from "@/lib/names";
 import { getMyLink, getRoster, getSiteOptions } from "@/lib/site";
@@ -35,6 +36,8 @@ export async function Navbar({ site }: { site: SiteInfo }) {
   // The bell lists what's new for everyone, plus what has happened to this member (a link decision, a goal reached).
   const [notifications, options] = await Promise.all([getNotifications(link?.notices ?? []), getSiteOptions()]);
 
+  const showJonnyBot = await canSeeJonnyBot();
+
   const items: SearchItem[] = [
     ...ALL_NAV_LINKS.map((l) => ({ label: l.label, href: l.href, hint: "Page" })),
     { label: "My profile & settings", href: "/profile", hint: "Page" },
@@ -56,9 +59,11 @@ export async function Navbar({ site }: { site: SiteInfo }) {
         </nav>
         <div className="flex-1 lg:hidden" />
 
-        <a href={jonnybotHref(site, "/")} className="hidden shrink-0 rounded-md border border-surface-border px-3 py-1.5 text-sm text-muted transition hover:border-gold hover:text-foreground lg:inline-block">
-          JonnyBot
-        </a>
+        {showJonnyBot && (
+          <a href={jonnybotHref(site, "/")} className="hidden shrink-0 rounded-md border border-surface-border px-3 py-1.5 text-sm text-muted transition hover:border-gold hover:text-foreground lg:inline-block">
+            JonnyBot
+          </a>
+        )}
         <NavSearch items={items} />
         <NotificationBell items={notifications} />
         <ProfileMenu user={user} isAdmin={isAdmin} link={link ? { state: link.state, pendingRsn: link.pendingRsn } : null} />
@@ -71,9 +76,11 @@ export async function Navbar({ site }: { site: SiteInfo }) {
             {link.label}
           </Link>
         ))}
-        <a href={jonnybotHref(site, "/")} className="shrink-0 text-gold transition hover:brightness-125">
-          JonnyBot
-        </a>
+        {showJonnyBot && (
+          <a href={jonnybotHref(site, "/")} className="shrink-0 text-gold transition hover:brightness-125">
+            JonnyBot
+          </a>
+        )}
       </nav>
     </header>
   );

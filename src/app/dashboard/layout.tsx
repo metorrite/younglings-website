@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { UnderDevelopment } from "@/components/jonnybot/UnderDevelopment";
 import { requireDashboardUser } from "@/lib/dashboard";
+import { canSeeJonnyBot } from "@/lib/jonnybotAccess";
+import { currentSite } from "@/lib/siteHostsServer";
 
 export const metadata = { title: "JonnyBot dashboard — beta" };
 
@@ -11,8 +14,10 @@ export const metadata = { title: "JonnyBot dashboard — beta" };
  * navigation.
  */
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const user = await requireDashboardUser();
   const open = process.env.DASHBOARD_PUBLIC === "true";
+  // While the dashboard is closed, everyone but the clan's admins gets the same "under development" page the rest of JonnyBot's site shows.
+  if (!open && !(await canSeeJonnyBot())) return <UnderDevelopment site={await currentSite()} />;
+  const user = await requireDashboardUser();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">

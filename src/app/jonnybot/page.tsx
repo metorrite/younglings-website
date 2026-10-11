@@ -1,3 +1,4 @@
+import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { FeatureOrbit } from "@/components/jonnybot/FeatureOrbit";
 import { installUrl } from "@/lib/dashboard";
@@ -17,6 +18,8 @@ const STEPS = [
 ];
 
 export default async function JonnyBotHome() {
+  const gated = await gateJonnyBot();
+  if (gated) return gated;
   const site = await currentSite();
   const install = installUrl();
   const button = "rounded-md px-5 py-2.5 text-sm font-semibold transition";
