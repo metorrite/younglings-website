@@ -40,6 +40,7 @@ const DASHBOARD: [string, string][] = [
   ["Moderation log", "A channel where bans, unbans and timeouts are recorded, with who did it and why when JonnyBot can read the audit log."],
   ["New accounts", "Be told when a Discord account younger than a number of days joins, or keep them out until they are old enough. Off by default."],
   ["Auto-delete", "Keep a channel free of Discord invites, links or files: a matching message is deleted at once and the person is told why. Moderators are never affected."],
+  ["Points", "Switch on a points ledger for your server, name the points, give or take them with a reason, and see the leaderboard and full history."],
   ["Warnings", "The record of warnings given with /warn. Search by member and take one back."],
   ["Polls & signups", "Where member polls are posted, and what members can start themselves."],
   ["Tickets", "Panels, the tickets themselves with their saved transcripts, settings, and panel defaults."],

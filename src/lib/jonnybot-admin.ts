@@ -632,6 +632,26 @@ export interface WarningList {
   limit: number;
 }
 
+/** A server's points: whether they are on, what they are called, the leaderboard, the newest ledger entries and the totals. */
+export interface PointsOverview {
+  enabled: boolean;
+  unit: string;
+  top: { userId: string; userName: string | null; points: number }[];
+  recent: {
+    id: string;
+    userId: string;
+    userName: string | null;
+    points: number;
+    reason: string;
+    category: string;
+    awardedBy: string | null;
+    awardedByName: string | null;
+    createdAt: string;
+  }[];
+  totals: { members: number; outstanding: number; awarded: number; spent: number };
+  maxPerEntry: number;
+}
+
 /** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
 export interface ModLog {
   enabled: boolean;
@@ -1125,6 +1145,10 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string }) => call<PointsOverview>(ctx, "PUT", "points", body),
+  awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
+    call<PointsOverview>(ctx, "POST", "points/award", body),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
   autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
   saveAutopunish: (ctx: ApiContext, rules: AutopunishRule[]) => call<Autopunish>(ctx, "PUT", "warnings/autopunish", { rules }),
