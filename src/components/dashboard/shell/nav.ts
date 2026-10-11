@@ -45,15 +45,25 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Commands", icon: "terminal", path: "/commands" },
       { label: "Activity announcements", icon: "bell", path: "/tracking" },
-      { label: "Starboard", icon: "star", path: "/starboard" },
-      { label: "Giveaways", icon: "gift", path: "/giveaways" },
-      { label: "Suggestions", icon: "bulb", path: "/suggestions" },
-      { label: "Auto-clean", icon: "broom", path: "/autoclean" },
-      { label: "Warnings", icon: "alert", path: "/warnings" },
-      { label: "Moderation log", icon: "shield", path: "/modlog" },
       { label: "Automatic replies", icon: "chat", path: "/autoresponder" },
       { label: "Polls & signups", icon: "poll", path: "/community" },
       { label: "Tickets", icon: "ticket", path: "/tickets" },
+    ],
+  },
+  {
+    title: "Community",
+    items: [
+      { label: "Starboard", icon: "star", path: "/starboard" },
+      { label: "Giveaways", icon: "gift", path: "/giveaways" },
+      { label: "Suggestions", icon: "bulb", path: "/suggestions" },
+    ],
+  },
+  {
+    title: "Moderation",
+    items: [
+      { label: "Warnings", icon: "alert", path: "/warnings" },
+      { label: "Moderation log", icon: "list", path: "/modlog" },
+      { label: "Auto-clean", icon: "broom", path: "/autoclean" },
     ],
   },
   {
