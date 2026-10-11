@@ -649,6 +649,23 @@ export interface AccountGate {
   canKick: boolean;
 }
 
+/** One autopunish rule: at exactly `threshold` warnings, do `action` (a timeout lasts `timeoutMinutes`). */
+export interface AutopunishRule {
+  threshold: number;
+  action: "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+}
+
+export interface Autopunish {
+  rules: AutopunishRule[];
+  maxRules: number;
+  maxThreshold: number;
+  maxTimeoutMinutes: number;
+  canTimeout: boolean;
+  canKick: boolean;
+  canBan: boolean;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1031,6 +1048,8 @@ export const adminApi = {
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
+  autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
+  saveAutopunish: (ctx: ApiContext, rules: AutopunishRule[]) => call<Autopunish>(ctx, "PUT", "warnings/autopunish", { rules }),
   deleteWarning: (ctx: ApiContext, id: string) => call<WarningList>(ctx, "DELETE", `warnings/${encodeURIComponent(id)}`),
   modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
   saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),

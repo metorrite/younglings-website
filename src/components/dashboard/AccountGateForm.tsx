@@ -140,7 +140,7 @@ export function AccountGateForm({
                       ),
                     })
                   }
-                  className={`${inputClass} w-20`}
+                  className={`${inputClass} w-20!`}
                 />
                 days
               </span>

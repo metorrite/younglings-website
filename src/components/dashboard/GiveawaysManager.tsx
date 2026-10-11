@@ -143,7 +143,7 @@ export function GiveawaysManager({
                     Math.max(1, Math.trunc(Number(e.target.value) || 1)),
                   )
                 }
-                className={`${inputClass} w-24`}
+                className={`${inputClass} w-24!`}
               />
               minutes
             </span>
@@ -155,7 +155,7 @@ export function GiveawaysManager({
               type="number"
               min={1}
               max={list.maxWinners}
-              className={`${inputClass} w-24`}
+              className={`${inputClass} w-24!`}
               value={winners}
               onChange={(e) =>
                 setWinners(

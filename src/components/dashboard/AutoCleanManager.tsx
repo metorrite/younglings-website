@@ -139,7 +139,7 @@ export function AutoCleanManager({
                 value={minutes}
                 aria-label="Minutes"
                 onChange={(e) => setMinutes(Math.trunc(Number(e.target.value) || list.minAge))}
-                className={`${inputClass} w-24`}
+                className={`${inputClass} w-24!`}
               />
               minutes
             </span>
