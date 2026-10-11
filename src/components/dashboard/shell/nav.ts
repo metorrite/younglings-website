@@ -81,6 +81,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Clan profile", icon: "smile", path: "/clan-profile", clanOnly: true },
       { label: "Public events", icon: "clock", path: "/events", clanOnly: true },
+      { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true },
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
     ],

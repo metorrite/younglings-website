@@ -3,11 +3,18 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { formatUtc, Notice, StatusBadge } from "@/components/admin/ui";
-import { Toggle } from "@/components/dashboard/ui/Toggle";
 import type { ClanEvents, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
+type Scope = "NONE" | "ALLIANCE" | "PUBLIC";
+
+const SCOPES: { value: Scope; label: string; detail: string }[] = [
+  { value: "NONE", label: "Only us", detail: "Only your server sees it." },
+  { value: "ALLIANCE", label: "Allies", detail: "Clans in an alliance with you see it on their dashboards. It is not public." },
+  { value: "PUBLIC", label: "Everyone", detail: "Anyone can see it in the clan directory." },
+];
+
 export interface PublicEventsActions {
-  setShared: (id: string, shared: boolean) => Promise<WelcomeActionResult<ClanEvents>>;
+  setScope: (id: string, scope: Scope) => Promise<WelcomeActionResult<ClanEvents>>;
 }
 
 /** The server's upcoming Discord events, each with a switch for whether it is shown in the public clan directory. */
@@ -16,10 +23,10 @@ export function PublicEventsManager({ initial, profileHref, actions }: { initial
   const [problem, setProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [pending, start] = useTransition();
 
-  function change(id: string, shared: boolean) {
+  function change(id: string, scope: Scope) {
     setProblem(null);
     start(async () => {
-      const result = await actions.setShared(id, shared);
+      const result = await actions.setScope(id, scope);
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       setData(result.data);
     });
@@ -60,15 +67,28 @@ export function PublicEventsManager({ initial, profileHref, actions }: { initial
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge tone={e.status === "ACTIVE" ? "good" : "muted"}>{e.status === "ACTIVE" ? "Happening now" : "Scheduled"}</StatusBadge>
-                {e.shared && <StatusBadge tone="good">Shared</StatusBadge>}
+                {e.scope === "PUBLIC" && <StatusBadge tone="good">Public</StatusBadge>}
+                {e.scope === "ALLIANCE" && <StatusBadge tone="warn">Allies only</StatusBadge>}
               </div>
-              <Toggle
-                checked={e.shared}
-                onChange={(on) => change(e.id, on)}
-                disabled={pending}
-                label="Show this event publicly"
-                detail={e.shared ? "Anyone can see it in the clan directory." : "Only your server sees it."}
-              />
+              <div>
+                <p className="mb-1 text-sm font-medium">Who can see this event</p>
+                <div role="radiogroup" aria-label={`Who can see ${e.name}`} className="inline-flex overflow-hidden rounded-lg border border-surface-border">
+                  {SCOPES.map((s) => (
+                    <button
+                      key={s.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={e.scope === s.value}
+                      disabled={pending}
+                      onClick={() => e.scope !== s.value && change(e.id, s.value)}
+                      className={`px-3 py-1.5 text-sm transition disabled:opacity-60 ${e.scope === s.value ? "bg-gold/20 text-gold" : "hover:bg-white/5"}`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-muted">{SCOPES.find((s) => s.value === e.scope)?.detail}</p>
+              </div>
             </li>
           ))}
         </ul>

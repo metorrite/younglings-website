@@ -805,9 +805,40 @@ export interface ClanListings {
 
 /** The server's upcoming Discord events and whether each is shown publicly. `listing` says whether sharing would actually show them. */
 export interface ClanEvents {
-  events: { id: string; name: string; location: string | null; status: string; startTime: string; endTime: string | null; shared: boolean }[];
+  events: { id: string; name: string; location: string | null; status: string; startTime: string; endTime: string | null; shared: boolean; scope: "NONE" | "ALLIANCE" | "PUBLIC" }[];
   listing: "HIDDEN" | "UNLISTED" | "LISTED";
   slug: string | null;
+}
+
+/** This server's alliances and invitations. `status` is this server's own: INVITED (not answered yet) or ACTIVE. */
+export interface Alliance {
+  id: string;
+  name: string;
+  status: "INVITED" | "ACTIVE";
+  founder: boolean;
+  members: { guildId: string; name: string; slug: string | null; status: "INVITED" | "ACTIVE"; founder: boolean; you: boolean }[];
+}
+
+export interface AllianceList {
+  alliances: Alliance[];
+  maxPerServer: number;
+  maxMembers: number;
+}
+
+/** An alliance's shared calendar: events its active clans share with allies (or with everyone), soonest first. */
+export interface AllianceEvents {
+  events: {
+    id: string;
+    name: string;
+    location: string | null;
+    status: string;
+    startTime: string;
+    endTime: string | null;
+    url: string;
+    clan: string;
+    yours: boolean;
+    scope: "ALLIANCE" | "PUBLIC";
+  }[];
 }
 
 /** How much of a clan reports through the plugin: counts only, never who. */
@@ -1238,7 +1269,16 @@ export const adminApi = {
   restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),
   resolveClanReport: (ctx: ApiContext, id: string, status: string) => call<ClanListings>(ctx, "POST", `clan-reports/${encodeURIComponent(id)}/resolve`, { status }),
   clanEvents: (ctx: ApiContext) => call<ClanEvents>(ctx, "GET", "clan-events"),
-  setClanEventShared: (ctx: ApiContext, id: string, shared: boolean) => call<ClanEvents>(ctx, "PUT", `clan-events/${encodeURIComponent(id)}`, { shared }),
+  setClanEventScope: (ctx: ApiContext, id: string, scope: "NONE" | "ALLIANCE" | "PUBLIC") =>
+    call<ClanEvents>(ctx, "PUT", `clan-events/${encodeURIComponent(id)}`, { scope }),
+  alliances: (ctx: ApiContext) => call<AllianceList>(ctx, "GET", "alliances"),
+  createAlliance: (ctx: ApiContext, name: string) => call<AllianceList>(ctx, "POST", "alliances", { name }),
+  inviteToAlliance: (ctx: ApiContext, id: string, slug: string) => call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/invite`, { slug }),
+  acceptAlliance: (ctx: ApiContext, id: string) => call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/accept`, {}),
+  leaveAlliance: (ctx: ApiContext, id: string) => call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/leave`, {}),
+  removeFromAlliance: (ctx: ApiContext, id: string, guildId: string) =>
+    call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
+  allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
