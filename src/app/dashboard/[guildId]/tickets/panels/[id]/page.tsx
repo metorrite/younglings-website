@@ -14,7 +14,7 @@ export default async function EditPanelPage({ params }: { params: Promise<{ guil
     remove: deleteGuildPanelAction.bind(null, guildId),
     post: postGuildPanelAction.bind(null, guildId),
     listPath: base,
-    panelPath: (panelId) => `${base}/panels/${panelId}`,
+    panelBase: `${base}/panels`,
     pvmHelpPath: null,
   };
 

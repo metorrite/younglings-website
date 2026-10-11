@@ -17,7 +17,7 @@ export default async function EditRolePanelPage({ params }: { params: Promise<{ 
     remove: deleteGuildRolePanelAction.bind(null, guildId),
     post: postGuildRolePanelAction.bind(null, guildId),
     listPath: base,
-    panelPath: (panelId) => `${base}/${panelId}`,
+    panelBase: base,
   };
 
   return (

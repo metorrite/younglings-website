@@ -55,8 +55,8 @@ export interface PanelEditorWhere {
   post: typeof postPanelAction;
   /** The ticket panels list. */
   listPath: string;
-  /** One panel's page. */
-  panelPath: (id: string) => string;
+  /** Where one panel's page is, without its id: a panel is at `${panelBase}/${id}`. A string, not a function, so a server page can pass it. */
+  panelBase: string;
   /** The PvM Help rules page, or null where there isn't one. */
   pvmHelpPath: string | null;
 }
@@ -66,7 +66,7 @@ const CONSOLE: PanelEditorWhere = {
   remove: deletePanelAction,
   post: postPanelAction,
   listPath: "/admin/tickets",
-  panelPath: (id) => `/admin/tickets/panels/${id}`,
+  panelBase: "/admin/tickets/panels",
   pvmHelpPath: "/admin/pvm-help",
 };
 
@@ -132,7 +132,7 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
         return;
       }
       if (isNew) {
-        router.push(where.panelPath(result.data.id!));
+        router.push(`${where.panelBase}/${result.data.id!}`);
         return;
       }
       setSaved(result.data);

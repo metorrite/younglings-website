@@ -45,7 +45,8 @@ export interface RolePanelActions {
   ) => Promise<WelcomeActionResult<RolePanelDef>>;
   /** Where the list of panels is, and where one panel is, so the editor can move on after creating or deleting one. */
   listPath: string;
-  panelPath: (id: string) => string;
+  /** Where one panel is, without its id: a panel is at `${panelBase}/${id}`. A string so a server page can pass it. */
+  panelBase: string;
 }
 
 const STYLE: Record<RolePanelButton["style"], { label: string; css: string }> =
@@ -131,7 +132,7 @@ export function RolePanelEditor({
           title: result.error,
           items: result.problems,
         });
-      if (isNew) return router.push(actions.panelPath(result.data.id!));
+      if (isNew) return router.push(`${actions.panelBase}/${result.data.id!}`);
       setSaved(result.data);
       setPanel(result.data);
       setOutcome({
