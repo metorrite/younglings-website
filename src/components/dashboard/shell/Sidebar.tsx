@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icons";
+import { QuickJump } from "./QuickJump";
 import { groupsFor, isActive } from "./nav";
 
 export interface SidebarServer {
@@ -46,6 +47,10 @@ export function Sidebar({ server, footer, hasClan = true, base: where }: { serve
           <Link href="/dashboard" title="Switch server" aria-label="Switch server" className="rounded-md p-1.5 text-muted transition hover:bg-white/5 hover:text-gold">
             <Icon name="swap" />
           </Link>
+        </div>
+
+        <div className="hidden px-3 pt-3 lg:block">
+          <QuickJump base={base} hasClan={hasClan} />
         </div>
 
         {/* wide screens: the full list */}
