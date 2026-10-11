@@ -63,6 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Moderation",
     items: [
       { label: "Warnings", icon: "alert", path: "/warnings" },
+      { label: "Automod", icon: "shield", path: "/automod" },
       { label: "Moderation log", icon: "list", path: "/modlog" },
       { label: "New accounts", icon: "users", path: "/newaccounts" },
       { label: "Auto-clean", icon: "broom", path: "/autoclean" },

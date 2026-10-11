@@ -41,6 +41,7 @@ const DASHBOARD: [string, string][] = [
   ["New accounts", "Be told when a Discord account younger than a number of days joins, or keep them out until they are old enough. Off by default."],
   ["Auto-delete", "Keep a channel free of Discord invites, links or files: a matching message is deleted at once and the person is told why. Moderators are never affected."],
   ["Points", "Switch on a points ledger for your server, name the points, give or take them with a reason, and see the leaderboard and full history."],
+  ["Automod", "Deletes invites, links, blocked words, shouting, spam and emoji floods automatically, and can give the writer a warning that counts toward Autopunish."],
   ["Warnings", "The record of warnings given with /warn. Search by member and take one back."],
   ["Polls & signups", "Where member polls are posted, and what members can start themselves."],
   ["Tickets", "Panels, the tickets themselves with their saved transcripts, settings, and panel defaults."],
