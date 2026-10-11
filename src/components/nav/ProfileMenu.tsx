@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LoginButton } from "@/components/auth/LoginButton";
 import { OPEN_LINK_EVENT } from "@/components/link/LinkModalHost";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import type { LinkState } from "@/lib/site";
@@ -80,14 +81,7 @@ export function ProfileMenu({ user, isAdmin, link }: { user: { name: string; ima
 
   if (!user) {
     return (
-      <button
-        type="button"
-        onClick={() => signIn("discord")}
-        className="flex items-center gap-2 rounded-md bg-[#5865F2] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#4752c4]"
-      >
-        <span aria-hidden>⚔️</span>
-        Login with Discord
-      </button>
+      <LoginButton onClick={() => signIn("discord")}>Login with Discord</LoginButton>
     );
   }
 
