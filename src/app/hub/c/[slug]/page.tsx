@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { gateHub } from "@/components/clanshub/gate";
 import { ClanMark, EventRow, FocusChips, RecruitingBadge, Unavailable, VerifiedTick } from "@/components/clanshub/parts";
 import { ReportClan } from "@/components/clanshub/ReportClan";
 import { accent, clanEvents, getClan } from "@/lib/clansHub";
+import { canSeeHub } from "@/lib/hubAccess";
 import { hubHref } from "@/lib/siteHosts";
 import { currentSite } from "@/lib/siteHostsServer";
 
@@ -11,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  if (!(await canSeeHub())) return { title: "Clans Hub" };
   const clan = await getClan(slug);
   return clan ? { title: clan.name, description: clan.tagline || `${clan.name} on the Clans Hub` } : { title: "Clan" };
 }
@@ -27,6 +30,8 @@ function safeUrl(raw: string | null): string | null {
 }
 
 export default async function ClanPage({ params }: { params: Promise<{ slug: string }> }) {
+  const closed = await gateHub();
+  if (closed) return closed;
   const { slug } = await params;
   const site = await currentSite();
   const clan = await getClan(slug);

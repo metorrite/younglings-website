@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { gateHub } from "@/components/clanshub/gate";
 import { ClanMark, Unavailable } from "@/components/clanshub/parts";
 import { leaderboard } from "@/lib/clansHub";
 import { hubHref } from "@/lib/siteHosts";
@@ -9,6 +10,8 @@ export const metadata: Metadata = { title: "Leaderboards", description: "Clans r
 export const dynamic = "force-dynamic";
 
 export default async function HubLeaderboards({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+  const closed = await gateHub();
+  if (closed) return closed;
   const params = await searchParams;
   const period = params.period === "month" ? "month" : "week";
   const site = await currentSite();

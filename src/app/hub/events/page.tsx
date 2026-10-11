@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { gateHub } from "@/components/clanshub/gate";
 import { EventRow, Unavailable } from "@/components/clanshub/parts";
 import { allEvents } from "@/lib/clansHub";
 import { currentSite } from "@/lib/siteHostsServer";
@@ -7,6 +8,8 @@ export const metadata: Metadata = { title: "Events", description: "Upcoming even
 export const dynamic = "force-dynamic";
 
 export default async function HubEvents() {
+  const closed = await gateHub();
+  if (closed) return closed;
   const site = await currentSite();
   const events = await allEvents();
   return (

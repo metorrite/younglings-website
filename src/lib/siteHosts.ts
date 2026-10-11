@@ -51,7 +51,7 @@ export function clanHostOf(host: string, apex: string | null = apexHost()): stri
   const port = portOf(host);
   const name = bare(host);
   if (apex) return apex + port;
-  return (name.startsWith(PREFIX) ? name.slice(PREFIX.length) : name) + port;
+  return name.replace(/^(jonnybot\.|clans\.|api\.)/, "") + port;
 }
 
 export function jonnybotHostOf(host: string, apex: string | null = apexHost()): string {
@@ -102,7 +102,7 @@ export function siteInfoFor(host: string, forwardedProto?: string | null, face?:
     hub,
     hubHost: classifyHost(host) === "hub",
     split,
-    clanOrigin: split ? `${scheme}://${clanHostOf(host)}` : "",
+    clanOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${clanHostOf(host)}` : "",
     jonnybotOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${jonnybotHostOf(host)}` : "",
   };
 }
