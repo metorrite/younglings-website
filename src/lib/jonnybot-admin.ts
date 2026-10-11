@@ -614,6 +614,22 @@ export interface AutoCleanList {
   maxRules: number;
 }
 
+/** A warning given with /warn. Names are null when the person has left the server. */
+export interface WarningItem {
+  id: string;
+  userId: string;
+  userName: string | null;
+  moderatorId: string;
+  moderatorName: string | null;
+  reason: string;
+  createdAt: string;
+}
+
+export interface WarningList {
+  warnings: WarningItem[];
+  limit: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -995,6 +1011,8 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
+  deleteWarning: (ctx: ApiContext, id: string) => call<WarningList>(ctx, "DELETE", `warnings/${encodeURIComponent(id)}`),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),

@@ -64,6 +64,7 @@ const PATHS: Record<string, ReactNode> = {
   door: <path d="M6 21V4a1 1 0 011-1h10a1 1 0 011 1v17M3 21h18M14 12h.01" />,
   star: <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z" />,
   chat: <path d="M4 5h16a1 1 0 011 1v10a1 1 0 01-1 1h-9l-5 4v-4H4a1 1 0 01-1-1V6a1 1 0 011-1z" />,
+  alert: <path d="M12 3l9.5 17h-19zM12 10v4M12 17v.5" />,
   broom: <path d="M4 20l6-6M9 9l6 6M14 4l6 6-5 5-6-6zM3 21l3-1-2-2z" />,
   bulb: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />,
   gift: <path d="M3 9h18v4H3zM5 13v8h14v-8M12 9v12M12 9c-2 0-4-1-4-3s2-3 4 0c2-3 4-2 4 0s-2 3-4 3z" />,
