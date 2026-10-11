@@ -81,7 +81,9 @@ export function ProfileMenu({ user, isAdmin, link }: { user: { name: string; ima
 
   if (!user) {
     return (
-      <LoginButton onClick={() => signIn("discord")}>Login with Discord</LoginButton>
+      <LoginButton aria-label="Login with Discord" onClick={() => signIn("discord")}>
+        <span className="max-sm:hidden">Login with Discord</span>
+      </LoginButton>
     );
   }
 

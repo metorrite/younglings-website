@@ -10,11 +10,13 @@
  */
 
 const PREFIX = "jonnybot.";
+const API_PREFIX = "api.";
+const HUB_PREFIX = "clans.";
 
 /** The request header the proxy sets so pages know which face a request is for, whatever its path or host. */
 export const FACE_HEADER = "x-site-face";
 
-export type HostKind = "jonnybot" | "clan" | "unknown";
+export type HostKind = "jonnybot" | "clan" | "api" | "hub" | "unknown";
 
 export function subdomainMode(): boolean {
   return process.env.JONNYBOT_SUBDOMAIN === "true";
@@ -35,6 +37,8 @@ export function classifyHost(host: string | null | undefined, apex: string | nul
   if (!host) return "clan";
   const name = bare(host);
   if (name.startsWith(PREFIX)) return "jonnybot";
+  if (name.startsWith(API_PREFIX)) return "api";
+  if (name.startsWith(HUB_PREFIX)) return "hub";
   if (!apex) return "clan";
   if (name === apex || name === `www.${apex}`) return "clan";
   // some other name under the site's domain (a typo, a stranger's guess): not either face
@@ -47,13 +51,24 @@ export function clanHostOf(host: string, apex: string | null = apexHost()): stri
   const port = portOf(host);
   const name = bare(host);
   if (apex) return apex + port;
-  return (name.startsWith(PREFIX) ? name.slice(PREFIX.length) : name) + port;
+  return name.replace(/^(jonnybot\.|clans\.|api\.)/, "") + port;
 }
 
 export function jonnybotHostOf(host: string, apex: string | null = apexHost()): string {
   const port = portOf(host);
-  const base = apex ?? bare(host).replace(new RegExp(`^(${PREFIX.replace(".", "\.")}|www\.)`), "");
+  const base = apex ?? bare(host).replace(/^(jonnybot\.|clans\.|api\.|www\.)/, "");
   return PREFIX + base + port;
+}
+
+/**
+ * The API's own address, for telling clients (the plugin) where to send things. `PUBLIC_API_ORIGIN` wins when set; otherwise
+ * `api.` + the site's apex host; otherwise null (local development, where the API is just this host's /api).
+ */
+export function apiOriginFor(host: string, forwardedProto?: string | null): string | null {
+  const configured = process.env.PUBLIC_API_ORIGIN?.trim().replace(/\/+$/, "");
+  if (configured) return configured;
+  const apex = apexHost();
+  return apex ? `${schemeFor(host, forwardedProto)}://${API_PREFIX}${apex}${portOf(host)}` : null;
 }
 
 export function schemeFor(host: string, forwardedProto?: string | null): string {
@@ -66,6 +81,10 @@ export function schemeFor(host: string, forwardedProto?: string | null): string 
 export interface SiteInfo {
   host: string;
   jonnybot: boolean;
+  /** Whether this is the clans hub (the public directory of clans), a third face of the same site. */
+  hub: boolean;
+  /** Whether the hub has its own host (clans.<domain>), so its paths have no /hub prefix. */
+  hubHost: boolean;
   /** Whether the two faces live on different hostnames. */
   split: boolean;
   clanOrigin: string;
@@ -75,13 +94,16 @@ export interface SiteInfo {
 export function siteInfoFor(host: string, forwardedProto?: string | null, face?: string | null): SiteInfo {
   const split = subdomainMode();
   const scheme = schemeFor(host, forwardedProto);
-  const jonnybot = face === "jonnybot" || (split && classifyHost(host) === "jonnybot");
+  const hub = face === "hub" || classifyHost(host) === "hub";
+  const jonnybot = !hub && (face === "jonnybot" || (split && classifyHost(host) === "jonnybot"));
   return {
     host,
     jonnybot,
+    hub,
+    hubHost: classifyHost(host) === "hub",
     split,
-    clanOrigin: split ? `${scheme}://${clanHostOf(host)}` : "",
-    jonnybotOrigin: split ? `${scheme}://${jonnybotHostOf(host)}` : "",
+    clanOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${clanHostOf(host)}` : "",
+    jonnybotOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${jonnybotHostOf(host)}` : "",
   };
 }
 
@@ -93,6 +115,12 @@ export function jonnybotHref(site: SiteInfo, path: string): string {
   if (site.split) return `${site.jonnybotOrigin}${path}`;
   if (path === "/dashboard" || path.startsWith("/dashboard/")) return path;
   return `/jonnybot${path === "/" ? "" : path}`;
+}
+
+/** A link to a page of the clans hub: its own host has short paths, otherwise (local development) the hub lives under /hub. */
+export function hubHref(site: SiteInfo, path: string): string {
+  if (site.hubHost) return path;
+  return `/hub${path === "/" ? "" : path}`;
 }
 
 /** A link to a page of the clan's face. */
