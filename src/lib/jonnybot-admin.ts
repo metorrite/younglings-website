@@ -443,6 +443,23 @@ export interface BetaGuilds {
   canEdit: boolean;
 }
 
+/** One line of a server's checkup: something fine, something worth a look, or something broken. */
+export interface CheckupFinding {
+  level: "OK" | "WARN" | "ERROR";
+  area: string;
+  title: string;
+  detail: string | null;
+  /** The dashboard page that fixes it, under /dashboard/<server>. */
+  page: string | null;
+}
+
+export interface Checkup {
+  findings: CheckupFinding[];
+  errors: number;
+  warnings: number;
+  ok: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -815,6 +832,7 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),

@@ -8,13 +8,14 @@ import { addNoticeAction, removeNoticeAction } from "./notices/actions";
 export default async function GuildOverview({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [overview, welcome, setup, permissions, tracking, hub] = await Promise.all([
+  const [overview, welcome, setup, permissions, tracking, hub, checkupResult] = await Promise.all([
     adminApi.overview(guild).then(dashboardData),
     dashboardApi.welcome(guild).then(dashboardData),
     adminApi.serverSetup(guild).then(dashboardData),
     adminApi.permissions(guild).then(dashboardData),
     adminApi.tracking(guild).then(dashboardData),
     adminApi.hub(guild).then(dashboardData),
+    adminApi.checkup(guild), // a bot without the checkup just shows no card
   ]);
 
   const base = `/dashboard/${guildId}`;
@@ -51,6 +52,7 @@ export default async function GuildOverview({ params }: { params: Promise<{ guil
     <OverviewView
       base={base}
       overview={overview}
+      checkup={checkupResult.ok ? { errors: checkupResult.data.errors, warnings: checkupResult.data.warnings, checked: checkupResult.data.findings.length } : null}
       setup={setup}
       rows={rows}
       owner={overview.isOwner && <NoticesEditor initial={overview.notices} add={addNoticeAction.bind(null, guildId)} remove={removeNoticeAction.bind(null, guildId)} />}

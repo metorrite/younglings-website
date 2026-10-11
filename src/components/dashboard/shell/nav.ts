@@ -53,7 +53,10 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Server",
-    items: [{ label: "Activity log", icon: "list", path: "/audit" }],
+    items: [
+      { label: "Checkup", icon: "check", path: "/checkup" },
+      { label: "Activity log", icon: "list", path: "/audit" },
+    ],
   },
   {
     title: "Coming soon",

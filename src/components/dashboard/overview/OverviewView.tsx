@@ -10,7 +10,7 @@ const MANAGE = "shrink-0 rounded-md border border-surface-border px-3 py-1.5 tex
 export type FeatureRow = { id: string; label: string; detail: string; done: boolean; href?: string; action?: string; where?: string };
 
 /** The Overview's layout, kept apart from fetching so it can be looked at with made-up numbers. */
-export function OverviewView({ base, overview, setup, rows, owner }: { base: string; overview: Overview; setup: Pick<ServerSetup, "clanActive" | "clanName">; rows: FeatureRow[]; owner?: ReactNode }) {
+export function OverviewView({ base, overview, setup, rows, owner, checkup }: { base: string; overview: Overview; setup: Pick<ServerSetup, "clanActive" | "clanName">; rows: FeatureRow[]; owner?: ReactNode; checkup?: { errors: number; warnings: number; checked: number } | null }) {
   const doneCount = rows.filter((row) => row.done).length;
   const percent = rows.length === 0 ? 0 : Math.round((doneCount / rows.length) * 100);
   const m = overview.members;
@@ -121,6 +121,24 @@ export function OverviewView({ base, overview, setup, rows, owner }: { base: str
       </div>
 
         <aside className="space-y-4 xl:sticky xl:top-4">
+          {checkup && (
+            <Link
+              href={`${base}/checkup`}
+              className={`block rounded-xl border p-5 transition hover:border-gold ${checkup.errors > 0 ? "border-red-500/40 bg-red-500/10" : checkup.warnings > 0 ? "border-amber-500/40 bg-amber-500/10" : "border-surface-border bg-surface"}`}
+            >
+              <p className="font-semibold text-gold">Checkup</p>
+              <p className="mt-1 text-sm">
+                {checkup.checked === 0
+                  ? "Nothing set up to check yet."
+                  : checkup.errors > 0
+                    ? `${checkup.errors} thing${checkup.errors === 1 ? "" : "s"} need${checkup.errors === 1 ? "s" : ""} fixing.`
+                    : checkup.warnings > 0
+                      ? `${checkup.warnings} thing${checkup.warnings === 1 ? " is" : "s are"} worth a look.`
+                      : "No permission or role problems found."}
+              </p>
+              <p className="mt-2 text-xs text-muted">Open the checkup →</p>
+            </Link>
+          )}
           <section className="rounded-xl border border-surface-border bg-surface p-5">
             <h2 className="font-semibold text-gold">Quick links</h2>
             <ul className="mt-3 space-y-1">
