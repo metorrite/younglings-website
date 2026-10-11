@@ -472,6 +472,45 @@ export interface Autoroles {
   issues: string[];
 }
 
+/** One button on a role panel: the role it gives, the words on it, an optional emoji, and its colour. */
+export interface RolePanelButton {
+  roleId: string;
+  label: string;
+  emoji: string | null;
+  style: "primary" | "secondary" | "success" | "danger";
+}
+
+/** A message of buttons members press to take or drop a role. */
+export interface RolePanelDef {
+  id: string | null;
+  name: string;
+  title: string;
+  description: string;
+  color: number | null;
+  mode: "TOGGLE" | "UNIQUE";
+  posted: boolean;
+  channelId: string | null;
+  messageId: string | null;
+  buttons: RolePanelButton[];
+}
+
+export interface RolePanelSummary {
+  id: string;
+  name: string;
+  title: string;
+  mode: "TOGGLE" | "UNIQUE";
+  buttonCount: number;
+  posted: boolean;
+  channelId: string | null;
+  channelName: string | null;
+}
+
+export interface RolePanelList {
+  panels: RolePanelSummary[];
+  maxPanels: number;
+  maxButtons: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -844,6 +883,12 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
+  rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
+  createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
+  updateRolePanel: (ctx: ApiContext, id: string, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "PUT", `rolepanels/${encodeURIComponent(id)}`, panel),
+  deleteRolePanel: (ctx: ApiContext, id: string) => call<RolePanelList>(ctx, "DELETE", `rolepanels/${encodeURIComponent(id)}`),
+  postRolePanel: (ctx: ApiContext, id: string, channelId: string) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, { channelId }),
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
   saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
