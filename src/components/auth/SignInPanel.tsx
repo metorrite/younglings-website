@@ -80,6 +80,7 @@ export function SignInPanel({ code, rawError, callbackUrl }: { code: string | nu
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <LoginButton
+            size="md"
             disabled={busy}
             onClick={() => {
               setBusy(true);
