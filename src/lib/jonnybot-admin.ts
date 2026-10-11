@@ -639,6 +639,16 @@ export interface ModLog {
   canReadAuditLog: boolean;
 }
 
+/** The new-account gate: what happens to an account younger than `minAgeDays` when it joins. `canKick` says whether JonnyBot may remove them. */
+export interface AccountGate {
+  enabled: boolean;
+  minAgeDays: number;
+  action: "ALERT" | "KICK";
+  alertChannelId: string | null;
+  maxAgeDays: number;
+  canKick: boolean;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1024,6 +1034,9 @@ export const adminApi = {
   deleteWarning: (ctx: ApiContext, id: string) => call<WarningList>(ctx, "DELETE", `warnings/${encodeURIComponent(id)}`),
   modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
   saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),
+  accountGate: (ctx: ApiContext) => call<AccountGate>(ctx, "GET", "accountgate"),
+  saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId">) =>
+    call<AccountGate>(ctx, "PUT", "accountgate", body),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
