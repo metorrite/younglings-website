@@ -1,3 +1,4 @@
+import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
 import { jonnybotHref } from "@/lib/siteHosts";
@@ -25,6 +26,8 @@ const DASHBOARD: [string, string][] = [
 ];
 
 export default async function DocsPage() {
+  const gated = await gateJonnyBot();
+  if (gated) return gated;
   const site = await currentSite();
   const contents = [
     ["start", "Getting started"],

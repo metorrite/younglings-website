@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 import { JonnyBotFooter } from "@/components/jonnybot/JonnyBotFooter";
+import { UnderDevelopment } from "@/components/jonnybot/UnderDevelopment";
+import { canSeeJonnyBot } from "@/lib/jonnybotAccess";
 import { currentSite } from "@/lib/siteHostsServer";
 import "./jonnybot.css";
 
 /** The pages under /jonnybot are JonnyBot's own public site; its header comes from the root layout, the footer from here. */
 export default async function JonnyBotLayout({ children }: { children: ReactNode }) {
   const site = await currentSite();
+  if (!(await canSeeJonnyBot())) return <UnderDevelopment site={site} />;
   return (
     <>
       {children}

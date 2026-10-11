@@ -1,9 +1,12 @@
+import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
 
 export const metadata: Metadata = { title: "Privacy", description: "What JonnyBot stores, why, and how to have it removed." };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const gated = await gateJonnyBot();
+  if (gated) return gated;
   return (
     <Page title="Privacy" intro="What JonnyBot and this website keep, why, and how to have it removed. Last updated October 2026.">
       <Section title="What JonnyBot stores">

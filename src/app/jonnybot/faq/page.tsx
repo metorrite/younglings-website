@@ -1,3 +1,4 @@
+import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Page } from "@/components/jonnybot/Prose";
@@ -7,6 +8,8 @@ import { currentSite } from "@/lib/siteHostsServer";
 export const metadata: Metadata = { title: "FAQ", description: "Common questions about JonnyBot." };
 
 export default async function FaqPage() {
+  const gated = await gateJonnyBot();
+  if (gated) return gated;
   const site = await currentSite();
   const link = "text-gold underline-offset-2 hover:underline";
 

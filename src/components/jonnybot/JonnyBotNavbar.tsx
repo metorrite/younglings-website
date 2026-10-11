@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { authOptions } from "@/lib/auth";
+import { canSeeJonnyBot } from "@/lib/jonnybotAccess";
 import { clanHref, jonnybotHref, type SiteInfo } from "@/lib/siteHosts";
 import { JonnyBotAccount } from "./JonnyBotAccount";
 
@@ -10,14 +11,18 @@ export async function JonnyBotNavbar({ site }: { site: SiteInfo }) {
   const session = await getServerSession(authOptions);
   const user = session?.user?.id ? { name: session.user.name ?? "Signed in", image: session.user.image ?? null } : null;
 
-  const links = [
-    { label: "Younglings Home", href: clanHref(site, "/"), clan: true },
-    { label: "JonnyBot Home", href: jonnybotHref(site, "/") },
-    { label: "Docs", href: jonnybotHref(site, "/docs") },
-    { label: "Install", href: jonnybotHref(site, "/install") },
-    { label: "FAQ", href: jonnybotHref(site, "/faq") },
-    { label: "Bot Dashboard", href: jonnybotHref(site, "/dashboard"), strong: true },
-  ];
+  // While the site is closed, a visitor who can't see it gets a header with nothing in it to click into.
+  const visible = await canSeeJonnyBot();
+  const links = visible
+    ? [
+        { label: "Younglings Home", href: clanHref(site, "/"), clan: true },
+        { label: "JonnyBot Home", href: jonnybotHref(site, "/") },
+        { label: "Docs", href: jonnybotHref(site, "/docs") },
+        { label: "Install", href: jonnybotHref(site, "/install") },
+        { label: "FAQ", href: jonnybotHref(site, "/faq") },
+        { label: "Bot Dashboard", href: jonnybotHref(site, "/dashboard"), strong: true },
+      ]
+    : [{ label: "Younglings Home", href: clanHref(site, "/"), clan: true }];
   const cls = (strong?: boolean) => (strong ? "font-semibold text-gold transition hover:brightness-125" : "text-muted transition hover:text-foreground");
 
   return (

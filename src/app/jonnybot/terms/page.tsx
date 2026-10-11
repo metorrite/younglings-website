@@ -1,9 +1,12 @@
+import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
 
 export const metadata: Metadata = { title: "Terms", description: "The terms for using JonnyBot." };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const gated = await gateJonnyBot();
+  if (gated) return gated;
   return (
     <Page title="Terms" intro="Plain terms for using JonnyBot and its website. Last updated October 2026.">
       <Section title="Using JonnyBot">

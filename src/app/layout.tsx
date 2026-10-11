@@ -5,6 +5,7 @@ import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 import { Navbar } from "@/components/Navbar";
 import { LinkModalGate } from "@/components/link/LinkModalGate";
 import { JonnyBotNavbar } from "@/components/jonnybot/JonnyBotNavbar";
+import { publicSiteOpen } from "@/lib/jonnybotAccess";
 import { currentSite } from "@/lib/siteHostsServer";
 
 const geistSans = Geist({
@@ -25,6 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(site.split ? site.jonnybotOrigin : (process.env.NEXTAUTH_URL ?? "http://localhost:3000")),
       title: { default: "JonnyBot", template: "%s | JonnyBot" },
       description: "A Discord bot for RuneScape 3 clans and communities.",
+      // closed until JONNYBOT_PUBLIC: not for search engines yet
+      ...(publicSiteOpen() ? {} : { robots: { index: false, follow: false } }),
     };
   }
   return {
