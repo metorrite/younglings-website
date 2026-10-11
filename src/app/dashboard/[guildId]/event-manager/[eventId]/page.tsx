@@ -1,0 +1,31 @@
+import Link from "next/link";
+import { EventManager } from "@/components/dashboard/EventManager";
+import { PageHeader } from "@/components/dashboard/ui/PageHeader";
+import { dashboardData, requireGuild } from "@/lib/dashboard";
+import type { EventAward, EventClaims, EventDetail, EventStandings } from "@/lib/eventTypes";
+import { adminApi } from "@/lib/jonnybot-admin";
+import { eventApiAction } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function EventPage({ params }: { params: Promise<{ guildId: string; eventId: string }> }) {
+  const { guildId, eventId } = await params;
+  const guild = await requireGuild(guildId);
+  if (!/^\d{1,18}$/.test(eventId)) throw new Error("That isn't a valid event.");
+  const [detail, claims, standings, awards] = (await Promise.all([
+    adminApi.eventsCall(guild, "GET", `events/${eventId}`).then(dashboardData),
+    adminApi.eventsCall(guild, "GET", `events/${eventId}/claims`).then(dashboardData),
+    adminApi.eventsCall(guild, "GET", `events/${eventId}/standings`).then(dashboardData),
+    adminApi.eventsCall(guild, "GET", `events/${eventId}/awards`).then(dashboardData),
+  ])) as [EventDetail, EventClaims, EventStandings, { awards: EventAward[] }];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title={detail.event.name} description="Build the event, run it and pay it out. Everything here is checked again by the bot, and every change is kept in the audit log." />
+      <Link href={`/dashboard/${guildId}/event-manager`} className="text-sm text-gold hover:underline">
+        All events
+      </Link>
+      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} call={eventApiAction.bind(null, guildId)} />
+    </div>
+  );
+}

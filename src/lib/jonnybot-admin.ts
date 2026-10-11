@@ -1262,6 +1262,8 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
+  eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
