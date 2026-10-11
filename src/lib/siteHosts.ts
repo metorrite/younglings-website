@@ -49,7 +49,7 @@ export function clanHostOf(host: string, apex: string | null = apexHost()): stri
   const port = portOf(host);
   const name = bare(host);
   if (apex) return apex + port;
-  return (name.startsWith(PREFIX) ? name.slice(PREFIX.length) : name) + port;
+  return name.replace(/^(jonnybot\.|clans\.|api\.)/, "") + port;
 }
 
 export function jonnybotHostOf(host: string, apex: string | null = apexHost()): string {

@@ -25,6 +25,13 @@ export function proxy(request: NextRequest) {
   // (/api/v1/..., /api/ingest/v1/...) keep working on every host, so nothing already pointed at them breaks.
   const requestHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(",")[0].trim();
   if (classifyHost(requestHost, apexHost()) === "api") {
+    // The API host is for programs. A person who types it into a browser address bar (or follows a link to it) is sent to the clan site's
+    // front page. Browsers say what they are doing: a page navigation carries Sec-Fetch-Dest: document (or Mode: navigate), and older ones
+    // ask for text/html. A plugin, a script, curl and a website's own fetch() call do none of that, so they get the API as before.
+    const dest = request.headers.get("sec-fetch-dest");
+    const mode = request.headers.get("sec-fetch-mode");
+    const browsing = dest === "document" || dest === "iframe" || mode === "navigate" || (!mode && /text\/html/i.test(request.headers.get("accept") ?? ""));
+    if (browsing) return NextResponse.redirect(`${schemeFor(requestHost, request.headers.get("x-forwarded-proto"))}://${clanHostOf(requestHost, apexHost())}/`, 307);
     const rewriteApi = (path: string) => {
       const url = request.nextUrl.clone();
       url.pathname = path;
