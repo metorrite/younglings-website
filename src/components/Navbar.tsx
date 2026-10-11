@@ -5,6 +5,7 @@ import { getAdminIfAny } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { getMemberInfo } from "@/lib/jonnybot";
 import { ALL_NAV_LINKS } from "@/lib/nav";
+import { jonnybotHref, type SiteInfo } from "@/lib/siteHosts";
 import { displayName } from "@/lib/names";
 import { getMyLink, getRoster, getSiteOptions } from "@/lib/site";
 import { getNotifications } from "@/lib/notifications";
@@ -18,7 +19,7 @@ import { ResetTimer } from "./nav/ResetTimer";
  * The site header. Left to right: the clan icon and name (home), a live countdown to the weekly game reset,
  * the page menus, search, and the signed-in person's menu (or the Discord login button).
  */
-export async function Navbar() {
+export async function Navbar({ site }: { site: SiteInfo }) {
   const [roster, session] = await Promise.all([getRoster(), getServerSession(authOptions)]);
 
   let user: { name: string; image: string | null } | null = null;
@@ -55,6 +56,9 @@ export async function Navbar() {
         </nav>
         <div className="flex-1 lg:hidden" />
 
+        <a href={jonnybotHref(site, "/")} className="hidden shrink-0 rounded-md border border-surface-border px-3 py-1.5 text-sm text-muted transition hover:border-gold hover:text-foreground lg:inline-block">
+          JonnyBot
+        </a>
         <NavSearch items={items} />
         <NotificationBell items={notifications} />
         <ProfileMenu user={user} isAdmin={isAdmin} link={link ? { state: link.state, pendingRsn: link.pendingRsn } : null} />
@@ -67,6 +71,9 @@ export async function Navbar() {
             {link.label}
           </Link>
         ))}
+        <a href={jonnybotHref(site, "/")} className="shrink-0 text-gold transition hover:brightness-125">
+          JonnyBot
+        </a>
       </nav>
     </header>
   );
