@@ -708,6 +708,28 @@ export interface PointsRedemptions {
   handled: PointsRedemption[];
 }
 
+/** One automod rule. `limit` and `seconds` mean different things per rule (the form labels them); `words` is the blocked words, or the allowed websites for links. */
+export interface AutomodRule {
+  key: "INVITES" | "LINKS" | "BLOCKED_WORDS" | "CAPS" | "MENTIONS" | "SPAM" | "REPEAT" | "EMOJI";
+  label: string;
+  enabled: boolean;
+  warn: boolean;
+  limit: number;
+  seconds: number;
+  words: string[];
+}
+
+/** A server's automod: which rules are on, what they allow, and who is never checked. `canDelete` says whether JonnyBot may delete messages. */
+export interface Automod {
+  enabled: boolean;
+  rules: AutomodRule[];
+  exemptRoles: string[];
+  exemptChannels: string[];
+  canDelete: boolean;
+  maxWords: number;
+  maxDomains: number;
+}
+
 /** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
 export interface ModLog {
   enabled: boolean;
@@ -1252,6 +1274,8 @@ export const adminApi = {
   autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
   saveAutopunish: (ctx: ApiContext, rules: AutopunishRule[]) => call<Autopunish>(ctx, "PUT", "warnings/autopunish", { rules }),
   deleteWarning: (ctx: ApiContext, id: string) => call<WarningList>(ctx, "DELETE", `warnings/${encodeURIComponent(id)}`),
+  automod: (ctx: ApiContext) => call<Automod>(ctx, "GET", "automod"),
+  saveAutomod: (ctx: ApiContext, body: Pick<Automod, "enabled" | "rules" | "exemptRoles" | "exemptChannels">) => call<Automod>(ctx, "PUT", "automod", body),
   modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
   saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),
   accountGate: (ctx: ApiContext) => call<AccountGate>(ctx, "GET", "accountgate"),
