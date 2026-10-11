@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Welcome message", icon: "smile", path: "/welcome" },
       { label: "Goodbye message", icon: "door", path: "/goodbye" },
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
+      { label: "Starboard", icon: "star", path: "/starboard" },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
       { label: "Polls & signups", icon: "poll", path: "/community" },
     ],

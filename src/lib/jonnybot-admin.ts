@@ -521,6 +521,16 @@ export interface Goodbye {
   memberCount: number;
 }
 
+/** A server's starboard: messages with enough of one reaction are copied to a showcase channel. */
+export interface Starboard {
+  enabled: boolean;
+  channelId: string | null;
+  emoji: string;
+  threshold: number;
+  selfStar: boolean;
+  maxThreshold: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -893,6 +903,8 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
+  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
