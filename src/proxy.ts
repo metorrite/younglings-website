@@ -32,7 +32,8 @@ export function proxy(request: NextRequest) {
 
   const host = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(",")[0].trim();
   const scheme = schemeFor(host, request.headers.get("x-forwarded-proto"));
-  const to = (targetHost: string, path: string) => NextResponse.redirect(`${scheme}://${targetHost}${path}${search}`, 308);
+  // 307, not 308: a permanent redirect is remembered by browsers for good, which would strand people if the split is ever switched off.
+  const to = (targetHost: string, path: string) => NextResponse.redirect(`${scheme}://${targetHost}${path}${search}`, 307);
   const rewrite = (path: string) => {
     const url = request.nextUrl.clone();
     url.pathname = path;
