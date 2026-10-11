@@ -14,15 +14,27 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/signup", who: "Admins (changeable)", what: "Create signups: queues, groups and submission forms, with a public panel for members." },
   { name: "/wrapped", who: "Everyone (changeable)", what: "A recap card for a week, month, year or all time: XP, Citadel, boss kills and more." },
   { name: "/ca", who: "Everyone (changeable)", what: "Look up a Combat Mastery achievement: its tier, scores and the wiki's tips." },
+  { name: "/remindme", who: "Everyone (changeable)", what: "Set a personal reminder (10m, 2h30m, 1d), list yours, or cancel one. It arrives by DM." },
+  { name: "/afk", who: "Everyone (changeable)", what: "Mark yourself away: people who mention you are told, and it clears the next time you speak." },
 ];
 
 const DASHBOARD: [string, string][] = [
-  ["Overview", "Is the bot healthy, how many members are linked, open tickets, signups and polls, and what is set up. Any notice about a known issue shows at the top."],
-  ["Settings", "The setup guide (Quick, Full or Custom) and the basics: your clan, link requests and the roles members get."],
+  ["Overview", "Is the bot healthy, how many members are linked, open tickets, signups and polls, and what is set up. A checkup card tells you if anything needs fixing, and any notice about a known issue shows at the top."],
+  ["Server setup", "The basics: your clan, where link requests are reviewed and the roles members get. Each section opens and closes, and a bar at the bottom saves everything and warns you about unsaved changes."],
   ["Roles & permissions", "Who counts as Admin, Support and Developer, and your own groups of roles. Commands can be limited to these groups."],
-  ["Commands", "Turn each command on or off, choose who may use it and in which channels."],
-  ["Tracking channels", "Where drops, level-ups, quests, boss kills, Citadel visits, joins and leaves are announced."],
+  ["Guided setup", "A step-by-step run through the parts of JonnyBot: Quick, Full or Custom. It starts from what is already set, so you can leave and pick it up later."],
+  ["Commands", "Turn each command on or off, choose who may use it and in which channels. Search and filter the list."],
+  ["Activity announcements", "Where drops, level-ups, quests, boss kills, Citadel visits, joins and leaves are announced."],
   ["Welcome message", "Design the message new members get: an embed or a container, with a preview and a Send test button."],
+  ["Goodbye message", "A line posted when someone leaves, with clickable variables and a preview."],
+  ["Autoroles", "Roles given to everyone who joins (and a separate list for bots), straight away or after a delay of up to 7 days."],
+  ["Role panels", "A message of buttons members press to take or drop a role. Choose any number, or only one at a time, and see a live preview."],
+  ["Polls & signups", "Where member polls are posted, and what members can start themselves."],
+  ["Tickets", "Panels, the tickets themselves with their saved transcripts, settings, and panel defaults."],
+  ["Post a message and Scheduled posts", "Write a message and have JonnyBot post it now or later, with headings, dividers, colours, images and buttons."],
+  ["Roster", "For a clan server: every member, who is verified, how fresh their data is, with staff-only notes."],
+  ["Checkup", "Finds channels JonnyBot can't post in and roles it can't give out, and tells you how to fix each one."],
+  ["Activity log", "Every change made from the dashboard, by whom and when."],
 ];
 
 export default async function DocsPage() {
@@ -88,6 +100,9 @@ export default async function DocsPage() {
                 </li>
               ))}
             </ul>
+            <p>
+              Tip: press <kbd>Ctrl</kbd> + <kbd>K</kbd> anywhere in the dashboard to jump to a page by typing part of its name. Next to many settings is a small <strong>i</strong>: hover or tap it for a plain explanation of what the setting does.
+            </p>
           </Section>
 
           <Section id="commands" title="Commands">
