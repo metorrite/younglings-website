@@ -135,3 +135,30 @@ section[id]:target { animation: target-flash 1.6s ease-out; }
   .bar-maxed { animation: none; }
   .sparkle { animation: none; opacity: 0.8; transform: translateY(-50%); }
 }
+
+/* The Login with Discord button's gold edge: a soft glow that slowly breathes, and swells on hover. */
+@keyframes login-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(212, 175, 55, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.38);
+  }
+}
+
+.login-glow {
+  animation: login-glow 3.5s ease-in-out infinite;
+}
+
+.login-glow:hover:not(:disabled) {
+  animation: none;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-glow {
+    animation: none;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
+  }
+}
