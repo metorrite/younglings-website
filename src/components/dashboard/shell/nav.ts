@@ -46,6 +46,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Commands", icon: "terminal", path: "/commands" },
       { label: "Activity announcements", icon: "bell", path: "/tracking" },
       { label: "Starboard", icon: "star", path: "/starboard" },
+      { label: "Giveaways", icon: "gift", path: "/giveaways" },
       { label: "Automatic replies", icon: "chat", path: "/autoresponder" },
       { label: "Polls & signups", icon: "poll", path: "/community" },
       { label: "Tickets", icon: "ticket", path: "/tickets" },

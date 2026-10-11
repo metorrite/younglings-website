@@ -550,6 +550,34 @@ export interface AutoReplyList {
   maxCooldown: number;
 }
 
+/** A giveaway as the dashboard lists it. */
+export interface GiveawayItem {
+  id: string;
+  prize: string;
+  status: "OPEN" | "ENDED";
+  channelId: string;
+  channelName: string | null;
+  winnerCount: number;
+  endsAt: string;
+  entries: number;
+  requiredRoleId: string | null;
+  winners: string[];
+}
+
+export interface GiveawayList {
+  giveaways: GiveawayItem[];
+  maxWinners: number;
+  maxPrize: number;
+}
+
+export interface GiveawayStart {
+  prize: string;
+  channelId: string;
+  durationMinutes: number;
+  winners: number;
+  requiredRoleId: string | null;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -922,6 +950,11 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
+  startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
+  endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
+  rerollGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/reroll`),
+  deleteGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "DELETE", `giveaways/${encodeURIComponent(id)}`),
   autoReplies: (ctx: ApiContext) => call<AutoReplyList>(ctx, "GET", "autoresponders"),
   createAutoReply: (ctx: ApiContext, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "POST", "autoresponders", reply),
   updateAutoReply: (ctx: ApiContext, id: string, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "PUT", `autoresponders/${encodeURIComponent(id)}`, reply),
