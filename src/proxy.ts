@@ -31,7 +31,12 @@ export function proxy(request: NextRequest) {
     const dest = request.headers.get("sec-fetch-dest");
     const mode = request.headers.get("sec-fetch-mode");
     const browsing = dest === "document" || dest === "iframe" || mode === "navigate" || (!mode && /text\/html/i.test(request.headers.get("accept") ?? ""));
-    if (browsing) return NextResponse.redirect(`${schemeFor(requestHost, request.headers.get("x-forwarded-proto"))}://${clanHostOf(requestHost, apexHost())}/`, 307);
+    if (browsing) {
+      // Built by hand: NextResponse.redirect turns a redirect to the request's own origin into a bare "/", which on a host that differs
+      // only by its api. prefix (local development) would send the browser straight back here.
+      const target = `${schemeFor(requestHost, request.headers.get("x-forwarded-proto"))}://${clanHostOf(requestHost, apexHost())}/`;
+      return new NextResponse(null, { status: 307, headers: { Location: target, "Cache-Control": "no-store" } });
+    }
     const rewriteApi = (path: string) => {
       const url = request.nextUrl.clone();
       url.pathname = path;
