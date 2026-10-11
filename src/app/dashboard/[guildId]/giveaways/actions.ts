@@ -73,9 +73,12 @@ async function onGiveaway(
     : { ok: false, error: result.error, problems: result.problems };
 }
 
-export const endGuildGiveawayAction = (guildId: string, id: string) =>
-  onGiveaway(guildId, id, (g) => adminApi.endGiveaway(g, id));
-export const rerollGuildGiveawayAction = (guildId: string, id: string) =>
-  onGiveaway(guildId, id, (g) => adminApi.rerollGiveaway(g, id));
-export const deleteGuildGiveawayAction = (guildId: string, id: string) =>
-  onGiveaway(guildId, id, (g) => adminApi.deleteGiveaway(g, id));
+export async function endGuildGiveawayAction(guildId: string, id: string) {
+  return onGiveaway(guildId, id, (g) => adminApi.endGiveaway(g, id));
+}
+export async function rerollGuildGiveawayAction(guildId: string, id: string) {
+  return onGiveaway(guildId, id, (g) => adminApi.rerollGiveaway(g, id));
+}
+export async function deleteGuildGiveawayAction(guildId: string, id: string) {
+  return onGiveaway(guildId, id, (g) => adminApi.deleteGiveaway(g, id));
+}
