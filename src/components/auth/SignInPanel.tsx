@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { LoginButton } from "@/components/auth/LoginButton";
 import { authError } from "@/lib/authErrors";
 
 /** What the downloadable file says: facts for troubleshooting, and nothing private (no cookies, tokens or codes). */
@@ -78,18 +79,15 @@ export function SignInPanel({ code, rawError, callbackUrl }: { code: string | nu
         )}
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
+          <LoginButton
             disabled={busy}
             onClick={() => {
               setBusy(true);
               void signIn("discord", { callbackUrl });
             }}
-            className="flex items-center gap-2 rounded-md bg-[#5865F2] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4752c4] disabled:opacity-60"
           >
-            <span aria-hidden>⚔️</span>
             {busy ? "Opening Discord…" : info ? "Try again with Discord" : "Login with Discord"}
-          </button>
+          </LoginButton>
           <Link href="/" className="rounded-md border border-surface-border px-5 py-2.5 text-sm font-semibold transition hover:border-gold">
             Back to the home page
           </Link>
