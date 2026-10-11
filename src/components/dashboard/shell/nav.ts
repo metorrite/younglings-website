@@ -43,6 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Messages",
     items: [
+      { label: "Tickets", icon: "ticket", path: "/tickets" },
       { label: "Post a message", icon: "send", path: "/post" },
       { label: "Scheduled posts", icon: "clock", path: "/scheduled" },
     ],
@@ -57,10 +58,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Checkup", icon: "check", path: "/checkup" },
       { label: "Activity log", icon: "list", path: "/audit" },
     ],
-  },
-  {
-    title: "Coming soon",
-    items: [{ label: "Tickets", icon: "ticket", soon: true }],
   },
 ];
 

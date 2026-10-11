@@ -7,7 +7,7 @@ import type { GuildStructure, TicketSettings } from "@/lib/jonnybot-admin";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, inputClass, Notice, primaryButton } from "./ui";
 
-export function SettingsForm({ initial, structure }: { initial: TicketSettings; structure: GuildStructure }) {
+export function SettingsForm({ initial, structure, save: persist = saveSettingsAction }: { initial: TicketSettings; structure: GuildStructure; save?: typeof saveSettingsAction }) {
   const [settings, setSettings] = useState(initial);
   const [error, setError] = useState<{ message: string; problems: string[] } | null>(null);
   const [saved, setSaved] = useState(false);
@@ -17,7 +17,7 @@ export function SettingsForm({ initial, structure }: { initial: TicketSettings; 
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await saveSettingsAction({
+      const result = await persist({
         logChannelId: settings.logChannelId,
         transcriptDm: settings.transcriptDm,
         closeDelaySeconds: settings.closeDelaySeconds,

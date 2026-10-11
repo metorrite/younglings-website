@@ -11,7 +11,7 @@ import { Card, FormField, inputClass, Notice, primaryButton } from "./ui";
  * What every new panel starts with. Saving changes only panels created afterwards, and each panel can still add, change
  * or remove any of it, so this is a time-saver rather than a rule.
  */
-export function PanelDefaultsForm({ initial, structure }: { initial: PanelDefaults; structure: GuildStructure }) {
+export function PanelDefaultsForm({ initial, structure, save: persist = savePanelDefaultsAction }: { initial: PanelDefaults; structure: GuildStructure; save?: typeof savePanelDefaultsAction }) {
   const [defaults, setDefaults] = useState(initial);
   const [error, setError] = useState<{ message: string; problems: string[] } | null>(null);
   const [saved, setSaved] = useState(false);
@@ -27,7 +27,7 @@ export function PanelDefaultsForm({ initial, structure }: { initial: PanelDefaul
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await savePanelDefaultsAction(defaults);
+      const result = await persist(defaults);
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
