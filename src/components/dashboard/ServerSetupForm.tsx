@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, FormField, inputClass, Notice, primaryButton } from "@/components/admin/ui";
+import { Card, FormField, inputClass } from "@/components/admin/ui";
 import { ChannelSelect, RoleSelect } from "@/components/admin/pickers";
+import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { choicesOf, type GuildStructure, type ServerSetup, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
@@ -50,58 +52,65 @@ export function ServerSetupForm({
 
   return (
     <div className="space-y-6">
-      <Card
-        title="Your clan"
-        hint="Tell JonnyBot which RuneScape clan this server is for. It tracks the clan's members, announces their drops, quests and kills, and gives members and guests their roles. Leave it empty if this isn't a clan server."
-      >
-        <FormField label="RuneScape clan name" hint="Exactly as it appears in game.">
-          <input className={inputClass} value={clanDraft} maxLength={30} onChange={(e) => { setClanDraft(e.target.value); setOutcome(null); }} />
-        </FormField>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={setup.clanEnabled} onChange={(e) => change({ clanEnabled: e.target.checked })} />
-          Clan features switched on
-        </label>
-        <p className="text-xs text-muted">
-          To set or change the clan you must be an Admin (or higher) of that clan in game, with your RuneScape name linked to your Discord account. If you
-          haven&apos;t linked it yet, run <code className="rounded bg-white/10 px-1">/rs</code> in the server first.
-        </p>
-      </Card>
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+        <div className="space-y-6">
+          <Card
+            title="Your clan"
+            hint="Which RuneScape clan this server is for. Leave it empty if it isn't a clan server."
+            info={
+              <>
+                <p>JonnyBot tracks the clan&apos;s members, announces their drops, quests and kills, and gives members and guests their roles.</p>
+                <p>To set or change the clan you must be an Admin (or higher) of that clan in game, with your RuneScape name linked to your Discord account. If you haven&apos;t linked it yet, run /rs in the server first.</p>
+              </>
+            }
+          >
+            <FormField label="RuneScape clan name" hint="Exactly as it appears in game.">
+              <input className={inputClass} value={clanDraft} maxLength={30} onChange={(e) => { setClanDraft(e.target.value); setOutcome(null); }} />
+            </FormField>
+            <Toggle
+              checked={setup.clanEnabled}
+              onChange={(on) => change({ clanEnabled: on })}
+              label="Clan features"
+              detail={setup.clanEnabled ? "On: the clan is tracked and announced." : "Off: the clan is kept but nothing about it is posted."}
+              info="Switch this off to pause everything clan-related in this server without losing your settings."
+            />
+          </Card>
 
-      <Card title="Link requests" hint="When a member asks to link a RuneScape name, a card with Approve and Reject buttons is posted for your staff.">
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Review channel" hint="Where link requests are posted. JonnyBot needs permission to send messages there.">
-            <ChannelSelect {...choicesOf(structure)} onlyPostable value={setup.verificationReviewChannelId} onChange={(id) => change({ verificationReviewChannelId: id })} none="No review channel" />
-          </FormField>
-          <FormField label="Rename alerts" hint="Where possible RuneScape name changes are flagged for staff.">
-            <ChannelSelect {...choicesOf(structure)} onlyPostable value={setup.renameAlertChannelId} onChange={(id) => change({ renameAlertChannelId: id })} none="No rename alerts" />
-          </FormField>
+          <Card title="Link requests" hint="Where staff review members who ask to link a RuneScape name." info="When a member asks to link a RuneScape name, a card with Approve and Reject buttons is posted in the review channel for your staff.">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Review channel" info="Where link requests are posted. JonnyBot needs permission to send messages there.">
+                <ChannelSelect {...choicesOf(structure)} onlyPostable value={setup.verificationReviewChannelId} onChange={(id) => change({ verificationReviewChannelId: id })} none="No review channel" />
+              </FormField>
+              <FormField label="Rename alerts" info="Where possible RuneScape name changes are flagged for staff.">
+                <ChannelSelect {...choicesOf(structure)} onlyPostable value={setup.renameAlertChannelId} onChange={(id) => change({ renameAlertChannelId: id })} none="No rename alerts" />
+              </FormField>
+            </div>
+          </Card>
         </div>
-      </Card>
 
-      <Card
-        title="Roles JonnyBot hands out"
-        hint="Given and taken away automatically as people link their names and join or leave the clan. JonnyBot's own role has to sit above each of these in Server Settings, Roles."
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField label="Verified clan member" hint="Linked, and in your clan.">
-            <RoleSelect roles={giveable} value={setup.verifiedClanRoleId} onChange={(id) => change({ verifiedClanRoleId: id })} none="No role" />
-          </FormField>
-          <FormField label="Verified, not in the clan" hint="Linked, but not (or no longer) in your clan.">
-            <RoleSelect roles={giveable} value={setup.verifiedNonClanRoleId} onChange={(id) => change({ verifiedNonClanRoleId: id })} none="No role" />
-          </FormField>
-          <FormField label="Not verified" hint="People who haven't linked a name.">
-            <RoleSelect roles={giveable} value={setup.unverifiedRoleId} onChange={(id) => change({ unverifiedRoleId: id })} none="No role" />
-          </FormField>
-          <FormField label="Link request pending" hint="Given when someone asks to link a name, until staff decide.">
-            <RoleSelect roles={giveable} value={setup.onboardingRoleId} onChange={(id) => change({ onboardingRoleId: id })} none="No role" />
-          </FormField>
-        </div>
-      </Card>
+        <Card
+          title="Roles JonnyBot hands out"
+          hint="Given and taken away automatically as people link names and join or leave the clan."
+          info="JonnyBot's own role has to sit above each of these in Server Settings, then Roles, or Discord won't let it hand them out."
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="Verified clan member" info="Linked, and in your clan.">
+              <RoleSelect roles={giveable} value={setup.verifiedClanRoleId} onChange={(id) => change({ verifiedClanRoleId: id })} none="No role" />
+            </FormField>
+            <FormField label="Verified, not in the clan" info="Linked, but not (or no longer) in your clan.">
+              <RoleSelect roles={giveable} value={setup.verifiedNonClanRoleId} onChange={(id) => change({ verifiedNonClanRoleId: id })} none="No role" />
+            </FormField>
+            <FormField label="Not verified" info="People who haven't linked a name.">
+              <RoleSelect roles={giveable} value={setup.unverifiedRoleId} onChange={(id) => change({ unverifiedRoleId: id })} none="No role" />
+            </FormField>
+            <FormField label="Link request pending" info="Given when someone asks to link a name, until staff decide.">
+              <RoleSelect roles={giveable} value={setup.onboardingRoleId} onChange={(id) => change({ onboardingRoleId: id })} none="No role" />
+            </FormField>
+          </div>
+        </Card>
+      </div>
 
-      {outcome && <Notice tone={outcome.tone} title={outcome.title} items={outcome.items} />}
-      <button type="button" className={primaryButton} disabled={pending} onClick={submit}>
-        {pending ? "Saving…" : "Save"}
-      </button>
+      <SaveBar pending={pending} onSave={submit} outcome={outcome} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
 
 /** Shared look for the admin dashboard, matching the site's existing surface/gold theme. */
 
@@ -11,10 +12,16 @@ export const ghostButton =
 export const dangerButton =
   "rounded-md border border-red-500/40 px-3 py-1.5 text-sm text-red-400 transition hover:bg-red-500/10 disabled:opacity-40";
 
-export function Card({ title, hint, children }: { title?: string; hint?: ReactNode; children: ReactNode }) {
+/** `hint` is a line shown under the title; `info` is a longer explanation tucked behind an "i" bubble beside it. */
+export function Card({ title, hint, info, children }: { title?: string; hint?: ReactNode; info?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-surface-border bg-surface p-6">
-      {title && <h2 className="font-semibold text-gold">{title}</h2>}
+    <section className="rounded-xl border border-surface-border bg-surface p-5 sm:p-6">
+      {title && (
+        <h2 className="flex items-center gap-2 font-semibold text-gold">
+          {title}
+          {info && <InfoBubble title={title}>{info}</InfoBubble>}
+        </h2>
+      )}
       {hint && <p className="mt-1 text-sm text-muted">{hint}</p>}
       <div className={title || hint ? "mt-4 space-y-4" : "space-y-4"}>{children}</div>
     </section>
@@ -29,11 +36,12 @@ export function Card({ title, hint, children }: { title?: string; hint?: ReactNo
  * The hint sits under the control, not between it and the label: fields side by side then line their controls up however long
  * (or absent) each one's hint is.
  */
-export function FormField({ label, hint, required = false, as = "label", children }: { label: string; hint?: ReactNode; required?: boolean; as?: "label" | "group"; children: ReactNode }) {
+export function FormField({ label, hint, info, required = false, as = "label", children }: { label: string; hint?: ReactNode; info?: ReactNode; required?: boolean; as?: "label" | "group"; children: ReactNode }) {
   const body = (
     <>
-      <span className="text-sm font-medium">
+      <span className="flex items-center gap-1.5 text-sm font-medium">
         {label}
+        {info && <InfoBubble title={label}>{info}</InfoBubble>}
         {required && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">Required</span>}
       </span>
       <span className="mt-1 block">{children}</span>

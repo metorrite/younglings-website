@@ -20,16 +20,16 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const user = await requireDashboardUser();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-surface-border pb-4">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="text-lg font-semibold">
+    <div className="mx-auto w-full max-w-[1700px] px-4 pb-12 sm:px-6 lg:px-8">
+      <div className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs text-muted">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="font-medium text-foreground/80 transition hover:text-gold">
             JonnyBot dashboard
           </Link>
-          <span className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-semibold text-gold">{open ? "Beta" : "Beta · clan admins only"}</span>
+          <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">{open ? "Beta" : "Beta · clan admins only"}</span>
         </div>
-        <p className="text-sm text-muted">Signed in as {user.displayName}</p>
-      </header>
+        <p>Signed in as {user.displayName}</p>
+      </div>
       {children}
     </div>
   );

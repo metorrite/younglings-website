@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { choicesOf, dashboardApi } from "@/lib/jonnybot-admin";
@@ -10,9 +11,7 @@ export default async function GuildWelcomePage({ params }: { params: Promise<{ g
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
-        Greets each new member in a channel, as text, an embed, or both. It can also send them a copy by DM when their DMs are open. Bots are never welcomed.
-      </p>
+      <PageHeader title="Welcome message" description="Greets each new member in a channel, as text, an embed, or both. It can also send them a copy by DM when their DMs are open. Bots are never welcomed." />
       <WelcomeEditor
         initial={welcome}
         {...choicesOf(structure)}

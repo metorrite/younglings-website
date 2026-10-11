@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, dangerButton, FormField, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
+import { Card, dangerButton, FormField, ghostButton, inputClass, Notice } from "@/components/admin/ui";
+import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { RolePicker } from "@/components/dashboard/pickers";
 import { type GuildRole, type PermissionGroupConfig, type PermissionGroupDraft, type PermissionGroups, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
@@ -157,7 +158,8 @@ export function PermissionGroupsEditor({
     <div className="space-y-6">
       {!canEdit && <Notice tone="error" title="Only an Admin can change the permission groups. You can see them here." />}
 
-      <Card title="Bot levels" hint="These three always exist. Fill each with the server roles that should have it; anyone holding any one of the roles is in.">
+      <div className="grid items-start gap-6 xl:grid-cols-2">
+      <Card title="Bot levels" hint="Fill each level with the server roles that should have it." info="These three always exist. Anyone holding any one of the roles you put in a level is in that level.">
         <div className="space-y-4">
           {rows
             .filter((r) => r.builtin)
@@ -179,7 +181,8 @@ export function PermissionGroupsEditor({
 
       <Card
         title="Your own groups"
-        hint="Make a group for any job your server has, such as Web Dev or Event Host, and give it as many roles as you like. A group has no powers of its own: pick it wherever a setting asks who can use something."
+        hint="Make a group for any job your server has, such as Web Dev or Event Host."
+        info="Give a group as many roles as you like. A group has no powers of its own: pick it wherever a setting asks who can use something, such as on the Commands page."
       >
         <div className="space-y-4">
           {custom.length === 0 && <p className="text-sm text-muted">No groups of your own yet.</p>}
@@ -219,12 +222,9 @@ export function PermissionGroupsEditor({
         </div>
       </Card>
 
-      {outcome && <Notice tone={outcome.tone} title={outcome.title} items={outcome.items} />}
-      {canEdit && (
-        <button type="button" className={primaryButton} disabled={pending} onClick={submit}>
-          {pending ? "Saving…" : "Save"}
-        </button>
-      )}
+      </div>
+
+      {canEdit && <SaveBar pending={pending} onSave={submit} outcome={outcome} />}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
@@ -10,10 +11,7 @@ export default async function PermissionsPage({ params }: { params: Promise<{ gu
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
-        Who can do what. Your server&apos;s roles decide it: put one or several roles in each level, and add groups of your own for jobs that don&apos;t fit
-        Admin, Support or Developer.
-      </p>
+      <PageHeader title="Roles &amp; permissions" description="Who can do what. Your server&apos;s roles decide it: put one or several roles in each level, and add groups of your own for jobs that don&apos;t fit Admin, Support or Developer." />
       <PermissionGroupsEditor initial={permissions} roles={structure.roles} canEdit={guild.tier === "ADMIN"} save={savePermissionGroupsAction.bind(null, guildId)} />
     </div>
   );

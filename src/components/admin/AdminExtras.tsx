@@ -1,5 +1,6 @@
 "use client";
 
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { useState, useTransition } from "react";
 import { markPromotedAction, postMessageAction, saveCommunityAction, saveTrackingAction } from "@/app/admin/(console)/actions";
 import type { ChannelChoices, ForumInfo, ForumThread, GuildStructure, PromotionDue, TrackingGroupConfig } from "@/lib/jonnybot-admin";
@@ -72,9 +73,7 @@ function TrackingGroupCard({ group, choices, save: saveGroup }: { group: Trackin
     <div className="space-y-3 rounded-md border border-surface-border bg-background/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold">{group.name}</p>
-        <label className="flex items-center gap-2 text-xs text-muted">
-          <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); setSaved(false); }} /> Enabled
-        </label>
+        <Toggle checked={enabled} onChange={(on) => { setEnabled(on); setSaved(false); }} label="Enabled" />
       </div>
       <ChannelListPicker {...choices} value={chosen} max={5} empty="No channels. This feed isn't posted anywhere." onChange={(ids) => { setChosen(ids); setSaved(false); }} />
       <div className="flex flex-wrap items-center gap-2">
