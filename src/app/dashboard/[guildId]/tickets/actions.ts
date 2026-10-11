@@ -63,6 +63,7 @@ export async function saveGuildTicketSettingsAction(guildId: string, input: unkn
     transcriptDm: s.transcriptDm !== false,
     closeDelaySeconds: intOrNull(s.closeDelaySeconds) ?? 10,
     transcriptRetentionDays: intOrNull(s.transcriptRetentionDays),
+    autoCloseDays: intOrNull(s.autoCloseDays),
   });
   revalidatePath(`/dashboard/${guildId}/tickets/settings`);
   return outcome(result);

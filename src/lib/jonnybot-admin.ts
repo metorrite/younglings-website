@@ -123,6 +123,8 @@ export interface TicketSettings {
   transcriptDm: boolean;
   closeDelaySeconds: number;
   transcriptRetentionDays: number | null;
+  /** Close a ticket this many days after its last message (warned a day before); null = never. */
+  autoCloseDays: number | null;
 }
 
 export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";

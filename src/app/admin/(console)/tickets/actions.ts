@@ -79,6 +79,7 @@ export async function saveSettingsAction(input: unknown): Promise<ActionResult<T
     transcriptDm: s.transcriptDm !== false,
     closeDelaySeconds: intOrNull(s.closeDelaySeconds) ?? 10,
     transcriptRetentionDays: intOrNull(s.transcriptRetentionDays),
+    autoCloseDays: intOrNull(s.autoCloseDays),
   });
   revalidatePath("/admin/tickets/settings");
   return outcome(result);

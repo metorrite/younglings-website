@@ -22,6 +22,7 @@ export function SettingsForm({ initial, structure, save: persist = saveSettingsA
         transcriptDm: settings.transcriptDm,
         closeDelaySeconds: settings.closeDelaySeconds,
         transcriptRetentionDays: settings.transcriptRetentionDays,
+        autoCloseDays: settings.autoCloseDays,
       });
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
@@ -73,6 +74,20 @@ export function SettingsForm({ initial, structure, save: persist = saveSettingsA
             className={inputClass}
             value={settings.closeDelaySeconds}
             onChange={(e) => setSettings((s) => ({ ...s, closeDelaySeconds: Number(e.target.value) || 0 }))}
+          />
+        </FormField>
+        <FormField
+          label="Close quiet tickets after (days)"
+          hint="A ticket with no message for this long is closed automatically. It is warned a day before, and any reply cancels it. Leave empty to never close tickets automatically."
+        >
+          <input
+            type="number"
+            min={1}
+            max={90}
+            className={inputClass}
+            value={settings.autoCloseDays ?? ""}
+            placeholder="Never"
+            onChange={(e) => setSettings((s) => ({ ...s, autoCloseDays: e.target.value ? Number(e.target.value) : null }))}
           />
         </FormField>
       </Card>
