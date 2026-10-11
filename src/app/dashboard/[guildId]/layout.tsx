@@ -14,13 +14,14 @@ export default async function GuildLayout({ children, params }: { children: Reac
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
   // A failed lookup just means no banners: the dashboard works without them.
-  const notices = await adminApi.notices(guild);
+  const [notices, setup] = await Promise.all([adminApi.notices(guild), adminApi.serverSetup(guild)]);
   const open = process.env.DASHBOARD_PUBLIC === "true";
 
   return (
     <div className="flex min-h-[calc(100vh-4.1rem)] flex-col lg:flex-row">
       <Sidebar
         server={{ id: guildId, name: guild.guildName, iconUrl: guild.guildIconUrl, role: ROLE_LABEL[guild.tier] ?? "Manager" }}
+        hasClan={!setup.ok || setup.data.clanActive}
         footer={`JonnyBot dashboard · ${open ? "Beta" : "Beta, clan admins only"}. Signed in as ${guild.displayName}.`}
       />
       <div className="min-w-0 flex-1 space-y-6 px-4 py-6 sm:px-8 lg:px-10">

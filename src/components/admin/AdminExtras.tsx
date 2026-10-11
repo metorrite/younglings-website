@@ -118,7 +118,7 @@ export function TrackingEditor({ groups, channels, forums, threads, save = saveT
 
 // ---------- post a message ----------
 
-export function PostTool({ channels, forums, threads }: { channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
+export function PostTool({ channels, forums, threads, post = postMessageAction }: { channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; post?: typeof postMessageAction }) {
   const [text, setText] = useState("");
   const [channelId, setChannelId] = useState("");
   const [convert, setConvert] = useState(false);
@@ -132,7 +132,7 @@ export function PostTool({ channels, forums, threads }: { channels: GuildStructu
     setMessage(null);
     setProblems([]);
     start(async () => {
-      const result = await postMessageAction({ text, channelId, convert, dryRun });
+      const result = await post({ text, channelId, convert, dryRun });
       if (!result.ok) {
         setError(result.error);
         setProblems(result.problems);
@@ -174,7 +174,7 @@ export function PostTool({ channels, forums, threads }: { channels: GuildStructu
 
 // ---------- community settings ----------
 
-export function CommunitySettingsForm({ pollChannelId, channels, forums, threads }: { pollChannelId: string | null; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
+export function CommunitySettingsForm({ pollChannelId, channels, forums, threads, save: saveChannel = saveCommunityAction }: { pollChannelId: string | null; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; save?: typeof saveCommunityAction }) {
   const [value, setValue] = useState(pollChannelId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -184,7 +184,7 @@ export function CommunitySettingsForm({ pollChannelId, channels, forums, threads
     setError(null);
     setSaved(false);
     start(async () => {
-      const result = await saveCommunityAction(value || null);
+      const result = await saveChannel(value || null);
       if (!result.ok) setError(result.error);
       else setSaved(true);
     });

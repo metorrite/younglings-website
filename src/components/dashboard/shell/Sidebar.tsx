@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icons";
-import { isActive, NAV_GROUPS } from "./nav";
+import { groupsFor, isActive } from "./nav";
 
 export interface SidebarServer {
   id: string;
@@ -29,9 +29,10 @@ function ServerIcon({ server, size }: { server: SidebarServer; size: number }) {
  * One server's navigation. On a wide screen it is a column down the left edge of the screen, as tall as the page, whose contents stay in
  * view while the page scrolls; on a narrow one it becomes a row of buttons above the page, so the pages themselves can use the whole width.
  */
-export function Sidebar({ server, footer, base: where }: { server: SidebarServer; footer?: string; base?: string }) {
+export function Sidebar({ server, footer, hasClan = true, base: where }: { server: SidebarServer; footer?: string; hasClan?: boolean; base?: string }) {
   const pathname = usePathname();
   const base = where ?? `/dashboard/${server.id}`;
+  const groups = groupsFor(hasClan);
 
   return (
     <aside aria-label="Server navigation" className="border-b border-surface-border bg-surface/60 lg:w-72 lg:shrink-0 lg:border-r lg:border-b-0">
@@ -49,7 +50,7 @@ export function Sidebar({ server, footer, base: where }: { server: SidebarServer
 
         {/* wide screens: the full list */}
         <nav className="hidden flex-1 space-y-5 p-3 lg:block">
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.title ?? "top"}>
               {group.title && <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-muted/80 uppercase">{group.title}</p>}
               <ul className="space-y-0.5">
@@ -90,7 +91,7 @@ export function Sidebar({ server, footer, base: where }: { server: SidebarServer
 
         {/* narrow screens: one row, scrolled sideways */}
         <nav className="flex gap-1.5 overflow-x-auto p-2 lg:hidden">
-          {NAV_GROUPS.flatMap((group) => group.items)
+          {groups.flatMap((group) => group.items)
             .filter((item) => !item.soon && item.path !== undefined)
             .map((item) => {
               const active = isActive(item, base, pathname);

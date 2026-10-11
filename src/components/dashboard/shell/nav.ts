@@ -12,6 +12,8 @@ export interface NavItem {
   /** Other paths that should keep this entry highlighted (the guided setup runs on /wizard). */
   also?: string[];
   soon?: boolean;
+  /** Only shown for a server that has a clan set up. */
+  clanOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -35,18 +37,36 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Commands", icon: "terminal", path: "/commands" },
       { label: "Activity announcements", icon: "bell", path: "/tracking" },
       { label: "Welcome message", icon: "smile", path: "/welcome" },
+      { label: "Polls & signups", icon: "poll", path: "/community" },
     ],
   },
   {
-    title: "Coming soon",
+    title: "Messages",
     items: [
-      { label: "Tickets", icon: "ticket", soon: true },
-      { label: "Polls & signups", icon: "poll", soon: true },
+      { label: "Post a message", icon: "send", path: "/post" },
+      { label: "Scheduled posts", icon: "clock", path: "/scheduled" },
     ],
+  },
+  {
+    title: "Clan",
+    items: [{ label: "Roster", icon: "users", path: "/members", clanOnly: true }],
+  },
+  {
+    title: "Server",
+    items: [{ label: "Activity log", icon: "list", path: "/audit" }],
+  },
+  {
+    title: "Coming soon",
+    items: [{ label: "Tickets", icon: "ticket", soon: true }],
   },
 ];
 
 /** Whether the page at `pathname` belongs to `item`, for highlighting. */
+/** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, and any group that leaves empty. */
+export function groupsFor(hasClan: boolean): NavGroup[] {
+  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasClan || !item.clanOnly) })).filter((group) => group.items.length > 0);
+}
+
 export function isActive(item: NavItem, base: string, pathname: string): boolean {
   if (item.path === undefined) return false;
   if (item.path === "") return pathname === base;

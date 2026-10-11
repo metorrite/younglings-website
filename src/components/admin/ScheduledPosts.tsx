@@ -13,7 +13,9 @@ const STATUS: Record<ScheduledPost["status"], { label: string; tone: string }> =
   CANCELLED: { label: "Cancelled", tone: "text-muted" },
 };
 
-export function ScheduledPosts({ initial, channels, forums, threads }: { initial: ScheduledPost[]; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[] }) {
+export function ScheduledPosts({ initial, channels, forums, threads, actions }: { initial: ScheduledPost[]; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; actions?: { schedule: typeof schedulePostAction; cancel: typeof cancelScheduledAction } }) {
+  const schedulePost = actions?.schedule ?? schedulePostAction;
+  const cancelPost = actions?.cancel ?? cancelScheduledAction;
   const [posts, setPosts] = useState(initial);
   const [text, setText] = useState("");
   const [channelId, setChannelId] = useState("");
@@ -30,7 +32,7 @@ export function ScheduledPosts({ initial, channels, forums, threads }: { initial
     setError(null);
     setMessage(null);
     start(async () => {
-      const result = await schedulePostAction({ text, channelId, convert, sendAt: when });
+      const result = await schedulePost({ text, channelId, convert, sendAt: when });
       if (!result.ok) return setError(result.error);
       setPosts(result.data);
       setText("");
@@ -74,7 +76,7 @@ export function ScheduledPosts({ initial, channels, forums, threads }: { initial
                   onClick={() => {
                     if (!window.confirm("Cancel this scheduled post?")) return;
                     start(async () => {
-                      const r = await cancelScheduledAction(p.id);
+                      const r = await cancelPost(p.id);
                       if (r.ok) setPosts(r.data);
                       else setError(r.error);
                     });
