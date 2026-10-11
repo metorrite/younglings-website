@@ -5,6 +5,8 @@ import { requireGuild } from "@/lib/dashboard";
 import {
   adminApi,
   type PointsOverview,
+  type PointsRedemptions,
+  type PointsRewards,
   type PointsSubmissions,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
@@ -81,6 +83,51 @@ export async function decideSubmissionAction(
     points: approve && typeof p.points === "number" ? Math.trunc(p.points) : undefined,
     note: typeof p.note === "string" ? p.note.slice(0, 300) : "",
   });
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok
+    ? { ok: true, data: result.data }
+    : { ok: false, error: result.error, problems: result.problems };
+}
+
+/** Adds a reward, or changes one (including archiving it with `active: false`). */
+export async function saveRewardAction(
+  guildId: string,
+  id: string | null,
+  input: unknown,
+): Promise<WelcomeActionResult<PointsRewards>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  if (id !== null && !/^\d{1,18}$/.test(id))
+    return { ok: false, error: "That isn't a valid reward.", problems: [] };
+  if (typeof input !== "object" || input === null)
+    return { ok: false, error: "That reward couldn't be read.", problems: [] };
+  const p = input as Record<string, unknown>;
+  const result = await adminApi.savePointsReward(guild, id, {
+    name: typeof p.name === "string" ? p.name.slice(0, 100) : "",
+    description: typeof p.description === "string" ? p.description.slice(0, 300) : "",
+    cost: typeof p.cost === "number" ? Math.trunc(p.cost) : 0,
+    stock: typeof p.stock === "number" ? Math.trunc(p.stock) : null,
+    active: p.active !== false,
+  });
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok
+    ? { ok: true, data: result.data }
+    : { ok: false, error: result.error, problems: result.problems };
+}
+
+/** Marks a redemption handed over, or cancels it (which refunds the member). */
+export async function handleRedemptionAction(
+  guildId: string,
+  id: string,
+  fulfil: boolean,
+): Promise<WelcomeActionResult<PointsRedemptions>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  if (!/^\d{1,18}$/.test(id))
+    return { ok: false, error: "That isn't a valid redemption.", problems: [] };
+  const result = await adminApi.handlePointsRedemption(guild, id, fulfil === true);
   revalidatePath(`/dashboard/${guildId}/points`);
   return result.ok
     ? { ok: true, data: result.data }

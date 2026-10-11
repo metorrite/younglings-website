@@ -11,16 +11,21 @@ import {
 } from "@/components/admin/ui";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { ChannelSelect } from "@/components/admin/pickers";
+import { PointsRewardsManager } from "@/components/dashboard/PointsRewardsManager";
 import { PointsSubmissionsQueue } from "@/components/dashboard/PointsSubmissionsQueue";
 import {
   choicesOf,
   type GuildStructure,
   type PointsOverview,
+  type PointsRedemptions,
+  type PointsRewards,
   type PointsSubmissions,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
 
 export interface PointsActions {
+  saveReward: (id: string | null, input: { name: string; description: string; cost: number; stock: number | null; active: boolean }) => Promise<WelcomeActionResult<PointsRewards>>;
+  handleRedemption: (id: string, fulfil: boolean) => Promise<WelcomeActionResult<PointsRedemptions>>;
   decide: (id: string, input: { approve: boolean; points?: number; note?: string }) => Promise<WelcomeActionResult<PointsSubmissions>>;
   saveSettings: (input: { enabled: boolean; unit: string; reviewChannelId: string | null }) => Promise<WelcomeActionResult<PointsOverview>>;
   award: (input: { userId: string; points: number; reason: string }) => Promise<WelcomeActionResult<PointsOverview>>;
@@ -44,11 +49,15 @@ export function PointsManager({
   initial,
   submissions,
   structure,
+  rewards,
+  redemptions,
   actions,
 }: {
   initial: PointsOverview;
   submissions: PointsSubmissions;
   structure: GuildStructure;
+  rewards: PointsRewards;
+  redemptions: PointsRedemptions;
   actions: PointsActions;
 }) {
   const [data, setData] = useState(initial);
@@ -136,6 +145,14 @@ export function PointsManager({
       </Card>
 
       <PointsSubmissionsQueue initial={submissions} unit={data.unit} decide={actions.decide} />
+
+      <PointsRewardsManager
+        rewards={rewards}
+        redemptions={redemptions}
+        unit={data.unit}
+        save={actions.saveReward}
+        handle={actions.handleRedemption}
+      />
 
       <Card
         title="Give or take points"

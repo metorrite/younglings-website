@@ -2,7 +2,13 @@ import { PointsManager } from "@/components/dashboard/PointsManager";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
-import { awardPointsAction, decideSubmissionAction, savePointsSettingsAction } from "./actions";
+import {
+  awardPointsAction,
+  decideSubmissionAction,
+  handleRedemptionAction,
+  saveRewardAction,
+  savePointsSettingsAction,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +19,12 @@ export default async function PointsPage({
 }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [overview, submissions, structure] = await Promise.all([
+  const [overview, submissions, structure, rewards, redemptions] = await Promise.all([
     adminApi.points(guild).then(dashboardData),
     adminApi.pointsSubmissions(guild).then(dashboardData),
     adminApi.structure(guild).then(dashboardData),
+    adminApi.pointsRewards(guild).then(dashboardData),
+    adminApi.pointsRedemptions(guild).then(dashboardData),
   ]);
 
   return (
@@ -29,10 +37,14 @@ export default async function PointsPage({
         initial={overview}
         submissions={submissions}
         structure={structure}
+        rewards={rewards}
+        redemptions={redemptions}
         actions={{
           saveSettings: savePointsSettingsAction.bind(null, guildId),
           award: awardPointsAction.bind(null, guildId),
           decide: decideSubmissionAction.bind(null, guildId),
+          saveReward: saveRewardAction.bind(null, guildId),
+          handleRedemption: handleRedemptionAction.bind(null, guildId),
         }}
       />
     </div>

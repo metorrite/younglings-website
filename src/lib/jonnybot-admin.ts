@@ -675,6 +675,39 @@ export interface PointsSubmissions {
   maxPerEntry: number;
 }
 
+/** A reward members can spend points on. `stock` is null for unlimited; an archived reward (`active` false) is hidden from members. */
+export interface PointsReward {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  stock: number | null;
+  active: boolean;
+}
+
+export interface PointsRewards {
+  rewards: PointsReward[];
+  maxRewards: number;
+  maxPerEntry: number;
+}
+
+export interface PointsRedemption {
+  id: string;
+  rewardName: string;
+  userId: string;
+  userName: string | null;
+  cost: number;
+  status: "PENDING" | "FULFILLED" | "CANCELLED";
+  handledByName: string | null;
+  createdAt: string;
+  handledAt: string | null;
+}
+
+export interface PointsRedemptions {
+  pending: PointsRedemption[];
+  handled: PointsRedemption[];
+}
+
 /** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
 export interface ModLog {
   enabled: boolean;
@@ -1169,6 +1202,15 @@ export const adminApi = {
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
+  savePointsReward: (
+    ctx: ApiContext,
+    id: string | null,
+    body: { name: string; description: string; cost: number; stock: number | null; active: boolean },
+  ) => call<PointsRewards>(ctx, id ? "PUT" : "POST", id ? `points/rewards/${encodeURIComponent(id)}` : "points/rewards", body),
+  pointsRedemptions: (ctx: ApiContext) => call<PointsRedemptions>(ctx, "GET", "points/redemptions"),
+  handlePointsRedemption: (ctx: ApiContext, id: string, fulfil: boolean) =>
+    call<PointsRedemptions>(ctx, "POST", `points/redemptions/${encodeURIComponent(id)}/${fulfil ? "fulfil" : "cancel"}`, {}),
   pointsSubmissions: (ctx: ApiContext) => call<PointsSubmissions>(ctx, "GET", "points/submissions"),
   decidePointsSubmission: (ctx: ApiContext, id: string, approve: boolean, body: { points?: number; note?: string }) =>
     call<PointsSubmissions>(ctx, "POST", `points/submissions/${encodeURIComponent(id)}/${approve ? "approve" : "deny"}`, body),
