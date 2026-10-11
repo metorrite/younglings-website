@@ -5,6 +5,7 @@ import { requireGuild } from "@/lib/dashboard";
 import {
   adminApi,
   type PointsOverview,
+  type PointsSubmissions,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
@@ -23,6 +24,7 @@ export async function savePointsSettingsAction(
   const result = await adminApi.savePoints(guild, {
     enabled: p.enabled === true,
     unit: typeof p.unit === "string" ? p.unit.slice(0, 40) : "points",
+    reviewChannelId: typeof p.reviewChannelId === "string" && /^\d{1,20}$/.test(p.reviewChannelId) ? p.reviewChannelId : null,
   });
   revalidatePath(`/dashboard/${guildId}/points`);
   return result.ok
@@ -53,6 +55,31 @@ export async function awardPointsAction(
     userId,
     points,
     reason: typeof p.reason === "string" ? p.reason.slice(0, 300) : "",
+  });
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok
+    ? { ok: true, data: result.data }
+    : { ok: false, error: result.error, problems: result.problems };
+}
+
+/** Approves a waiting submission and pays the amount staff chose, or denies it with a reason the member is told. */
+export async function decideSubmissionAction(
+  guildId: string,
+  id: string,
+  input: unknown,
+): Promise<WelcomeActionResult<PointsSubmissions>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  if (!/^\d{1,18}$/.test(id))
+    return { ok: false, error: "That isn't a valid submission.", problems: [] };
+  if (typeof input !== "object" || input === null)
+    return { ok: false, error: "That decision couldn't be read.", problems: [] };
+  const p = input as Record<string, unknown>;
+  const approve = p.approve === true;
+  const result = await adminApi.decidePointsSubmission(guild, id, approve, {
+    points: approve && typeof p.points === "number" ? Math.trunc(p.points) : undefined,
+    note: typeof p.note === "string" ? p.note.slice(0, 300) : "",
   });
   revalidatePath(`/dashboard/${guildId}/points`);
   return result.ok

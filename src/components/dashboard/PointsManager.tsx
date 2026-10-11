@@ -10,10 +10,19 @@ import {
   primaryButton,
 } from "@/components/admin/ui";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
-import type { PointsOverview, WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { ChannelSelect } from "@/components/admin/pickers";
+import { PointsSubmissionsQueue } from "@/components/dashboard/PointsSubmissionsQueue";
+import {
+  choicesOf,
+  type GuildStructure,
+  type PointsOverview,
+  type PointsSubmissions,
+  type WelcomeActionResult,
+} from "@/lib/jonnybot-admin";
 
 export interface PointsActions {
-  saveSettings: (input: { enabled: boolean; unit: string }) => Promise<WelcomeActionResult<PointsOverview>>;
+  decide: (id: string, input: { approve: boolean; points?: number; note?: string }) => Promise<WelcomeActionResult<PointsSubmissions>>;
+  saveSettings: (input: { enabled: boolean; unit: string; reviewChannelId: string | null }) => Promise<WelcomeActionResult<PointsOverview>>;
   award: (input: { userId: string; points: number; reason: string }) => Promise<WelcomeActionResult<PointsOverview>>;
 }
 
@@ -33,14 +42,19 @@ function amount(n: number): string {
 /** Settings, an award form, the leaderboard and the newest ledger entries for a server's points. */
 export function PointsManager({
   initial,
+  submissions,
+  structure,
   actions,
 }: {
   initial: PointsOverview;
+  submissions: PointsSubmissions;
+  structure: GuildStructure;
   actions: PointsActions;
 }) {
   const [data, setData] = useState(initial);
   const [enabled, setEnabled] = useState(initial.enabled);
   const [unit, setUnit] = useState(initial.unit);
+  const [reviewChannel, setReviewChannel] = useState<string | null>(initial.reviewChannelId);
   const [userId, setUserId] = useState("");
   const [points, setPoints] = useState("");
   const [reason, setReason] = useState("");
@@ -48,17 +62,25 @@ export function PointsManager({
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const dirty = enabled !== data.enabled || unit.trim() !== data.unit;
+  // A decision elsewhere on the page refreshes the server data; follow it so the leaderboard and history stay current.
+  const [seen, setSeen] = useState(initial);
+  if (initial !== seen) {
+    setSeen(initial);
+    setData(initial);
+  }
+
+  const dirty = enabled !== data.enabled || unit.trim() !== data.unit || reviewChannel !== data.reviewChannelId;
 
   function saveSettings() {
     setProblem(null);
     setNote(null);
     start(async () => {
-      const result = await actions.saveSettings({ enabled, unit: unit.trim() });
+      const result = await actions.saveSettings({ enabled, unit: unit.trim(), reviewChannelId: reviewChannel });
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       setData(result.data);
       setEnabled(result.data.enabled);
       setUnit(result.data.unit);
+      setReviewChannel(result.data.reviewChannelId);
       setNote("Settings saved.");
     });
   }
@@ -97,11 +119,23 @@ export function PointsManager({
           <FormField label="What the points are called" hint="For example points, tickets or coins.">
             <input className={`${inputClass} max-w-xs`} value={unit} maxLength={20} onChange={(e) => setUnit(e.target.value)} />
           </FormField>
+          <FormField label="Review channel for screenshots" as="group" hint="Members run /points submit with a screenshot; it is posted here for your staff, then approved or denied below. Leave empty to turn submissions off.">
+            <ChannelSelect
+              {...choicesOf(structure)}
+              onlyPostable
+              allowForums={false}
+              value={reviewChannel}
+              onChange={setReviewChannel}
+              none="No submissions"
+            />
+          </FormField>
           <button type="button" className={primaryButton} disabled={pending || !dirty} onClick={saveSettings}>
             Save settings
           </button>
         </div>
       </Card>
+
+      <PointsSubmissionsQueue initial={submissions} unit={data.unit} decide={actions.decide} />
 
       <Card
         title="Give or take points"

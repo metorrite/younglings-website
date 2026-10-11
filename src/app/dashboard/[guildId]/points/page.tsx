@@ -2,7 +2,7 @@ import { PointsManager } from "@/components/dashboard/PointsManager";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
-import { awardPointsAction, savePointsSettingsAction } from "./actions";
+import { awardPointsAction, decideSubmissionAction, savePointsSettingsAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,11 @@ export default async function PointsPage({
 }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const overview = await adminApi.points(guild).then(dashboardData);
+  const [overview, submissions, structure] = await Promise.all([
+    adminApi.points(guild).then(dashboardData),
+    adminApi.pointsSubmissions(guild).then(dashboardData),
+    adminApi.structure(guild).then(dashboardData),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -23,9 +27,12 @@ export default async function PointsPage({
       />
       <PointsManager
         initial={overview}
+        submissions={submissions}
+        structure={structure}
         actions={{
           saveSettings: savePointsSettingsAction.bind(null, guildId),
           award: awardPointsAction.bind(null, guildId),
+          decide: decideSubmissionAction.bind(null, guildId),
         }}
       />
     </div>

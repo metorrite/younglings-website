@@ -636,6 +636,8 @@ export interface WarningList {
 export interface PointsOverview {
   enabled: boolean;
   unit: string;
+  /** Where members' screenshots are sent for review; null until an admin picks one. */
+  reviewChannelId: string | null;
   top: { userId: string; userName: string | null; points: number }[];
   recent: {
     id: string;
@@ -649,6 +651,27 @@ export interface PointsOverview {
     createdAt: string;
   }[];
   totals: { members: number; outstanding: number; awarded: number; spent: number };
+  maxPerEntry: number;
+}
+
+/** One points submission: a member's screenshot waiting for staff, or already decided. `proofUrl` is a fresh link to the image. */
+export interface PointsSubmission {
+  id: string;
+  userId: string;
+  userName: string | null;
+  description: string;
+  proofUrl: string;
+  status: "PENDING" | "APPROVED" | "DENIED";
+  decidedByName: string | null;
+  decisionNote: string | null;
+  pointsAwarded: number | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface PointsSubmissions {
+  pending: PointsSubmission[];
+  decided: PointsSubmission[];
   maxPerEntry: number;
 }
 
@@ -1146,7 +1169,10 @@ export const adminApi = {
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
-  savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string }) => call<PointsOverview>(ctx, "PUT", "points", body),
+  pointsSubmissions: (ctx: ApiContext) => call<PointsSubmissions>(ctx, "GET", "points/submissions"),
+  decidePointsSubmission: (ctx: ApiContext, id: string, approve: boolean, body: { points?: number; note?: string }) =>
+    call<PointsSubmissions>(ctx, "POST", `points/submissions/${encodeURIComponent(id)}/${approve ? "approve" : "deny"}`, body),
+  savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string; reviewChannelId: string | null }) => call<PointsOverview>(ctx, "PUT", "points", body),
   awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
     call<PointsOverview>(ctx, "POST", "points/award", body),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
