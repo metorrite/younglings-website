@@ -54,6 +54,9 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
       authorization: { params: { scope: "identify" } },
+      // Discord adds `iss` to the redirect back (RFC 9207) and next-auth's Discord provider declares no issuer to check it against,
+      // which fails every sign-in with "issuer must be configured on the issuer". This is the value Discord publishes as its issuer.
+      issuer: "https://discord.com",
     }),
   ],
   cookies: authCookies(cookieDomain, (process.env.NEXTAUTH_URL ?? "").startsWith("https://")),
