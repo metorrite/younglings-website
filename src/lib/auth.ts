@@ -59,6 +59,8 @@ export const authOptions: NextAuthOptions = {
       issuer: "https://discord.com",
     }),
   ],
+  // Our own page, inside the site, for signing in and for when it goes wrong (next-auth would otherwise show its bare default).
+  pages: { signIn: "/auth/signin", error: "/auth/signin" },
   cookies: authCookies(cookieDomain, (process.env.NEXTAUTH_URL ?? "").startsWith("https://")),
   callbacks: {
     // After signing in or out a person may be sent back to either of the site's faces, not just the host that finished the sign-in.
