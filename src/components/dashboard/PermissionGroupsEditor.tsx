@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, dangerButton, FormField, ghostButton, inputClass, Notice } from "@/components/admin/ui";
+import { dangerButton, FormField, ghostButton, inputClass, Notice } from "@/components/admin/ui";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { RolePicker } from "@/components/dashboard/pickers";
 import { type GuildRole, type PermissionGroupConfig, type PermissionGroupDraft, type PermissionGroups, type WelcomeActionResult } from "@/lib/jonnybot-admin";
@@ -159,7 +160,20 @@ export function PermissionGroupsEditor({
       {!canEdit && <Notice tone="error" title="Only an Admin can change the permission groups. You can see them here." />}
 
       <div className="grid items-start gap-6 xl:grid-cols-2">
-      <Card title="Bot levels" hint="Fill each level with the server roles that should have it." info="These three always exist. Anyone holding any one of the roles you put in a level is in that level.">
+      <CollapsibleCard
+        id="perm-levels"
+        title="Bot levels"
+        hint="Fill each level with the server roles that should have it."
+        defaultOpen
+        summary={rows
+          .filter((r) => r.builtin)
+          .map((r) => (
+            <Chip key={r.local} tone={r.roleIds.length === 0 ? "warn" : "good"}>
+              {BUILT_IN[r.key]?.label ?? r.name}: {r.roleIds.length === 0 ? "no roles" : `${r.roleIds.length} role${r.roleIds.length === 1 ? "" : "s"}`}
+            </Chip>
+          ))}
+        info="These three always exist. Anyone holding any one of the roles you put in a level is in that level."
+      >
         <div className="space-y-4">
           {rows
             .filter((r) => r.builtin)
@@ -177,9 +191,12 @@ export function PermissionGroupsEditor({
               </div>
             ))}
         </div>
-      </Card>
+      </CollapsibleCard>
 
-      <Card
+      <CollapsibleCard
+        id="perm-groups"
+        defaultOpen
+        summary={<Chip>{custom.length === 0 ? "None yet" : `${custom.length} group${custom.length === 1 ? "" : "s"}`}</Chip>}
         title="Your own groups"
         hint="Make a group for any job your server has, such as Web Dev or Event Host."
         info="Give a group as many roles as you like. A group has no powers of its own: pick it wherever a setting asks who can use something, such as on the Commands page."
@@ -220,7 +237,7 @@ export function PermissionGroupsEditor({
             </button>
           )}
         </div>
-      </Card>
+      </CollapsibleCard>
 
       </div>
 

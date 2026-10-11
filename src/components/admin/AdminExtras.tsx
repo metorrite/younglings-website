@@ -1,5 +1,6 @@
 "use client";
 
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { useState, useTransition } from "react";
 import { markPromotedAction, postMessageAction, saveCommunityAction, saveTrackingAction } from "@/app/admin/(console)/actions";
@@ -93,13 +94,23 @@ export function TrackingEditor({ groups, channels, forums, threads, save = saveT
   return (
     <div className="space-y-6">
       {sources.map((source) => (
-        <Card key={source} title={source}>
-          <div className="grid gap-3 lg:grid-cols-2">
+        <CollapsibleCard
+          key={source}
+          id={`tracking-${source}`}
+          title={source}
+          defaultOpen
+          summary={(() => {
+            const mine = groups.filter((g) => g.source === source);
+            const on = mine.filter((g) => g.enabled && g.channels.length > 0).length;
+            return <Chip tone={on === 0 ? "warn" : "good"}>{on === 0 ? "Nothing posting yet" : `${on} of ${mine.length} posting`}</Chip>;
+          })()}
+        >
+          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
             {groups.filter((g) => g.source === source).map((g) => (
               <TrackingGroupCard key={g.key} group={g} choices={choices} save={save} />
             ))}
           </div>
-        </Card>
+        </CollapsibleCard>
       ))}
     </div>
   );
