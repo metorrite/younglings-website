@@ -1,0 +1,34 @@
+/* JonnyBot's landing page: floating cards, the logo's glow, and the swap when a card changes. All of it stops for people who ask for less motion. */
+
+@keyframes jb-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--jb-tilt, 0deg)); }
+  50% { transform: translate3d(var(--jb-dx, 6px), var(--jb-dy, -12px), 0) rotate(calc(var(--jb-tilt, 0deg) * -1)); }
+}
+
+@keyframes jb-swap {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes jb-glow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.06); }
+}
+
+.jb-drift {
+  animation: jb-drift var(--jb-dur, 9s) ease-in-out infinite;
+  animation-delay: var(--jb-delay, 0s);
+}
+
+.jb-swap {
+  animation: jb-swap 0.6s ease both;
+}
+
+.jb-glow {
+  background: radial-gradient(closest-side, rgba(220, 38, 38, 0.55), rgba(220, 38, 38, 0) 70%);
+  animation: jb-glow 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jb-drift, .jb-swap, .jb-glow { animation: none; }
+}

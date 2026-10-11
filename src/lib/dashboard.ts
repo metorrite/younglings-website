@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 import { AdminUnavailableError } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
+import { currentSite } from "@/lib/siteHostsServer";
 import { createGuildContext, whoAmI, type ApiResult, type GuildContext } from "@/lib/jonnybot-admin";
 
 /**
@@ -32,7 +33,11 @@ async function betaAllows(userId: string): Promise<boolean> {
 /** A signed-in user who may see the dashboard at all. Not signed in goes to sign-in; no beta access is a 404. */
 export async function requireDashboardUser(returnTo = "/dashboard"): Promise<DashboardUser> {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(returnTo)}`);
+  if (!session?.user?.id) {
+    // On JonnyBot's own host come back to that host after signing in, not to the host that finishes the sign-in.
+    const site = await currentSite();
+    redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(site.split ? `${site.jonnybotOrigin}${returnTo}` : returnTo)}`);
+  }
   if (!(await betaAllows(session.user.id))) notFound();
 
   return { id: session.user.id, displayName: session.user.name ?? "Member", avatarUrl: session.user.image ?? null };
