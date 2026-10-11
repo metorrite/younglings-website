@@ -1,5 +1,6 @@
 "use client";
 
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
 import { BUTTON_MARKER, containerBlocks } from "@/lib/containerPreview";
@@ -225,7 +226,19 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,27rem)]">
       <div className="min-w-0 space-y-6">
-        <Card title="Delivery" hint="Where the welcome goes. The channel always gets it; a DM is sent as well when you ask for one and the member's DMs are open.">
+        <CollapsibleCard
+          id="welcome-delivery"
+          title="Delivery"
+          hint="Where the welcome goes. The channel always gets it; a DM is sent as well when you ask for one and the member's DMs are open."
+          defaultOpen
+          summary={
+            <>
+              <Chip tone={draft.enabled ? "good" : "bad"}>{draft.enabled ? "On" : "Off"}</Chip>
+              <Chip tone={draft.channelId ? "plain" : "warn"}>{draft.channelId ? `#${(channels.find((c) => c.id === draft.channelId)?.name ?? "channel")}` : "No channel"}</Chip>
+              {draft.alsoDm && <Chip>Also by DM</Chip>}
+            </>
+          }
+        >
           <label className="flex items-start gap-3">
             <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-gold)]" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
             <span>
@@ -327,21 +340,30 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
               )}
             </div>
           )}
-        </Card>
+        </CollapsibleCard>
 
         {hasText && (
-          <Card title="Message text" hint="The plain line above the embed. Markdown works, and so do the variables below.">
+          <CollapsibleCard
+            id="welcome-text"
+            title="Message text"
+            hint="The plain line above the embed. Markdown works, and so do the variables below."
+            defaultOpen
+            summary={<Chip tone={draft.content.trim() ? "plain" : "warn"}>{draft.content.trim() ? `${draft.content.trim().length} characters` : "Empty"}</Chip>}
+          >
             <FormField label="Text">
               <textarea id="welcome-content" className={`${inputClass} min-h-28`} rows={4} value={draft.content} onChange={(e) => set("content", e.target.value)} placeholder="Welcome to **{server}**, {user} 👋" />
             </FormField>
             <div className="text-right">
               <Counter value={draft.content} max={MAX.content} />
             </div>
-          </Card>
+          </CollapsibleCard>
         )}
 
         {hasEmbed && (
-          <Card
+          <CollapsibleCard
+            id="welcome-embed"
+            defaultOpen
+            summary={<Chip>{container ? "Container" : "Embed"}</Chip>}
             title={container ? "Container" : "Embed"}
             hint={container ? "Every part is optional. Everything here is text Discord formats, so **bold** and [links](https://example.com) work in every part, and the footer is small grey text. Inline fields and the author and footer icons don't exist in a container." : "Every part is optional."}
           >
@@ -480,7 +502,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                 )}
               </div>
             </details>
-          </Card>
+          </CollapsibleCard>
         )}
 
         <div className="space-y-3">
@@ -506,7 +528,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
           {outcome && <Notice tone={outcome.tone} title={outcome.title} items={outcome.items} />}
         </div>
 
-        <Card title="Variables" hint="Use these anywhere in the text boxes. They match Dyno's, so a message can be copied across as it is.">
+        <CollapsibleCard id="welcome-variables" title="Variables" hint="Use these anywhere in the text boxes. They match Dyno's, so a message can be copied across as it is." summary={<Chip>{String(WELCOME_VARIABLES.length)} available</Chip>}>
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             {WELCOME_VARIABLES.map((v) => (
               <div key={v.token} className="flex gap-2">
@@ -518,7 +540,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
           <p className="text-xs text-muted">
             In a title, author or footer a mention shows as a name, because Discord can&apos;t draw mentions there. You can also paste a mention as Discord writes it, such as &lt;#123456&gt; for a channel.
           </p>
-        </Card>
+        </CollapsibleCard>
       </div>
 
       <div className="min-w-0">

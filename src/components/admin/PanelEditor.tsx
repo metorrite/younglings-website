@@ -48,7 +48,29 @@ function purposesFor(kind: FieldKind): FieldPurpose[] {
 let uidCounter = 0;
 const nextUid = () => ++uidCounter;
 
-export function PanelEditor({ initial, structure }: { initial: PanelDefinition; structure: GuildStructure }) {
+/** Where the editor's saves go and where it sends people afterwards: the clan console's by default, a server's on the bot dashboard. */
+export interface PanelEditorWhere {
+  save: typeof savePanelAction;
+  remove: typeof deletePanelAction;
+  post: typeof postPanelAction;
+  /** The ticket panels list. */
+  listPath: string;
+  /** Where one panel's page is, without its id: a panel is at `${panelBase}/${id}`. A string, not a function, so a server page can pass it. */
+  panelBase: string;
+  /** The PvM Help rules page, or null where there isn't one. */
+  pvmHelpPath: string | null;
+}
+
+const CONSOLE: PanelEditorWhere = {
+  save: savePanelAction,
+  remove: deletePanelAction,
+  post: postPanelAction,
+  listPath: "/admin/tickets",
+  panelBase: "/admin/tickets/panels",
+  pvmHelpPath: "/admin/pvm-help",
+};
+
+export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: PanelDefinition; structure: GuildStructure; where?: PanelEditorWhere }) {
   const router = useRouter();
   const [saved, setSaved] = useState(initial);
   const [panel, setPanel] = useState<EditorPanel>(() => ({
@@ -104,13 +126,13 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
       })),
     };
     startTransition(async () => {
-      const result = await savePanelAction(saved.id ?? null, payload);
+      const result = await where.save(saved.id ?? null, payload);
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
       }
       if (isNew) {
-        router.push(`/admin/tickets/panels/${result.data.id}`);
+        router.push(`${where.panelBase}/${result.data.id!}`);
         return;
       }
       setSaved(result.data);
@@ -123,12 +145,12 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
     if (!saved.id || !window.confirm(`Delete the panel "${saved.name}"? Closed tickets and transcripts are kept.`)) return;
     setError(null);
     startTransition(async () => {
-      const result = await deletePanelAction(saved.id!);
+      const result = await where.remove(saved.id!);
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
       }
-      router.push("/admin/tickets");
+      router.push(where.listPath);
     });
   }
 
@@ -137,7 +159,7 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const result = await postPanelAction(saved.id!, postChannel);
+      const result = await where.post(saved.id!, postChannel);
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
@@ -173,7 +195,7 @@ export function PanelEditor({ initial, structure }: { initial: PanelDefinition; 
           label="Help type"
           hint={
             <>
-              PvM Help and CA Help tickets follow the <a className="text-gold hover:underline" href="/admin/pvm-help">PvM Help rules</a>: members ping helpers and escalate, guests ping nobody, and a
+              PvM Help and CA Help tickets follow the {where.pvmHelpPath ? <a className="text-gold hover:underline" href={where.pvmHelpPath}>PvM Help rules</a> : "PvM Help rules"}: members ping helpers and escalate, guests ping nobody, and a
               guest asking for Master or Grandmaster must describe earlier attempts. A CA Help panel also needs a required dropdown marked as the tier below.
             </>
           }

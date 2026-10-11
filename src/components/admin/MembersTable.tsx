@@ -34,7 +34,10 @@ const FILTERS = [
   { id: "notes", label: "Has notes", test: (m: RosterMember) => m.notes > 0 },
 ] as const;
 
-export function MembersTable({ roster }: { roster: Roster }) {
+export function MembersTable({ roster, notes }: { roster: Roster; notes?: { load: typeof loadNotesAction; add: typeof addNoteAction; remove: typeof deleteNoteAction } }) {
+  const loadNotes = notes?.load ?? loadNotesAction;
+  const addNote = notes?.add ?? addNoteAction;
+  const deleteNote = notes?.remove ?? deleteNoteAction;
   const now = useSyncExternalStore(subscribe, snapshot, () => null);
   const [query, setQuery] = useState("");
   const [rank, setRank] = useState("");
@@ -50,7 +53,7 @@ export function MembersTable({ roster }: { roster: Roster }) {
     setOpen(rsn);
     if (!notesByRsn[rsn]) {
       startLoad(async () => {
-        const r = await loadNotesAction(rsn);
+        const r = await loadNotes(rsn);
         if (r.ok) setNotesByRsn((prev) => ({ ...prev, [rsn]: r.data }));
       });
     }
@@ -179,7 +182,7 @@ export function MembersTable({ roster }: { roster: Roster }) {
                 {open === m.rsn && (
                   <tr className="bg-background/40">
                     <td colSpan={9} className="px-4 py-4">
-                      <MemberDetail member={m} notes={notesByRsn[m.rsn]} onNotes={(list) => setNotesByRsn((prev) => ({ ...prev, [m.rsn]: list }))} />
+                      <MemberDetail member={m} notes={notesByRsn[m.rsn]} onNotes={(list) => setNotesByRsn((prev) => ({ ...prev, [m.rsn]: list }))} addNote={addNote} deleteNote={deleteNote} />
                     </td>
                   </tr>
                 )}
@@ -202,7 +205,7 @@ export function MembersTable({ roster }: { roster: Roster }) {
   );
 }
 
-function MemberDetail({ member: m, notes, onNotes }: { member: RosterMember; notes: MemberNote[] | undefined; onNotes: (list: MemberNote[]) => void }) {
+function MemberDetail({ member: m, notes, onNotes, addNote, deleteNote }: { member: RosterMember; notes: MemberNote[] | undefined; onNotes: (list: MemberNote[]) => void; addNote: typeof addNoteAction; deleteNote: typeof deleteNoteAction }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -235,7 +238,7 @@ function MemberDetail({ member: m, notes, onNotes }: { member: RosterMember; not
             if (!draft.trim()) return;
             setError(null);
             startTransition(async () => {
-              const r = await addNoteAction(m.rsn, draft);
+              const r = await addNote(m.rsn, draft);
               if (r.ok) {
                 onNotes(r.data);
                 setDraft("");
@@ -262,7 +265,7 @@ function MemberDetail({ member: m, notes, onNotes }: { member: RosterMember; not
                     type="button"
                     onClick={() =>
                       startTransition(async () => {
-                        const r = await deleteNoteAction(n.id, m.rsn);
+                        const r = await deleteNote(n.id, m.rsn);
                         if (r.ok) onNotes(r.data);
                         else setError(r.error);
                       })

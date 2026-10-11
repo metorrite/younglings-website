@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { FormField, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { ChannelListPicker, RolePicker } from "@/components/dashboard/pickers";
@@ -84,14 +86,20 @@ function HubCard({
       </button>
       {open && (
         <div className="space-y-4 border-t border-surface-border p-6">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={enabled} onChange={(e) => { setEnabled(e.target.checked); dirty(); }} />
-            Turned on
-          </label>
+          <Toggle
+            checked={enabled}
+            onChange={(on) => { setEnabled(on); dirty(); }}
+            label="Turned on"
+            detail={enabled ? "Members can use this command." : "Switched off for everyone in this server."}
+          />
       {!enabled && <p className="text-xs text-amber-300">While this is off, nobody in the server can use /{command.slashName}, admins included.</p>}
 
+      <div className="grid gap-x-8 gap-y-4 xl:grid-cols-2">
       <div className="space-y-3 border-t border-surface-border pt-4">
-        <p className="text-sm font-medium">Who can use it</p>
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          Who can use it
+          <InfoBubble title="Who can use it">Admins can always use every command, whatever you choose here, so you can never lock yourself out.</InfoBubble>
+        </p>
         <div className="space-y-2 text-sm">
           <label className="flex items-start gap-2">
             <input type="radio" name={`${command.key}-access`} disabled={!canEditAccess} checked={!customAccess} onChange={() => { setCustomAccess(false); dirty(); }} className="mt-1" />
@@ -152,14 +160,18 @@ function HubCard({
       </div>
 
       <div className="space-y-2 border-t border-surface-border pt-4">
-        <p className="text-sm font-medium">Where members can use it</p>
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          Where members can use it
+          <InfoBubble title="Where members can use it">Leave it empty and the command works in every channel. Add channels to limit it to just those. Admins are never held to this limit.</InfoBubble>
+        </p>
         <ChannelListPicker
           {...choicesOf(structure)}
           value={channelIds}
           max={maxList}
-          empty="Anywhere in the server. Add channels to limit it to those. Admins can always use it anywhere."
+          empty="Anywhere in the server."
           onChange={(ids) => { setChannelIds(ids); dirty(); }}
         />
+      </div>
       </div>
 
       {signup && (
@@ -228,11 +240,50 @@ export function HubEditor({
   canEditAccess: boolean;
   save: (key: string, draft: HubCommandDraft) => Promise<WelcomeActionResult<HubCommandConfig>>;
 }) {
+  const [query, setQuery] = useState("");
+  const [show, setShow] = useState<"all" | "on" | "off">("all");
+  const needle = query.trim().toLowerCase();
+  const shown = hub.commands.filter(
+    (c) =>
+      (show === "all" || (show === "on" ? c.enabled : !c.enabled)) &&
+      (needle === "" || `${c.title} ${c.slashName} ${c.description}`.toLowerCase().includes(needle)),
+  );
+  const onCount = hub.commands.filter((c) => c.enabled).length;
+
   return (
-    <div className="space-y-3">
-      {hub.commands.map((command) => (
-        <HubCard key={command.key} command={command} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
-      ))}
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search commands…"
+          aria-label="Search commands"
+          className="w-full max-w-sm rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold"
+        />
+        <div className="flex gap-1.5" role="group" aria-label="Show">
+          {(["all", "on", "off"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={show === key}
+              onClick={() => setShow(key)}
+              className={`rounded-full border px-3 py-1 text-xs transition ${show === key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+            >
+              {key === "all" ? "All" : key === "on" ? "On" : "Off"}
+            </button>
+          ))}
+        </div>
+        <p className="ml-auto text-sm text-muted">
+          {onCount} of {hub.commands.length} turned on
+        </p>
+      </div>
+      <div className="space-y-3">
+        {shown.map((command) => (
+          <HubCard key={command.key} command={command} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
+        ))}
+        {shown.length === 0 && <p className="rounded-xl border border-dashed border-surface-border p-8 text-center text-sm text-muted">No commands match.</p>}
+      </div>
     </div>
   );
 }

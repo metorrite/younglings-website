@@ -14,15 +14,45 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/signup", who: "Admins (changeable)", what: "Create signups: queues, groups and submission forms, with a public panel for members." },
   { name: "/wrapped", who: "Everyone (changeable)", what: "A recap card for a week, month, year or all time: XP, Citadel, boss kills and more." },
   { name: "/ca", who: "Everyone (changeable)", what: "Look up a Combat Mastery achievement: its tier, scores and the wiki's tips." },
+  { name: "/remindme", who: "Everyone (changeable)", what: "Set a personal reminder (10m, 2h30m, 1d), list yours, or cancel one. It arrives by DM." },
+  { name: "/afk", who: "Everyone (changeable)", what: "Mark yourself away: people who mention you are told, and it clears the next time you speak." },
+  { name: "/split", who: "Everyone (changeable)", what: "Split a drop between a group (1.5b, 250m, 12,500k), with an optional fee off the top and any left-over coins shown." },
+  { name: "/suggest", who: "Everyone (changeable)", what: "Post an idea in the suggestions channel for everyone to vote on with the up and down buttons." },
+  { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
 ];
 
 const DASHBOARD: [string, string][] = [
-  ["Overview", "Is the bot healthy, how many members are linked, open tickets, signups and polls, and what is set up. Any notice about a known issue shows at the top."],
-  ["Settings", "The setup guide (Quick, Full or Custom) and the basics: your clan, link requests and the roles members get."],
+  ["Overview", "Is the bot healthy, how many members are linked, open tickets, signups and polls, and what is set up. A checkup card tells you if anything needs fixing, and any notice about a known issue shows at the top."],
+  ["Server setup", "The basics: your clan, where link requests are reviewed and the roles members get. Each section opens and closes, and a bar at the bottom saves everything and warns you about unsaved changes."],
   ["Roles & permissions", "Who counts as Admin, Support and Developer, and your own groups of roles. Commands can be limited to these groups."],
-  ["Commands", "Turn each command on or off, choose who may use it and in which channels."],
-  ["Tracking channels", "Where drops, level-ups, quests, boss kills, Citadel visits, joins and leaves are announced."],
+  ["Guided setup", "A step-by-step run through the parts of JonnyBot: Quick, Full or Custom. It starts from what is already set, so you can leave and pick it up later."],
+  ["Commands", "Turn each command on or off, choose who may use it and in which channels. Search and filter the list."],
+  ["Activity announcements", "Where drops, level-ups, quests, boss kills, Citadel visits, joins and leaves are announced."],
   ["Welcome message", "Design the message new members get: an embed or a container, with a preview and a Send test button."],
+  ["Goodbye message", "A line posted when someone leaves, with clickable variables and a preview."],
+  ["Autoroles", "Roles given to everyone who joins (and a separate list for bots), straight away or after a delay of up to 7 days."],
+  ["Role panels", "A message of buttons members press to take or drop a role. Choose any number, or only one at a time, and see a live preview."],
+  ["Starboard", "Messages that collect enough of a reaction (a star by default) are reposted in a channel you choose."],
+  ["Automatic replies", "Reply to a word or phrase in your server's messages with text you write, with a cooldown so it can't spam."],
+  ["Giveaways", "Start a giveaway with an Enter button and a timed draw. See who entered, end one early, draw again, or delete it."],
+  ["Suggestions", "Members post ideas with /suggest and everyone votes. Reply here: approve, deny or mark them implemented."],
+  ["Auto-clean", "Channels that delete their own old messages after an age you choose, keeping pinned messages. Check it on a test channel first."],
+  ["Moderation log", "A channel where bans, unbans and timeouts are recorded, with who did it and why when JonnyBot can read the audit log."],
+  ["New accounts", "Be told when a Discord account younger than a number of days joins, or keep them out until they are old enough. Off by default."],
+  ["Auto-delete", "Keep a channel free of Discord invites, links or files: a matching message is deleted at once and the person is told why. Moderators are never affected."],
+  ["Points", "Switch on a points ledger for your server, name the points, give or take them with a reason, and see the leaderboard and full history."],
+  ["Automod", "Deletes invites, links, blocked words, shouting, spam and emoji floods automatically, and can give the writer a warning that counts toward Autopunish."],
+  ["Warnings", "The record of warnings given with /warn. Search by member and take one back."],
+  ["Polls & signups", "Where member polls are posted, and what members can start themselves."],
+  ["Tickets", "Panels, the tickets themselves with their saved transcripts, settings, and panel defaults."],
+  ["Post a message and Scheduled posts", "Write a message and have JonnyBot post it now or later, with headings, dividers, colours, images and buttons."],
+  ["Clan profile", "How your clan appears to others: name, tagline, focus, recruiting status and where to apply. Unlisted by default (nothing shows until you pick an address); a public listing needs a clan Owner or Deputy Owner to verify the clan, and only clan-level facts are ever shown, never members."],
+  ["Public events", "Choose which of your Discord events are shown in the public clan directory. Nothing is shared until your clan profile is public or unlisted."],
+  ["Alliances", "Team up with other clans: invite a clan by its directory address, and share events with your allies only, without making them public."],
+  ["Clan plugin", "How many of your members use the in-game clan plugin, as counts only. Nobody is named and nobody has to install anything."],
+  ["Roster", "For a clan server: every member, who is verified, how fresh their data is, with staff-only notes."],
+  ["Checkup", "Finds channels JonnyBot can't post in and roles it can't give out, and tells you how to fix each one."],
+  ["Activity log", "Every change made from the dashboard, by whom and when."],
 ];
 
 export default async function DocsPage() {
@@ -88,6 +118,9 @@ export default async function DocsPage() {
                 </li>
               ))}
             </ul>
+            <p>
+              Tip: press <kbd>Ctrl</kbd> + <kbd>K</kbd> anywhere in the dashboard to jump to a page by typing part of its name. Next to many settings is a small <strong>i</strong>: hover or tap it for a plain explanation of what the setting does.
+            </p>
           </Section>
 
           <Section id="commands" title="Commands">
