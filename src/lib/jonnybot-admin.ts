@@ -630,6 +630,15 @@ export interface WarningList {
   limit: number;
 }
 
+/** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
+export interface ModLog {
+  enabled: boolean;
+  channelId: string | null;
+  logBans: boolean;
+  logTimeouts: boolean;
+  canReadAuditLog: boolean;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1013,6 +1022,8 @@ export const adminApi = {
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
   deleteWarning: (ctx: ApiContext, id: string) => call<WarningList>(ctx, "DELETE", `warnings/${encodeURIComponent(id)}`),
+  modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
+  saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
