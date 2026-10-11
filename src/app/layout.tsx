@@ -5,6 +5,7 @@ import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 import { Navbar } from "@/components/Navbar";
 import { LinkModalGate } from "@/components/link/LinkModalGate";
 import { JonnyBotNavbar } from "@/components/jonnybot/JonnyBotNavbar";
+import { ClansNavbar } from "@/components/clanshub/ClansNavbar";
 import { publicSiteOpen } from "@/lib/jonnybotAccess";
 import { currentSite } from "@/lib/siteHostsServer";
 
@@ -21,6 +22,15 @@ const geistMono = Geist_Mono({
 // Which face of the site this is (the clan site or JonnyBot's) decides the title and the header, so the metadata is worked out per request.
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite();
+  if (site.hub) {
+    return {
+      metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
+      title: { default: "Clans Hub", template: "%s | Clans Hub" },
+      description: "Find a RuneScape 3 clan: who is recruiting, what they do and what they have coming up.",
+      // closed to search engines until HUB_PUBLIC=true
+      ...(process.env.HUB_PUBLIC === "true" ? {} : { robots: { index: false, follow: false } }),
+    };
+  }
   if (site.jonnybot) {
     return {
       metadataBase: new URL(site.split ? site.jonnybotOrigin : (process.env.NEXTAUTH_URL ?? "http://localhost:3000")),
@@ -47,9 +57,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <SessionProviderWrapper>
-          {site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
+          {site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
           <main className="flex-1">{children}</main>
-          {!site.jonnybot && <LinkModalGate />}
+          {!site.jonnybot && !site.hub && <LinkModalGate />}
         </SessionProviderWrapper>
       </body>
     </html>
