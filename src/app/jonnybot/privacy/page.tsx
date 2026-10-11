@@ -52,7 +52,7 @@ export default async function PrivacyPage() {
             <strong>Unlink a name:</strong> use <code>/rs</code> and remove the account. That removes the link everywhere.
           </li>
           <li>
-            <strong>A server removes JonnyBot:</strong> its settings stop being used. To have a server&apos;s stored data deleted, its owner can ask.
+            <strong>A server removes JonnyBot:</strong> its settings stop being used and its stored data is deleted automatically 30 days later, unless JonnyBot is added back first. The owner can also ask for it to be deleted sooner.
           </li>
           <li>
             <strong>Anything else:</strong> ask in the Younglings Discord server (linked from the clan site) and your data will be removed or you will be told why it can&apos;t be.
