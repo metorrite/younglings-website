@@ -682,6 +682,50 @@ export interface AutoDeleteList {
   maxRules: number;
 }
 
+/** A server's clan profile: what it shares publicly, and the read-only facts about verification and listing. */
+export interface ClanProfileData {
+  visibility: "PRIVATE" | "UNLISTED" | "PUBLIC";
+  slug: string | null;
+  displayName: string;
+  tagline: string;
+  description: string;
+  logoUrl: string | null;
+  colour: number | null;
+  timezone: string | null;
+  focus: string[];
+  recruiting: "CLOSED" | "OPEN" | "INVITE_ONLY";
+  requirements: string;
+  applyUrl: string | null;
+  currentClanName: string | null;
+  verified: boolean;
+  verifiedClanName: string | null;
+  listing: "HIDDEN" | "UNLISTED" | "LISTED";
+  suspended: boolean;
+  suspendedReason: string | null;
+  memberCount: number;
+  suggestedName: string;
+  options: { visibility: { key: string; label: string }[]; recruiting: { key: string; label: string }[]; focus: { key: string; label: string }[] };
+  limits: { name: number; tagline: number; description: number; requirements: number };
+}
+
+/** The bot owner's view of the clan directory. Everyone else gets `canEdit: false` and empty lists. */
+export interface ClanListings {
+  canEdit: boolean;
+  listings: {
+    guildId: string;
+    serverName: string | null;
+    slug: string | null;
+    displayName: string;
+    visibility: string;
+    listing: "HIDDEN" | "UNLISTED" | "LISTED";
+    verified: boolean;
+    suspended: boolean;
+    suspendedReason: string | null;
+    openReports: number;
+  }[];
+  reports: { id: string; guildId: string; slug: string | null; displayName: string | null; reason: string; reporter: string | null; createdAt: string }[];
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1075,6 +1119,14 @@ export const adminApi = {
   autoDelete: (ctx: ApiContext) => call<AutoDeleteList>(ctx, "GET", "autodelete"),
   saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
   deleteAutoDelete: (ctx: ApiContext, channelId: string) => call<AutoDeleteList>(ctx, "DELETE", `autodelete/${encodeURIComponent(channelId)}`),
+  clanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "GET", "clan-profile"),
+  saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl">) =>
+    call<ClanProfileData>(ctx, "PUT", "clan-profile", body),
+  verifyClanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "POST", "clan-profile/verify"),
+  clanListings: (ctx: ApiContext) => call<ClanListings>(ctx, "GET", "clan-listings"),
+  suspendClanListing: (ctx: ApiContext, guildId: string, reason: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/suspend`, { reason }),
+  restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),
+  resolveClanReport: (ctx: ApiContext, id: string, status: string) => call<ClanListings>(ctx, "POST", `clan-reports/${encodeURIComponent(id)}/resolve`, { status }),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
