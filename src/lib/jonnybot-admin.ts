@@ -531,6 +531,25 @@ export interface Starboard {
   maxThreshold: number;
 }
 
+/** One automatic reply: when a message matches the trigger, the bot answers. */
+export interface AutoReplyDef {
+  id: string | null;
+  trigger: string;
+  match: "WORD" | "STARTS" | "EXACT";
+  reply: string;
+  cooldownSeconds: number;
+  enabled: boolean;
+}
+
+export interface AutoReplyList {
+  replies: AutoReplyDef[];
+  max: number;
+  maxTrigger: number;
+  maxReply: number;
+  minCooldown: number;
+  maxCooldown: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -903,6 +922,10 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  autoReplies: (ctx: ApiContext) => call<AutoReplyList>(ctx, "GET", "autoresponders"),
+  createAutoReply: (ctx: ApiContext, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "POST", "autoresponders", reply),
+  updateAutoReply: (ctx: ApiContext, id: string, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "PUT", `autoresponders/${encodeURIComponent(id)}`, reply),
+  deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
