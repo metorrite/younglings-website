@@ -598,6 +598,22 @@ export interface SuggestionList {
   maxNote: number;
 }
 
+/** One channel's auto-clean rule. `problem` says why it is not working, when it is not. */
+export interface AutoCleanRule {
+  channelId: string;
+  channelName: string | null;
+  maxAgeMinutes: number;
+  keepPinned: boolean;
+  problem: string | null;
+}
+
+export interface AutoCleanList {
+  rules: AutoCleanRule[];
+  minAge: number;
+  maxAge: number;
+  maxRules: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -975,6 +991,10 @@ export const adminApi = {
   decideSuggestion: (ctx: ApiContext, id: string, status: string, note: string) =>
     call<SuggestionList>(ctx, "POST", `suggestions/${encodeURIComponent(id)}/decide`, { status, note }),
   deleteSuggestion: (ctx: ApiContext, id: string) => call<SuggestionList>(ctx, "DELETE", `suggestions/${encodeURIComponent(id)}`),
+  autoClean: (ctx: ApiContext) => call<AutoCleanList>(ctx, "GET", "autopurge"),
+  saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
+    call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
+  deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),

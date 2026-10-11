@@ -48,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Starboard", icon: "star", path: "/starboard" },
       { label: "Giveaways", icon: "gift", path: "/giveaways" },
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
+      { label: "Auto-clean", icon: "broom", path: "/autoclean" },
       { label: "Automatic replies", icon: "chat", path: "/autoresponder" },
       { label: "Polls & signups", icon: "poll", path: "/community" },
       { label: "Tickets", icon: "ticket", path: "/tickets" },
