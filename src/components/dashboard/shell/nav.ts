@@ -65,6 +65,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Moderation log", icon: "list", path: "/modlog" },
       { label: "New accounts", icon: "users", path: "/newaccounts" },
       { label: "Auto-clean", icon: "broom", path: "/autoclean" },
+      { label: "Auto-delete", icon: "broom", path: "/autodelete" },
     ],
   },
   {

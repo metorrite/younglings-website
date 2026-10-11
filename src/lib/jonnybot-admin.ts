@@ -668,6 +668,20 @@ export interface Autopunish {
   canBan: boolean;
 }
 
+/** One channel's auto-delete rule. `problem` says why it is not working, when it is not. */
+export interface AutoDeleteRule {
+  channelId: string;
+  channelName: string | null;
+  filters: string[];
+  problem: string | null;
+}
+
+export interface AutoDeleteList {
+  rules: AutoDeleteRule[];
+  available: { key: string; label: string }[];
+  maxRules: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1058,6 +1072,9 @@ export const adminApi = {
   accountGate: (ctx: ApiContext) => call<AccountGate>(ctx, "GET", "accountgate"),
   saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId">) =>
     call<AccountGate>(ctx, "PUT", "accountgate", body),
+  autoDelete: (ctx: ApiContext) => call<AutoDeleteList>(ctx, "GET", "autodelete"),
+  saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
+  deleteAutoDelete: (ctx: ApiContext, channelId: string) => call<AutoDeleteList>(ctx, "DELETE", `autodelete/${encodeURIComponent(channelId)}`),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
