@@ -21,6 +21,35 @@ export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const segment = pathname.split("/")[1] ?? "";
 
+  // The API host is independent of the clan/JonnyBot split: api.<domain> serves only the API, with shorter paths. The long forms
+  // (/api/v1/..., /api/ingest/v1/...) keep working on every host, so nothing already pointed at them breaks.
+  const requestHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(",")[0].trim();
+  if (classifyHost(requestHost, apexHost()) === "api") {
+    // The API host is for programs. A person who types it into a browser address bar (or follows a link to it) is sent to the clan site's
+    // front page. Browsers say what they are doing: a page navigation carries Sec-Fetch-Dest: document (or Mode: navigate), and older ones
+    // ask for text/html. A plugin, a script, curl and a website's own fetch() call do none of that, so they get the API as before.
+    const dest = request.headers.get("sec-fetch-dest");
+    const mode = request.headers.get("sec-fetch-mode");
+    const browsing = dest === "document" || dest === "iframe" || mode === "navigate" || (!mode && /text\/html/i.test(request.headers.get("accept") ?? ""));
+    if (browsing) {
+      // Built by hand: NextResponse.redirect turns a redirect to the request's own origin into a bare "/", which on a host that differs
+      // only by its api. prefix (local development) would send the browser straight back here.
+      const target = `${schemeFor(requestHost, request.headers.get("x-forwarded-proto"))}://${clanHostOf(requestHost, apexHost())}/`;
+      return new NextResponse(null, { status: 307, headers: { Location: target, "Cache-Control": "no-store" } });
+    }
+    const rewriteApi = (path: string) => {
+      const url = request.nextUrl.clone();
+      url.pathname = path;
+      return NextResponse.rewrite(url);
+    };
+    if (pathname === "/") return rewriteApi("/api/v1");
+    if (pathname === "/openapi.yaml") return rewriteApi("/openapi/jonnybot-v1.yaml");
+    if (pathname === "/v1" || pathname.startsWith("/v1/")) return rewriteApi(`/api${pathname}`);
+    if (pathname === "/ingest/v1" || pathname.startsWith("/ingest/v1/")) return rewriteApi(`/api${pathname}`);
+    if (pathname.startsWith("/api/") || pathname.startsWith("/openapi/")) return NextResponse.next();
+    return NextResponse.json({ apiVersion: 1, error: "Not found. See https://" + requestHost + "/ for the list of endpoints." }, { status: 404 });
+  }
+
   const faced = (face: "jonnybot" | "clan") => {
     const headers = new Headers(request.headers);
     headers.set(FACE_HEADER, face);
