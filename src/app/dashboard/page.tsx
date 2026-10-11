@@ -21,7 +21,7 @@ export default async function DashboardHome() {
   const install = installUrl();
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-8">
       <PageHeader title="Your servers" description="The servers you can manage that already have JonnyBot. Pick one to change how the bot works there." />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">

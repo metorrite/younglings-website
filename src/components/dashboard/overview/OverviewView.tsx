@@ -27,6 +27,8 @@ export function OverviewView({ base, overview, setup, rows, owner }: { base: str
         }
       />
 
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="min-w-0 space-y-6">
       <section className="grid gap-4 lg:grid-cols-2">
         <div className={`flex items-start gap-3 rounded-xl border p-5 ${overview.health.ok ? "border-emerald-500/30 bg-emerald-500/5" : "border-red-500/40 bg-red-500/10"}`}>
           <span aria-hidden="true" className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${overview.health.ok ? "bg-emerald-400" : "bg-red-400"}`} />
@@ -58,7 +60,7 @@ export function OverviewView({ base, overview, setup, rows, owner }: { base: str
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">At a glance</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
           {setup.clanActive && (
             <>
               <StatTile label="Clan members" value={m.rosterSize} hint={`Tracking ${setup.clanName}`} />
@@ -85,7 +87,6 @@ export function OverviewView({ base, overview, setup, rows, owner }: { base: str
         {!setup.clanActive && <p className="text-xs text-muted">Clan member numbers appear here once a clan is set up in Server setup.</p>}
       </section>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="space-y-3">
           <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">Features</h2>
           <ul className="grid gap-3 md:grid-cols-2">
@@ -117,8 +118,9 @@ export function OverviewView({ base, overview, setup, rows, owner }: { base: str
             ))}
           </ul>
         </section>
+      </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 xl:sticky xl:top-4">
           <section className="rounded-xl border border-surface-border bg-surface p-5">
             <h2 className="font-semibold text-gold">Quick links</h2>
             <ul className="mt-3 space-y-1">

@@ -7,19 +7,23 @@ import { adminApi } from "@/lib/jonnybot-admin";
 const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", DEVELOPER: "Developer" };
 
 /**
- * One server's dashboard: its navigation down the left and the page beside it. Like every dashboard page it is checked for *this*
- * server before anything is shown.
+ * One server's dashboard: its navigation as a column down the left edge of the screen and the page filling the rest. Like every
+ * dashboard page it is checked for *this* server before anything is shown.
  */
 export default async function GuildLayout({ children, params }: { children: ReactNode; params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
   // A failed lookup just means no banners: the dashboard works without them.
   const notices = await adminApi.notices(guild);
+  const open = process.env.DASHBOARD_PUBLIC === "true";
 
   return (
-    <div className="gap-8 space-y-4 lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:space-y-0">
-      <Sidebar server={{ id: guildId, name: guild.guildName, iconUrl: guild.guildIconUrl, role: ROLE_LABEL[guild.tier] ?? "Manager" }} />
-      <div className="min-w-0 space-y-6">
+    <div className="flex min-h-[calc(100vh-4.1rem)] flex-col lg:flex-row">
+      <Sidebar
+        server={{ id: guildId, name: guild.guildName, iconUrl: guild.guildIconUrl, role: ROLE_LABEL[guild.tier] ?? "Manager" }}
+        footer={`JonnyBot dashboard · ${open ? "Beta" : "Beta, clan admins only"}. Signed in as ${guild.displayName}.`}
+      />
+      <div className="min-w-0 flex-1 space-y-6 px-4 py-6 sm:px-8 lg:px-10">
         {notices.ok && <NoticeBanners notices={notices.data.notices} />}
         {children}
       </div>

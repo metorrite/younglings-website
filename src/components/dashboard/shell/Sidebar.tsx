@@ -26,16 +26,16 @@ function ServerIcon({ server, size }: { server: SidebarServer; size: number }) {
 }
 
 /**
- * One server's navigation. On a wide screen it is a panel down the left that stays in view while the page scrolls; on a narrow one it
- * becomes a row of buttons above the page, so the pages themselves can use the whole width.
+ * One server's navigation. On a wide screen it is a column down the left edge of the screen, as tall as the page, whose contents stay in
+ * view while the page scrolls; on a narrow one it becomes a row of buttons above the page, so the pages themselves can use the whole width.
  */
-export function Sidebar({ server, base: where }: { server: SidebarServer; base?: string }) {
+export function Sidebar({ server, footer, base: where }: { server: SidebarServer; footer?: string; base?: string }) {
   const pathname = usePathname();
   const base = where ?? `/dashboard/${server.id}`;
 
   return (
-    <aside aria-label="Server navigation" className="lg:sticky lg:top-20 lg:self-start">
-      <div className="rounded-xl border border-surface-border bg-surface">
+    <aside aria-label="Server navigation" className="border-b border-surface-border bg-surface/60 lg:w-72 lg:shrink-0 lg:border-r lg:border-b-0">
+      <div className="lg:sticky lg:top-0 lg:flex lg:max-h-screen lg:flex-col lg:overflow-y-auto">
         <div className="flex items-center gap-3 border-b border-surface-border p-4">
           <ServerIcon server={server} size={44} />
           <div className="min-w-0 flex-1">
@@ -48,7 +48,7 @@ export function Sidebar({ server, base: where }: { server: SidebarServer; base?:
         </div>
 
         {/* wide screens: the full list */}
-        <nav className="hidden space-y-5 p-3 lg:block">
+        <nav className="hidden flex-1 space-y-5 p-3 lg:block">
           {NAV_GROUPS.map((group) => (
             <div key={group.title ?? "top"}>
               {group.title && <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-muted/80 uppercase">{group.title}</p>}
@@ -86,6 +86,7 @@ export function Sidebar({ server, base: where }: { server: SidebarServer; base?:
             </div>
           ))}
         </nav>
+        {footer && <p className="hidden border-t border-surface-border p-4 text-[11px] leading-relaxed text-muted lg:block">{footer}</p>}
 
         {/* narrow screens: one row, scrolled sideways */}
         <nav className="flex gap-1.5 overflow-x-auto p-2 lg:hidden">
