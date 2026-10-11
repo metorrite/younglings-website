@@ -61,6 +61,7 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="16" cy="12" r="2.5" />
     </>
   ),
+  door: <path d="M6 21V4a1 1 0 011-1h10a1 1 0 011 1v17M3 21h18M14 12h.01" />,
   swap: <path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
 };
 

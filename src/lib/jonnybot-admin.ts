@@ -511,6 +511,16 @@ export interface RolePanelList {
   maxButtons: number;
 }
 
+/** A server's goodbye message: a line posted when someone leaves. */
+export interface Goodbye {
+  enabled: boolean;
+  channelId: string | null;
+  content: string;
+  maxContent: number;
+  serverName: string;
+  memberCount: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -883,6 +893,8 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
+  saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
   createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
