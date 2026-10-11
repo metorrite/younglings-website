@@ -37,6 +37,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Commands", icon: "terminal", path: "/commands" },
       { label: "Activity announcements", icon: "bell", path: "/tracking" },
       { label: "Welcome message", icon: "smile", path: "/welcome" },
+      { label: "Autoroles", icon: "tag", path: "/autoroles" },
       { label: "Polls & signups", icon: "poll", path: "/community" },
     ],
   },

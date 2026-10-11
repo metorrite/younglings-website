@@ -460,6 +460,18 @@ export interface Checkup {
   ok: number;
 }
 
+/** A server's autoroles: roles handed to everyone who joins (a separate list for bots), after an optional delay. */
+export interface Autoroles {
+  enabled: boolean;
+  delaySeconds: number;
+  memberRoleIds: string[];
+  botRoleIds: string[];
+  maxRoles: number;
+  maxDelaySeconds: number;
+  /** Chosen roles that can't be given out right now (deleted, above the bot, too powerful). */
+  issues: string[];
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -832,6 +844,8 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
+  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),

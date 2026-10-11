@@ -54,6 +54,7 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M8 12.5l3 3 5-6" />
     </>
   ),
+  tag: <path d="M3 12V4h8l10 10-8 8L3 12zM7.5 8h.01" />,
   swap: <path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" />,
 };
 
