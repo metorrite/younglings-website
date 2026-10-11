@@ -16,6 +16,9 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/ca", who: "Everyone (changeable)", what: "Look up a Combat Mastery achievement: its tier, scores and the wiki's tips." },
   { name: "/remindme", who: "Everyone (changeable)", what: "Set a personal reminder (10m, 2h30m, 1d), list yours, or cancel one. It arrives by DM." },
   { name: "/afk", who: "Everyone (changeable)", what: "Mark yourself away: people who mention you are told, and it clears the next time you speak." },
+  { name: "/split", who: "Everyone (changeable)", what: "Split a drop between a group (1.5b, 250m, 12,500k), with an optional fee off the top and any left-over coins shown." },
+  { name: "/suggest", who: "Everyone (changeable)", what: "Post an idea in the suggestions channel for everyone to vote on with the up and down buttons." },
+  { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
 ];
 
 const DASHBOARD: [string, string][] = [
@@ -29,6 +32,12 @@ const DASHBOARD: [string, string][] = [
   ["Goodbye message", "A line posted when someone leaves, with clickable variables and a preview."],
   ["Autoroles", "Roles given to everyone who joins (and a separate list for bots), straight away or after a delay of up to 7 days."],
   ["Role panels", "A message of buttons members press to take or drop a role. Choose any number, or only one at a time, and see a live preview."],
+  ["Starboard", "Messages that collect enough of a reaction (a star by default) are reposted in a channel you choose."],
+  ["Automatic replies", "Reply to a word or phrase in your server's messages with text you write, with a cooldown so it can't spam."],
+  ["Giveaways", "Start a giveaway with an Enter button and a timed draw. See who entered, end one early, draw again, or delete it."],
+  ["Suggestions", "Members post ideas with /suggest and everyone votes. Reply here: approve, deny or mark them implemented."],
+  ["Auto-clean", "Channels that delete their own old messages after an age you choose, keeping pinned messages. Check it on a test channel first."],
+  ["Warnings", "The record of warnings given with /warn. Search by member and take one back."],
   ["Polls & signups", "Where member polls are posted, and what members can start themselves."],
   ["Tickets", "Panels, the tickets themselves with their saved transcripts, settings, and panel defaults."],
   ["Post a message and Scheduled posts", "Write a message and have JonnyBot post it now or later, with headings, dividers, colours, images and buttons."],
