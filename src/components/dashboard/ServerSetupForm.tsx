@@ -24,8 +24,10 @@ export function ServerSetupForm({
   structure: GuildStructure;
   save: (setup: ServerSetup) => Promise<WelcomeActionResult<ServerSetup>>;
 }) {
+  const [saved, setSaved] = useState<ServerSetup>(initial);
   const [setup, setSetup] = useState<ServerSetup>(initial);
   const [clanDraft, setClanDraft] = useState(initial.clanName ?? "");
+  const dirty = JSON.stringify({ ...setup, clanName: clanDraft.trim() || null }) !== JSON.stringify({ ...saved, clanName: saved.clanName || null });
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
 
@@ -45,6 +47,7 @@ export function ServerSetupForm({
         setOutcome({ tone: "error", title: result.error, items: result.problems });
         return;
       }
+      setSaved(result.data);
       setSetup(result.data);
       setClanDraft(result.data.clanName ?? "");
       setOutcome({ tone: "success", title: "Saved." });
@@ -137,7 +140,17 @@ export function ServerSetupForm({
         </div>
       </CollapsibleCard>
 
-      <SaveBar pending={pending} onSave={submit} outcome={outcome} />
+      <SaveBar
+        pending={pending}
+        onSave={submit}
+        outcome={outcome}
+        dirty={dirty}
+        onDiscard={() => {
+          setSetup(saved);
+          setClanDraft(saved.clanName ?? "");
+          setOutcome(null);
+        }}
+      />
     </div>
   );
 }

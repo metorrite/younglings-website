@@ -64,6 +64,9 @@ export function PermissionGroupsEditor({
   save: (groups: PermissionGroupDraft[]) => Promise<WelcomeActionResult<PermissionGroups>>;
 }) {
   const [rows, setRows] = useState<Row[]>(() => toRows(initial.groups));
+  const [baseline, setBaseline] = useState<PermissionGroupConfig[]>(initial.groups);
+  const shape = (list: { key: string; name: string; includeHigher: boolean; roleIds: string[] }[]) => JSON.stringify(list.map((r) => [r.key, r.name, r.includeHigher, r.roleIds]));
+  const dirty = shape(rows) !== shape(baseline);
   const [limits, setLimits] = useState(initial);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
@@ -138,6 +141,7 @@ export function PermissionGroupsEditor({
         return;
       }
       setLimits(result.data);
+      setBaseline(result.data.groups);
       setRows(toRows(result.data.groups));
       setOutcome({ tone: "success", title: "Saved." });
     });
@@ -241,7 +245,18 @@ export function PermissionGroupsEditor({
 
       </div>
 
-      {canEdit && <SaveBar pending={pending} onSave={submit} outcome={outcome} />}
+      {canEdit && (
+        <SaveBar
+          pending={pending}
+          onSave={submit}
+          outcome={outcome}
+          dirty={dirty}
+          onDiscard={() => {
+            setRows(toRows(baseline));
+            setOutcome(null);
+          }}
+        />
+      )}
     </div>
   );
 }
