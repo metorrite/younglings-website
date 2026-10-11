@@ -102,7 +102,7 @@ export function siteInfoFor(host: string, forwardedProto?: string | null, face?:
     hub,
     hubHost: classifyHost(host) === "hub",
     split,
-    clanOrigin: split ? `${scheme}://${clanHostOf(host)}` : "",
+    clanOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${clanHostOf(host)}` : "",
     jonnybotOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${jonnybotHostOf(host)}` : "",
   };
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { gateHub } from "@/components/clanshub/gate";
 import { ClanCard, EventRow, Unavailable } from "@/components/clanshub/parts";
 import { allEvents, FOCUSES, leaderboard, listClans, RECRUITING } from "@/lib/clansHub";
 import { currentSite } from "@/lib/siteHostsServer";
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 const field = "rounded-lg border border-surface-border bg-background px-3 py-2 text-sm";
 
 export default async function ClansHubHome({ searchParams }: { searchParams: Promise<{ q?: string; recruiting?: string; focus?: string }> }) {
+  const closed = await gateHub();
+  if (closed) return closed;
   const params = await searchParams;
   const site = await currentSite();
   const q = (params.q ?? "").slice(0, 60);
