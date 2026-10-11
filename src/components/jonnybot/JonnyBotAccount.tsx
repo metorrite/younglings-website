@@ -7,8 +7,8 @@ import { LoginButton } from "@/components/auth/LoginButton";
 export function JonnyBotAccount({ user, signInTo, signOutTo }: { user: { name: string; image: string | null } | null; signInTo: string; signOutTo: string }) {
   if (!user) {
     return (
-      <LoginButton size="sm" onClick={() => signIn("discord", { callbackUrl: signInTo })}>
-        Login with Discord
+      <LoginButton size="sm" aria-label="Login with Discord" onClick={() => signIn("discord", { callbackUrl: signInTo })}>
+        <span className="max-sm:hidden">Login with Discord</span>
       </LoginButton>
     );
   }

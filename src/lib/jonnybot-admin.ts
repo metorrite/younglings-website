@@ -873,6 +873,14 @@ export interface PluginCoverage {
   consent: { key: string; label: string; players: number }[];
 }
 
+/** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
+export interface PremiumGuilds {
+  guilds: BetaGuild[];
+  canEdit: boolean;
+  /** Whether the server the question was asked about is on the plan. */
+  thisServer: boolean;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1326,6 +1334,9 @@ export const adminApi = {
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
   saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
+  premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
+  savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
+  removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
