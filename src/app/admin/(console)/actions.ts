@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type ClanPoints, type MemberNote, type NewsChannelConfig, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -145,6 +145,28 @@ export async function saveSiteOptionsAction(navEventBubble: boolean): Promise<Ac
     revalidatePath("/admin/site-options");
     revalidatePath("/", "layout"); // the navigation bar reads this
   }
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+}
+
+// ---------- JonnyBot beta access ----------
+
+export async function saveBetaGuildAction(guildId: string, label: string): Promise<ActionResult<BetaGuilds>> {
+  const ctx = await requireAdmin("/admin/beta-access");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "A Discord server ID is 17 to 20 digits." };
+  const result = await adminApi.saveBetaGuild(ctx, guildId.trim(), label.trim().slice(0, 60));
+  if (result.ok) revalidatePath("/admin/beta-access");
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+}
+
+export async function removeBetaGuildAction(guildId: string): Promise<ActionResult<BetaGuilds>> {
+  const ctx = await requireAdmin("/admin/beta-access");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };
+  const result = await adminApi.removeBetaGuild(ctx, guildId.trim());
+  if (result.ok) revalidatePath("/admin/beta-access");
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
 }
 

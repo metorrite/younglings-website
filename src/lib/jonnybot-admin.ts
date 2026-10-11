@@ -65,6 +65,8 @@ export interface WhoAmI {
   id?: string;
   displayName?: string;
   avatarUrl?: string;
+  /** Whether the person may use JonnyBot's website while it is closed: the clan's admins, or admins of a trusted beta server. Absent from an older bot. */
+  beta?: boolean;
   /** The server the answer is about; only present when the user is allowed in. */
   guildName?: string;
   guildIconUrl?: string | null;
@@ -424,6 +426,21 @@ export interface Overview {
   notices: BotNotice[];
   /** Whether the person asking owns the bot itself (not just this server), and so may post notices. */
   isOwner: boolean;
+}
+
+/** A trusted server whose admin team may use JonnyBot's website while it is closed to everyone else. */
+export interface BetaGuild {
+  guildId: string;
+  label: string;
+  /** Whether the bot is in that server; it has to be, to check who holds Manage Server there. */
+  botPresent: boolean;
+  name: string | null;
+}
+
+export interface BetaGuilds {
+  guilds: BetaGuild[];
+  /** Only the bot's owner may change the list. */
+  canEdit: boolean;
 }
 
 export interface PollJobStatus {
@@ -798,6 +815,9 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
+  saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
+  removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
   notices: (ctx: ApiContext) => call<{ notices: BotNotice[] }>(ctx, "GET", "notices"),
   addNotice: (ctx: ApiContext, severity: BotNotice["severity"], body: string) => call<{ notices: BotNotice[] }>(ctx, "POST", "notices", { severity, body }),
   removeNotice: (ctx: ApiContext, id: string) => call<{ notices: BotNotice[] }>(ctx, "DELETE", `notices/${encodeURIComponent(id)}`),

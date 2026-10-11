@@ -27,7 +27,8 @@ async function betaAllows(userId: string): Promise<boolean> {
   if (process.env.DASHBOARD_PUBLIC === "true") return true;
   const result = await whoAmI(userId);
   if (!result.ok) throw new AdminUnavailableError();
-  return result.data.allowed && result.data.tier !== "NONE";
+  // `beta` also lets in the admins of the trusted beta servers; an older bot without it falls back to the clan's own admins.
+  return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
 }
 
 /** A signed-in user who may see the dashboard at all. Not signed in goes to sign-in; no beta access is a 404. */
