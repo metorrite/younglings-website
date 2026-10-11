@@ -123,6 +123,8 @@ export interface TicketSettings {
   transcriptDm: boolean;
   closeDelaySeconds: number;
   transcriptRetentionDays: number | null;
+  /** Close a ticket this many days after its last message (warned a day before); null = never. */
+  autoCloseDays: number | null;
 }
 
 export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";
@@ -441,6 +443,434 @@ export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
   canEdit: boolean;
+}
+
+/** One line of a server's checkup: something fine, something worth a look, or something broken. */
+export interface CheckupFinding {
+  level: "OK" | "WARN" | "ERROR";
+  area: string;
+  title: string;
+  detail: string | null;
+  /** The dashboard page that fixes it, under /dashboard/<server>. */
+  page: string | null;
+}
+
+export interface Checkup {
+  findings: CheckupFinding[];
+  errors: number;
+  warnings: number;
+  ok: number;
+}
+
+/** A server's autoroles: roles handed to everyone who joins (a separate list for bots), after an optional delay. */
+export interface Autoroles {
+  enabled: boolean;
+  delaySeconds: number;
+  memberRoleIds: string[];
+  botRoleIds: string[];
+  maxRoles: number;
+  maxDelaySeconds: number;
+  /** Chosen roles that can't be given out right now (deleted, above the bot, too powerful). */
+  issues: string[];
+}
+
+/** One button on a role panel: the role it gives, the words on it, an optional emoji, and its colour. */
+export interface RolePanelButton {
+  roleId: string;
+  label: string;
+  emoji: string | null;
+  style: "primary" | "secondary" | "success" | "danger";
+}
+
+/** A message of buttons members press to take or drop a role. */
+export interface RolePanelDef {
+  id: string | null;
+  name: string;
+  title: string;
+  description: string;
+  color: number | null;
+  mode: "TOGGLE" | "UNIQUE";
+  posted: boolean;
+  channelId: string | null;
+  messageId: string | null;
+  buttons: RolePanelButton[];
+}
+
+export interface RolePanelSummary {
+  id: string;
+  name: string;
+  title: string;
+  mode: "TOGGLE" | "UNIQUE";
+  buttonCount: number;
+  posted: boolean;
+  channelId: string | null;
+  channelName: string | null;
+}
+
+export interface RolePanelList {
+  panels: RolePanelSummary[];
+  maxPanels: number;
+  maxButtons: number;
+}
+
+/** A server's goodbye message: a line posted when someone leaves. */
+export interface Goodbye {
+  enabled: boolean;
+  channelId: string | null;
+  content: string;
+  maxContent: number;
+  serverName: string;
+  memberCount: number;
+}
+
+/** A server's starboard: messages with enough of one reaction are copied to a showcase channel. */
+export interface Starboard {
+  enabled: boolean;
+  channelId: string | null;
+  emoji: string;
+  threshold: number;
+  selfStar: boolean;
+  maxThreshold: number;
+}
+
+/** One automatic reply: when a message matches the trigger, the bot answers. */
+export interface AutoReplyDef {
+  id: string | null;
+  trigger: string;
+  match: "WORD" | "STARTS" | "EXACT";
+  reply: string;
+  cooldownSeconds: number;
+  enabled: boolean;
+}
+
+export interface AutoReplyList {
+  replies: AutoReplyDef[];
+  max: number;
+  maxTrigger: number;
+  maxReply: number;
+  minCooldown: number;
+  maxCooldown: number;
+}
+
+/** A giveaway as the dashboard lists it. */
+export interface GiveawayItem {
+  id: string;
+  prize: string;
+  status: "OPEN" | "ENDED";
+  channelId: string;
+  channelName: string | null;
+  winnerCount: number;
+  endsAt: string;
+  entries: number;
+  requiredRoleId: string | null;
+  winners: string[];
+}
+
+export interface GiveawayList {
+  giveaways: GiveawayItem[];
+  maxWinners: number;
+  maxPrize: number;
+}
+
+export interface GiveawayStart {
+  prize: string;
+  channelId: string;
+  durationMinutes: number;
+  winners: number;
+  requiredRoleId: string | null;
+}
+
+/** A suggestion as the dashboard lists it. */
+export interface SuggestionItem {
+  id: string;
+  authorId: string;
+  authorName: string | null;
+  content: string;
+  status: "PENDING" | "APPROVED" | "DENIED" | "IMPLEMENTED";
+  note: string | null;
+  decidedBy: string | null;
+  ups: number;
+  downs: number;
+  createdAt: string;
+}
+
+export interface SuggestionList {
+  channelId: string | null;
+  suggestions: SuggestionItem[];
+  maxNote: number;
+}
+
+/** One channel's auto-clean rule. `problem` says why it is not working, when it is not. */
+export interface AutoCleanRule {
+  channelId: string;
+  channelName: string | null;
+  maxAgeMinutes: number;
+  keepPinned: boolean;
+  problem: string | null;
+}
+
+export interface AutoCleanList {
+  rules: AutoCleanRule[];
+  minAge: number;
+  maxAge: number;
+  maxRules: number;
+}
+
+/** A warning given with /warn. Names are null when the person has left the server. */
+export interface WarningItem {
+  id: string;
+  userId: string;
+  userName: string | null;
+  moderatorId: string;
+  moderatorName: string | null;
+  reason: string;
+  createdAt: string;
+}
+
+export interface WarningList {
+  warnings: WarningItem[];
+  limit: number;
+}
+
+/** A server's points: whether they are on, what they are called, the leaderboard, the newest ledger entries and the totals. */
+export interface PointsOverview {
+  enabled: boolean;
+  unit: string;
+  /** Where members' screenshots are sent for review; null until an admin picks one. */
+  reviewChannelId: string | null;
+  top: { userId: string; userName: string | null; points: number }[];
+  recent: {
+    id: string;
+    userId: string;
+    userName: string | null;
+    points: number;
+    reason: string;
+    category: string;
+    awardedBy: string | null;
+    awardedByName: string | null;
+    createdAt: string;
+  }[];
+  totals: { members: number; outstanding: number; awarded: number; spent: number };
+  maxPerEntry: number;
+}
+
+/** One points submission: a member's screenshot waiting for staff, or already decided. `proofUrl` is a fresh link to the image. */
+export interface PointsSubmission {
+  id: string;
+  userId: string;
+  userName: string | null;
+  description: string;
+  proofUrl: string;
+  status: "PENDING" | "APPROVED" | "DENIED";
+  decidedByName: string | null;
+  decisionNote: string | null;
+  pointsAwarded: number | null;
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface PointsSubmissions {
+  pending: PointsSubmission[];
+  decided: PointsSubmission[];
+  maxPerEntry: number;
+}
+
+/** A reward members can spend points on. `stock` is null for unlimited; an archived reward (`active` false) is hidden from members. */
+export interface PointsReward {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  stock: number | null;
+  active: boolean;
+}
+
+export interface PointsRewards {
+  rewards: PointsReward[];
+  maxRewards: number;
+  maxPerEntry: number;
+}
+
+export interface PointsRedemption {
+  id: string;
+  rewardName: string;
+  userId: string;
+  userName: string | null;
+  cost: number;
+  status: "PENDING" | "FULFILLED" | "CANCELLED";
+  handledByName: string | null;
+  createdAt: string;
+  handledAt: string | null;
+}
+
+export interface PointsRedemptions {
+  pending: PointsRedemption[];
+  handled: PointsRedemption[];
+}
+
+/** One automod rule. `limit` and `seconds` mean different things per rule (the form labels them); `words` is the blocked words, or the allowed websites for links. */
+export interface AutomodRule {
+  key: "INVITES" | "LINKS" | "BLOCKED_WORDS" | "CAPS" | "MENTIONS" | "SPAM" | "REPEAT" | "EMOJI";
+  label: string;
+  enabled: boolean;
+  warn: boolean;
+  limit: number;
+  seconds: number;
+  words: string[];
+}
+
+/** A server's automod: which rules are on, what they allow, and who is never checked. `canDelete` says whether JonnyBot may delete messages. */
+export interface Automod {
+  enabled: boolean;
+  rules: AutomodRule[];
+  exemptRoles: string[];
+  exemptChannels: string[];
+  canDelete: boolean;
+  maxWords: number;
+  maxDomains: number;
+}
+
+/** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
+export interface ModLog {
+  enabled: boolean;
+  channelId: string | null;
+  logBans: boolean;
+  logTimeouts: boolean;
+  canReadAuditLog: boolean;
+}
+
+/** The new-account gate: what happens to an account younger than `minAgeDays` when it joins. `canKick` says whether JonnyBot may remove them. */
+export interface AccountGate {
+  enabled: boolean;
+  minAgeDays: number;
+  action: "ALERT" | "KICK";
+  alertChannelId: string | null;
+  maxAgeDays: number;
+  canKick: boolean;
+}
+
+/** One autopunish rule: at exactly `threshold` warnings, do `action` (a timeout lasts `timeoutMinutes`). */
+export interface AutopunishRule {
+  threshold: number;
+  action: "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+}
+
+export interface Autopunish {
+  rules: AutopunishRule[];
+  maxRules: number;
+  maxThreshold: number;
+  maxTimeoutMinutes: number;
+  canTimeout: boolean;
+  canKick: boolean;
+  canBan: boolean;
+}
+
+/** One channel's auto-delete rule. `problem` says why it is not working, when it is not. */
+export interface AutoDeleteRule {
+  channelId: string;
+  channelName: string | null;
+  filters: string[];
+  problem: string | null;
+}
+
+export interface AutoDeleteList {
+  rules: AutoDeleteRule[];
+  available: { key: string; label: string }[];
+  maxRules: number;
+}
+
+/** A server's clan profile: what it shares publicly, and the read-only facts about verification and listing. */
+export interface ClanProfileData {
+  visibility: "PRIVATE" | "UNLISTED" | "PUBLIC";
+  slug: string | null;
+  displayName: string;
+  tagline: string;
+  description: string;
+  logoUrl: string | null;
+  colour: number | null;
+  timezone: string | null;
+  focus: string[];
+  recruiting: "CLOSED" | "OPEN" | "INVITE_ONLY";
+  requirements: string;
+  applyUrl: string | null;
+  leaderboardOptIn: boolean;
+  currentClanName: string | null;
+  verified: boolean;
+  verifiedClanName: string | null;
+  listing: "HIDDEN" | "UNLISTED" | "LISTED";
+  suspended: boolean;
+  suspendedReason: string | null;
+  memberCount: number;
+  suggestedName: string;
+  options: { visibility: { key: string; label: string }[]; recruiting: { key: string; label: string }[]; focus: { key: string; label: string }[] };
+  limits: { name: number; tagline: number; description: number; requirements: number };
+}
+
+/** The bot owner's view of the clan directory. Everyone else gets `canEdit: false` and empty lists. */
+export interface ClanListings {
+  canEdit: boolean;
+  listings: {
+    guildId: string;
+    serverName: string | null;
+    slug: string | null;
+    displayName: string;
+    visibility: string;
+    listing: "HIDDEN" | "UNLISTED" | "LISTED";
+    verified: boolean;
+    suspended: boolean;
+    suspendedReason: string | null;
+    openReports: number;
+  }[];
+  reports: { id: string; guildId: string; slug: string | null; displayName: string | null; reason: string; reporter: string | null; createdAt: string }[];
+}
+
+/** The server's upcoming Discord events and whether each is shown publicly. `listing` says whether sharing would actually show them. */
+export interface ClanEvents {
+  events: { id: string; name: string; location: string | null; status: string; startTime: string; endTime: string | null; shared: boolean; scope: "NONE" | "ALLIANCE" | "PUBLIC" }[];
+  listing: "HIDDEN" | "UNLISTED" | "LISTED";
+  slug: string | null;
+}
+
+/** This server's alliances and invitations. `status` is this server's own: INVITED (not answered yet) or ACTIVE. */
+export interface Alliance {
+  id: string;
+  name: string;
+  status: "INVITED" | "ACTIVE";
+  founder: boolean;
+  members: { guildId: string; name: string; slug: string | null; status: "INVITED" | "ACTIVE"; founder: boolean; you: boolean }[];
+}
+
+export interface AllianceList {
+  alliances: Alliance[];
+  maxPerServer: number;
+  maxMembers: number;
+}
+
+/** An alliance's shared calendar: events its active clans share with allies (or with everyone), soonest first. */
+export interface AllianceEvents {
+  events: {
+    id: string;
+    name: string;
+    location: string | null;
+    status: string;
+    startTime: string;
+    endTime: string | null;
+    url: string;
+    clan: string;
+    yours: boolean;
+    scope: "ALLIANCE" | "PUBLIC";
+  }[];
+}
+
+/** How much of a clan reports through the plugin: counts only, never who. */
+export interface PluginCoverage {
+  rosterSize: number;
+  linkedPlayers: number;
+  withToken: number;
+  reportingRecently: number;
+  recentDays: number;
+  consent: { key: string; label: string; players: number }[];
 }
 
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
@@ -823,6 +1253,87 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  suggestions: (ctx: ApiContext) => call<SuggestionList>(ctx, "GET", "suggestions"),
+  saveSuggestionChannel: (ctx: ApiContext, channelId: string | null) => call<SuggestionList>(ctx, "PUT", "suggestions/settings", { channelId }),
+  decideSuggestion: (ctx: ApiContext, id: string, status: string, note: string) =>
+    call<SuggestionList>(ctx, "POST", `suggestions/${encodeURIComponent(id)}/decide`, { status, note }),
+  deleteSuggestion: (ctx: ApiContext, id: string) => call<SuggestionList>(ctx, "DELETE", `suggestions/${encodeURIComponent(id)}`),
+  autoClean: (ctx: ApiContext) => call<AutoCleanList>(ctx, "GET", "autopurge"),
+  saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
+    call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
+  deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
+  savePointsReward: (
+    ctx: ApiContext,
+    id: string | null,
+    body: { name: string; description: string; cost: number; stock: number | null; active: boolean },
+  ) => call<PointsRewards>(ctx, id ? "PUT" : "POST", id ? `points/rewards/${encodeURIComponent(id)}` : "points/rewards", body),
+  pointsRedemptions: (ctx: ApiContext) => call<PointsRedemptions>(ctx, "GET", "points/redemptions"),
+  handlePointsRedemption: (ctx: ApiContext, id: string, fulfil: boolean) =>
+    call<PointsRedemptions>(ctx, "POST", `points/redemptions/${encodeURIComponent(id)}/${fulfil ? "fulfil" : "cancel"}`, {}),
+  pointsSubmissions: (ctx: ApiContext) => call<PointsSubmissions>(ctx, "GET", "points/submissions"),
+  decidePointsSubmission: (ctx: ApiContext, id: string, approve: boolean, body: { points?: number; note?: string }) =>
+    call<PointsSubmissions>(ctx, "POST", `points/submissions/${encodeURIComponent(id)}/${approve ? "approve" : "deny"}`, body),
+  savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string; reviewChannelId: string | null }) => call<PointsOverview>(ctx, "PUT", "points", body),
+  awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
+    call<PointsOverview>(ctx, "POST", "points/award", body),
+  warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
+  autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
+  saveAutopunish: (ctx: ApiContext, rules: AutopunishRule[]) => call<Autopunish>(ctx, "PUT", "warnings/autopunish", { rules }),
+  deleteWarning: (ctx: ApiContext, id: string) => call<WarningList>(ctx, "DELETE", `warnings/${encodeURIComponent(id)}`),
+  automod: (ctx: ApiContext) => call<Automod>(ctx, "GET", "automod"),
+  saveAutomod: (ctx: ApiContext, body: Pick<Automod, "enabled" | "rules" | "exemptRoles" | "exemptChannels">) => call<Automod>(ctx, "PUT", "automod", body),
+  modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
+  saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),
+  accountGate: (ctx: ApiContext) => call<AccountGate>(ctx, "GET", "accountgate"),
+  saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId">) =>
+    call<AccountGate>(ctx, "PUT", "accountgate", body),
+  autoDelete: (ctx: ApiContext) => call<AutoDeleteList>(ctx, "GET", "autodelete"),
+  saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
+  deleteAutoDelete: (ctx: ApiContext, channelId: string) => call<AutoDeleteList>(ctx, "DELETE", `autodelete/${encodeURIComponent(channelId)}`),
+  clanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "GET", "clan-profile"),
+  saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn">) =>
+    call<ClanProfileData>(ctx, "PUT", "clan-profile", body),
+  verifyClanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "POST", "clan-profile/verify"),
+  clanListings: (ctx: ApiContext) => call<ClanListings>(ctx, "GET", "clan-listings"),
+  suspendClanListing: (ctx: ApiContext, guildId: string, reason: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/suspend`, { reason }),
+  restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),
+  resolveClanReport: (ctx: ApiContext, id: string, status: string) => call<ClanListings>(ctx, "POST", `clan-reports/${encodeURIComponent(id)}/resolve`, { status }),
+  clanEvents: (ctx: ApiContext) => call<ClanEvents>(ctx, "GET", "clan-events"),
+  setClanEventScope: (ctx: ApiContext, id: string, scope: "NONE" | "ALLIANCE" | "PUBLIC") =>
+    call<ClanEvents>(ctx, "PUT", `clan-events/${encodeURIComponent(id)}`, { scope }),
+  alliances: (ctx: ApiContext) => call<AllianceList>(ctx, "GET", "alliances"),
+  createAlliance: (ctx: ApiContext, name: string) => call<AllianceList>(ctx, "POST", "alliances", { name }),
+  inviteToAlliance: (ctx: ApiContext, id: string, slug: string) => call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/invite`, { slug }),
+  acceptAlliance: (ctx: ApiContext, id: string) => call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/accept`, {}),
+  leaveAlliance: (ctx: ApiContext, id: string) => call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/leave`, {}),
+  removeFromAlliance: (ctx: ApiContext, id: string, guildId: string) =>
+    call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
+  allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
+  pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
+  startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
+  endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
+  rerollGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/reroll`),
+  deleteGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "DELETE", `giveaways/${encodeURIComponent(id)}`),
+  autoReplies: (ctx: ApiContext) => call<AutoReplyList>(ctx, "GET", "autoresponders"),
+  createAutoReply: (ctx: ApiContext, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "POST", "autoresponders", reply),
+  updateAutoReply: (ctx: ApiContext, id: string, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "PUT", `autoresponders/${encodeURIComponent(id)}`, reply),
+  deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
+  starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
+  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
+  saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
+  rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
+  rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
+  createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
+  updateRolePanel: (ctx: ApiContext, id: string, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "PUT", `rolepanels/${encodeURIComponent(id)}`, panel),
+  deleteRolePanel: (ctx: ApiContext, id: string) => call<RolePanelList>(ctx, "DELETE", `rolepanels/${encodeURIComponent(id)}`),
+  postRolePanel: (ctx: ApiContext, id: string, channelId: string) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, { channelId }),
+  autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
+  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
+  checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),

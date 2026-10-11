@@ -7,7 +7,7 @@ import type { GuildStructure, TicketSettings } from "@/lib/jonnybot-admin";
 import { ChannelSelect } from "./pickers";
 import { Card, FormField, inputClass, Notice, primaryButton } from "./ui";
 
-export function SettingsForm({ initial, structure }: { initial: TicketSettings; structure: GuildStructure }) {
+export function SettingsForm({ initial, structure, save: persist = saveSettingsAction }: { initial: TicketSettings; structure: GuildStructure; save?: typeof saveSettingsAction }) {
   const [settings, setSettings] = useState(initial);
   const [error, setError] = useState<{ message: string; problems: string[] } | null>(null);
   const [saved, setSaved] = useState(false);
@@ -17,11 +17,12 @@ export function SettingsForm({ initial, structure }: { initial: TicketSettings; 
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await saveSettingsAction({
+      const result = await persist({
         logChannelId: settings.logChannelId,
         transcriptDm: settings.transcriptDm,
         closeDelaySeconds: settings.closeDelaySeconds,
         transcriptRetentionDays: settings.transcriptRetentionDays,
+        autoCloseDays: settings.autoCloseDays,
       });
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
@@ -73,6 +74,20 @@ export function SettingsForm({ initial, structure }: { initial: TicketSettings; 
             className={inputClass}
             value={settings.closeDelaySeconds}
             onChange={(e) => setSettings((s) => ({ ...s, closeDelaySeconds: Number(e.target.value) || 0 }))}
+          />
+        </FormField>
+        <FormField
+          label="Close quiet tickets after (days)"
+          hint="A ticket with no message for this long is closed automatically. It is warned a day before, and any reply cancels it. Leave empty to never close tickets automatically."
+        >
+          <input
+            type="number"
+            min={1}
+            max={90}
+            className={inputClass}
+            value={settings.autoCloseDays ?? ""}
+            placeholder="Never"
+            onChange={(e) => setSettings((s) => ({ ...s, autoCloseDays: e.target.value ? Number(e.target.value) : null }))}
           />
         </FormField>
       </Card>
