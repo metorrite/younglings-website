@@ -1,5 +1,7 @@
 import { cache } from "react";
-import { getAdminIfAny } from "@/lib/admin";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { whoAmI } from "@/lib/jonnybot-admin";
 
 /**
  * Whether JonnyBot's public pages (home, docs, install, FAQ, privacy, terms) are open to everyone yet. They start closed:
@@ -10,6 +12,14 @@ export const publicSiteOpen = (): boolean => process.env.JONNYBOT_PUBLIC === "tr
 
 /**
  * Whether this visitor may see JonnyBot's pages: everyone once the site is open, otherwise signed-in admins and developers of
- * the clan's server. Worked out once per request, since the header, the layout and the page all ask.
+ * the clan's server and the admin teams of the trusted beta servers (the bot works that out). Worked out once per request, since the
+ * header, the layout and the page all ask.
  */
-export const canSeeJonnyBot = cache(async (): Promise<boolean> => publicSiteOpen() || (await getAdminIfAny()) !== null);
+export const canSeeJonnyBot = cache(async (): Promise<boolean> => {
+  if (publicSiteOpen()) return true;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return false;
+  const result = await whoAmI(session.user.id);
+  if (!result.ok) return false; // can't ask the bot: closed, not guessed
+  return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
+});
