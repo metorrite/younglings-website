@@ -20,12 +20,12 @@ const EXAMPLE = `{
 }`;
 
 const READ: [string, string][] = [
-  ["GET /api/v1/clans", "Publicly listed clans. Filter with q, recruiting and focus."],
-  ["GET /api/v1/clans/{slug}", "One clan's public profile."],
-  ["GET /api/v1/clans/{slug}/events", "The events that clan shares publicly."],
-  ["GET /api/v1/events", "Upcoming shared events from every listed clan."],
-  ["GET /api/v1/leaderboards?period=week|month", "Clans that opted in, ranked by XP gained."],
-  ["POST /api/v1/clans/{slug}/report", "Report a listing that breaks the rules."],
+  ["GET /v1/clans", "Publicly listed clans. Filter with q, recruiting and focus."],
+  ["GET /v1/clans/{slug}", "One clan's public profile."],
+  ["GET /v1/clans/{slug}/events", "The events that clan shares publicly."],
+  ["GET /v1/events", "Upcoming shared events from every listed clan."],
+  ["GET /v1/leaderboards?period=week|month", "Clans that opted in, ranked by XP gained."],
+  ["POST /v1/clans/{slug}/report", "Report a listing that breaks the rules."],
 ];
 
 export default async function ApiDocsPage() {
@@ -59,6 +59,10 @@ export default async function ApiDocsPage() {
           Everything a clan chose to share, readable by anyone, from any website. Answers look like <code>{"{ \"apiVersion\": 1, \"data\": ... }"}</code> and can be cached for 30 seconds. It never
           includes a member&apos;s name or Discord details.
         </p>
+        <p>
+          Base address: <code>https://api.rsyounglings.com</code>. The same routes also answer under <code>/api</code> on the website (for example <code>/api/v1/clans</code>), and the plugin check
+          (<code>whoami</code>) tells the plugin the current API address, so it can follow if the API ever moves.
+        </p>
         <div className="overflow-x-auto rounded-xl border border-surface-border">
           <table className="w-full text-left text-sm">
             <tbody>
@@ -75,8 +79,8 @@ export default async function ApiDocsPage() {
 
       <Section id="ingest" title="Plugin API (for plugin developers)">
         <p>
-          Send the token as <code>Authorization: Bearer jbp_...</code>. <code>GET /api/ingest/v1/whoami</code> checks a token and lists the names and categories it may use.{" "}
-          <code>POST /api/ingest/v1/events</code> takes a batch of up to 100 events (256 KB). Each event has an <code>id</code> that works as an idempotency key, so a failed request can simply be
+          Send the token as <code>Authorization: Bearer jbp_...</code>. <code>GET /ingest/v1/whoami</code> checks a token and lists the names and categories it may use.{" "}
+          <code>POST /ingest/v1/events</code> takes a batch of up to 100 events (256 KB). Each event has an <code>id</code> that works as an idempotency key, so a failed request can simply be
           sent again: a repeat is counted as a duplicate, not an error. A bad event is rejected on its own with a reason and the rest still go through.
         </p>
         <pre className="overflow-x-auto rounded-xl border border-surface-border bg-surface p-4 text-xs leading-relaxed">{EXAMPLE}</pre>

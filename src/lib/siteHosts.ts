@@ -10,11 +10,12 @@
  */
 
 const PREFIX = "jonnybot.";
+const API_PREFIX = "api.";
 
 /** The request header the proxy sets so pages know which face a request is for, whatever its path or host. */
 export const FACE_HEADER = "x-site-face";
 
-export type HostKind = "jonnybot" | "clan" | "unknown";
+export type HostKind = "jonnybot" | "clan" | "api" | "unknown";
 
 export function subdomainMode(): boolean {
   return process.env.JONNYBOT_SUBDOMAIN === "true";
@@ -35,6 +36,7 @@ export function classifyHost(host: string | null | undefined, apex: string | nul
   if (!host) return "clan";
   const name = bare(host);
   if (name.startsWith(PREFIX)) return "jonnybot";
+  if (name.startsWith(API_PREFIX)) return "api";
   if (!apex) return "clan";
   if (name === apex || name === `www.${apex}`) return "clan";
   // some other name under the site's domain (a typo, a stranger's guess): not either face
@@ -54,6 +56,17 @@ export function jonnybotHostOf(host: string, apex: string | null = apexHost()): 
   const port = portOf(host);
   const base = apex ?? bare(host).replace(new RegExp(`^(${PREFIX.replace(".", "\.")}|www\.)`), "");
   return PREFIX + base + port;
+}
+
+/**
+ * The API's own address, for telling clients (the plugin) where to send things. `PUBLIC_API_ORIGIN` wins when set; otherwise
+ * `api.` + the site's apex host; otherwise null (local development, where the API is just this host's /api).
+ */
+export function apiOriginFor(host: string, forwardedProto?: string | null): string | null {
+  const configured = process.env.PUBLIC_API_ORIGIN?.trim().replace(/\/+$/, "");
+  if (configured) return configured;
+  const apex = apexHost();
+  return apex ? `${schemeFor(host, forwardedProto)}://${API_PREFIX}${apex}${portOf(host)}` : null;
 }
 
 export function schemeFor(host: string, forwardedProto?: string | null): string {

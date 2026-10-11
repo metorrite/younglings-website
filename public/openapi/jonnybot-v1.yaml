@@ -5,11 +5,11 @@ info:
   description: |
     Two groups of endpoints.
 
-    **Public read API** (`/api/v1/...`): clan profiles, shared events and clan leaderboards. No sign-in. Everything a clan chose to
+    **Public read API** (`/v1/...`): clan profiles, shared events and clan leaderboards. No sign-in. Everything a clan chose to
     share and nothing else: never a member's name or Discord identity. Answers are wrapped as `{ "apiVersion": 1, "data": ... }`
     and can be read from any website (CORS) and cached for 30 seconds.
 
-    **Plugin API** (`/api/ingest/v1/...`): for the RuneScape clan plugin. A player makes a token on their JonnyBot profile (Plugin tab),
+    **Plugin API** (`/ingest/v1/...`): for the RuneScape clan plugin. A player makes a token on their JonnyBot profile (Plugin tab),
     pastes it into the plugin, and chooses which categories may be reported. Events are only accepted for a RuneScape name linked to
     the token's owner, and only for categories the player switched on. Each event carries an `id` used as an idempotency key, so
     retrying a batch is always safe.
@@ -17,15 +17,17 @@ info:
     Rate limits: 60 reads a minute per address; plugin calls are limited per token and per address. Errors always look like
     `{ "apiVersion": 1, "error": "message" }` (plugin routes answer with the bot's own `{ "error": "message" }`).
 servers:
-  - url: https://rsyounglings.com
-    description: Production
-  - url: http://localhost:3000
+  - url: https://api.rsyounglings.com
+    description: Production (the API host)
+  - url: https://rsyounglings.com/api
+    description: Production, same API under the website's /api
+  - url: http://localhost:3000/api
     description: Local development
 tags:
   - name: Public
   - name: Plugin
 paths:
-  /api/v1/clans:
+  /v1/clans:
     get:
       tags: [Public]
       summary: Publicly listed clans
@@ -37,7 +39,7 @@ paths:
         "200": { description: The clans, content: { application/json: { schema: { $ref: "#/components/schemas/ClanList" } } } }
         "429": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Error" }
-  /api/v1/clans/{slug}:
+  /v1/clans/{slug}:
     get:
       tags: [Public]
       summary: One clan's public profile (listed or unlisted)
@@ -45,7 +47,7 @@ paths:
       responses:
         "200": { description: The clan, content: { application/json: { schema: { $ref: "#/components/schemas/ClanEnvelope" } } } }
         "404": { $ref: "#/components/responses/Error" }
-  /api/v1/clans/{slug}/events:
+  /v1/clans/{slug}/events:
     get:
       tags: [Public]
       summary: The events a clan shares publicly, soonest first
@@ -53,7 +55,7 @@ paths:
       responses:
         "200": { description: The events, content: { application/json: { schema: { $ref: "#/components/schemas/EventList" } } } }
         "404": { $ref: "#/components/responses/Error" }
-  /api/v1/clans/{slug}/report:
+  /v1/clans/{slug}/report:
     post:
       tags: [Public]
       summary: Report a listing that breaks the rules
@@ -67,13 +69,13 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
         "429": { $ref: "#/components/responses/Error" }
-  /api/v1/events:
+  /v1/events:
     get:
       tags: [Public]
       summary: Upcoming shared events from every listed clan, soonest first
       responses:
         "200": { description: The events, content: { application/json: { schema: { $ref: "#/components/schemas/EventList" } } } }
-  /api/v1/leaderboards:
+  /v1/leaderboards:
     get:
       tags: [Public]
       summary: Clan leaderboard by XP gained
@@ -83,7 +85,7 @@ paths:
       responses:
         "200": { description: The ranking, content: { application/json: { schema: { $ref: "#/components/schemas/Leaderboard" } } } }
         "400": { $ref: "#/components/responses/Error" }
-  /api/ingest/v1/whoami:
+  /ingest/v1/whoami:
     get:
       tags: [Plugin]
       summary: What this token may report
@@ -92,7 +94,7 @@ paths:
       responses:
         "200": { description: Names and categories, content: { application/json: { schema: { $ref: "#/components/schemas/WhoAmI" } } } }
         "401": { $ref: "#/components/responses/PluginError" }
-  /api/ingest/v1/events:
+  /ingest/v1/events:
     post:
       tags: [Plugin]
       summary: Send a batch of events (schema 1)

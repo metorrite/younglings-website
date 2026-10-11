@@ -21,6 +21,23 @@ export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const segment = pathname.split("/")[1] ?? "";
 
+  // The API host is independent of the clan/JonnyBot split: api.<domain> serves only the API, with shorter paths. The long forms
+  // (/api/v1/..., /api/ingest/v1/...) keep working on every host, so nothing already pointed at them breaks.
+  const requestHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(",")[0].trim();
+  if (classifyHost(requestHost, apexHost()) === "api") {
+    const rewriteApi = (path: string) => {
+      const url = request.nextUrl.clone();
+      url.pathname = path;
+      return NextResponse.rewrite(url);
+    };
+    if (pathname === "/") return rewriteApi("/api/v1");
+    if (pathname === "/openapi.yaml") return rewriteApi("/openapi/jonnybot-v1.yaml");
+    if (pathname === "/v1" || pathname.startsWith("/v1/")) return rewriteApi(`/api${pathname}`);
+    if (pathname === "/ingest/v1" || pathname.startsWith("/ingest/v1/")) return rewriteApi(`/api${pathname}`);
+    if (pathname.startsWith("/api/") || pathname.startsWith("/openapi/")) return NextResponse.next();
+    return NextResponse.json({ apiVersion: 1, error: "Not found. See https://" + requestHost + "/ for the list of endpoints." }, { status: 404 });
+  }
+
   const faced = (face: "jonnybot" | "clan") => {
     const headers = new Headers(request.headers);
     headers.set(FACE_HEADER, face);
