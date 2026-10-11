@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import {
   dangerButton,
+  formatUtc,
   FormField,
   ghostButton,
   inputClass,
@@ -311,7 +312,7 @@ function Section({
                   #{g.channelName ?? "deleted channel"} · {g.winnerCount} winner
                   {g.winnerCount === 1 ? "" : "s"} ·{" "}
                   {g.status === "OPEN" ? "ends" : "ended"}{" "}
-                  {new Date(g.endsAt).toLocaleString()}
+                  {formatUtc(g.endsAt)}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

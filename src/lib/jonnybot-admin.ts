@@ -578,6 +578,26 @@ export interface GiveawayStart {
   requiredRoleId: string | null;
 }
 
+/** A suggestion as the dashboard lists it. */
+export interface SuggestionItem {
+  id: string;
+  authorId: string;
+  authorName: string | null;
+  content: string;
+  status: "PENDING" | "APPROVED" | "DENIED" | "IMPLEMENTED";
+  note: string | null;
+  decidedBy: string | null;
+  ups: number;
+  downs: number;
+  createdAt: string;
+}
+
+export interface SuggestionList {
+  channelId: string | null;
+  suggestions: SuggestionItem[];
+  maxNote: number;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -950,6 +970,11 @@ export const adminApi = {
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
+  suggestions: (ctx: ApiContext) => call<SuggestionList>(ctx, "GET", "suggestions"),
+  saveSuggestionChannel: (ctx: ApiContext, channelId: string | null) => call<SuggestionList>(ctx, "PUT", "suggestions/settings", { channelId }),
+  decideSuggestion: (ctx: ApiContext, id: string, status: string, note: string) =>
+    call<SuggestionList>(ctx, "POST", `suggestions/${encodeURIComponent(id)}/decide`, { status, note }),
+  deleteSuggestion: (ctx: ApiContext, id: string) => call<SuggestionList>(ctx, "DELETE", `suggestions/${encodeURIComponent(id)}`),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
