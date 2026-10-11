@@ -696,6 +696,7 @@ export interface ClanProfileData {
   recruiting: "CLOSED" | "OPEN" | "INVITE_ONLY";
   requirements: string;
   applyUrl: string | null;
+  leaderboardOptIn: boolean;
   currentClanName: string | null;
   verified: boolean;
   verifiedClanName: string | null;
@@ -724,6 +725,23 @@ export interface ClanListings {
     openReports: number;
   }[];
   reports: { id: string; guildId: string; slug: string | null; displayName: string | null; reason: string; reporter: string | null; createdAt: string }[];
+}
+
+/** The server's upcoming Discord events and whether each is shown publicly. `listing` says whether sharing would actually show them. */
+export interface ClanEvents {
+  events: { id: string; name: string; location: string | null; status: string; startTime: string; endTime: string | null; shared: boolean }[];
+  listing: "HIDDEN" | "UNLISTED" | "LISTED";
+  slug: string | null;
+}
+
+/** How much of a clan reports through the plugin: counts only, never who. */
+export interface PluginCoverage {
+  rosterSize: number;
+  linkedPlayers: number;
+  withToken: number;
+  reportingRecently: number;
+  recentDays: number;
+  consent: { key: string; label: string; players: number }[];
 }
 
 export interface PollJobStatus {
@@ -1120,13 +1138,16 @@ export const adminApi = {
   saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
   deleteAutoDelete: (ctx: ApiContext, channelId: string) => call<AutoDeleteList>(ctx, "DELETE", `autodelete/${encodeURIComponent(channelId)}`),
   clanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "GET", "clan-profile"),
-  saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl">) =>
+  saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn">) =>
     call<ClanProfileData>(ctx, "PUT", "clan-profile", body),
   verifyClanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "POST", "clan-profile/verify"),
   clanListings: (ctx: ApiContext) => call<ClanListings>(ctx, "GET", "clan-listings"),
   suspendClanListing: (ctx: ApiContext, guildId: string, reason: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/suspend`, { reason }),
   restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),
   resolveClanReport: (ctx: ApiContext, id: string, status: string) => call<ClanListings>(ctx, "POST", `clan-reports/${encodeURIComponent(id)}/resolve`, { status }),
+  clanEvents: (ctx: ApiContext) => call<ClanEvents>(ctx, "GET", "clan-events"),
+  setClanEventShared: (ctx: ApiContext, id: string, shared: boolean) => call<ClanEvents>(ctx, "PUT", `clan-events/${encodeURIComponent(id)}`, { shared }),
+  pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),

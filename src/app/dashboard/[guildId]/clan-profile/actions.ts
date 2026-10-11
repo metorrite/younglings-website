@@ -31,6 +31,7 @@ export async function saveClanProfileAction(guildId: string, input: unknown): Pr
     recruiting: p.recruiting === "OPEN" || p.recruiting === "INVITE_ONLY" ? p.recruiting : "CLOSED",
     requirements: str(p.requirements, 800),
     applyUrl: optStr(p.applyUrl, 400),
+    leaderboardOptIn: p.leaderboardOptIn === true,
   });
   revalidatePath(`/dashboard/${guildId}/clan-profile`);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };

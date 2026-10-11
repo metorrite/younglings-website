@@ -4,12 +4,13 @@ import { useState, useTransition } from "react";
 import { FormField, ghostButton, inputClass, Notice, StatusBadge } from "@/components/admin/ui";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import type { ClanProfileData, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
 type Draft = Pick<
   ClanProfileData,
-  "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl"
+  "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn"
 >;
 
 export interface ClanProfileActions {
@@ -135,6 +136,14 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               <button type="button" className={ghostButton} disabled={verifying || !meta.currentClanName} onClick={verify}>
                 {verifying ? "Checking…" : meta.verified ? "Check again" : "Verify the clan"}
               </button>
+            </div>
+            <div className="mt-4">
+              <Toggle
+                checked={draft.leaderboardOptIn}
+                onChange={(on) => change({ leaderboardOptIn: on })}
+                label="Take part in clan leaderboards"
+                detail="Your clan is ranked by the total XP its members gained. Only the total, member count and average are shown, never a member's own figure. Needs a public listing."
+              />
             </div>
             <p className="mt-2 text-xs text-muted">
               A clan Owner, Deputy Owner or Overseer does this: link your RuneScape name with /rs in this server first, and JonnyBot checks your rank on the clan

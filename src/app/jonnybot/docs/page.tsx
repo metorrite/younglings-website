@@ -45,6 +45,8 @@ const DASHBOARD: [string, string][] = [
   ["Tickets", "Panels, the tickets themselves with their saved transcripts, settings, and panel defaults."],
   ["Post a message and Scheduled posts", "Write a message and have JonnyBot post it now or later, with headings, dividers, colours, images and buttons."],
   ["Clan profile", "How your clan appears to others: name, tagline, focus, recruiting status and where to apply. Private by default; a public listing needs a clan Owner, Deputy Owner or Overseer to verify the clan, and only clan-level facts are ever shown, never members."],
+  ["Public events", "Choose which of your Discord events are shown in the public clan directory. Nothing is shared until your clan profile is public or unlisted."],
+  ["Clan plugin", "How many of your members use the in-game clan plugin, as counts only. Nobody is named and nobody has to install anything."],
   ["Roster", "For a clan server: every member, who is verified, how fresh their data is, with staff-only notes."],
   ["Checkup", "Finds channels JonnyBot can't post in and roles it can't give out, and tells you how to fix each one."],
   ["Activity log", "Every change made from the dashboard, by whom and when."],
