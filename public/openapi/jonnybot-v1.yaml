@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: JonnyBot public and plugin API
+  version: "1"
+  description: |
+    Two groups of endpoints.
+
+    **Public read API** (`/v1/...`): clan profiles, shared events and clan leaderboards. No sign-in. Everything a clan chose to
+    share and nothing else: never a member's name or Discord identity. Answers are wrapped as `{ "apiVersion": 1, "data": ... }`
+    and can be read from any website (CORS) and cached for 30 seconds.
+
+    **Plugin API** (`/ingest/v1/...`): for the RuneScape clan plugin. A player makes a token on their JonnyBot profile (Plugin tab),
+    pastes it into the plugin, and chooses which categories may be reported. Events are only accepted for a RuneScape name linked to
+    the token's owner, and only for categories the player switched on. Each event carries an `id` used as an idempotency key, so
+    retrying a batch is always safe.
+
+    Rate limits: 60 reads a minute per address; plugin calls are limited per token and per address. Errors always look like
+    `{ "apiVersion": 1, "error": "message" }` (plugin routes answer with the bot's own `{ "error": "message" }`).
+servers:
+  - url: https://api.rsyounglings.com
+    description: Production (the API host)
+  - url: https://rsyounglings.com/api
+    description: Production, same API under the website's /api
+  - url: http://localhost:3000/api
+    description: Local development
+tags:
+  - name: Public
+  - name: Plugin
+paths:
+  /v1/clans:
+    get:
+      tags: [Public]
+      summary: Publicly listed clans
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 60 }, description: Text in the name or tagline }
+        - { name: recruiting, in: query, schema: { enum: [OPEN, INVITE_ONLY, CLOSED] } }
+        - { name: focus, in: query, schema: { enum: [PVM, SKILLING, SOCIAL, EVENTS, COMPETITIVE, CASUAL, IRONMAN, NEW_PLAYERS] } }
+      responses:
+        "200": { description: The clans, content: { application/json: { schema: { $ref: "#/components/schemas/ClanList" } } } }
+        "429": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+  /v1/clans/{slug}:
+    get:
+      tags: [Public]
+      summary: One clan's public profile (listed or unlisted)
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200": { description: The clan, content: { application/json: { schema: { $ref: "#/components/schemas/ClanEnvelope" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /v1/clans/{slug}/events:
+    get:
+      tags: [Public]
+      summary: The events a clan shares publicly, soonest first
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200": { description: The events, content: { application/json: { schema: { $ref: "#/components/schemas/EventList" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /v1/clans/{slug}/report:
+    post:
+      tags: [Public]
+      summary: Report a listing that breaks the rules
+      description: Three reports per ten minutes per address. A person reviews every report.
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [reason], properties: { reason: { type: string, minLength: 10, maxLength: 500 } } } } }
+      responses:
+        "202": { description: Received }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /v1/events:
+    get:
+      tags: [Public]
+      summary: Upcoming shared events from every listed clan, soonest first
+      responses:
+        "200": { description: The events, content: { application/json: { schema: { $ref: "#/components/schemas/EventList" } } } }
+  /v1/leaderboards:
+    get:
+      tags: [Public]
+      summary: Clan leaderboard by XP gained
+      description: Only clans that opted in. Totals, member counts and per-member averages; never a member's own figure.
+      parameters:
+        - { name: period, in: query, schema: { enum: [week, month], default: week } }
+      responses:
+        "200": { description: The ranking, content: { application/json: { schema: { $ref: "#/components/schemas/Leaderboard" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+  /ingest/v1/whoami:
+    get:
+      tags: [Plugin]
+      summary: What this token may report
+      description: Use it to check a token and to show the player which names and categories are active.
+      security: [{ pluginToken: [] }]
+      responses:
+        "200": { description: Names and categories, content: { application/json: { schema: { $ref: "#/components/schemas/WhoAmI" } } } }
+        "401": { $ref: "#/components/responses/PluginError" }
+  /ingest/v1/events:
+    post:
+      tags: [Plugin]
+      summary: Send a batch of events (schema 1)
+      description: |
+        At most 100 events and 256 KB per batch. A bad event is rejected on its own with a reason; the rest are still processed.
+        Events in a category the player has not switched on are rejected with `not_consented`. Sending the same event `id` again
+        is counted as a duplicate, not an error, so a failed request can simply be retried.
+      security: [{ pluginToken: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/Batch" } } }
+      responses:
+        "200": { description: Processed, content: { application/json: { schema: { $ref: "#/components/schemas/IngestResult" } } } }
+        "400": { $ref: "#/components/responses/PluginError" }
+        "401": { $ref: "#/components/responses/PluginError" }
+        "403": { description: The name isn't linked to the token's owner, content: { application/json: { schema: { $ref: "#/components/schemas/PluginError" } } } }
+        "413": { $ref: "#/components/responses/PluginError" }
+        "429": { $ref: "#/components/responses/PluginError" }
+components:
+  securitySchemes:
+    pluginToken:
+      type: http
+      scheme: bearer
+      description: A token made on your JonnyBot profile, starting jbp_
+  parameters:
+    Slug: { name: slug, in: path, required: true, schema: { type: string, pattern: "^[a-z0-9]+(-[a-z0-9]+)*$", maxLength: 40 } }
+  responses:
+    Error: { description: An error, content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } } }
+    PluginError: { description: An error, content: { application/json: { schema: { $ref: "#/components/schemas/PluginError" } } } }
+  schemas:
+    ApiError: { type: object, properties: { apiVersion: { const: 1 }, error: { type: string } } }
+    PluginError: { type: object, properties: { error: { type: string } } }
+    Clan:
+      type: object
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        tagline: { type: string }
+        logoUrl: { type: [string, "null"] }
+        colour: { type: [integer, "null"], description: RGB as an integer }
+        focus: { type: array, items: { type: object, properties: { key: { type: string }, label: { type: string } } } }
+        recruiting: { type: object, properties: { key: { enum: [OPEN, INVITE_ONLY, CLOSED] }, label: { type: string } } }
+        clanName: { type: [string, "null"], description: The RuneScape clan, only for a verified listing }
+        verified: { type: boolean }
+        listed: { type: boolean }
+        memberCount: { type: [integer, "null"] }
+        onLeaderboards: { type: boolean }
+        description: { type: string, description: Only on the single-clan endpoint }
+        requirements: { type: string }
+        applyUrl: { type: [string, "null"] }
+        timezone: { type: [string, "null"] }
+    ClanList: { type: object, properties: { apiVersion: { const: 1 }, data: { type: object, properties: { clans: { type: array, items: { $ref: "#/components/schemas/Clan" } }, count: { type: integer }, generatedAt: { type: string } } } } }
+    ClanEnvelope: { type: object, properties: { apiVersion: { const: 1 }, data: { $ref: "#/components/schemas/Clan" } } }
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+        location: { type: [string, "null"] }
+        status: { enum: [SCHEDULED, ACTIVE] }
+        startTime: { type: string, format: date-time }
+        endTime: { type: [string, "null"], format: date-time }
+        interestedCount: { type: integer }
+        url: { type: string }
+        clan: { type: object, description: Present on the all-clans feed, properties: { slug: { type: string }, name: { type: string }, logoUrl: { type: [string, "null"] }, colour: { type: [integer, "null"] } } }
+    EventList: { type: object, properties: { apiVersion: { const: 1 }, data: { type: object, properties: { events: { type: array, items: { $ref: "#/components/schemas/Event" } }, generatedAt: { type: string } } } } }
+    Leaderboard:
+      type: object
+      properties:
+        apiVersion: { const: 1 }
+        data:
+          type: object
+          properties:
+            period: { enum: [week, month] }
+            since: { type: string, format: date-time }
+            generatedAt: { type: string, format: date-time }
+            entries:
+              type: array
+              items: { type: object, properties: { rank: { type: integer }, slug: { type: string }, name: { type: string }, logoUrl: { type: [string, "null"] }, colour: { type: [integer, "null"] }, xpGained: { type: integer }, members: { type: integer }, perMember: { type: integer } } }
+    Category: { enum: [DROPS, KILLS, ACHIEVEMENTS, PRESENCE] }
+    WhoAmI:
+      type: object
+      properties:
+        schema: { const: 1 }
+        maxEventsPerBatch: { type: integer }
+        rsns: { type: array, items: { type: string } }
+        consented: { type: array, items: { $ref: "#/components/schemas/Category" } }
+        categories: { type: array, items: { type: object, properties: { key: { type: string }, label: { type: string }, description: { type: string } } } }
+    Batch:
+      type: object
+      required: [schema, player, events]
+      properties:
+        schema: { const: 1 }
+        client: { type: object, properties: { name: { type: string }, version: { type: string } } }
+        player: { type: object, required: [rsn], properties: { rsn: { type: string, maxLength: 12, description: A RuneScape name linked to the token's owner } } }
+        events: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PluginEvent" } }
+    PluginEvent:
+      type: object
+      required: [id, type, at, data]
+      properties:
+        id: { type: string, pattern: "^[A-Za-z0-9._:-]{8,64}$", description: Unique per event; the idempotency key }
+        type: { enum: [DROP, KILL, LEVEL_UP, QUEST_COMPLETE, ACHIEVEMENT, COLLECTION_LOG, PRESENCE] }
+        at: { type: string, format: date-time, description: Not more than 14 days old or 5 minutes ahead }
+        source:
+          type: object
+          description: Where it came from, so a qualifying drop can be told from another way of getting the item
+          properties:
+            kind: { enum: [NPC, ACTIVITY, CHEST, PLAYER, OTHER] }
+            name: { type: string, maxLength: 100 }
+            id: { type: integer }
+        data:
+          type: object
+          description: |
+            By type. DROP: itemName (required), itemId, quantity (default 1), value. KILL: bossName (required), killCount,
+            durationSeconds. LEVEL_UP: skill, level (1 to 150). QUEST_COMPLETE: quest. ACHIEVEMENT: name, kind.
+            COLLECTION_LOG: itemName. PRESENCE: state (ONLINE, OFFLINE or ACTIVITY), activity. Extra fields are kept.
+          additionalProperties: true
+    IngestResult:
+      type: object
+      properties:
+        accepted: { type: integer }
+        duplicates: { type: integer }
+        rejected: { type: array, items: { type: object, properties: { id: { type: [string, "null"] }, reason: { type: string } } } }
+        consented: { type: array, items: { $ref: "#/components/schemas/Category" } }

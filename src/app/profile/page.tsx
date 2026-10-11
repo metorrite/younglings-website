@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LinkRsn } from "@/components/link/LinkRsn";
+import { PluginPanel } from "@/components/profile/PluginPanel";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { SkillIcon } from "@/components/site/SkillIcon";
@@ -12,6 +13,7 @@ import { badgesFor } from "@/lib/badges";
 import { whoAmI } from "@/lib/jonnybot-admin";
 import { COLOR_PALETTE, getMemberInfo } from "@/lib/jonnybot";
 import { memberApi } from "@/lib/member";
+import { pluginApi } from "@/lib/plugin";
 import { displayName } from "@/lib/names";
 import { compact, full, getMyLink, getOverview, getPolls, getProfile, getSignups, rankColor, shortDate } from "@/lib/site";
 import { updateColorRoleAction, updateNicknameAction } from "./actions";
@@ -27,6 +29,7 @@ const TABS = [
   { id: "activity", label: "My activity", icon: "📋" },
   { id: "coffer", label: "Coffer", icon: "💰" },
   { id: "notifications", label: "Notifications", icon: "🔔" },
+  { id: "plugin", label: "Plugin", icon: "🔌" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -63,6 +66,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const myVotes = polls && myPolls?.ok ? polls.filter((p) => p.active).flatMap((p) => { const mine = myPolls.data.polls.find((m) => m.pollId === p.id)?.mine ?? []; return mine.length ? [{ poll: p, picks: p.options.filter((o) => mine.includes(o.number)) }] : []; }) : [];
   const mySheets = sheets && mySignups?.ok ? sheets.filter((s) => mySignups.data.joined.includes(s.id)) : [];
   const coffer = tab === "coffer" ? await memberApi.myCoffer(user.id) : null;
+  const plugin = tab === "plugin" ? await pluginApi.view(user.id) : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -360,6 +364,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         {tab === "notifications" && (
           <Panel title="Notifications" hint="Choose which direct messages JonnyBot may send you.">
             {settings.ok ? <NotificationsForm initial={settings.data} /> : <Unavailable what="Your notification settings" />}
+          </Panel>
+        )}
+
+        {tab === "plugin" && (
+          <Panel title="Clan plugin" hint="Connect the in-game plugin and choose what it may report.">
+            {plugin?.ok ? <PluginPanel initial={plugin.data} /> : <Unavailable what="Your plugin settings" />}
           </Panel>
         )}
       </div>

@@ -24,6 +24,10 @@ const RULES = {
   signup: { capacity: 5, refillMs: 2000 },
   profile: { capacity: 8, refillMs: 1500 },
   admin: { capacity: 15, refillMs: 1000 },
+  // The public API and the plugin routes are keyed by caller address, not by a signed-in user.
+  publicRead: { capacity: 60, refillMs: 1000 },
+  publicReport: { capacity: 3, refillMs: 600_000 },
+  ingest: { capacity: 30, refillMs: 1000 },
 } satisfies Record<string, Rule>;
 
 export type LimitKind = keyof typeof RULES;
