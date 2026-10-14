@@ -14,3 +14,15 @@ export interface CitadelCappers {
   /** The last few finished weeks to choose from, newest first. */
   weeks: { end: string; start: string }[];
 }
+
+/** How a server announces the wheel's winner, as the bot's `citadel/wheel` route answers. */
+export interface WheelSettings {
+  /** Announce a winner automatically when the weekly Citadel list is made. */
+  autoPost: boolean;
+  /** The channel announcements go to (null until one is chosen). */
+  channelId: string | null;
+  /** The message template: {winner}, {mention}, {week} and {entries} are filled in. */
+  message: string;
+  defaultMessage: string;
+  maxLength: number;
+}

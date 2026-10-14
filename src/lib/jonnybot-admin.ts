@@ -1264,6 +1264,13 @@ export const adminApi = {
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   /** Who capped at the Clan Citadel in the week that ended on `end` (a Wednesday), or the week that just finished. */
   citadelCappers: (ctx: ApiContext, end: string | null) => call<import("./citadelTypes").CitadelCappers>(ctx, "GET", end ? `citadel/cappers/${encodeURIComponent(end)}` : "citadel/cappers"),
+  /** The settings for announcing the Citadel wheel's winner (auto-post, channel, message). */
+  citadelWheel: (ctx: ApiContext) => call<import("./citadelTypes").WheelSettings>(ctx, "GET", "citadel/wheel"),
+  saveCitadelWheel: (ctx: ApiContext, body: { autoPost: boolean; channelId: string | null; message: string }) =>
+    call<import("./citadelTypes").WheelSettings>(ctx, "PUT", "citadel/wheel", body),
+  /** Announces a winner the dashboard's wheel picked, in the channel the server chose. `entries` is every entry on the wheel (a name once per entry). */
+  citadelPost: (ctx: ApiContext, body: { winner: string; entries: string[]; end: string }) =>
+    call<{ queued: boolean; channel: string }>(ctx, "POST", "citadel/post", body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (

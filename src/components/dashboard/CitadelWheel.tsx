@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
-import type { CitadelCappers } from "@/lib/citadelTypes";
+import { ChannelSelect } from "@/components/admin/pickers";
+import { FormField, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
+import type { CitadelCappers, WheelSettings } from "@/lib/citadelTypes";
+import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 import {
   addEntries,
   drawWheel,
@@ -17,8 +19,13 @@ import {
 
 type Load = (end: string | null) => Promise<{ ok: true; data: CitadelCappers } | { ok: false; error: string }>;
 
-const SIZE = 560;
+const SIZE = 760;
 const SPIN_MS = 7000;
+
+type Actions = {
+  saveSettings: (autoPost: boolean, channelId: string | null, message: string) => Promise<{ ok: true; data: WheelSettings } | { ok: false; error: string; problems: string[] }>;
+  post: (winner: string, entries: string[], end: string) => Promise<{ ok: true; channel: string } | { ok: false; error: string; problems: string[] }>;
+};
 
 const fromCappers = (names: string[]): WheelEntry[] => names.map((name) => ({ name, entries: 1 }));
 
@@ -26,8 +33,29 @@ const fromCappers = (names: string[]): WheelEntry[] => names.map((name) => ({ na
  * A wheel of names for the week's Citadel cappers: add or remove names, give someone an extra entry (a prize, a make-up for a missed cap), spin it, and
  * keep a list of who won. Everything runs in the browser except fetching who capped.
  */
-export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load: Load }) {
+export function CitadelWheel({
+  initial,
+  settings: initialSettings,
+  structure,
+  load,
+  actions,
+}: {
+  initial: CitadelCappers;
+  settings: WheelSettings;
+  structure: GuildStructure;
+  load: Load;
+  actions: Actions;
+}) {
   const [week, setWeek] = useState(initial);
+  const [settings, setSettings] = useState(initialSettings);
+  const [autoPost, setAutoPost] = useState(initialSettings.autoPost);
+  const [channelId, setChannelId] = useState<string | null>(initialSettings.channelId);
+  const [message, setMessage] = useState(initialSettings.message);
+  const [settingsNote, setSettingsNote] = useState<{ tone: "error" | "success"; title: string; items?: string[] } | null>(null);
+  const [saving, startSave] = useTransition();
+  const [posted, setPosted] = useState<string | null>(null);
+  const [postNote, setPostNote] = useState<{ tone: "error" | "success"; title: string; items?: string[] } | null>(null);
+  const [posting, startPost] = useTransition();
   const [entries, setEntries] = useState<WheelEntry[]>(fromCappers(initial.cappers));
   const [extrasText, setExtrasText] = useState("");
   const [problems, setProblems] = useState<string[]>([]);
@@ -46,6 +74,8 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
     setEntries(next);
     setWinner(null);
     setWinnerIndex(-1);
+    setPosted(null);
+    setPostNote(null);
   };
 
   const labels = spread(entries);
@@ -83,6 +113,8 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
     setWinner(null);
     setWinnerIndex(-1);
     setError(null);
+    setPosted(null);
+    setPostNote(null);
     const n = labels.length;
     const pick = secureIndex(n);
     const inside = 0.15 + (secureIndex(1000) / 1000) * 0.7;
@@ -139,6 +171,32 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
     if (parsed.extras.length > 0) setExtrasText("");
   }
 
+  const settingsChanged = autoPost !== settings.autoPost || channelId !== settings.channelId || message.trim() !== settings.message;
+
+  function saveSettings() {
+    startSave(async () => {
+      const result = await actions.saveSettings(autoPost, channelId, message);
+      if (!result.ok) return setSettingsNote({ tone: "error", title: result.error, items: result.problems });
+      setSettings(result.data);
+      setAutoPost(result.data.autoPost);
+      setChannelId(result.data.channelId);
+      setMessage(result.data.message);
+      setSettingsNote({ tone: "success", title: "Saved." });
+    });
+  }
+
+  function postWinner() {
+    if (!winner) return;
+    // every entry as a name once per entry, so the bot can draw the same wheel and stop its GIF on the winner
+    const all = entries.flatMap((e) => Array.from({ length: e.entries }, () => e.name));
+    startPost(async () => {
+      const result = await actions.post(winner, all, week.end);
+      if (!result.ok) return setPostNote({ tone: "error", title: result.error, items: result.problems });
+      setPosted(winner);
+      setPostNote({ tone: "success", title: `Posting ${winner} to #${result.channel}. The GIF takes a few seconds to draw.` });
+    });
+  }
+
   async function copyList() {
     try {
       await navigator.clipboard.writeText(entries.map((e) => e.name).join("\n"));
@@ -182,7 +240,7 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
 
         {error && <Notice tone="error" title={error} />}
 
-        <div className="relative mx-auto w-full max-w-[560px]">
+        <div className="relative mx-auto w-full max-w-[760px]">
           <canvas ref={canvas} style={{ width: "100%", aspectRatio: "1 / 1" }} aria-label="Wheel of names" />
           {labels.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-muted">Nobody on the wheel yet.</p>}
         </div>
@@ -196,8 +254,15 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
               Take {winner} off the wheel
             </button>
           )}
+          {winner && !spinning && (
+            <button type="button" className={ghostButton} disabled={posting || posted === winner || !settings.channelId} onClick={postWinner}>
+              {posting ? "Posting..." : posted === winner ? "Posted" : "📣 Post winner"}
+            </button>
+          )}
         </div>
         {winner && !spinning && <p className="text-center text-lg font-semibold text-gold">The wheel landed on {winner}</p>}
+        {winner && !spinning && !settings.channelId && <p className="text-center text-xs text-muted">Choose the channel in Announcing winners (on the right) to post this.</p>}
+        {postNote && <Notice tone={postNote.tone} title={postNote.title} items={postNote.items} />}
       </section>
 
       <aside className="min-w-0 space-y-5">
@@ -232,7 +297,7 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
           {entries.length === 0 ? (
             <p className="text-sm text-muted">Nothing here.</p>
           ) : (
-            <ul className="max-h-72 divide-y divide-surface-border overflow-y-auto text-sm">
+            <ul className="divide-y divide-surface-border text-sm">
               {entries.map((e) => (
                 <li key={e.name} className="flex items-center justify-between gap-2 py-1.5">
                   <span className="min-w-0 truncate">{e.name}</span>
@@ -252,6 +317,34 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
               ))}
             </ul>
           )}
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-surface-border bg-surface p-4">
+          <h2 className="text-sm font-semibold">Announcing winners</h2>
+          <p className="text-xs text-muted">
+            The winner is posted in the channel below with your message and a GIF of the wheel. Use Post winner under the wheel, or the button under a spin in Discord.
+          </p>
+          <FormField label="Channel" as="group">
+            <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={channelId} onChange={setChannelId} none="No channel chosen" />
+          </FormField>
+          <FormField label="Message" as="group">
+            <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
+            <p className="mt-1 text-xs text-muted">
+              Fills in <code>{"{winner}"}</code> (the name), <code>{"{mention}"}</code> (pings them if their account is linked), <code>{"{week}"}</code> and{" "}
+              <code>{"{entries}"}</code>. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+            </p>
+          </FormField>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-1" checked={autoPost} onChange={(ev) => setAutoPost(ev.target.checked)} />
+            <span>
+              Post a winner automatically when the weekly Citadel list is made
+              <span className="block text-xs text-muted">Wednesday at 12:00 UTC, or when the list is sent now. Staff are left off and everyone gets one entry.</span>
+            </span>
+          </label>
+          {settingsNote && <Notice tone={settingsNote.tone} title={settingsNote.title} items={settingsNote.items} />}
+          <button type="button" className={primaryButton} disabled={saving || !settingsChanged} onClick={saveSettings}>
+            {saving ? "Saving..." : "Save"}
+          </button>
         </div>
 
         {history.length > 0 && (
