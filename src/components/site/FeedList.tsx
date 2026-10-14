@@ -4,6 +4,7 @@ import type { ActivityKind, FeedItem } from "@/lib/site";
 import { RsChathead } from "@/components/site/RsChathead";
 import { SkillIcon } from "@/components/site/SkillIcon";
 import { activityPicture, kindImage } from "@/lib/activityIcon";
+import { activityWhen } from "@/lib/activityTime";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import { shortNumbers, SKILL_NAMES } from "@/lib/site";
 
@@ -71,7 +72,7 @@ export function FeedList({ items, compact = false }: { items: FeedItem[]; compac
                 <span className="text-foreground/90">{sentence(item)}</span>
               </p>
               {!compact && item.details && <p className="mt-0.5 text-xs text-muted">{item.details}</p>}
-              <p className="mt-0.5 text-[11px] text-muted/80">{item.date}</p>
+              <p className="mt-0.5 text-[11px] text-muted/80">{activityWhen(item.occurredAt, item.date)}</p>
             </div>
           </li>
         );
