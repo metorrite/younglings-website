@@ -415,7 +415,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                       <span className="font-medium">{c.userName ?? nameOf(c.userId)}</span> on <span className="font-medium">{detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective}</span> (×{c.amount})
                     </p>
                     {c.note && <p className="break-words text-muted">{c.note}</p>}
-                    {c.proofUrl && (
+                    {c.proofUrl && /^https?:\/\//i.test(c.proofUrl) && (
                       <a href={c.proofUrl} target="_blank" rel="noreferrer noopener" className="text-gold underline">
                         View proof
                       </a>
