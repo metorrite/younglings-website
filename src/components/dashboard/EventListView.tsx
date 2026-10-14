@@ -29,6 +29,8 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [huntOrdered, setHuntOrdered] = useState(false);
   const [huntBonus, setHuntBonus] = useState("100");
   const [skillId, setSkillId] = useState("-1");
+  const [boardChannel, setBoardChannel] = useState<string | null>(null);
+  const [reviewChannel, setReviewChannel] = useState<string | null>(null);
   const [bossName, setBossName] = useState("");
   const [bossKills, setBossKills] = useState("10");
   const [bossPoints, setBossPoints] = useState("10");
@@ -69,6 +71,8 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
       config.finishBonus = Number(huntBonus.replace(/[, ]/g, "") || 0);
     }
     if (template === "bingo") {
+      if (boardChannel) config.boardChannelId = boardChannel;
+      if (reviewChannel) config.reviewChannelId = reviewChannel;
       config.board = { size: Number(boardSize) };
       config.lineBonus = Number(lineBonus.replace(/[, ]/g, "") || 0);
       config.blackoutBonus = Number(blackoutBonus.replace(/[, ]/g, "") || 0);
@@ -143,6 +147,12 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
               </FormField>
               <FormField label="Blackout bonus" hint="Every tile done. 0 for none.">
                 <input className={inputClass} inputMode="numeric" value={blackoutBonus} onChange={(e) => setBlackoutBonus(e.target.value)} />
+              </FormField>
+              <FormField label="Live board channel" as="group" hint="The board picture is posted here when the event starts and updates as tiles are approved.">
+                <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={boardChannel} onChange={setBoardChannel} none="No live board" />
+              </FormField>
+              <FormField label="Screenshot review channel" as="group" hint="Players send proof with /events submit; it lands here for staff.">
+                <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={reviewChannel} onChange={setReviewChannel} none="No review channel" />
               </FormField>
             </div>
           )}

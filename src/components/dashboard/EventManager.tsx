@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
+import { ChannelSelect } from "@/components/admin/pickers";
 import type { EventAward, EventClaims, EventDetail, EventObjective, EventPrize, EventStandings, EventStatus } from "@/lib/eventTypes";
+import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
 type Tab = "overview" | "board" | "objectives" | "players" | "progress" | "standings" | "prizes";
 const TABS: { key: Tab; label: string }[] = [
@@ -23,7 +25,7 @@ const emptyObjective = (): EventObjective => ({ key: "", label: "", description:
 const emptyPrize = (): EventPrize => ({ id: "", place: 1, placeTo: 1, kind: "IN_GAME", description: "", amount: 0, percentOfPot: 0, split: "EQUAL" });
 
 /** Runs one event: its stages, objectives, teams and players, progress and proof, standings, and prizes. */
-export function EventManager({ initial, initialClaims, initialStandings, initialAwards, call }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; call: EventCall }) {
+export function EventManager({ initial, initialClaims, initialStandings, initialAwards, structure, call }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; structure?: GuildStructure; call: EventCall }) {
   const [detail, setDetail] = useState(initial);
   const [claims, setClaims] = useState<EventClaims>(initialClaims);
   const [standings, setStandings] = useState<EventStandings>(initialStandings);
@@ -47,6 +49,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [pNote, setPNote] = useState("");
   const [decisions, setDecisions] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState<string[]>([]);
+  const [boardChannel, setBoardChannel] = useState<string | null>(initial.event.config.boardChannelId ?? null);
+  const [reviewChannel, setReviewChannel] = useState<string | null>(initial.event.config.reviewChannelId ?? null);
   const [newSize, setNewSize] = useState("");
 
   async function refresh() {
@@ -225,6 +229,56 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             </div>
           ) : (
             <p className="text-sm text-muted">The board is locked now that the event has started.</p>
+          )}
+          {structure && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <p className="text-sm font-medium">Discord</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted">Live board channel</p>
+                  <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={boardChannel} onChange={setBoardChannel} none="No live board" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted">Screenshot review channel</p>
+                  <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={reviewChannel} onChange={setReviewChannel} none="No review channel" />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className={ghostButton}
+                  disabled={pending}
+                  onClick={() => {
+                    const config: Record<string, unknown> = { ...e.config };
+                    if (boardChannel) config.boardChannelId = boardChannel;
+                    else delete config.boardChannelId;
+                    if (reviewChannel) config.reviewChannelId = reviewChannel;
+                    else delete config.reviewChannelId;
+                    run("PUT", base, { config }, "Channels saved.");
+                  }}
+                >
+                  Save channels
+                </button>
+                <button
+                  type="button"
+                  className={primaryButton}
+                  disabled={pending || !e.config.boardChannelId || (e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE")}
+                  title="Posts the board picture, or updates it if it is already there"
+                  onClick={() => {
+                    setProblem(null);
+                    setNote(null);
+                    start(async () => {
+                      const result = await call("POST", `${base}/board`, {});
+                      if (!result.ok) return setProblem({ title: result.error, items: result.problems });
+                      setNote((result.data as { message?: string } | null)?.message ?? "Done.");
+                    });
+                  }}
+                >
+                  Post or refresh the board
+                </button>
+              </div>
+              <p className="text-xs text-muted">The board posts itself when the event starts and updates a few seconds after each approval. Players send screenshots with /events submit.</p>
+            </div>
           )}
           {(e.config.bonuses?.length ?? 0) > 0 && (
             <details>

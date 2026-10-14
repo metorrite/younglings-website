@@ -12,12 +12,15 @@ export default async function EventPage({ params }: { params: Promise<{ guildId:
   const { guildId, eventId } = await params;
   const guild = await requireGuild(guildId);
   if (!/^\d{1,18}$/.test(eventId)) throw new Error("That isn't a valid event.");
-  const [detail, claims, standings, awards] = (await Promise.all([
+  const [structureResult, ...rest] = await Promise.all([
+    adminApi.structure(guild).then(dashboardData),
     adminApi.eventsCall(guild, "GET", `events/${eventId}`).then(dashboardData),
     adminApi.eventsCall(guild, "GET", `events/${eventId}/claims`).then(dashboardData),
     adminApi.eventsCall(guild, "GET", `events/${eventId}/standings`).then(dashboardData),
     adminApi.eventsCall(guild, "GET", `events/${eventId}/awards`).then(dashboardData),
-  ])) as [EventDetail, EventClaims, EventStandings, { awards: EventAward[] }];
+  ]);
+  const [detail, claims, standings, awards] = rest as [EventDetail, EventClaims, EventStandings, { awards: EventAward[] }];
+  const structure = structureResult;
 
   return (
     <div className="space-y-6">
@@ -25,7 +28,7 @@ export default async function EventPage({ params }: { params: Promise<{ guildId:
       <Link href={`/dashboard/${guildId}/event-manager`} className="text-sm text-gold hover:underline">
         All events
       </Link>
-      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} call={eventApiAction.bind(null, guildId)} />
+      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} structure={structure} call={eventApiAction.bind(null, guildId)} />
     </div>
   );
 }

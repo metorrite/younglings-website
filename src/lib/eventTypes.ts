@@ -18,6 +18,9 @@ export interface EventSummary {
     signupClosesAt?: string;
     signupChannelId?: string;
     signupAdminChannelId?: string;
+    /** Bingo: where the live board picture is kept, and where players' screenshots go for review. */
+    boardChannelId?: string;
+    reviewChannelId?: string;
     buyIn?: { enabled?: boolean; kind?: string; amount?: number; showPot?: boolean };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
     board?: { size: number; seed: number; keys: string[] };
