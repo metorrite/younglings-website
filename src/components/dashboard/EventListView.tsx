@@ -23,12 +23,15 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [events] = useState(initial.events);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [template, setTemplate] = useState<"custom" | "bingo" | "scavenger-hunt" | "competition">("custom");
+  const [template, setTemplate] = useState<"custom" | "bingo" | "scavenger-hunt" | "competition" | "boss-night">("custom");
   const [huntSteps, setHuntSteps] = useState("8");
   const [huntPoints, setHuntPoints] = useState("25");
   const [huntOrdered, setHuntOrdered] = useState(false);
   const [huntBonus, setHuntBonus] = useState("100");
   const [skillId, setSkillId] = useState("-1");
+  const [bossName, setBossName] = useState("");
+  const [bossKills, setBossKills] = useState("10");
+  const [bossPoints, setBossPoints] = useState("10");
   const [xpPerPoint, setXpPerPoint] = useState("10000");
   const [boardSize, setBoardSize] = useState("5");
   const [lineBonus, setLineBonus] = useState("50");
@@ -50,6 +53,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   function create() {
     setProblem(null);
     const config: Record<string, unknown> = { queue, teamPolicy };
+    if (template === "boss-night") {
+      if (bossName.trim()) config.boss = bossName.trim();
+      config.kills = Number(bossKills);
+      config.pointsPerKill = Number(bossPoints.replace(/[, ]/g, "") || 0);
+    }
     if (template === "competition") {
       config.skillId = Number(skillId);
       config.xpPerPoint = Number(xpPerPoint.replace(/[, ]/g, "") || 0);
@@ -111,11 +119,12 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
         <div className="space-y-4">
           {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
           <FormField label="Kind of event" hint="Templates make a starting set of objectives you can adjust. Custom starts empty.">
-            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo" | "scavenger-hunt" | "competition")}>
+            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo" | "scavenger-hunt" | "competition" | "boss-night")}>
               <option value="custom">Custom (start empty)</option>
               <option value="bingo">Bingo</option>
               <option value="scavenger-hunt">Scavenger hunt</option>
               <option value="competition">Competition (XP gained)</option>
+              <option value="boss-night">Boss night</option>
             </select>
           </FormField>
           {template === "bingo" && (
@@ -134,6 +143,19 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
               </FormField>
               <FormField label="Blackout bonus" hint="Every tile done. 0 for none.">
                 <input className={inputClass} inputMode="numeric" value={blackoutBonus} onChange={(e) => setBlackoutBonus(e.target.value)} />
+              </FormField>
+            </div>
+          )}
+          {template === "boss-night" && (
+            <div className="grid gap-4 rounded-lg border border-surface-border p-4 md:grid-cols-3">
+              <FormField label="Boss">
+                <input className={inputClass} value={bossName} maxLength={40} placeholder="Araxxor" onChange={(e) => setBossName(e.target.value)} />
+              </FormField>
+              <FormField label="Kills that count" hint="Up to 1,000.">
+                <input className={inputClass} inputMode="numeric" value={bossKills} onChange={(e) => setBossKills(e.target.value)} />
+              </FormField>
+              <FormField label="Points per kill">
+                <input className={inputClass} inputMode="numeric" value={bossPoints} onChange={(e) => setBossPoints(e.target.value)} />
               </FormField>
             </div>
           )}
