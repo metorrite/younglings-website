@@ -5,9 +5,10 @@ import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import type { EventAward, EventClaims, EventDetail, EventObjective, EventPrize, EventStandings, EventStatus } from "@/lib/eventTypes";
 
-type Tab = "overview" | "objectives" | "players" | "progress" | "standings" | "prizes";
+type Tab = "overview" | "board" | "objectives" | "players" | "progress" | "standings" | "prizes";
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
+  { key: "board", label: "Board" },
   { key: "objectives", label: "Objectives" },
   { key: "players", label: "Teams and players" },
   { key: "progress", label: "Progress and proof" },
@@ -45,6 +46,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [pAmount, setPAmount] = useState("1");
   const [pNote, setPNote] = useState("");
   const [decisions, setDecisions] = useState<Record<string, string>>({});
+  const [locked, setLocked] = useState<string[]>([]);
+  const [newSize, setNewSize] = useState("");
 
   async function refresh() {
     const [d, c, s, a] = await Promise.all([call("GET", base), call("GET", `${base}/claims`), call("GET", `${base}/standings`), call("GET", `${base}/awards`)]);
@@ -108,7 +111,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       </div>
 
       <div role="tablist" className="flex flex-wrap gap-1 border-b border-surface-border">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t.key !== "board" || e.template === "bingo").map((t) => (
           <button
             key={t.key}
             type="button"
@@ -161,6 +164,81 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
           </p>
+        </section>
+      )}
+
+      {tab === "board" && e.template === "bingo" && e.config.board && (
+        <section className="space-y-4">
+          <p className="text-sm text-muted">
+            A {e.config.board.size} × {e.config.board.size} board. Lock the tiles you like, then re-roll to change the rest. Tiles are ordinary objectives, so you can rename them or change their points on the Objectives tab.
+          </p>
+          <div className="grid max-w-3xl gap-2" style={{ gridTemplateColumns: `repeat(${e.config.board.size}, minmax(0, 1fr))` }}>
+            {e.config.board.keys.map((key) => {
+              const o = detail.objectives.find((x) => x.key === key);
+              const done = standings.standings.filter((s) => (s.completions[key] ?? 0) > 0).length;
+              const isLocked = locked.includes(key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={!editable}
+                  aria-pressed={isLocked}
+                  title={editable ? (isLocked ? "Unlock this tile" : "Lock this tile for the next re-roll") : undefined}
+                  onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}
+                  className={`flex aspect-square min-w-0 flex-col justify-between rounded-lg border p-2 text-left text-xs transition sm:text-sm ${isLocked ? "border-gold bg-gold/10" : "border-surface-border bg-surface"} ${editable ? "hover:border-gold/60" : ""}`}
+                >
+                  <span className="line-clamp-4 break-words font-medium">{o?.label ?? key}</span>
+                  <span className="flex flex-wrap items-center justify-between gap-1 text-muted">
+                    <span className="tabular-nums">{o?.points ?? 0} pts</span>
+                    {isLocked ? <span className="text-gold">Locked</span> : !editable && done > 0 ? <span>{done} done</span> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {editable ? (
+            <div className="flex flex-wrap items-end gap-2">
+              <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/bingo`, { lockedKeys: locked }, locked.length ? "Re-rolled. Locked tiles stayed." : "Re-rolled the board.")}>
+                Re-roll{locked.length ? ` (keep ${locked.length} locked)` : ""}
+              </button>
+              <select className={`${inputClass} max-w-40`} value={newSize} onChange={(ev) => setNewSize(ev.target.value)} aria-label="Board size">
+                <option value="">Same size</option>
+                {[3, 4, 5, 6, 7].filter((n) => n !== e.config.board?.size).map((n) => (
+                  <option key={n} value={n}>
+                    {n} × {n}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={ghostButton}
+                disabled={pending || !newSize}
+                onClick={() => window.confirm("Change the size? That makes a fresh board and drops locks.") && run("POST", `${base}/bingo`, { size: Number(newSize) }, "New board made.", () => { setNewSize(""); setLocked([]); })}
+              >
+                Change size
+              </button>
+              {locked.length > 0 && (
+                <button type="button" className="text-sm text-muted underline" onClick={() => setLocked([])}>
+                  Clear locks
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">The board is locked now that the event has started.</p>
+          )}
+          {(e.config.bonuses?.length ?? 0) > 0 && (
+            <details>
+              <summary className={`${ghostButton} inline-block cursor-pointer`}>Bonuses ({e.config.bonuses?.length})</summary>
+              <ul className="mt-2 divide-y divide-surface-border text-sm">
+                {e.config.bonuses?.map((b) => (
+                  <li key={b.name} className="flex items-center justify-between gap-2 py-1.5">
+                    <span>{b.name}</span>
+                    <span className="tabular-nums text-muted">+{b.points}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </section>
       )}
 
@@ -385,6 +463,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                     <th className="px-4 py-3">{standings.scoringMode === "TEAM" ? "Team" : "Player"}</th>
                     <th className="px-4 py-3 text-right">Points</th>
                     <th className="px-4 py-3 text-right">Objectives done</th>
+                    {standings.standings.some((s) => (s.bonuses ?? []).length > 0) && <th className="px-4 py-3">Bonuses</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -394,6 +473,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                       <td className="px-4 py-2 font-medium">{s.label}</td>
                       <td className="px-4 py-2 text-right tabular-nums">{s.points.toLocaleString("en-GB")}</td>
                       <td className="px-4 py-2 text-right tabular-nums text-muted">{s.objectivesCompleted}</td>
+                      {standings.standings.some((x) => (x.bonuses ?? []).length > 0) && <td className="px-4 py-2 text-xs text-muted">{(s.bonuses ?? []).join(", ")}</td>}
                     </tr>
                   ))}
                 </tbody>

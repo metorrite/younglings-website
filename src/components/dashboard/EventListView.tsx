@@ -20,6 +20,10 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [events] = useState(initial.events);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [template, setTemplate] = useState<"custom" | "bingo">("custom");
+  const [boardSize, setBoardSize] = useState("5");
+  const [lineBonus, setLineBonus] = useState("50");
+  const [blackoutBonus, setBlackoutBonus] = useState("250");
   const [scoringMode, setScoringMode] = useState("INDIVIDUAL");
   const [scope, setScope] = useState("PRIVATE");
   const [maxParticipants, setMaxParticipants] = useState("");
@@ -37,6 +41,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   function create() {
     setProblem(null);
     const config: Record<string, unknown> = { queue, teamPolicy };
+    if (template === "bingo") {
+      config.board = { size: Number(boardSize) };
+      config.lineBonus = Number(lineBonus.replace(/[, ]/g, "") || 0);
+      config.blackoutBonus = Number(blackoutBonus.replace(/[, ]/g, "") || 0);
+    }
     if (buyIn) config.buyIn = { enabled: true, kind: "IN_GAME", amount: Number(buyInAmount.replace(/[, ]/g, "")), showPot };
     if (closes) config.signupClosesAt = new Date(closes).toISOString();
     if (signupChannel && staffChannel) {
@@ -44,7 +53,7 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
       config.signupAdminChannelId = staffChannel;
     }
     start(async () => {
-      const result = await call("POST", "events", { name, description, template: "custom", scoringMode, scope, maxParticipants: Number(maxParticipants || 0), config });
+      const result = await call("POST", "events", { name, description, template, scoringMode, scope, maxParticipants: Number(maxParticipants || 0), config });
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const created = result.data as { event: { id: string } };
       router.push(`/dashboard/${guildId}/event-manager/${created.event.id}`);
@@ -82,6 +91,31 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
       <Card title="Start a new event" hint="Begin with the basics. You add objectives, teams, players and prizes on the next page.">
         <div className="space-y-4">
           {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
+          <FormField label="Kind of event" hint="Bingo makes a board of tiles for you to adjust. Custom starts empty.">
+            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo")}>
+              <option value="custom">Custom (start empty)</option>
+              <option value="bingo">Bingo</option>
+            </select>
+          </FormField>
+          {template === "bingo" && (
+            <div className="grid gap-4 rounded-lg border border-surface-border p-4 md:grid-cols-3">
+              <FormField label="Board size" hint="3 to 7 tiles across.">
+                <select className={inputClass} value={boardSize} onChange={(e) => setBoardSize(e.target.value)}>
+                  {[3, 4, 5, 6, 7].map((n) => (
+                    <option key={n} value={n}>
+                      {n} × {n} ({n * n} tiles)
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Bonus per line" hint="Row, column or diagonal. 0 for none.">
+                <input className={inputClass} inputMode="numeric" value={lineBonus} onChange={(e) => setLineBonus(e.target.value)} />
+              </FormField>
+              <FormField label="Blackout bonus" hint="Every tile done. 0 for none.">
+                <input className={inputClass} inputMode="numeric" value={blackoutBonus} onChange={(e) => setBlackoutBonus(e.target.value)} />
+              </FormField>
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-2">
             <FormField label="Name">
               <input className={inputClass} value={name} maxLength={80} placeholder="Friday night bingo" onChange={(e) => setName(e.target.value)} />

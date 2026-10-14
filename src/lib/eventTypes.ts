@@ -19,8 +19,19 @@ export interface EventSummary {
     signupChannelId?: string;
     signupAdminChannelId?: string;
     buyIn?: { enabled?: boolean; kind?: string; amount?: number; showPot?: boolean };
+    /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
+    board?: { size: number; seed: number; keys: string[] };
+    bonuses?: EventBonus[];
+    lineBonus?: number;
+    blackoutBonus?: number;
   };
   createdAt: string;
+}
+
+export interface EventBonus {
+  name: string;
+  keys: string[];
+  points: number;
 }
 
 export interface EventList {
@@ -102,6 +113,8 @@ export interface EventStanding {
   points: number;
   objectivesCompleted: number;
   completions: Record<string, number>;
+  /** Names of the bonuses this player or team has earned. */
+  bonuses: string[];
 }
 
 export interface EventStandings {
