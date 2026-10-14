@@ -163,8 +163,22 @@ export function CitadelWheel({ initial, load }: { initial: CitadelCappers; load:
               </option>
             ))}
           </select>
-          <span className="text-sm text-muted">{week.cappers.length} capped</span>
+          <span className="text-sm text-muted">{week.cappers.length} on the wheel</span>
         </div>
+        {(week.leftOut.length > 0 || week.merged.length > 0) && (
+          <div className="space-y-1 text-xs text-muted">
+            {week.leftOut.length > 0 && (
+              <p>
+                <span className="font-medium text-foreground/80">Left off (staff):</span> {week.leftOut.map((l) => `${l.name} (${l.reason})`).join(", ")}
+              </p>
+            )}
+            {week.merged.length > 0 && (
+              <p>
+                <span className="font-medium text-foreground/80">One entry per person:</span> {week.merged.map((m) => m.accounts.join(" + ")).join(", ")}
+              </p>
+            )}
+          </div>
+        )}
 
         {error && <Notice tone="error" title={error} />}
 
