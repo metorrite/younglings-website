@@ -11,6 +11,9 @@ import { choicesOf, type GuildStructure, type WelcomeActionResult } from "@/lib/
 
 export type EventCall = (method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => Promise<WelcomeActionResult<unknown>>;
 
+// RuneMetrics' skill order, which is what the bot's skill ids are (see RuneScapeSkillCatalog)
+const SKILLS = ["Attack", "Defence", "Strength", "Constitution", "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting", "Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", "Mining", "Herblore", "Agility", "Thieving", "Slayer", "Farming", "Runecrafting", "Hunter", "Construction", "Summoning", "Dungeoneering", "Divination", "Invention", "Archaeology", "Necromancy"];
+
 const TONE: Record<EventStatus, "good" | "muted" | "warn"> = { DRAFT: "muted", SIGNUPS: "warn", RUNNING: "good", SCORING: "warn", DONE: "muted", CANCELLED: "muted" };
 export const STAGE_LABEL: Record<EventStatus, string> = { DRAFT: "Draft", SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Done", CANCELLED: "Cancelled" };
 
@@ -20,11 +23,13 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [events] = useState(initial.events);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [template, setTemplate] = useState<"custom" | "bingo" | "scavenger-hunt">("custom");
+  const [template, setTemplate] = useState<"custom" | "bingo" | "scavenger-hunt" | "competition">("custom");
   const [huntSteps, setHuntSteps] = useState("8");
   const [huntPoints, setHuntPoints] = useState("25");
   const [huntOrdered, setHuntOrdered] = useState(false);
   const [huntBonus, setHuntBonus] = useState("100");
+  const [skillId, setSkillId] = useState("-1");
+  const [xpPerPoint, setXpPerPoint] = useState("10000");
   const [boardSize, setBoardSize] = useState("5");
   const [lineBonus, setLineBonus] = useState("50");
   const [blackoutBonus, setBlackoutBonus] = useState("250");
@@ -45,6 +50,10 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   function create() {
     setProblem(null);
     const config: Record<string, unknown> = { queue, teamPolicy };
+    if (template === "competition") {
+      config.skillId = Number(skillId);
+      config.xpPerPoint = Number(xpPerPoint.replace(/[, ]/g, "") || 0);
+    }
     if (template === "scavenger-hunt") {
       config.steps = Number(huntSteps);
       config.stepPoints = Number(huntPoints.replace(/[, ]/g, "") || 0);
@@ -102,10 +111,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
         <div className="space-y-4">
           {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
           <FormField label="Kind of event" hint="Templates make a starting set of objectives you can adjust. Custom starts empty.">
-            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo" | "scavenger-hunt")}>
+            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo" | "scavenger-hunt" | "competition")}>
               <option value="custom">Custom (start empty)</option>
               <option value="bingo">Bingo</option>
               <option value="scavenger-hunt">Scavenger hunt</option>
+              <option value="competition">Competition (XP gained)</option>
             </select>
           </FormField>
           {template === "bingo" && (
@@ -124,6 +134,23 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
               </FormField>
               <FormField label="Blackout bonus" hint="Every tile done. 0 for none.">
                 <input className={inputClass} inputMode="numeric" value={blackoutBonus} onChange={(e) => setBlackoutBonus(e.target.value)} />
+              </FormField>
+            </div>
+          )}
+          {template === "competition" && (
+            <div className="grid gap-4 rounded-lg border border-surface-border p-4 md:grid-cols-2">
+              <FormField label="Skill" hint="Players' linked accounts are read automatically, a few minutes behind. Players need a linked RuneScape name.">
+                <select className={inputClass} value={skillId} onChange={(e) => setSkillId(e.target.value)}>
+                  <option value="-1">Overall XP</option>
+                  {SKILLS.map((name, id) => (
+                    <option key={name} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="XP for one point" hint="10,000 means 25,000 XP gained is 2 points. Counts up to 1,000 points.">
+                <input className={inputClass} inputMode="numeric" value={xpPerPoint} onChange={(e) => setXpPerPoint(e.target.value)} />
               </FormField>
             </div>
           )}
