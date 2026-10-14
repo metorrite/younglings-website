@@ -75,7 +75,16 @@ export interface EventPrize {
   split: "EQUAL" | "EACH" | "CAPTAIN";
 }
 
+export interface EventRefusal {
+  userId: string;
+  userName: string | null;
+  reason: string;
+  at: string;
+}
+
 export interface EventDetail {
+  /** Discord signups the event's rules turned away, with the reason. */
+  refused: EventRefusal[];
   event: EventSummary;
   objectives: EventObjective[];
   teams: { id: string; name: string; captainId: string | null }[];

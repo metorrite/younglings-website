@@ -49,6 +49,9 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [pNote, setPNote] = useState("");
   const [decisions, setDecisions] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState<string[]>([]);
+  const [tileNumber, setTileNumber] = useState("1");
+  const [tileLabel, setTileLabel] = useState("");
+  const [tilePoints, setTilePoints] = useState("25");
   const [boardChannel, setBoardChannel] = useState<string | null>(initial.event.config.boardChannelId ?? null);
   const [reviewChannel, setReviewChannel] = useState<string | null>(initial.event.config.reviewChannelId ?? null);
   const [newSize, setNewSize] = useState("");
@@ -230,6 +233,31 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           ) : (
             <p className="text-sm text-muted">The board is locked now that the event has started.</p>
           )}
+          {editable && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <p className="text-sm font-medium">Replace a tile</p>
+              <div className="flex flex-wrap gap-2">
+                <select className={`${inputClass} max-w-28`} value={tileNumber} onChange={(ev) => setTileNumber(ev.target.value)} aria-label="Tile number">
+                  {e.config.board.keys.map((_, i) => (
+                    <option key={i} value={i + 1}>
+                      Tile {i + 1}
+                    </option>
+                  ))}
+                </select>
+                <input className={`${inputClass} max-w-xs`} placeholder="New title, e.g. Nex: Torva helm" value={tileLabel} maxLength={80} onChange={(ev) => setTileLabel(ev.target.value)} />
+                <input className={`${inputClass} w-24!`} inputMode="numeric" title="Points" value={tilePoints} onChange={(ev) => setTilePoints(ev.target.value)} />
+                <button
+                  type="button"
+                  className={ghostButton}
+                  disabled={pending || !tileLabel.trim()}
+                  onClick={() => run("POST", `${base}/bingo`, { replace: { number: Number(tileNumber), label: tileLabel, points: num(tilePoints) } }, `Tile ${tileNumber} replaced.`, () => setTileLabel(""))}
+                >
+                  Replace
+                </button>
+              </div>
+              <p className="text-xs text-muted">The tile keeps its place. Line and blackout bonuses follow it. You can also rename a tile or change its points on the Objectives tab.</p>
+            </div>
+          )}
           {structure && (
             <div className="space-y-3 rounded-xl border border-surface-border p-4">
               <p className="text-sm font-medium">Discord</p>
@@ -369,6 +397,26 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               </div>
             )}
           </div>
+
+          {detail.refused.length > 0 && (
+            <div className="space-y-2 rounded-xl border border-gold/40 p-4">
+              <h3 className="font-semibold">Signups that were turned away</h3>
+              <ul className="divide-y divide-surface-border text-sm">
+                {detail.refused.map((r) => (
+                  <li key={r.userId} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                    <span>
+                      <span className="font-medium">{r.userName ?? `Player ${r.userId}`}</span>
+                      <span className="ml-2 text-muted">{r.reason}</span>
+                    </span>
+                    <button type="button" className="text-xs text-gold underline" onClick={() => setAddUser(r.userId)}>
+                      Use their ID below
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted">They were told why. To let one in anyway, add them below and choose the kind of player; that overrides the rule that turned them away.</p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <h3 className="font-semibold">Add a player</h3>
