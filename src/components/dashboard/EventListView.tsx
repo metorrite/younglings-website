@@ -20,7 +20,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [events] = useState(initial.events);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [template, setTemplate] = useState<"custom" | "bingo">("custom");
+  const [template, setTemplate] = useState<"custom" | "bingo" | "scavenger-hunt">("custom");
+  const [huntSteps, setHuntSteps] = useState("8");
+  const [huntPoints, setHuntPoints] = useState("25");
+  const [huntOrdered, setHuntOrdered] = useState(false);
+  const [huntBonus, setHuntBonus] = useState("100");
   const [boardSize, setBoardSize] = useState("5");
   const [lineBonus, setLineBonus] = useState("50");
   const [blackoutBonus, setBlackoutBonus] = useState("250");
@@ -41,6 +45,12 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   function create() {
     setProblem(null);
     const config: Record<string, unknown> = { queue, teamPolicy };
+    if (template === "scavenger-hunt") {
+      config.steps = Number(huntSteps);
+      config.stepPoints = Number(huntPoints.replace(/[, ]/g, "") || 0);
+      config.ordered = huntOrdered;
+      config.finishBonus = Number(huntBonus.replace(/[, ]/g, "") || 0);
+    }
     if (template === "bingo") {
       config.board = { size: Number(boardSize) };
       config.lineBonus = Number(lineBonus.replace(/[, ]/g, "") || 0);
@@ -91,10 +101,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
       <Card title="Start a new event" hint="Begin with the basics. You add objectives, teams, players and prizes on the next page.">
         <div className="space-y-4">
           {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
-          <FormField label="Kind of event" hint="Bingo makes a board of tiles for you to adjust. Custom starts empty.">
-            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo")}>
+          <FormField label="Kind of event" hint="Templates make a starting set of objectives you can adjust. Custom starts empty.">
+            <select className={inputClass} value={template} onChange={(e) => setTemplate(e.target.value as "custom" | "bingo" | "scavenger-hunt")}>
               <option value="custom">Custom (start empty)</option>
               <option value="bingo">Bingo</option>
+              <option value="scavenger-hunt">Scavenger hunt</option>
             </select>
           </FormField>
           {template === "bingo" && (
@@ -114,6 +125,22 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
               <FormField label="Blackout bonus" hint="Every tile done. 0 for none.">
                 <input className={inputClass} inputMode="numeric" value={blackoutBonus} onChange={(e) => setBlackoutBonus(e.target.value)} />
               </FormField>
+            </div>
+          )}
+          {template === "scavenger-hunt" && (
+            <div className="grid gap-4 rounded-lg border border-surface-border p-4 md:grid-cols-4">
+              <FormField label="Items to find" hint="3 to 30. Rename them into clues later.">
+                <input className={inputClass} inputMode="numeric" value={huntSteps} onChange={(e) => setHuntSteps(e.target.value)} />
+              </FormField>
+              <FormField label="Points per item">
+                <input className={inputClass} inputMode="numeric" value={huntPoints} onChange={(e) => setHuntPoints(e.target.value)} />
+              </FormField>
+              <FormField label="Bonus for everything" hint="0 for none.">
+                <input className={inputClass} inputMode="numeric" value={huntBonus} onChange={(e) => setHuntBonus(e.target.value)} />
+              </FormField>
+              <div className="flex items-end">
+                <Toggle checked={huntOrdered} onChange={setHuntOrdered} label="One after another" detail="Each item opens after the one before." />
+              </div>
             </div>
           )}
           <div className="grid gap-4 md:grid-cols-2">
