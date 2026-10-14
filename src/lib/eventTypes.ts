@@ -16,6 +16,8 @@ export interface EventSummary {
     queue?: string;
     teamPolicy?: string;
     signupClosesAt?: string;
+    signupChannelId?: string;
+    signupAdminChannelId?: string;
     buyIn?: { enabled?: boolean; kind?: string; amount?: number; showPot?: boolean };
   };
   createdAt: string;
@@ -64,6 +66,7 @@ export interface EventDetail {
   objectives: EventObjective[];
   teams: { id: string; name: string; captainId: string | null }[];
   participants: EventPlayer[];
+  signup: { attached: boolean; active: boolean; entries: number; channelsChosen: boolean };
   prizes: EventPrize[];
   pot: number;
   potVisible: boolean;

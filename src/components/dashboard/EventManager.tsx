@@ -65,7 +65,9 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
     start(async () => {
       const result = await call(method, path, body);
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
-      setNote(message);
+      const warning = (result.data as { signupWarning?: string } | null)?.signupWarning;
+      if (warning) setProblem({ title: `Done, but the signup wasn't updated: ${warning}`, items: [] });
+      else setNote(message);
       after?.();
       await refresh();
     });
@@ -131,6 +133,31 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
             <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
           </dl>
+          <div className="space-y-2 rounded-xl border border-surface-border p-4">
+            <p className="font-medium">Signup panel</p>
+            {!detail.signup.attached ? (
+              <p className="text-muted">
+                {detail.signup.channelsChosen ? "No signup has been posted yet." : "No signup panel. Players are added by staff, or choose signup channels in the event settings when creating it."}
+              </p>
+            ) : (
+              <p className="text-muted">
+                {detail.signup.active ? "Open: players can sign up in Discord." : "Closed: it has stopped taking signups."} {detail.signup.entries} signed up so far.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {!detail.signup.attached && detail.signup.channelsChosen && e.status === "SIGNUPS" && (
+                <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/signup`, {}, "The signup was posted in Discord.")}>
+                  Post the signup now
+                </button>
+              )}
+              {detail.signup.attached && (
+                <button type="button" className={ghostButton} disabled={pending} onClick={() => run("POST", `${base}/signup/sync`, {}, "Everyone who signed up is now in the event.")}>
+                  Add everyone who signed up
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted">The bot also does this every minute. Staff can always add late entries by hand on the Teams and players tab.</p>
+          </div>
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
           </p>

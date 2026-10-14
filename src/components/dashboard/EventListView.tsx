@@ -6,7 +6,8 @@ import { useState, useTransition } from "react";
 import { Card, FormField, formatUtc, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import type { EventList, EventStatus } from "@/lib/eventTypes";
-import type { WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { ChannelSelect } from "@/components/admin/pickers";
+import { choicesOf, type GuildStructure, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 export type EventCall = (method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => Promise<WelcomeActionResult<unknown>>;
 
@@ -14,7 +15,7 @@ const TONE: Record<EventStatus, "good" | "muted" | "warn"> = { DRAFT: "muted", S
 export const STAGE_LABEL: Record<EventStatus, string> = { DRAFT: "Draft", SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Done", CANCELLED: "Cancelled" };
 
 /** The server's events, and a form to start a new one. Every setting here can be changed later while the event is a draft or taking signups. */
-export function EventListView({ initial, guildId, call }: { initial: EventList; guildId: string; call: EventCall }) {
+export function EventListView({ initial, structure, guildId, call }: { initial: EventList; structure: GuildStructure; guildId: string; call: EventCall }) {
   const router = useRouter();
   const [events] = useState(initial.events);
   const [name, setName] = useState("");
@@ -28,6 +29,8 @@ export function EventListView({ initial, guildId, call }: { initial: EventList; 
   const [queue, setQueue] = useState("FIRST_COME");
   const [teamPolicy, setTeamPolicy] = useState("everyone");
   const [closes, setCloses] = useState("");
+  const [signupChannel, setSignupChannel] = useState<string | null>(null);
+  const [staffChannel, setStaffChannel] = useState<string | null>(null);
   const [problem, setProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [pending, start] = useTransition();
 
@@ -36,6 +39,10 @@ export function EventListView({ initial, guildId, call }: { initial: EventList; 
     const config: Record<string, unknown> = { queue, teamPolicy };
     if (buyIn) config.buyIn = { enabled: true, kind: "IN_GAME", amount: Number(buyInAmount.replace(/[, ]/g, "")), showPot };
     if (closes) config.signupClosesAt = new Date(closes).toISOString();
+    if (signupChannel && staffChannel) {
+      config.signupChannelId = signupChannel;
+      config.signupAdminChannelId = staffChannel;
+    }
     start(async () => {
       const result = await call("POST", "events", { name, description, template: "custom", scoringMode, scope, maxParticipants: Number(maxParticipants || 0), config });
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
@@ -119,6 +126,18 @@ export function EventListView({ initial, guildId, call }: { initial: EventList; 
                 <option value="CLAN_FIRST">Clan members first</option>
               </select>
             </FormField>
+          </div>
+          <div className="space-y-3 rounded-lg border border-surface-border p-4">
+            <p className="text-sm font-medium">Signup panel in Discord (optional)</p>
+            <p className="text-xs text-muted">Choose both channels and a signup is posted for this event when you open signups. Players who sign up there join the event, and it closes at the deadline and when the event starts.</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField label="Post the signup in" as="group">
+                <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={signupChannel} onChange={setSignupChannel} none="No signup panel" />
+              </FormField>
+              <FormField label="Staff panel in" as="group" hint="Where the staff controls for the signup go.">
+                <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={staffChannel} onChange={setStaffChannel} none="Choose a staff channel" />
+              </FormField>
+            </div>
           </div>
           <div className="space-y-3 rounded-lg border border-surface-border p-4">
             <Toggle checked={buyIn} onChange={setBuyIn} label="Buy-in" detail="Players pay in-game gp to enter, and the paid total makes the pot." />
