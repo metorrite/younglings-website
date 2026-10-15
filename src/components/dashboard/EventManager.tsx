@@ -75,10 +75,15 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
     if (a.ok) setAwards((a.data as { awards: EventAward[] }).awards);
   }
 
-  function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string, after?: () => void) {
+  /** `saveChannelsFirst`: the channel choices on screen are saved before this, so a choice made but not saved can't make the action do nothing. */
+  function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string, after?: () => void, saveChannelsFirst = false) {
     setProblem(null);
     setNote(null);
     start(async () => {
+      if (saveChannelsFirst && channelsChanged) {
+        const saved = await call("PUT", base, { config: channelConfig() });
+        if (!saved.ok) return setProblem({ title: `The channels couldn't be saved: ${saved.error}`, items: saved.problems });
+      }
       const result = await call(method, path, body);
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const warning = (result.data as { signupWarning?: string } | null)?.signupWarning;
@@ -91,6 +96,16 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
   const e = detail.event;
   const editable = detail.editable;
+  // what the two channel pickers show against what the event has saved
+  const channelsChanged = (boardChannel ?? null) !== (e.config.boardChannelId ?? null) || (reviewChannel ?? null) !== (e.config.reviewChannelId ?? null);
+  function channelConfig(): Record<string, unknown> {
+    const config: Record<string, unknown> = { ...e.config };
+    if (boardChannel) config.boardChannelId = boardChannel;
+    else delete config.boardChannelId;
+    if (reviewChannel) config.reviewChannelId = reviewChannel;
+    else delete config.reviewChannelId;
+    return config;
+  }
 
   function editTile(key: string) {
     const o = detail.objectives.find((x) => x.key === key);
@@ -119,7 +134,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       type="button"
       className={to === "CANCELLED" ? dangerButton : to === "RUNNING" || to === "SIGNUPS" ? primaryButton : ghostButton}
       disabled={pending}
-      onClick={() => (to !== "CANCELLED" || window.confirm("Cancel this event? It can't be reopened.")) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`)}
+      onClick={() => (to !== "CANCELLED" || window.confirm("Cancel this event? It can't be reopened.")) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`, undefined, true)}
     >
       {to === "SIGNUPS" ? "Open signups" : to === "RUNNING" ? "Start the event" : to === "SCORING" ? "Move to scoring" : to === "DONE" ? "Finish" : to === "CANCELLED" ? "Cancel event" : `Back to ${STAGE_LABEL[to].toLowerCase()}`}
     </button>
@@ -400,26 +415,24 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   type="button"
                   className={ghostButton}
                   disabled={pending}
-                  onClick={() => {
-                    const config: Record<string, unknown> = { ...e.config };
-                    if (boardChannel) config.boardChannelId = boardChannel;
-                    else delete config.boardChannelId;
-                    if (reviewChannel) config.reviewChannelId = reviewChannel;
-                    else delete config.reviewChannelId;
-                    run("PUT", base, { config }, "Channels saved.");
-                  }}
+                  onClick={() => run("PUT", base, { config: channelConfig() }, "Channels saved.")}
                 >
                   Save channels
                 </button>
                 <button
                   type="button"
                   className={primaryButton}
-                  disabled={pending || !e.config.boardChannelId || (e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE")}
+                  disabled={pending || !boardChannel || (e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE")}
                   title="Posts the board picture, or updates it if it is already there"
                   onClick={() => {
                     setProblem(null);
                     setNote(null);
                     start(async () => {
+                      if (channelsChanged) {
+                        const saved = await call("PUT", base, { config: channelConfig() });
+                        if (!saved.ok) return setProblem({ title: `The channels couldn't be saved: ${saved.error}`, items: saved.problems });
+                        await refresh();
+                      }
                       const result = await call("POST", `${base}/board`, {});
                       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
                       setNote((result.data as { message?: string } | null)?.message ?? "Done.");
@@ -429,6 +442,11 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   Post or refresh the board
                 </button>
               </div>
+              {channelsChanged && (
+                <p className="text-xs text-amber-300">
+                  These channel choices aren&apos;t saved yet. Press Save channels, or just start the event or post the board: either saves them first.
+                </p>
+              )}
               <p className="text-xs text-muted">The board posts itself when the event starts and updates a few seconds after each approval. Players send screenshots with /events submit.</p>
             </div>
           )}
