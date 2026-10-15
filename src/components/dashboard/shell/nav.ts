@@ -58,6 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel" },
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
       { label: "Points", icon: "trophy", path: "/points" },
+      { label: "Event manager", icon: "clock", path: "/event-manager" },
     ],
   },
   {

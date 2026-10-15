@@ -1300,6 +1300,8 @@ export const adminApi = {
     call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/prize/coffer", body),
   citadelHolders: (ctx: ApiContext) => call<{ holders: import("./citadelTypes").CofferHolderInfo[] }>(ctx, "GET", "citadel/prize/holders"),
   citadelPostLocked: (ctx: ApiContext, end: string) => call<{ queued: boolean; channel: string }>(ctx, "POST", `citadel/winners/${encodeURIComponent(end)}/post`),
+  /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
+  eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
