@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getServerSession } from "next-auth";
 import { notFound, redirect } from "next/navigation";
 import { AdminUnavailableError } from "@/lib/admin";
@@ -45,6 +46,12 @@ export async function requireDashboardUser(returnTo = "/dashboard"): Promise<Das
 }
 
 /**
+ * Asks the bot who this person is in this server. A page and its layout both call {@link requireGuild} in one request, so this asks once and both
+ * get the answer (React's cache lasts for a single request only, so a later request always asks again).
+ */
+const whoAmIOncePerRequest = cache((actorId: string, guildId: string) => whoAmI(actorId, guildId));
+
+/**
  * Permission to manage one particular server. The user comes from the verified login session, and the bot is asked,
  * on every call, whether that person may manage *this server* by *its* rules (its owner, someone with Administrator or
  * Manage Server, or its own Admin role). Someone who may not, or a server JonnyBot isn't in, gets a 404, so the
@@ -54,7 +61,7 @@ export async function requireGuild(guildId: string, returnTo?: string): Promise<
   if (!/^\d{1,20}$/.test(guildId)) notFound();
   const user = await requireDashboardUser(returnTo ?? `/dashboard/${guildId}`);
 
-  const result = await whoAmI(user.id, guildId);
+  const result = await whoAmIOncePerRequest(user.id, guildId);
   if (!result.ok) {
     if (result.status === 404) notFound();
     throw new AdminUnavailableError();
