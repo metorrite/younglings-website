@@ -303,8 +303,6 @@ export function CitadelWheel({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedWeek, setCopiedWeek] = useState<string | null>(null);
-  // Discord shows a pasted address as text and the picture under the whole message; as a link with an invisible name only the picture shows
-  const [hideLink, setHideLink] = useState(true);
   const [handDate, setHandDate] = useState("");
   const [handNames, setHandNames] = useState("");
   const [loading, startLoad] = useTransition();
@@ -546,27 +544,27 @@ export function CitadelWheel({
     });
   }
 
-  /** The announcement with each GIF's address after it: pasted into Discord, an address turns into the spinning wheel under the message. */
+  async function copyToClipboard(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedWeek(key);
+      setTimeout(() => setCopiedWeek((cur) => (cur === key ? null : cur)), 2500);
+    } catch {
+      setError("Couldn't copy. Allow clipboard access for this page and try again.");
+    }
+  }
+
+  /** The announcement text on its own. The wheel goes in a second message (see copyGifLink): Discord shows an address as text unless it is alone. */
   async function copyAnnouncement(w: { end: string }) {
     // asked for fresh each time, so a message edited since the week was locked is used
     const fetched = await actions.week(w.end);
     if (!fetched.ok) return setError(fetched.error);
-    const source = fetched.data;
-    const invisible = String.fromCharCode(0x200b);
-    const urls = source.winners.map((x) => {
-      const address = `${window.location.origin}/api/citadel-wheel/${x.gifToken}.gif`;
-      return hideLink ? `[${invisible}](${address})` : address;
-    });
-    try {
-      // {wheel} in the message marks where the GIF addresses go; without it they follow the message
-      const message = source.message ?? "";
-      const text = message.includes("{wheel}") ? message.replaceAll("{wheel}", urls.join("\n")) : [message, ...urls].join("\n");
-      await navigator.clipboard.writeText(text);
-      setCopiedWeek(w.end);
-      setTimeout(() => setCopiedWeek((cur) => (cur === w.end ? null : cur)), 2500);
-    } catch {
-      setError("Couldn't copy. Allow clipboard access for this page and try again.");
-    }
+    await copyToClipboard((fetched.data.message ?? "").replaceAll("{wheel}", "").trim(), `${w.end}:message`);
+  }
+
+  /** One winner's GIF address, to paste as a message of its own under the announcement: Discord then shows only the spinning wheel. */
+  async function copyGifLink(w: WheelWinner) {
+    await copyToClipboard(`${window.location.origin}/api/citadel-wheel/${w.gifToken}.gif`, `${w.end}:gif${w.place}`);
   }
 
   async function copyList() {
@@ -641,18 +639,19 @@ export function CitadelWheel({
               ))}
             </ul>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <button type="button" className={primaryButton} disabled={waitingForGif} onClick={() => copyAnnouncement(locked)}>
-                {copiedWeek === locked.end ? "Copied" : locked.winners.length > 1 ? "Copy message with the GIFs" : "Copy message with the GIF"}
+              <button type="button" className={primaryButton} onClick={() => copyAnnouncement(locked)}>
+                {copiedWeek === `${locked.end}:message` ? "Copied" : "Copy message"}
               </button>
+              {locked.winners.map((w) => (
+                <button key={w.place} type="button" className={primaryButton} disabled={!w.hasGif} onClick={() => copyGifLink(w)}>
+                  {copiedWeek === `${w.end}:gif${w.place}` ? "Copied" : locked.winners.length > 1 ? `Copy GIF link (${ordinal(w.place)})` : "Copy GIF link"}
+                </button>
+              ))}
             </div>
-            <label className="flex items-center justify-center gap-2 text-xs text-muted">
-              <input type="checkbox" checked={hideLink} onChange={(ev) => setHideLink(ev.target.checked)} />
-              Hide the address in the message (only the wheel shows)
-            </label>
             {waitingForGif && <p className="text-center text-xs text-muted">A wheel GIF is still being drawn. This updates by itself.</p>}
             <p className="text-center text-xs text-muted">
-              Paste the copied text into the channel and add anything else for the week. Discord always shows the wheel under the whole message, wherever{" "}
-              <code>{"{wheel}"}</code> is. If the address still shows as odd text after pasting, untick the box and copy again.
+              Paste the message into the channel, then send the GIF link as a message of its own under it. Discord only hides the address when it is alone, so
+              the wheel shows with no link text.
               {onLocalhost ? " (You're on a local copy of the site, so Discord can't open those addresses from here. It works from the live site.)" : ""}
             </p>
             {!waitingForGif && (
@@ -760,9 +759,16 @@ export function CitadelWheel({
                 <div key={r.end} className="rounded-lg border border-surface-border p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold">{weekLabel(r.start, r.end)}</span>
-                    <button type="button" className="text-xs text-gold underline disabled:opacity-50" disabled={r.winners.some((x) => !x.hasGif)} onClick={() => copyAnnouncement(r)}>
-                      {copiedWeek === r.end ? "Copied" : `Copy message with the GIF${r.winners.length > 1 ? "s" : ""}`}
-                    </button>
+                    <span className="flex flex-wrap items-center gap-3">
+                      <button type="button" className="text-xs text-gold underline" onClick={() => copyAnnouncement(r)}>
+                        {copiedWeek === `${r.end}:message` ? "Copied" : "Copy message"}
+                      </button>
+                      {r.winners.map((w) => (
+                        <button key={w.place} type="button" className="text-xs text-gold underline disabled:opacity-50" disabled={!w.hasGif} onClick={() => copyGifLink(w)}>
+                          {copiedWeek === `${w.end}:gif${w.place}` ? "Copied" : r.winners.length > 1 ? `Copy GIF link (${ordinal(w.place)})` : "Copy GIF link"}
+                        </button>
+                      ))}
+                    </span>
                   </div>
                   <ul className="divide-y divide-surface-border">
                     {r.winners.map((w) => (
@@ -870,8 +876,8 @@ export function CitadelWheel({
         <div className="space-y-3 rounded-xl border border-surface-border bg-surface p-4">
           <h2 className="text-sm font-semibold">Announcing winners</h2>
           <p className="text-xs text-muted">
-            For posting from the bot instead of pasting it yourself. The winner is posted in the channel below with your message and the wheel GIF. Copy message with the GIF
-            (under a locked winner) uses the same message.
+            For posting from the bot instead of pasting it yourself. The winner is posted in the channel below with your message and the wheel GIF. Copy message (under a locked
+            winner) uses the same message.
           </p>
           <FormField label="Channel" as="group">
             <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={channelId} onChange={setChannelId} none="No channel chosen" />
@@ -880,7 +886,7 @@ export function CitadelWheel({
             <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
             <p className="mt-1 text-xs text-muted">
               Fills in <code>{"{winner}"}</code> (the name; with several winners, all of them: A, B and C), <code>{"{mention}"}</code> (pings them if their account is linked),{" "}
-              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <code>{"{wheel}"}</code> is where the GIF address goes when you copy the message; without it the address comes last. Discord shows the wheel under the whole message either way, so <code>{"{wheel}"}</code> has to be the last thing in the message. When the bot posts, the GIF is attached and <code>{"{wheel}"}</code> is left out. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. Put <code>{"{wheel}"}</code> as the very last thing to post the wheel as a second message under the text: Discord only hides the GIF address when it is alone in a message. The bot does this itself when it posts; copying the message gives the text, and Copy GIF link gives the second message. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
             </p>
           </FormField>
           <label className="flex items-start gap-2 text-sm">

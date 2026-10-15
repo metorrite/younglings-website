@@ -37,7 +37,7 @@ export async function saveCitadelWheelAction(
   // Discord draws the wheel under the whole message wherever {wheel} is, so keeping the tag last matches what is shown
   const text = message.trim();
   if (text.includes("{wheel}") && (!text.endsWith("{wheel}") || text.indexOf("{wheel}") !== text.lastIndexOf("{wheel}"))) {
-    return fail("Put {wheel} once, at the very end of the message. Discord shows the wheel under the whole message anyway.");
+    return fail("Put {wheel} once, as the very last thing in the message. Everything above it is one message and the wheel goes in a second message.");
   }
   const result = await adminApi.saveCitadelWheel(guild, { autoPost, channelId, message });
   return result.ok ? { ok: true, data: result.data } : fail(result.error, result.problems);
