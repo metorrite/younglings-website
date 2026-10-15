@@ -81,7 +81,7 @@ export interface WheelSettings {
   autoPost: boolean;
   /** The channel announcements go to (null until one is chosen). */
   channelId: string | null;
-  /** The message template: {winner} (or {winners}), {mention}, {week} and {entries} are filled in. */
+  /** The message template: {winner} (or {winners}), {mention}, {week} and {entries} are filled in; {wheel} marks where the GIF address goes in a copy. */
   message: string;
   defaultMessage: string;
   maxLength: number;

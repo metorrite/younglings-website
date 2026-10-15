@@ -552,7 +552,10 @@ export function CitadelWheel({
     const source = fetched.data;
     const urls = source.winners.map((x) => `${window.location.origin}/api/citadel-wheel/${x.gifToken}.gif`);
     try {
-      await navigator.clipboard.writeText([source.message ?? "", ...urls].join("\n"));
+      // {wheel} in the message marks where the GIF addresses go; without it they follow the message
+      const message = source.message ?? "";
+      const text = message.includes("{wheel}") ? message.replaceAll("{wheel}", urls.join("\n")) : [message, ...urls].join("\n");
+      await navigator.clipboard.writeText(text);
       setCopiedWeek(w.end);
       setTimeout(() => setCopiedWeek((cur) => (cur === w.end ? null : cur)), 2500);
     } catch {
@@ -866,7 +869,7 @@ export function CitadelWheel({
             <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
             <p className="mt-1 text-xs text-muted">
               Fills in <code>{"{winner}"}</code> (the name; with several winners, all of them: A, B and C), <code>{"{mention}"}</code> (pings them if their account is linked),{" "}
-              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <code>{"{wheel}"}</code> is where the GIF address goes when you copy the message (on its own line between the text and the week, say); without it the address comes last. When the bot posts, the GIF is attached and <code>{"{wheel}"}</code> is left out. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
             </p>
           </FormField>
           <label className="flex items-start gap-2 text-sm">
