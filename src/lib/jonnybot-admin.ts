@@ -1286,11 +1286,19 @@ export const adminApi = {
   citadelPost: (ctx: ApiContext, body: { winner: string; entries: string[]; end: string }) =>
     call<{ queued: boolean; channel: string }>(ctx, "POST", "citadel/post", body),
   /** The locked winners (newest first), one week's winner with its announcement text, and locking, unlocking and posting one. */
-  citadelWinners: (ctx: ApiContext) => call<{ winners: import("./citadelTypes").WheelWinner[] }>(ctx, "GET", "citadel/winners"),
-  citadelWinner: (ctx: ApiContext, end: string) => call<import("./citadelTypes").WheelWinner>(ctx, "GET", `citadel/winners/${encodeURIComponent(end)}`),
+  citadelWinners: (ctx: ApiContext) => call<{ weeks: import("./citadelTypes").WheelWeek[] }>(ctx, "GET", "citadel/winners"),
+  citadelWinner: (ctx: ApiContext, end: string) => call<import("./citadelTypes").WheelWeek>(ctx, "GET", `citadel/winners/${encodeURIComponent(end)}`),
+  /** Locks the next place of a week. Answers with the whole week so far. */
   citadelLock: (ctx: ApiContext, body: { end: string; winner: string; entries: string[]; manual: boolean; gif?: string }) =>
-    call<import("./citadelTypes").WheelWinner>(ctx, "POST", "citadel/lock", body),
-  citadelUnlock: (ctx: ApiContext, end: string) => call<{ winners: import("./citadelTypes").WheelWinner[] }>(ctx, "POST", "citadel/unlock", { end }),
+    call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/lock", body),
+  citadelUnlock: (ctx: ApiContext, end: string) => call<{ weeks: import("./citadelTypes").WheelWeek[] }>(ctx, "POST", "citadel/unlock", { end }),
+  /** Marks a winner's prize given by hand, or back to not given. */
+  citadelPrize: (ctx: ApiContext, body: { end: string; place: number; action: "given" | "pending"; amount?: string; note?: string }) =>
+    call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/prize", body),
+  /** Records a winner's prize in the clan coffer as a giveaway from whoever paid it. */
+  citadelPrizeCoffer: (ctx: ApiContext, body: { end: string; place: number; amount: string; paidBy: string; recipient?: string; note?: string }) =>
+    call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/prize/coffer", body),
+  citadelHolders: (ctx: ApiContext) => call<{ holders: import("./citadelTypes").CofferHolderInfo[] }>(ctx, "GET", "citadel/prize/holders"),
   citadelPostLocked: (ctx: ApiContext, end: string) => call<{ queued: boolean; channel: string }>(ctx, "POST", `citadel/winners/${encodeURIComponent(end)}/post`),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),

@@ -1,14 +1,18 @@
 import { CitadelWheel } from "@/components/dashboard/CitadelWheel";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
-import type { CitadelCappers, WheelSettings, WheelWinner } from "@/lib/citadelTypes";
+import type { CitadelCappers, WheelSettings, WheelWeek } from "@/lib/citadelTypes";
 import { adminApi } from "@/lib/jonnybot-admin";
 import {
   citadelCappersAction,
+  citadelHoldersAction,
   citadelWinnerAction,
   lockCitadelWinnerAction,
+  markCitadelPrizeAction,
   postCitadelWinnerAction,
   postLockedCitadelWinnerAction,
+  recordCitadelPrizeAction,
+  recordPastWeekAction,
   saveCitadelWheelAction,
   unlockCitadelWinnerAction,
 } from "./actions";
@@ -20,7 +24,7 @@ export default async function CitadelWheelPage({ params }: { params: Promise<{ g
   const guild = await requireGuild(guildId);
   const [initial, winners, settings, structure] = await Promise.all([
     adminApi.citadelCappers(guild, null).then(dashboardData) as Promise<CitadelCappers>,
-    adminApi.citadelWinners(guild).then(dashboardData) as Promise<{ winners: WheelWinner[] }>,
+    adminApi.citadelWinners(guild).then(dashboardData) as Promise<{ weeks: WheelWeek[] }>,
     adminApi.citadelWheel(guild).then(dashboardData) as Promise<WheelSettings>,
     adminApi.structure(guild).then(dashboardData),
   ]);
@@ -29,11 +33,11 @@ export default async function CitadelWheelPage({ params }: { params: Promise<{ g
     <div className="space-y-6">
       <PageHeader
         title="Citadel wheel"
-        description="A wheel of everyone who capped at the Clan Citadel in a week. Add names, give someone an extra entry for a prize or a missed cap, spin for the winner, lock them in, and copy the announcement with the wheel GIF."
+        description="A wheel of everyone who capped at the Clan Citadel in a week. Add names, give someone an extra entry for a prize or a missed cap, spin for the winner, lock in one or more winners, copy the announcement with the wheel GIF, and keep track of their prizes."
       />
       <CitadelWheel
         initial={initial}
-        winners={winners.winners}
+        weeks={winners.weeks}
         settings={settings}
         structure={structure}
         load={citadelCappersAction.bind(null, guildId)}
@@ -41,9 +45,13 @@ export default async function CitadelWheelPage({ params }: { params: Promise<{ g
           saveSettings: saveCitadelWheelAction.bind(null, guildId),
           post: postCitadelWinnerAction.bind(null, guildId),
           lock: lockCitadelWinnerAction.bind(null, guildId),
+          recordPast: recordPastWeekAction.bind(null, guildId),
           unlock: unlockCitadelWinnerAction.bind(null, guildId),
-          winner: citadelWinnerAction.bind(null, guildId),
+          week: citadelWinnerAction.bind(null, guildId),
           postLocked: postLockedCitadelWinnerAction.bind(null, guildId),
+          markPrize: markCitadelPrizeAction.bind(null, guildId),
+          recordPrize: recordCitadelPrizeAction.bind(null, guildId),
+          holders: citadelHoldersAction.bind(null, guildId),
         }}
       />
     </div>

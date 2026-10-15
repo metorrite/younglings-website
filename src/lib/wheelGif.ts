@@ -18,13 +18,13 @@ export const GIF_LIMIT_BYTES = 8_500_000;
 const BACKGROUND = "#0b0d12";
 /** Room under the wheel for the winner's name, so it isn't squeezed against the edge of the picture. */
 const FOOTER = 44;
-const TURNS = 4;
-const SPIN_MS = 6500;
-const EASE_POWER = 2.8;
-const MAX_STEP_RADIANS = 0.16;
-const MIN_FRAME_MS = 30;
-const MAX_FRAME_MS = 110;
-const HOLD_MS = 9000;
+const TURNS = 3;
+const SPIN_MS = 4200;
+const EASE_POWER = 2.6;
+const MAX_STEP_RADIANS = 0.12;
+const MIN_FRAME_MS = 20;
+const MAX_FRAME_MS = 90;
+const HOLD_MS = 3500;
 /** The colour table slot that means "the same as the frame before". */
 const TRANSPARENT = 255;
 /** Largest first: a picture that is too big for Discord is redrawn smaller. */
@@ -122,7 +122,7 @@ function draw(labels: string[], winnerIndex: number, size: number, family: strin
     const index = applyPalette(frame(angle, false), mapPalette, "rgb565");
     const next = i + 1 < times.length ? times[i + 1] : times[i] + MIN_FRAME_MS;
     // the very first frame waits a moment so the picture doesn't start already moving
-    const ms = i === 0 ? 700 : next - times[i];
+    const ms = i === 0 ? 400 : next - times[i];
     const delay = Math.max(2, Math.round(ms / 10));
     if (previous === null) {
       gif.writeFrame(index, size, height, { palette: spinPalette, delay, first: true });
