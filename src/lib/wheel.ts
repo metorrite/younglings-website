@@ -98,10 +98,23 @@ export function colourFor(i: number, n: number): string {
   return COLOURS[index];
 }
 
+/** Optional looks for `drawWheel`: a solid background (a picture can't be transparent like the page), and a font family (the page uses the system's). */
+export interface WheelLook {
+  background?: string;
+  fontFamily?: string;
+  /** Where the winner's name sits (its baseline), below the wheel when the canvas is taller than it is wide. Defaults to the bottom edge. */
+  textY?: number;
+}
+
 /** Draws the wheel into a canvas context of `size` x `size` CSS pixels (already scaled for the screen). */
-export function drawWheel(ctx: CanvasRenderingContext2D, size: number, labels: string[], angle: number, winner: number, text: string): void {
+export function drawWheel(ctx: CanvasRenderingContext2D, size: number, labels: string[], angle: number, winner: number, text: string, look: WheelLook = {}): void {
+  const family = look.fontFamily ?? "system-ui, sans-serif";
   const n = labels.length;
   ctx.clearRect(0, 0, size, size);
+  if (look.background) {
+    ctx.fillStyle = look.background;
+    ctx.fillRect(0, 0, size, size);
+  }
   const cx = size / 2;
   const cy = size / 2 + 8;
   const radius = size / 2 - 22;
@@ -119,7 +132,7 @@ export function drawWheel(ctx: CanvasRenderingContext2D, size: number, labels: s
   ctx.globalAlpha = 1;
   const arc = radius * 0.62 * slice;
   const fontSize = Math.max(9, Math.min(26, arc * 0.62));
-  ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+  ctx.font = `bold ${fontSize}px ${family}`;
   ctx.textBaseline = "middle";
   ctx.textAlign = "right";
   const room = radius - 12 - radius * 0.2;
@@ -160,10 +173,10 @@ export function drawWheel(ctx: CanvasRenderingContext2D, size: number, labels: s
   ctx.stroke();
   if (text) {
     ctx.save();
-    ctx.font = "bold 22px system-ui, sans-serif";
+    ctx.font = `bold 22px ${family}`;
     ctx.textAlign = "center";
     ctx.fillStyle = "#fff";
-    ctx.fillText(text, cx, size - 6);
+    ctx.fillText(text, cx, look.textY ?? size - 6);
     ctx.restore();
   }
 }

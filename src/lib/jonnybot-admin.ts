@@ -1145,6 +1145,20 @@ export async function fetchUploadedImage(token: string): Promise<{ contentType: 
   }
 }
 
+/** A locked week's wheel GIF by its token, or null. For the public route that serves it, which is what makes it show inside a Discord message. */
+export async function fetchWheelGif(token: string): Promise<ArrayBuffer | null> {
+  const baseUrl = process.env.JONNYBOT_INTERNAL_API_URL;
+  const secret = process.env.JONNYBOT_INTERNAL_API_SECRET;
+  if (!baseUrl || !secret) return null;
+
+  try {
+    const response = await fetch(`${baseUrl}/internal/wheel-gif/${token}`, { headers: { "X-Internal-Secret": secret }, cache: "no-store", signal: AbortSignal.timeout(20_000) });
+    return response.ok ? await response.arrayBuffer() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Asks the bot who this Discord user is and whether they may use the dashboard. Used only by `requireAdmin()`. */
 export function whoAmI(actorId: string, guildId?: string): Promise<ApiResult<WhoAmI>> {
   return request<WhoAmI>(actorId, "GET", "whoami", undefined, guildId);
@@ -1271,6 +1285,13 @@ export const adminApi = {
   /** Announces a winner the dashboard's wheel picked, in the channel the server chose. `entries` is every entry on the wheel (a name once per entry). */
   citadelPost: (ctx: ApiContext, body: { winner: string; entries: string[]; end: string }) =>
     call<{ queued: boolean; channel: string }>(ctx, "POST", "citadel/post", body),
+  /** The locked winners (newest first), one week's winner with its announcement text, and locking, unlocking and posting one. */
+  citadelWinners: (ctx: ApiContext) => call<{ winners: import("./citadelTypes").WheelWinner[] }>(ctx, "GET", "citadel/winners"),
+  citadelWinner: (ctx: ApiContext, end: string) => call<import("./citadelTypes").WheelWinner>(ctx, "GET", `citadel/winners/${encodeURIComponent(end)}`),
+  citadelLock: (ctx: ApiContext, body: { end: string; winner: string; entries: string[]; manual: boolean; gif?: string }) =>
+    call<import("./citadelTypes").WheelWinner>(ctx, "POST", "citadel/lock", body),
+  citadelUnlock: (ctx: ApiContext, end: string) => call<{ winners: import("./citadelTypes").WheelWinner[] }>(ctx, "POST", "citadel/unlock", { end }),
+  citadelPostLocked: (ctx: ApiContext, end: string) => call<{ queued: boolean; channel: string }>(ctx, "POST", `citadel/winners/${encodeURIComponent(end)}/post`),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
