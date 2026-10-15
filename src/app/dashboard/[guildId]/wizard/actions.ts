@@ -85,8 +85,11 @@ export async function quickSaveTrackingAction(guildId: string, input: { channelI
   const current = await adminApi.tracking(guild);
   if (!current.ok) return refused(current);
 
-  // one channel for every kind of event: on with that channel, or all switched off when none was chosen
+  // One channel for every kind of event that has none yet (or all of those switched off when no channel was chosen). A kind that already has
+  // channels is left exactly as it is: saving here used to replace every kind's channels with this one, which silently undid a server's own
+  // setup (its separate channels per kind, several channels for one kind, a kind switched off on purpose). That is what the full setup is for.
   for (const group of current.data.groups) {
+    if (group.channels.length > 0) continue;
     const saved = await adminApi.saveTracking(guild, group.key, { enabled: channelId !== null, channelIds: channelId ? [channelId] : [] });
     if (!saved.ok) return refused(saved);
   }

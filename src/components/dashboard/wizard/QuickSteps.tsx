@@ -152,7 +152,11 @@ export function QuickClan({ data, actions, onSaved }: QuickStepProps) {
 // ---------- clan event feeds ----------
 
 export function QuickTracking({ data, actions, onSaved }: QuickStepProps) {
-  const current = data.tracking.find((g) => g.enabled && g.channels.length > 0)?.channels[0]?.channelId ?? null;
+  // What is already chosen is shown, and this step never changes it: it only fills in the kinds of activity that have no channel yet, so a server that
+  // set things up another way can come back here to cover what it missed without losing anything.
+  const set = data.tracking.filter((g) => g.channels.length > 0);
+  const gaps = data.tracking.length - set.length;
+  const current = set.find((g) => g.enabled)?.channels[0]?.channelId ?? null;
   const [announce, setAnnounce] = useState(current !== null);
   const [channel, setChannel] = useState<string | null>(current);
   const { outcome, pending, run, clear } = useStepSave(onSaved);
@@ -162,19 +166,48 @@ export function QuickTracking({ data, actions, onSaved }: QuickStepProps) {
       {!data.setup.clanActive && (
         <Notice tone="error" title="These only announce members of your clan, and no clan is set yet. You can still choose a channel now, or skip this step." />
       )}
-      <YesNo
-        name="announce"
-        question="Announce your clan's activity in Discord?"
-        hint="What your members do in game, from their adventure logs: drops, quests, boss kills and Citadel visits. Also members joining and leaving the clan."
-        value={announce}
-        onChange={(v) => { setAnnounce(v); clear(); }}
-      />
-      {announce && (
-        <FormField label="Which channel should they go in?" hint="Every kind of activity is announced there. The full setup lets you give each kind its own channels.">
-          <ChannelSelect {...choicesOf(data.structure)} onlyPostable value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
-        </FormField>
+      {set.length > 0 && (
+        <details className="rounded-md border border-surface-border bg-surface px-3 py-2 text-sm" open={gaps === 0}>
+          <summary className="cursor-pointer text-xs text-muted">
+            Already set up: {set.length} of {data.tracking.length} kinds of activity. This step leaves them exactly as they are.
+          </summary>
+          <ul className="mt-2 space-y-1 text-xs">
+            {set.map((g) => (
+              <li key={g.key} className="flex flex-wrap justify-between gap-2">
+                <span>{g.name}{g.enabled ? "" : " (switched off)"}</span>
+                <span className="text-muted">{g.channels.map((c) => (c.name ? `#${c.name}` : "a channel that no longer exists")).join(", ")}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
-      <StepFooter pending={pending} outcome={outcome} disabled={announce && !channel} onClick={() => run(() => actions.tracking({ channelId: announce ? channel : null }))} />
+      {gaps === 0 ? (
+        <p className="text-sm text-muted">Every kind of activity already has a channel, so there is nothing to fill in here. Change them on Activity announcements.</p>
+      ) : (
+        <>
+          <YesNo
+            name="announce"
+            question="Announce your clan's activity in Discord?"
+            hint="What your members do in game, from their adventure logs: drops, quests, boss kills and Citadel visits. Also members joining and leaving the clan."
+            value={announce}
+            onChange={(v) => { setAnnounce(v); clear(); }}
+          />
+          {announce && (
+            <FormField
+              label="Which channel should they go in?"
+              hint={`${gaps} kind${gaps === 1 ? "" : "s"} of activity ${gaps === 1 ? "has" : "have"} no channel yet. ${gaps === 1 ? "It goes" : "They go"} there. The full setup lets you give each kind its own channels.`}
+            >
+              <ChannelSelect {...choicesOf(data.structure)} onlyPostable value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
+            </FormField>
+          )}
+        </>
+      )}
+      <StepFooter
+        pending={pending}
+        outcome={outcome}
+        disabled={gaps === 0 || (announce && !channel)}
+        onClick={() => run(() => actions.tracking({ channelId: announce ? channel : null }))}
+      />
     </div>
   );
 }
