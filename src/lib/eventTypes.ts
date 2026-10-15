@@ -2,6 +2,8 @@
 export type EventStatus = "DRAFT" | "SIGNUPS" | "RUNNING" | "SCORING" | "DONE" | "CANCELLED";
 
 export interface EventSummary {
+  /** Hidden from the main list (only a finished or cancelled event can be archived). */
+  archived: boolean;
   id: string;
   name: string;
   description: string;
@@ -82,12 +84,27 @@ export interface EventRefusal {
   at: string;
 }
 
+/** What a bingo tile means: its boss, its item, and the item's picture (a key under /items), when the label is a drop. */
+export interface BingoTileInfo {
+  key: string;
+  boss: string | null;
+  item: string;
+  icon: string | null;
+}
+
+/** Every boss with the items in its loot table, for the board editor's dropdowns. */
+export interface BingoCatalog {
+  bosses: { name: string; image: string | null; items: { name: string; key: string; rarity: string; icon: boolean }[] }[];
+}
+
 export interface EventOrganiser {
   userId: string;
   userName: string | null;
 }
 
 export interface EventDetail {
+  /** For a bingo: the boss, item and picture of each tile. Empty for other kinds. */
+  tiles: BingoTileInfo[];
   /** People named to run this one event from Discord (start and finish it, decide proof) without being staff. */
   organisers: EventOrganiser[];
   /** Discord signups the event's rules turned away, with the reason. */
