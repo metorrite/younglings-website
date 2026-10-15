@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { RsChathead } from "@/components/site/RsChathead";
+import { activityWhen } from "@/lib/activityTime";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import type { DropCell, DropEntry } from "@/lib/site";
 
@@ -101,7 +102,7 @@ export function DropList({ entries, showBoss = true, empty = "No drops recorded 
               </p>
             )}
           </div>
-          <span className="shrink-0 text-xs text-muted">{d.date}</span>
+          <span className="shrink-0 text-xs text-muted">{activityWhen(d.occurredAt, d.date)}</span>
         </li>
       ))}
     </ul>

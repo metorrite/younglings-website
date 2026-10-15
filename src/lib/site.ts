@@ -117,6 +117,8 @@ export interface FeedItem {
   text: string;
   details: string;
   date: string;
+  /** The real moment it happened (the bot converts RuneMetrics' UK-time text); null if it couldn't be read. */
+  occurredAt?: string | null;
   recordedAt: string;
 }
 
@@ -203,7 +205,7 @@ export interface Pvm {
 
 export interface Drops {
   total: number;
-  recent: { rsn: string; item: string; date: string; recordedAt: string }[];
+  recent: { rsn: string; item: string; date: string; occurredAt?: string | null; recordedAt: string }[];
   topItems: { item: string; count: number }[];
 }
 
@@ -222,7 +224,7 @@ export interface MemberProfile extends RosterMember {
   history: { date: string; totalXp: number; totalLevel: number }[];
   citadel: { caps: number; visits: number; cappedWeeks: string[] };
   awards: { type: string; points: number; date: string }[];
-  activities: { date: string; text: string; details: string }[];
+  activities: { date: string; occurredAt?: string | null; text: string; details: string }[];
 }
 
 export interface SkillSeries {
@@ -449,6 +451,7 @@ export interface DropEntry {
   icon: string | null;
   boss: { key: string; name: string; image: string | null } | null;
   date: string;
+  occurredAt?: string | null;
   recordedAt: string;
 }
 export interface BossDetail {
