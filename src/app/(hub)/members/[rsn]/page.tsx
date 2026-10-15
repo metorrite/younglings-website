@@ -7,6 +7,7 @@ import { badgesFor } from "@/lib/badges";
 import { SkillsGrid } from "@/components/profile/SkillsGrid";
 import { Tip, TipBody } from "@/components/ui/Tip";
 import { SkillIcon } from "@/components/site/SkillIcon";
+import { activityWhen } from "@/lib/activityTime";
 import { ChatheadBeside } from "@/components/site/ChatheadBeside";
 import { awardLabel, compact, etaLabel, full, getOverview, getProfile, getSkillSeries, rankColor, shortDate, shortDay, shortNumbers, type MemberProfile } from "@/lib/site";
 
@@ -324,7 +325,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
                 <li key={i} className="border-l-2 border-gold/40 pl-3">
                   <p className="text-sm font-medium">{shortNumbers(a.text)}</p>
                   {a.details && <p className="text-xs text-muted">{a.details}</p>}
-                  <p className="mt-0.5 text-[11px] text-muted/80">{a.date}</p>
+                  <p className="mt-0.5 text-[11px] text-muted/80">{activityWhen(a.occurredAt, a.date)}</p>
                 </li>
               ))}
             </ol>
