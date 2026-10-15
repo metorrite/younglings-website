@@ -303,6 +303,8 @@ export function CitadelWheel({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedWeek, setCopiedWeek] = useState<string | null>(null);
+  // Discord shows a pasted address as text and the picture under the whole message; as a link with an invisible name only the picture shows
+  const [hideLink, setHideLink] = useState(true);
   const [handDate, setHandDate] = useState("");
   const [handNames, setHandNames] = useState("");
   const [loading, startLoad] = useTransition();
@@ -550,7 +552,11 @@ export function CitadelWheel({
     const fetched = await actions.week(w.end);
     if (!fetched.ok) return setError(fetched.error);
     const source = fetched.data;
-    const urls = source.winners.map((x) => `${window.location.origin}/api/citadel-wheel/${x.gifToken}.gif`);
+    const invisible = String.fromCharCode(0x200b);
+    const urls = source.winners.map((x) => {
+      const address = `${window.location.origin}/api/citadel-wheel/${x.gifToken}.gif`;
+      return hideLink ? `[${invisible}](${address})` : address;
+    });
     try {
       // {wheel} in the message marks where the GIF addresses go; without it they follow the message
       const message = source.message ?? "";
@@ -639,9 +645,14 @@ export function CitadelWheel({
                 {copiedWeek === locked.end ? "Copied" : locked.winners.length > 1 ? "Copy message with the GIFs" : "Copy message with the GIF"}
               </button>
             </div>
+            <label className="flex items-center justify-center gap-2 text-xs text-muted">
+              <input type="checkbox" checked={hideLink} onChange={(ev) => setHideLink(ev.target.checked)} />
+              Hide the address in the message (only the wheel shows)
+            </label>
             {waitingForGif && <p className="text-center text-xs text-muted">A wheel GIF is still being drawn. This updates by itself.</p>}
             <p className="text-center text-xs text-muted">
-              Paste the copied text into the channel and add anything else for the week. Each address at the end becomes a spinning wheel.
+              Paste the copied text into the channel and add anything else for the week. Discord always shows the wheel under the whole message, wherever{" "}
+              <code>{"{wheel}"}</code> is. If the address still shows as odd text after pasting, untick the box and copy again.
               {onLocalhost ? " (You're on a local copy of the site, so Discord can't open those addresses from here. It works from the live site.)" : ""}
             </p>
             {!waitingForGif && (
@@ -869,7 +880,7 @@ export function CitadelWheel({
             <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
             <p className="mt-1 text-xs text-muted">
               Fills in <code>{"{winner}"}</code> (the name; with several winners, all of them: A, B and C), <code>{"{mention}"}</code> (pings them if their account is linked),{" "}
-              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <code>{"{wheel}"}</code> is where the GIF address goes when you copy the message (on its own line between the text and the week, say); without it the address comes last. When the bot posts, the GIF is attached and <code>{"{wheel}"}</code> is left out. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <code>{"{wheel}"}</code> is where the GIF address goes when you copy the message; without it the address comes last. Discord shows the wheel under the whole message either way. When the bot posts, the GIF is attached and <code>{"{wheel}"}</code> is left out. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
             </p>
           </FormField>
           <label className="flex items-start gap-2 text-sm">
