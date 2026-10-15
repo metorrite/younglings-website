@@ -1145,6 +1145,20 @@ export async function fetchUploadedImage(token: string): Promise<{ contentType: 
   }
 }
 
+/** A locked week's wheel GIF by its token, or null. For the public route that serves it, which is what makes it show inside a Discord message. */
+export async function fetchWheelGif(token: string): Promise<ArrayBuffer | null> {
+  const baseUrl = process.env.JONNYBOT_INTERNAL_API_URL;
+  const secret = process.env.JONNYBOT_INTERNAL_API_SECRET;
+  if (!baseUrl || !secret) return null;
+
+  try {
+    const response = await fetch(`${baseUrl}/internal/wheel-gif/${token}`, { headers: { "X-Internal-Secret": secret }, cache: "no-store", signal: AbortSignal.timeout(20_000) });
+    return response.ok ? await response.arrayBuffer() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Asks the bot who this Discord user is and whether they may use the dashboard. Used only by `requireAdmin()`. */
 export function whoAmI(actorId: string, guildId?: string): Promise<ApiResult<WhoAmI>> {
   return request<WhoAmI>(actorId, "GET", "whoami", undefined, guildId);
@@ -1262,6 +1276,30 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  /** Who capped at the Clan Citadel in the week that ended on `end` (a Wednesday), or the week that just finished. */
+  citadelCappers: (ctx: ApiContext, end: string | null) => call<import("./citadelTypes").CitadelCappers>(ctx, "GET", end ? `citadel/cappers/${encodeURIComponent(end)}` : "citadel/cappers"),
+  /** The settings for announcing the Citadel wheel's winner (auto-post, channel, message). */
+  citadelWheel: (ctx: ApiContext) => call<import("./citadelTypes").WheelSettings>(ctx, "GET", "citadel/wheel"),
+  saveCitadelWheel: (ctx: ApiContext, body: { autoPost: boolean; channelId: string | null; message: string }) =>
+    call<import("./citadelTypes").WheelSettings>(ctx, "PUT", "citadel/wheel", body),
+  /** Announces a winner the dashboard's wheel picked, in the channel the server chose. `entries` is every entry on the wheel (a name once per entry). */
+  citadelPost: (ctx: ApiContext, body: { winner: string; entries: string[]; end: string }) =>
+    call<{ queued: boolean; channel: string }>(ctx, "POST", "citadel/post", body),
+  /** The locked winners (newest first), one week's winner with its announcement text, and locking, unlocking and posting one. */
+  citadelWinners: (ctx: ApiContext) => call<{ weeks: import("./citadelTypes").WheelWeek[] }>(ctx, "GET", "citadel/winners"),
+  citadelWinner: (ctx: ApiContext, end: string) => call<import("./citadelTypes").WheelWeek>(ctx, "GET", `citadel/winners/${encodeURIComponent(end)}`),
+  /** Locks the next place of a week. Answers with the whole week so far. */
+  citadelLock: (ctx: ApiContext, body: { end: string; winner: string; entries: string[]; manual: boolean; gif?: string }) =>
+    call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/lock", body),
+  citadelUnlock: (ctx: ApiContext, end: string) => call<{ weeks: import("./citadelTypes").WheelWeek[] }>(ctx, "POST", "citadel/unlock", { end }),
+  /** Marks a winner's prize given by hand, or back to not given. */
+  citadelPrize: (ctx: ApiContext, body: { end: string; place: number; action: "given" | "pending"; amount?: string; note?: string }) =>
+    call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/prize", body),
+  /** Records a winner's prize in the clan coffer as a giveaway from whoever paid it. */
+  citadelPrizeCoffer: (ctx: ApiContext, body: { end: string; place: number; amount: string; paidBy: string; recipient?: string; note?: string }) =>
+    call<import("./citadelTypes").WheelWeek>(ctx, "POST", "citadel/prize/coffer", body),
+  citadelHolders: (ctx: ApiContext) => call<{ holders: import("./citadelTypes").CofferHolderInfo[] }>(ctx, "GET", "citadel/prize/holders"),
+  citadelPostLocked: (ctx: ApiContext, end: string) => call<{ queued: boolean; channel: string }>(ctx, "POST", `citadel/winners/${encodeURIComponent(end)}/post`),
   /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
   eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
