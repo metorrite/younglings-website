@@ -152,15 +152,23 @@ export function QuickClan({ data, actions, onSaved }: QuickStepProps) {
 // ---------- clan event feeds ----------
 
 export function QuickTracking({ data, actions, onSaved }: QuickStepProps) {
-  const current = data.tracking.find((g) => g.enabled && g.channels.length > 0)?.channels[0]?.channelId ?? null;
-  const [announce, setAnnounce] = useState(current !== null);
-  const [channel, setChannel] = useState<string | null>(current);
+  // kinds of activity that already have their own channels: this step never touches them, so nothing is preselected from them either
+  const alreadySet = data.tracking.filter((g) => g.channels.length > 0).length;
+  const [announce, setAnnounce] = useState(false);
+  const [channel, setChannel] = useState<string | null>(null);
   const { outcome, pending, run, clear } = useStepSave(onSaved);
 
   return (
     <div className="space-y-6">
       {!data.setup.clanActive && (
         <Notice tone="error" title="These only announce members of your clan, and no clan is set yet. You can still choose a channel now, or skip this step." />
+      )}
+      {alreadySet > 0 && (
+        <p className="rounded-md border border-surface-border bg-surface px-3 py-2 text-xs text-muted">
+          {alreadySet} kind{alreadySet === 1 ? "" : "s"} of activity {alreadySet === 1 ? "already has" : "already have"} channels chosen. Saving here leaves
+          {alreadySet === 1 ? " it" : " them"} exactly as {alreadySet === 1 ? "it is" : "they are"} and only fills in the kinds that have none. To change a
+          kind that is already set up, use Activity announcements.
+        </p>
       )}
       <YesNo
         name="announce"
@@ -170,7 +178,7 @@ export function QuickTracking({ data, actions, onSaved }: QuickStepProps) {
         onChange={(v) => { setAnnounce(v); clear(); }}
       />
       {announce && (
-        <FormField label="Which channel should they go in?" hint="Every kind of activity is announced there. The full setup lets you give each kind its own channels.">
+        <FormField label="Which channel should they go in?" hint="Every kind of activity that has no channel yet is announced there. The full setup lets you give each kind its own channels.">
           <ChannelSelect {...choicesOf(data.structure)} onlyPostable value={channel} onChange={(c) => { setChannel(c); clear(); }} none="Choose a channel" />
         </FormField>
       )}
