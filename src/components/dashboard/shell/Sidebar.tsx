@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icons";
+import { LinkPending } from "./LinkPending";
 import { QuickJump } from "./QuickJump";
 import { groupsFor, isActive } from "./nav";
 
@@ -66,6 +67,7 @@ export function Sidebar({ server, footer, hasClan = true, base: where }: { serve
                       <Icon name={item.icon} />
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.soon && <span className="rounded-full bg-white/5 px-1.5 py-0.5 text-[10px] text-muted">Soon</span>}
+                      {!item.soon && item.path !== undefined && <LinkPending />}
                     </>
                   );
                   return (
@@ -109,6 +111,7 @@ export function Sidebar({ server, footer, hasClan = true, base: where }: { serve
                 >
                   <Icon name={item.icon} className="h-4 w-4" />
                   {item.label}
+                  <LinkPending />
                 </Link>
               );
             })}
