@@ -82,7 +82,14 @@ export interface EventRefusal {
   at: string;
 }
 
+export interface EventOrganiser {
+  userId: string;
+  userName: string | null;
+}
+
 export interface EventDetail {
+  /** People named to run this one event from Discord (start and finish it, decide proof) without being staff. */
+  organisers: EventOrganiser[];
   /** Discord signups the event's rules turned away, with the reason. */
   refused: EventRefusal[];
   event: EventSummary;

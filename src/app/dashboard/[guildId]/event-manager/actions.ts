@@ -13,7 +13,7 @@ const ALLOWED = [
   /^events$/,
   /^events\/templates$/,
   /^events\/\d{1,18}$/,
-  /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board)$/,
+  /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board|organisers)$/,
   /^events\/\d{1,18}\/signup\/sync$/,
   /^events\/\d{1,18}\/(teams|participants)\/\d{1,20}$/,
   /^events\/\d{1,18}\/participants\/\d{1,20}\/buyin$/,

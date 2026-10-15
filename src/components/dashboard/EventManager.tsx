@@ -55,6 +55,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [boardChannel, setBoardChannel] = useState<string | null>(initial.event.config.boardChannelId ?? null);
   const [reviewChannel, setReviewChannel] = useState<string | null>(initial.event.config.reviewChannelId ?? null);
   const [newSize, setNewSize] = useState("");
+  const [organiser, setOrganiser] = useState("");
 
   async function refresh() {
     const [d, c, s, a] = await Promise.all([call("GET", base), call("GET", `${base}/claims`), call("GET", `${base}/standings`), call("GET", `${base}/awards`)]);
@@ -167,6 +168,55 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               )}
             </div>
             <p className="text-xs text-muted">The bot also does this every minute. Staff can always add late entries by hand on the Teams and players tab.</p>
+          </div>
+          <div className="space-y-2 rounded-xl border border-surface-border p-4">
+            <p className="font-medium">Organisers</p>
+            <p className="text-xs text-muted">
+              Organisers can start and finish this event and approve or deny proof from Discord, without being staff or using the dashboard. Staff can always do all of that for every event.
+            </p>
+            {detail.organisers.length === 0 ? (
+              <p className="text-muted">Nobody has been named for this event.</p>
+            ) : (
+              <ul className="divide-y divide-surface-border">
+                {detail.organisers.map((o) => (
+                  <li key={o.userId} className="flex items-center justify-between gap-2 py-1.5">
+                    <span className="min-w-0 truncate">{o.userName ?? `Player ${o.userId}`}</span>
+                    {e.status !== "DONE" && e.status !== "CANCELLED" && (
+                      <button type="button" className="text-xs text-red-400 underline" disabled={pending} onClick={() => run("POST", `${base}/organisers`, { remove: [o.userId] }, `${o.userName ?? "They"} is no longer an organiser.`)}>
+                        Remove
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {e.status !== "DONE" && e.status !== "CANCELLED" && (
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="min-w-0 flex-1 text-xs text-muted">
+                  Add an organiser
+                  <input
+                    className={`${inputClass} mt-1`}
+                    placeholder="A linked RuneScape name or a Discord user id"
+                    list={`organiser-choices-${id}`}
+                    value={organiser}
+                    onChange={(ev) => setOrganiser(ev.target.value)}
+                  />
+                  <datalist id={`organiser-choices-${id}`}>
+                    {active.map((p) => (
+                      <option key={p.userId} value={p.userId} label={p.userName ?? undefined} />
+                    ))}
+                  </datalist>
+                </label>
+                <button
+                  type="button"
+                  className={ghostButton}
+                  disabled={pending || !organiser.trim()}
+                  onClick={() => run("POST", `${base}/organisers`, { add: [organiser.trim()] }, "Organiser added.", () => setOrganiser(""))}
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
