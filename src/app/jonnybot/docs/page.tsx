@@ -19,6 +19,7 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/split", who: "Everyone (changeable)", what: "Split a drop between a group (1.5b, 250m, 12,500k), with an optional fee off the top and any left-over coins shown." },
   { name: "/suggest", who: "Everyone (changeable)", what: "Post an idea in the suggestions channel for everyone to vote on with the up and down buttons." },
   { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
+  { name: "/events", who: "Everyone (changeable)", what: "Your events (place, points, buy-in, prizes), the ones open for signup, and join or leave. Events themselves are made and run from the dashboard." },
 ];
 
 const DASHBOARD: [string, string][] = [
@@ -40,6 +41,7 @@ const DASHBOARD: [string, string][] = [
   ["Moderation log", "A channel where bans, unbans and timeouts are recorded, with who did it and why when JonnyBot can read the audit log."],
   ["New accounts", "Be told when a Discord account younger than a number of days joins, or keep them out until they are old enough. Off by default."],
   ["Auto-delete", "Keep a channel free of Discord invites, links or files: a matching message is deleted at once and the person is told why. Moderators are never affected."],
+  ["Event manager", "Run bingos, scavenger hunts, XP competitions, boss nights or your own custom events: objectives, teams and players, proof to approve, standings, buy-ins, prizes and payouts. Each event can post its own signup, and members see their own place and prizes on their profile."],
   ["Points", "Switch on a points ledger for your server, name the points, give or take them with a reason, and see the leaderboard and full history."],
   ["Automod", "Deletes invites, links, blocked words, shouting, spam and emoji floods automatically, and can give the writer a warning that counts toward Autopunish."],
   ["Warnings", "The record of warnings given with /warn. Search by member and take one back."],

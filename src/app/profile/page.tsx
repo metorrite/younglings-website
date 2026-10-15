@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LinkRsn } from "@/components/link/LinkRsn";
+import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { PluginPanel } from "@/components/profile/PluginPanel";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
@@ -27,6 +28,7 @@ const TABS = [
   { id: "public", label: "Member page", icon: "🪪" },
   { id: "goals", label: "Goals", icon: "🎯" },
   { id: "activity", label: "My activity", icon: "📋" },
+  { id: "events", label: "My events", icon: "🏆" },
   { id: "coffer", label: "Coffer", icon: "💰" },
   { id: "notifications", label: "Notifications", icon: "🔔" },
   { id: "plugin", label: "Plugin", icon: "🔌" },
@@ -65,6 +67,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     tab === "activity" ? await Promise.all([getPolls(), memberApi.myPolls(user.id), getSignups(), memberApi.mySignups(user.id)]) : [null, null, null, null];
   const myVotes = polls && myPolls?.ok ? polls.filter((p) => p.active).flatMap((p) => { const mine = myPolls.data.polls.find((m) => m.pollId === p.id)?.mine ?? []; return mine.length ? [{ poll: p, picks: p.options.filter((o) => mine.includes(o.number)) }] : []; }) : [];
   const mySheets = sheets && mySignups?.ok ? sheets.filter((s) => mySignups.data.joined.includes(s.id)) : [];
+  const myEvents = tab === "events" ? await memberApi.myEvents(user.id) : null;
   const coffer = tab === "coffer" ? await memberApi.myCoffer(user.id) : null;
   const plugin = tab === "plugin" ? await pluginApi.view(user.id) : null;
 
@@ -314,6 +317,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             </Panel>
           </>
         )}
+
+        {tab === "events" && (myEvents?.ok ? <MyEventsPanel data={myEvents.data} /> : <Panel title="Your events"><Unavailable what="Your events" /></Panel>)}
 
         {tab === "coffer" && !linked && needsLink("Your clan coffer")}
         {tab === "coffer" && linked && (

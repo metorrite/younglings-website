@@ -66,6 +66,41 @@ export interface MyCoffer {
   giveaways: { amount: number; description: string | null; at: string }[];
 }
 
+/** One event the member is in, as the bot reports it (`/internal/me/events`). Only their own rows. */
+export interface MyEvent {
+  id: string;
+  name: string;
+  description: string;
+  template: string;
+  status: "SIGNUPS" | "RUNNING" | "SCORING" | "DONE" | "CANCELLED";
+  scoringMode: "INDIVIDUAL" | "TEAM";
+  waiting: boolean;
+  team: string | null;
+  buyIn: { enabled: boolean; amount: number; status: "NONE" | "DUE" | "PAID" | "REFUNDED" };
+  /** 0 until they have a place in the standings. */
+  rank: number;
+  of: number;
+  points: number;
+  objectives: { key: string; label: string; points: number; target: number; repeatLimit: number; done: number }[];
+  pendingProof: number;
+  awards: { place: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number; status: "PENDING" | "PAID" | "REVOKED" | "REFUNDED" }[];
+}
+
+export interface OpenEvent {
+  id: string;
+  name: string;
+  description: string;
+  template: string;
+  scoringMode: "INDIVIDUAL" | "TEAM";
+  signupClosesAt: string | null;
+  buyIn: number;
+}
+
+export interface MyEvents {
+  events: MyEvent[];
+  open: OpenEvent[];
+}
+
 export interface NewMemberPoll {
   title: string;
   options: string[];
@@ -129,6 +164,7 @@ export const memberApi = {
   myPolls: (userId: string) => request<{ polls: MyPoll[] }>("GET", "polls", userId),
   vote: (userId: string, pollId: string, optionNumber: number) => request<{ polls: MyPoll[] }>("POST", "polls/vote", userId, { pollId, optionNumber }),
   createPoll: (userId: string, poll: NewMemberPoll) => request<{ created: boolean; channel: string }>("POST", "polls", userId, { ...poll }),
+  myEvents: (userId: string) => request<MyEvents>("GET", "events", userId),
   myCoffer: (userId: string) => request<MyCoffer>("GET", "coffer", userId),
   mySignups: (userId: string) => request<MySignups>("GET", "signups", userId),
   joinSignup: (userId: string, signupId: string, body: { rsn?: string; fields?: string[] }) => request<MySignups>("POST", "signups/join", userId, { signupId, ...body }),
