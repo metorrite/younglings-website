@@ -880,7 +880,7 @@ export function CitadelWheel({
             <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
             <p className="mt-1 text-xs text-muted">
               Fills in <code>{"{winner}"}</code> (the name; with several winners, all of them: A, B and C), <code>{"{mention}"}</code> (pings them if their account is linked),{" "}
-              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <code>{"{wheel}"}</code> is where the GIF address goes when you copy the message; without it the address comes last. Discord shows the wheel under the whole message either way. When the bot posts, the GIF is attached and <code>{"{wheel}"}</code> is left out. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. <code>{"{wheel}"}</code> is where the GIF address goes when you copy the message; without it the address comes last. Discord shows the wheel under the whole message either way, so <code>{"{wheel}"}</code> has to be the last thing in the message. When the bot posts, the GIF is attached and <code>{"{wheel}"}</code> is left out. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
             </p>
           </FormField>
           <label className="flex items-start gap-2 text-sm">
