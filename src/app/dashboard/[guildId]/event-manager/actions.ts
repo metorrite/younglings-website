@@ -22,6 +22,15 @@ const ALLOWED = [
   /^events\/\d{1,18}\/participants\/\d{1,20}\/buyin$/,
   /^events\/\d{1,18}\/claims\/\d{1,20}\/(approve|deny)$/,
   /^events\/\d{1,18}\/awards\/\d{1,20}\/status$/,
+  // setting an event up: the options of a kind, the standard and full creates, unfinished setups, and saved templates
+  /^events\/setup\/schema\/[a-z][a-z-]{0,40}$/,
+  /^events\/setup\/(standard|create)$/,
+  /^events\/drafts$/,
+  /^events\/drafts\/\d{1,18}$/,
+  /^events\/drafts\/\d{1,18}\/create$/,
+  /^events\/saved-templates$/,
+  /^events\/saved-templates\/\d{1,18}$/,
+  /^events\/saved-templates\/\d{1,18}\/create$/,
 ];
 
 export async function eventApiAction(
