@@ -30,13 +30,17 @@ const STREAM_LABEL: Record<string, string> = { standard: "Standard", quick: "Qui
 
 type Problem = { title: string; items: string[] } | null;
 
+/** The kinds people reach for first come first, the empty "custom" event last; a kind the website doesn't know yet follows in the bot's order. */
+const KIND_ORDER = ["bingo", "scavenger-hunt", "competition", "boss-night", "custom"];
+const rankOf = (key: string) => (KIND_ORDER.includes(key) ? KIND_ORDER.indexOf(key) : KIND_ORDER.length);
+
 /**
  * Starting an event: the kind, then the stream (standard, quick or guided), plus the unfinished setups to carry on with and the saved templates to make
  * similar events from.
  */
 export function EventStreams({
   guildId,
-  kinds,
+  kinds: offered,
   initialDrafts,
   initialTemplates,
   structure,
@@ -50,7 +54,8 @@ export function EventStreams({
   call: EventCall;
 }) {
   const router = useRouter();
-  const [kind, setKind] = useState<string>(() => kinds.find((k) => k.key === "bingo")?.key ?? kinds[0]?.key ?? "custom");
+  const kinds = [...offered].sort((a, b) => rankOf(a.key) - rankOf(b.key));
+  const [kind, setKind] = useState<string>(() => kinds[0]?.key ?? "custom");
   const [stream, setStream] = useState<StreamKey>("quick");
   const [schemas, setSchemas] = useState<Record<string, OptionSchema>>({});
   const [loadProblem, setLoadProblem] = useState<Problem>(null);
@@ -162,7 +167,7 @@ export function EventStreams({
                 <div className="min-w-0">
                   <p className="break-words font-medium">{d.title}</p>
                   <p className="text-xs text-muted">
-                    {d.templateLabel} · {STREAM_LABEL[d.stream] ?? d.stream} · {d.missingCount === 0 ? "ready to create" : `${d.missingCount} ${d.missingCount === 1 ? "thing" : "things"} still needed`} · saved {formatUtc(d.updatedAt)}
+                    {d.templateLabel} · {STREAM_LABEL[d.stream.toLowerCase()] ?? d.stream} · {d.missingCount === 0 ? "ready to create" : `${d.missingCount} ${d.missingCount === 1 ? "thing" : "things"} still needed`} · saved {formatUtc(d.updatedAt)}
                     {d.createdByName ? ` · started by ${d.createdByName}` : ""}
                   </p>
                 </div>
