@@ -7,6 +7,7 @@ import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
@@ -64,6 +65,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [newShape, setNewShape] = useState("");
   const [pickedLook, setPickedLook] = useState<string | null>(null);
   const [organiser, setOrganiser] = useState("");
+  const [setupDraft, setSetupDraft] = useState<SetupDraft>(setupFromConfig(initial.event.config));
 
   async function refresh() {
     const [d, c, s, a] = await Promise.all([call("GET", base), call("GET", `${base}/claims`), call("GET", `${base}/standings`), call("GET", `${base}/awards`)]);
@@ -287,6 +289,112 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
             <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
           </dl>
+          {e.status !== "CANCELLED" && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">Before it starts</p>
+                {detail.prep.ready ? <StatusBadge tone="good">Ready to start</StatusBadge> : e.status === "DRAFT" || e.status === "SIGNUPS" ? <StatusBadge tone="warn">Not ready yet</StatusBadge> : null}
+              </div>
+              <ol className="space-y-3">
+                {detail.prep.steps.map((s) => (
+                  <li key={s.key} className="flex gap-3">
+                    <span
+                      aria-hidden
+                      className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border text-[11px] ${s.state === "DONE" ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-300" : s.state === "ACTIVE" ? "border-gold bg-gold/15 text-gold" : "border-surface-border text-muted"}`}
+                    >
+                      {s.state === "DONE" ? "✓" : s.state === "SKIPPED" ? "–" : "•"}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="font-medium">
+                        {s.label}
+                        {!s.required && <span className="ml-2 text-xs font-normal text-muted">optional for this event</span>}
+                      </p>
+                      <p className="text-xs text-muted">{s.detail}</p>
+                      {s.key === "signups" && detail.setup.signupsClosedAt && (
+                        <p className="text-xs text-muted">
+                          Closed {formatUtc(detail.setup.signupsClosedAt)}
+                          {detail.setup.signupsClosedBy ? ` by ${detail.setup.signupsClosedBy}` : ""}.
+                        </p>
+                      )}
+                      {s.key === "roster" && detail.setup.rosterConfirmedAt && (
+                        <p className="text-xs text-muted">
+                          Confirmed {formatUtc(detail.setup.rosterConfirmedAt)}
+                          {detail.setup.rosterConfirmedBy ? ` by ${detail.setup.rosterConfirmedBy}` : ""}.
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {s.key === "signups" && e.status === "SIGNUPS" && !detail.setup.signupsClosedAt && (
+                          <button
+                            type="button"
+                            className={primaryButton}
+                            disabled={pending}
+                            onClick={() =>
+                              window.confirm("Close signups? Players can no longer join themselves, the Discord signup is paused, and the roster is synced one last time. Staff can still add late entries.") &&
+                              run("POST", `${base}/signup/close`, {}, "Signups are closed. The roster was synced one last time: check it, then confirm it.")
+                            }
+                          >
+                            Close signups
+                          </button>
+                        )}
+                        {s.key === "signups" && e.status === "SIGNUPS" && detail.setup.signupsClosedAt && (
+                          <button
+                            type="button"
+                            className={ghostButton}
+                            disabled={pending}
+                            onClick={() => window.confirm("Reopen signups? Players can join again, and the roster has to be confirmed again once you close them.") && run("POST", `${base}/signup/reopen`, {}, "Signups are open again.")}
+                          >
+                            Reopen signups
+                          </button>
+                        )}
+                        {s.key === "roster" && e.status === "SIGNUPS" && detail.setup.signupsClosedAt && !detail.setup.rosterConfirmedAt && (
+                          <>
+                            <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/roster/confirm`, {}, "The roster is confirmed.")}>
+                              Confirm the roster
+                            </button>
+                            <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
+                              Check the list first
+                            </button>
+                          </>
+                        )}
+                        {s.key === "verification" && s.state !== "DONE" && (
+                          <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
+                            Decide on the Teams and players tab
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {detail.prep.warnings.map((w) => (
+                <p key={w} className="text-xs text-gold">
+                  {w}
+                </p>
+              ))}
+              {!detail.prep.ready && (e.status === "DRAFT" || e.status === "SIGNUPS") && <p className="text-xs text-muted">It can&apos;t start yet: {detail.prep.blockers.join(" ")}</p>}
+            </div>
+          )}
+          <div className="space-y-3 rounded-xl border border-surface-border p-4">
+            <p className="font-medium">Setup and verification</p>
+            {editable ? (
+              <>
+                <EventSetupFields value={setupDraft} onChange={setSetupDraft} disabled={pending} />
+                <button
+                  type="button"
+                  className={primaryButton}
+                  disabled={pending || JSON.stringify(setupDraft) === JSON.stringify(setupFromConfig(e.config))}
+                  onClick={() => run("PUT", base, { config: setupToConfig({ ...e.config }, setupDraft) }, "Setup saved.")}
+                >
+                  Save
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-muted">
+                {(e.config.setup?.mode ?? "OFF") === "OFF" ? "This event doesn't follow the setup steps." : "This event follows the setup steps."}{" "}
+                {e.config.verification?.required ? `Players must be verified ${GATES.find((g) => g.id === (e.config.verification?.gate ?? "TEAMS"))?.label.toLowerCase()}.` : "Players aren't asked to verify."}
+              </p>
+            )}
+          </div>
           <div className="space-y-2 rounded-xl border border-surface-border p-4">
             <p className="font-medium">Signup panel</p>
             {!detail.signup.attached ? (
@@ -669,6 +777,18 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <p className="text-xs text-muted">Staff can add players any time, including after signups close. A full event puts them on the waitlist.</p>
           </div>
 
+          {detail.verification.required && (
+            <div className="space-y-1 rounded-xl border border-surface-border p-4 text-sm">
+              <p className="font-medium">Verification</p>
+              <p className="text-muted">
+                {detail.verification.verified} verified
+                {detail.verification.waived > 0 ? `, ${detail.verification.waived} let through` : ""}, {detail.verification.pending} waiting for a decision, {detail.verification.rejected} turned down. Players must pass{" "}
+                {GATES.find((g) => g.id === detail.verification.gate)?.label.toLowerCase()}.
+              </p>
+              {detail.verification.instructions && <p className="text-xs text-muted">Players were told: {detail.verification.instructions}</p>}
+            </div>
+          )}
+
           <ul className="divide-y divide-surface-border">
             {detail.participants.length === 0 && <li className="py-3 text-sm text-muted">Nobody has joined yet.</li>}
             {detail.participants.map((p) => (
@@ -677,6 +797,42 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   <span className="font-medium">{p.userName ?? `Player ${p.userId}`}</span> <span className="text-xs text-muted">{KIND_LABEL[p.kind]}</span>
                   {p.waiting && <span className="ml-2"><StatusBadge tone="warn">Waiting</StatusBadge></span>}
                 </span>
+                {detail.verification.required && !p.waiting && (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <StatusBadge tone={p.verification === "VERIFIED" || p.verification === "WAIVED" ? "good" : "warn"}>
+                      {{ VERIFIED: "Verified", WAIVED: "Waived", PENDING: "Needs verification", REJECTED: "Turned down", NOT_REQUIRED: "Not required" }[p.verification]}
+                    </StatusBadge>
+                    {p.verification !== "VERIFIED" && (
+                      <button type="button" className="text-xs text-gold underline" disabled={pending} onClick={() => run("PUT", `${base}/participants/${p.userId}/verification`, { state: "verified" }, `${nameOf(p.userId)} is verified.`)}>
+                        Verify
+                      </button>
+                    )}
+                    {p.verification !== "VERIFIED" && p.verification !== "WAIVED" && (
+                      <button type="button" className="text-xs text-gold underline" disabled={pending} title="Let them through without proof" onClick={() => run("PUT", `${base}/participants/${p.userId}/verification`, { state: "waived" }, `${nameOf(p.userId)} was let through without proof.`)}>
+                        Waive
+                      </button>
+                    )}
+                    {p.verification !== "REJECTED" && (
+                      <button
+                        type="button"
+                        className="text-xs text-red-400 underline"
+                        disabled={pending}
+                        onClick={() => {
+                          const why = window.prompt(`Why is ${nameOf(p.userId)}'s verification turned down? They will see this.`);
+                          if (why && why.trim()) run("PUT", `${base}/participants/${p.userId}/verification`, { state: "rejected", note: why.trim() }, `${nameOf(p.userId)}'s verification was turned down.`);
+                        }}
+                      >
+                        Turn down
+                      </button>
+                    )}
+                    {p.verification !== "PENDING" && (
+                      <button type="button" className="text-xs text-muted underline" disabled={pending} onClick={() => run("PUT", `${base}/participants/${p.userId}/verification`, { state: "pending" }, `${nameOf(p.userId)} is waiting for a decision again.`)}>
+                        Reset
+                      </button>
+                    )}
+                    {p.verification === "REJECTED" && p.verificationNote && <span className="basis-full text-xs text-muted">Reason: {p.verificationNote}</span>}
+                  </span>
+                )}
                 <select className={`${inputClass} max-w-40`} value={p.teamId ?? ""} onChange={(ev) => run("PUT", `${base}/participants/${p.userId}`, { teamId: ev.target.value || null }, "Team changed.")}>
                   <option value="">No team</option>
                   {detail.teams.map((t) => (

@@ -24,6 +24,10 @@ export interface EventSummary {
     boardChannelId?: string;
     reviewChannelId?: string;
     buyIn?: { enabled?: boolean; kind?: string; amount?: number; showPot?: boolean };
+    /** How much of the setup checklist the event follows: none ("OFF", start whenever) or the steps ("STANDARD"; "FULL" adds later ones). */
+    setup?: { mode?: "OFF" | "STANDARD" | "FULL" };
+    /** Whether players must be verified, by when, and what they are told to send. */
+    verification?: { required?: boolean; gate?: VerificationGate; instructions?: string };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
     board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string };
     bonuses?: EventBonus[];
@@ -31,6 +35,47 @@ export interface EventSummary {
     blackoutBonus?: number;
   };
   createdAt: string;
+}
+
+/** When a player must have passed verification to count: when signing up, before teams are made, or before the event starts. */
+export type VerificationGate = "SIGNUP" | "TEAMS" | "START";
+export type VerificationState = "NOT_REQUIRED" | "PENDING" | "VERIFIED" | "REJECTED" | "WAIVED";
+
+/** One line of the "before it starts" checklist; `required` steps hold the start back and `blockers` says why in words. */
+export interface EventPrepStep {
+  key: string;
+  label: string;
+  state: "WAITING" | "ACTIVE" | "DONE" | "SKIPPED";
+  required: boolean;
+  detail: string;
+  blockers: string[];
+}
+
+export interface EventPrep {
+  steps: EventPrepStep[];
+  /** Everything that stops the event starting right now. */
+  blockers: string[];
+  /** Things worth knowing that don't stop it. */
+  warnings: string[];
+  ready: boolean;
+}
+
+export interface EventSetupInfo {
+  signupsClosedAt: string | null;
+  signupsClosedBy: string | null;
+  rosterConfirmedAt: string | null;
+  rosterConfirmedBy: string | null;
+}
+
+/** The event's verification settings and how many players are in each state (the waitlist isn't counted). */
+export interface EventVerification {
+  required: boolean;
+  gate: VerificationGate;
+  instructions: string;
+  verified: number;
+  waived: number;
+  pending: number;
+  rejected: number;
 }
 
 export interface EventBonus {
@@ -64,6 +109,11 @@ export interface EventPlayer {
   kind: "HOME_CLAN" | "HOME_OTHER" | "PARTNER";
   waiting: boolean;
   buyIn: "NONE" | "DUE" | "PAID" | "REFUNDED";
+  /** "NOT_REQUIRED" unless the event asks for verification. */
+  verification: VerificationState;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  verificationNote: string;
 }
 
 export interface EventPrize {
@@ -150,6 +200,10 @@ export interface EventDetail {
   buyInEnabled: boolean;
   nextStages: EventStatus[];
   editable: boolean;
+  /** The checklist of what is left before the event can start. */
+  prep: EventPrep;
+  setup: EventSetupInfo;
+  verification: EventVerification;
 }
 
 export interface EventClaim {

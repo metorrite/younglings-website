@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { Card, FormField, formatUtc, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { EventSetupFields, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { DEFAULT_BINGO_LOOK, type EventList, type EventStatus } from "@/lib/eventTypes";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { choicesOf, type GuildStructure, type WelcomeActionResult } from "@/lib/jonnybot-admin";
@@ -63,6 +64,7 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [queue, setQueue] = useState("FIRST_COME");
   const [teamPolicy, setTeamPolicy] = useState("everyone");
   const [closes, setCloses] = useState("");
+  const [setup, setSetup] = useState<SetupDraft>(setupFromConfig(undefined));
   const [signupChannel, setSignupChannel] = useState<string | null>(null);
   const [staffChannel, setStaffChannel] = useState<string | null>(null);
   const [problem, setProblem] = useState<{ title: string; items: string[] } | null>(null);
@@ -71,7 +73,7 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
 
   function create() {
     setProblem(null);
-    const config: Record<string, unknown> = { queue, teamPolicy };
+    const config: Record<string, unknown> = setupToConfig({ queue, teamPolicy }, setup);
     if (template === "boss-night") {
       if (bossName.trim()) config.boss = bossName.trim();
       config.kills = Number(bossKills);
@@ -334,6 +336,7 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
               <input className={inputClass} type="datetime-local" value={closes} onChange={(e) => setCloses(e.target.value)} />
             </FormField>
           </div>
+          <EventSetupFields value={setup} onChange={setSetup} />
           <div className="grid gap-4 md:grid-cols-2">
             <FormField label="Who may join and share a team">
               <select className={inputClass} value={teamPolicy} onChange={(e) => setTeamPolicy(e.target.value)}>
