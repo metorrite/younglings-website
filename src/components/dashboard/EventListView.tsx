@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Card, FormField, formatUtc, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
-import type { EventList, EventStatus } from "@/lib/eventTypes";
+import { DEFAULT_BINGO_LOOK, type EventList, type EventStatus } from "@/lib/eventTypes";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { choicesOf, type GuildStructure, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
@@ -19,6 +20,15 @@ const TONE: Record<EventStatus, "good" | "muted" | "warn"> = { DRAFT: "muted", S
 export const STAGE_LABEL: Record<EventStatus, string> = { DRAFT: "Draft", SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Done", CANCELLED: "Cancelled" };
 
 /** The server's events, and a form to start a new one. Every setting here can be changed later while the event is a draft or taking signups. */
+/** The shapes a bingo can have (the pictures live in the bot); the first is the usual square grid. */
+const BINGO_SHAPES = [
+  { id: "grid", name: "Square grid", blurb: "Rows, columns and diagonals earn bonuses." },
+  { id: "path", name: "The Adventurer's Path", blurb: "24 tiles along a winding trail from the start to the treasure chest." },
+  { id: "pyramid", name: "Pyramid of the Pharaohs", blurb: "15 tiles in five tiers: five at the base, one fewer each step up, one at the apex." },
+  { id: "convergence", name: "The Boss Convergence", blurb: "12 tiles on the outer ring, 4 on the inner ring and the final boss in the centre." },
+  { id: "tree", name: "The World Tree", blurb: "7 roots grow through branches and limbs up to the crown (16 tiles)." },
+];
+
 export function EventListView({ initial, structure, guildId, call }: { initial: EventList; structure: GuildStructure; guildId: string; call: EventCall }) {
   const router = useRouter();
   const [events, setEvents] = useState(initial.events);
@@ -39,6 +49,10 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [bossPoints, setBossPoints] = useState("10");
   const [xpPerPoint, setXpPerPoint] = useState("10000");
   const [boardSize, setBoardSize] = useState("5");
+  const [boardShape, setBoardShape] = useState("grid");
+  const [boardLook, setBoardLook] = useState<string>(DEFAULT_BINGO_LOOK);
+  const [boardPool, setBoardPool] = useState("drops");
+  const [unlockMode, setUnlockMode] = useState("auto");
   const [lineBonus, setLineBonus] = useState("50");
   const [blackoutBonus, setBlackoutBonus] = useState("250");
   const [scoringMode, setScoringMode] = useState("INDIVIDUAL");
@@ -78,7 +92,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
     if (template === "bingo") {
       if (boardChannel) config.boardChannelId = boardChannel;
       if (reviewChannel) config.reviewChannelId = reviewChannel;
-      config.board = { size: Number(boardSize) };
+      const board: Record<string, unknown> = boardShape === "grid" ? { size: Number(boardSize) } : { layout: boardShape };
+      board.look = boardLook;
+      if (boardPool !== "drops") board.pool = boardPool;
+      if (boardShape !== "grid" && unlockMode !== "auto") board.unlock = unlockMode;
+      config.board = board;
       config.lineBonus = Number(lineBonus.replace(/[, ]/g, "") || 0);
       config.blackoutBonus = Number(blackoutBonus.replace(/[, ]/g, "") || 0);
     }
@@ -190,16 +208,46 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
           </FormField>
           {template === "bingo" && (
             <div className="grid gap-4 rounded-lg border border-surface-border p-4 md:grid-cols-3">
-              <FormField label="Board size" hint="3 to 7 tiles across.">
-                <select className={inputClass} value={boardSize} onChange={(e) => setBoardSize(e.target.value)}>
-                  {[3, 4, 5, 6, 7].map((n) => (
-                    <option key={n} value={n}>
-                      {n} × {n} ({n * n} tiles)
+              <FormField label="Board shape" hint={BINGO_SHAPES.find((x) => x.id === boardShape)?.blurb}>
+                <select className={inputClass} value={boardShape} onChange={(e) => setBoardShape(e.target.value)}>
+                  {BINGO_SHAPES.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
                     </option>
                   ))}
                 </select>
               </FormField>
-              <FormField label="Bonus per line" hint="Row, column or diagonal. 0 for none.">
+              {boardShape === "grid" ? (
+                <FormField label="Board size" hint="3 to 7 tiles across.">
+                  <select className={inputClass} value={boardSize} onChange={(e) => setBoardSize(e.target.value)}>
+                    {[3, 4, 5, 6, 7].map((n) => (
+                      <option key={n} value={n}>
+                        {n} × {n} ({n * n} tiles)
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+              ) : (
+                <FormField label="Tiles open" hint="In order, a tile can only be done once the tiles it rests on are done (a drop for a closed tile can't be saved). Automatic is in order for tasks and any order for drops.">
+                  <select className={inputClass} value={unlockMode} onChange={(e) => setUnlockMode(e.target.value)}>
+                    <option value="auto">Automatic</option>
+                    <option value="locked">In order</option>
+                    <option value="free">Any order (the shape only earns bonuses)</option>
+                  </select>
+                </FormField>
+              )}
+              <div className="md:col-span-3">
+                <FormField label="Look" as="group" hint="What the board picture in Discord is drawn on. You can change it any time before the event ends.">
+                  <BingoLookPicker shape={boardShape} value={boardLook} onChange={setBoardLook} />
+                </FormField>
+              </div>
+              <FormField label="Tiles come from" hint="You can edit, lock and swap any tile afterwards.">
+                <select className={inputClass} value={boardPool} onChange={(e) => setBoardPool(e.target.value)}>
+                  <option value="drops">Boss drops</option>
+                  <option value="classic">Kills, skilling and goals</option>
+                </select>
+              </FormField>
+              <FormField label={boardShape === "grid" ? "Bonus per line" : "Bonus per tier, row or ring"} hint={boardShape === "grid" ? "Row, column or diagonal. 0 for none." : "Each finished tier, stretch or ring. 0 for none."}>
                 <input className={inputClass} inputMode="numeric" value={lineBonus} onChange={(e) => setLineBonus(e.target.value)} />
               </FormField>
               <FormField label="Blackout bonus" hint="Every tile done. 0 for none.">

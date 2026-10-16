@@ -14,7 +14,7 @@ const ALLOWED = [
   /^events\/templates$/,
   /^events\/(bingo-catalog|archive-finished)$/,
   /^events\/\d{1,18}$/,
-  /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board|organisers|archive)$/,
+  /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board|organisers|archive|look)$/,
   /^events\/\d{1,18}\/signup\/(sync|close|reopen)$/,
   /^events\/\d{1,18}\/roster\/confirm$/,
   /^events\/\d{1,18}\/participants\/\d{1,20}\/verification$/,
