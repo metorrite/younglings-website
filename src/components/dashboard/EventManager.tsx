@@ -6,7 +6,8 @@ import { useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { ChannelSelect } from "@/components/admin/pickers";
-import type { EventAward, EventClaims, EventDetail, EventObjective, EventPrize, EventStandings, EventStatus, BingoCatalog } from "@/lib/eventTypes";
+import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
 type Tab = "overview" | "board" | "objectives" | "players" | "progress" | "standings" | "prizes";
@@ -60,6 +61,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [boardChannel, setBoardChannel] = useState<string | null>(initial.event.config.boardChannelId ?? null);
   const [reviewChannel, setReviewChannel] = useState<string | null>(initial.event.config.reviewChannelId ?? null);
   const [newSize, setNewSize] = useState("");
+  const [newShape, setNewShape] = useState("");
+  const [pickedLook, setPickedLook] = useState<string | null>(null);
   const [organiser, setOrganiser] = useState("");
 
   async function refresh() {
@@ -139,6 +142,104 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       {to === "SIGNUPS" ? "Open signups" : to === "RUNNING" ? "Start the event" : to === "SCORING" ? "Move to scoring" : to === "DONE" ? "Finish" : to === "CANCELLED" ? "Cancel event" : `Back to ${STAGE_LABEL[to].toLowerCase()}`}
     </button>
   );
+  const layout = detail.layout ?? null;
+  /** The look the board's settings name, or null when it names none (it is drawn the way boards were before looks existed). */
+  const currentLook = e.config.board?.look ?? null;
+  /** One tile of the board with its lock, edit and points, the same on a square grid and on a shaped board. */
+  const renderTile = (key: string, index: number) => {
+              const o = detail.objectives.find((x) => x.key === key);
+              const info = detail.tiles.find((x) => x.key === key);
+              const done = standings.standings.filter((s) => (s.completions[key] ?? 0) > 0).length;
+              const isLocked = locked.includes(key);
+              const isEditing = editing === key;
+              const bossItems = catalog?.bosses.find((bo) => bo.name === draftBoss)?.items ?? [];
+              const draftIcon = bossItems.find((it) => it.name === draftItem && it.icon)?.key;
+              return (
+                <div
+                  key={key}
+                  className={`flex min-w-0 flex-col gap-2 rounded-lg border p-3 text-xs sm:text-sm ${isEditing ? "col-span-full sm:col-span-2" : ""} ${isLocked ? "border-gold bg-gold/10" : "border-surface-border bg-surface"}`}
+                >
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted">
+                    <span className="tabular-nums">#{index + 1}</span>
+                    {editable && !isEditing && (
+                      <span className="flex gap-3">
+                        <button type="button" aria-pressed={isLocked} className={isLocked ? "text-gold underline" : "underline"} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
+                          {isLocked ? "Locked" : "Lock"}
+                        </button>
+                        <button type="button" className="text-gold underline" onClick={() => editTile(key)}>
+                          Edit
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <select className={inputClass} value={draftBoss} onChange={(ev) => { setDraftBoss(ev.target.value); setDraftItem(""); }} aria-label="Boss">
+                        <option value="">Custom tile (type it)</option>
+                        {catalog?.bosses.map((bo) => (
+                          <option key={bo.name} value={bo.name}>
+                            {bo.name}
+                          </option>
+                        ))}
+                        {draftBoss && catalog && !catalog.bosses.some((bo) => bo.name === draftBoss) && <option value={draftBoss}>{draftBoss}</option>}
+                      </select>
+                      {draftBoss && bossItems.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          {draftIcon && <img src={`/items/${draftIcon}.png`} alt="" width={32} height={32} className="shrink-0 [image-rendering:pixelated]" />}
+                          <select className={inputClass} value={draftItem} onChange={(ev) => setDraftItem(ev.target.value)} aria-label="Item from this boss's loot table">
+                            <option value="">Choose an item</option>
+                            {bossItems.map((it) => (
+                              <option key={it.key} value={it.name}>
+                                {it.name}
+                                {it.rarity ? ` (${it.rarity})` : ""}
+                              </option>
+                            ))}
+                            {draftItem && !bossItems.some((it) => it.name === draftItem) && <option value={draftItem}>{draftItem}</option>}
+                          </select>
+                        </div>
+                      ) : (
+                        <input className={inputClass} placeholder="Tile text, e.g. Reach 99 Slayer" value={draftCustom} maxLength={80} onChange={(ev) => setDraftCustom(ev.target.value)} aria-label="Tile text" />
+                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="flex items-center gap-1 text-xs text-muted">
+                          Points
+                          <input className={`${inputClass} w-20!`} inputMode="numeric" value={draftPoints} onChange={(ev) => setDraftPoints(ev.target.value)} />
+                        </label>
+                        <button
+                          type="button"
+                          className={primaryButton}
+                          disabled={pending || (draftBoss && bossItems.length > 0 ? !draftItem : !draftCustom.trim())}
+                          onClick={() => saveTile(index + 1)}
+                        >
+                          Save tile
+                        </button>
+                        <button type="button" className="text-sm text-muted underline" onClick={() => setEditing(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex min-h-28 flex-1 flex-col items-center justify-center gap-1 text-center">
+                      {info?.icon ? (
+                        <img src={`/items/${info.icon}.png`} alt="" width={60} height={60} className="h-14 w-auto [image-rendering:pixelated]" loading="lazy" />
+                      ) : (
+                        <span className="grid h-14 w-14 place-items-center rounded-md border border-dashed border-surface-border text-muted" aria-hidden>
+                          ?
+                        </span>
+                      )}
+                      {info?.boss && <span className="text-xs text-muted">{info.boss}</span>}
+                      <span className="line-clamp-3 break-words font-medium">{info?.boss ? info.item : (o?.label ?? key)}</span>
+                    </div>
+                  )}
+                  {!isEditing && (
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-muted">
+                      <span className="tabular-nums">{o?.points ?? 0} pts</span>
+                      {!editable && done > 0 ? <span>{done} done</span> : null}
+                    </div>
+                  )}
+                </div>
+              );
+  };
   const nameOf = (userId: string) => detail.participants.find((p) => p.userId === userId)?.userName ?? `Player ${userId}`;
   const active = detail.participants.filter((p) => !p.waiting);
 
@@ -269,109 +370,50 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       {tab === "board" && e.template === "bingo" && e.config.board && (
         <section className="space-y-4">
           <p className="text-sm text-muted">
-            A {e.config.board.size} × {e.config.board.size} board. Lock the tiles you like, then re-roll to change the rest, or press Edit on a tile to pick its boss and item (or type your own tile). Tiles are ordinary objectives, so you can also rename them on the Objectives tab.
+            {layout ? `A ${layout.name} board of ${layout.tiles} tiles.` : `A ${e.config.board.size} × ${e.config.board.size} board.`} Lock the tiles you like, then re-roll to change the rest, or press Edit on a tile to pick its boss and item (or type your own tile). Tiles are ordinary objectives, so you can also rename them on the Objectives tab.
           </p>
-          <div className="grid max-w-5xl gap-3" style={{ gridTemplateColumns: `repeat(${e.config.board.size}, minmax(0, 1fr))` }}>
-            {e.config.board.keys.map((key, index) => {
-              const o = detail.objectives.find((x) => x.key === key);
-              const info = detail.tiles.find((x) => x.key === key);
-              const done = standings.standings.filter((s) => (s.completions[key] ?? 0) > 0).length;
-              const isLocked = locked.includes(key);
-              const isEditing = editing === key;
-              const bossItems = catalog?.bosses.find((bo) => bo.name === draftBoss)?.items ?? [];
-              const draftIcon = bossItems.find((it) => it.name === draftItem && it.icon)?.key;
-              return (
-                <div
-                  key={key}
-                  className={`flex min-w-0 flex-col gap-2 rounded-lg border p-3 text-xs sm:text-sm ${isEditing ? "col-span-full sm:col-span-2" : ""} ${isLocked ? "border-gold bg-gold/10" : "border-surface-border bg-surface"}`}
-                >
-                  <div className="flex items-center justify-between gap-2 text-xs text-muted">
-                    <span className="tabular-nums">#{index + 1}</span>
-                    {editable && !isEditing && (
-                      <span className="flex gap-3">
-                        <button type="button" aria-pressed={isLocked} className={isLocked ? "text-gold underline" : "underline"} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
-                          {isLocked ? "Locked" : "Lock"}
-                        </button>
-                        <button type="button" className="text-gold underline" onClick={() => editTile(key)}>
-                          Edit
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <select className={inputClass} value={draftBoss} onChange={(ev) => { setDraftBoss(ev.target.value); setDraftItem(""); }} aria-label="Boss">
-                        <option value="">Custom tile (type it)</option>
-                        {catalog?.bosses.map((bo) => (
-                          <option key={bo.name} value={bo.name}>
-                            {bo.name}
-                          </option>
-                        ))}
-                        {draftBoss && catalog && !catalog.bosses.some((bo) => bo.name === draftBoss) && <option value={draftBoss}>{draftBoss}</option>}
-                      </select>
-                      {draftBoss && bossItems.length > 0 ? (
-                        <div className="flex items-center gap-2">
-                          {draftIcon && <img src={`/items/${draftIcon}.png`} alt="" width={32} height={32} className="shrink-0 [image-rendering:pixelated]" />}
-                          <select className={inputClass} value={draftItem} onChange={(ev) => setDraftItem(ev.target.value)} aria-label="Item from this boss's loot table">
-                            <option value="">Choose an item</option>
-                            {bossItems.map((it) => (
-                              <option key={it.key} value={it.name}>
-                                {it.name}
-                                {it.rarity ? ` (${it.rarity})` : ""}
-                              </option>
-                            ))}
-                            {draftItem && !bossItems.some((it) => it.name === draftItem) && <option value={draftItem}>{draftItem}</option>}
-                          </select>
+          {layout ? (
+            <div className="space-y-5">
+              <div className="rounded-lg border border-surface-border bg-surface p-3 text-sm">
+                <p className="font-medium">{layout.name}</p>
+                <p className="mt-1 text-xs text-muted">{layout.rule}</p>
+                <p className="mt-1 text-xs text-muted">
+                  {layout.unlock === "locked"
+                    ? "Tiles open in order: a closed tile can't be completed until the tiles it needs are done (shown under each tile)."
+                    : "Tiles can be done in any order; the shape only earns its tier, row or ring bonuses."}
+                </p>
+              </div>
+              {layout.rows.map((row, r) => (
+                <div key={r}>
+                  <p className="mb-2 text-center text-[11px] font-semibold tracking-wider text-muted/80 uppercase">{layout.rowNames[r]}</p>
+                  <div className="flex flex-wrap items-start justify-center gap-3">
+                    {row.map((n) => {
+                      const key = e.config.board?.keys[n - 1];
+                      const needs = layout.unlock === "locked" ? layout.requires[String(n)] : undefined;
+                      if (!key) return null;
+                      return (
+                        <div key={n} className={editing === key ? "w-full sm:w-96" : "w-44"}>
+                          {renderTile(key, n - 1)}
+                          {needs && needs.length > 0 && <p className="mt-1 text-center text-[11px] text-muted">Needs {needs.map((x) => `#${x}`).join(", ")}</p>}
                         </div>
-                      ) : (
-                        <input className={inputClass} placeholder="Tile text, e.g. Reach 99 Slayer" value={draftCustom} maxLength={80} onChange={(ev) => setDraftCustom(ev.target.value)} aria-label="Tile text" />
-                      )}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label className="flex items-center gap-1 text-xs text-muted">
-                          Points
-                          <input className={`${inputClass} w-20!`} inputMode="numeric" value={draftPoints} onChange={(ev) => setDraftPoints(ev.target.value)} />
-                        </label>
-                        <button
-                          type="button"
-                          className={primaryButton}
-                          disabled={pending || (draftBoss && bossItems.length > 0 ? !draftItem : !draftCustom.trim())}
-                          onClick={() => saveTile(index + 1)}
-                        >
-                          Save tile
-                        </button>
-                        <button type="button" className="text-sm text-muted underline" onClick={() => setEditing(null)}>
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex min-h-28 flex-1 flex-col items-center justify-center gap-1 text-center">
-                      {info?.icon ? (
-                        <img src={`/items/${info.icon}.png`} alt="" width={60} height={60} className="h-14 w-auto [image-rendering:pixelated]" loading="lazy" />
-                      ) : (
-                        <span className="grid h-14 w-14 place-items-center rounded-md border border-dashed border-surface-border text-muted" aria-hidden>
-                          ?
-                        </span>
-                      )}
-                      {info?.boss && <span className="text-xs text-muted">{info.boss}</span>}
-                      <span className="line-clamp-3 break-words font-medium">{info?.boss ? info.item : (o?.label ?? key)}</span>
-                    </div>
-                  )}
-                  {!isEditing && (
-                    <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-muted">
-                      <span className="tabular-nums">{o?.points ?? 0} pts</span>
-                      {!editable && done > 0 ? <span>{done} done</span> : null}
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid max-w-5xl gap-3" style={{ gridTemplateColumns: `repeat(${e.config.board.size}, minmax(0, 1fr))` }}>
+              {e.config.board.keys.map((key, index) => renderTile(key, index))}
+            </div>
+          )}
           {editable ? (
             <div className="flex flex-wrap items-end gap-2">
               <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/bingo`, { lockedKeys: locked }, locked.length ? "Re-rolled. Locked tiles stayed." : "Re-rolled the board.")}>
                 Re-roll{locked.length ? ` (keep ${locked.length} locked)` : ""}
               </button>
+              {!layout && (
+              <>
               <select className={`${inputClass} max-w-40`} value={newSize} onChange={(ev) => setNewSize(ev.target.value)} aria-label="Board size">
                 <option value="">Same size</option>
                 {[3, 4, 5, 6, 7].filter((n) => n !== e.config.board?.size).map((n) => (
@@ -388,6 +430,29 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               >
                 Change size
               </button>
+              </>
+              )}
+              <select className={`${inputClass} max-w-56`} value={newShape} onChange={(ev) => setNewShape(ev.target.value)} aria-label="Board shape">
+                <option value="">Change shape…</option>
+                {[["grid", "Square grid"], ["path", "The Adventurer's Path"], ["pyramid", "Pyramid of the Pharaohs"], ["convergence", "The Boss Convergence"], ["tree", "The World Tree"]]
+                  .filter(([id]) => id !== (layout?.id ?? "grid"))
+                  .map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+              </select>
+              <button
+                type="button"
+                className={ghostButton}
+                disabled={pending || !newShape}
+                onClick={() =>
+                  window.confirm("Change the shape? That makes a fresh board and drops locks.") &&
+                  run("POST", `${base}/bingo`, newShape === "grid" ? { layout: "grid", size: 5 } : { layout: newShape }, "New board made.", () => { setNewShape(""); setLocked([]); })
+                }
+              >
+                Change shape
+              </button>
               {locked.length > 0 && (
                 <button type="button" className="text-sm text-muted underline" onClick={() => setLocked([])}>
                   Clear locks
@@ -396,6 +461,26 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             </div>
           ) : (
             <p className="text-sm text-muted">The board is locked now that the event has started.</p>
+          )}
+          {e.status !== "DONE" && e.status !== "CANCELLED" && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <div>
+                <p className="text-sm font-medium">Look</p>
+                <p className="text-xs text-muted">
+                  What the board picture in Discord is drawn on. Only the picture changes, never the tiles or the rules, so it can be changed any time before the event is over
+                  {currentLook ? "" : ` (this board is still drawn the original way: ${layout ? "in the template picture" : "as the plain dark board"})`}.
+                </p>
+              </div>
+              <BingoLookPicker shape={layout?.id ?? "grid"} value={pickedLook ?? currentLook ?? (layout ? "classic" : "plain")} onChange={setPickedLook} allowPlain={!layout} disabled={pending} />
+              <button
+                type="button"
+                className={primaryButton}
+                disabled={pending || !pickedLook || pickedLook === (currentLook ?? (layout ? "classic" : "plain"))}
+                onClick={() => pickedLook && run("POST", `${base}/look`, { look: pickedLook === PLAIN_LOOK.id ? "" : pickedLook }, `The board is now drawn in the ${[...BINGO_LOOKS, PLAIN_LOOK].find((x) => x.id === pickedLook)?.label ?? ""} look.`, () => setPickedLook(null))}
+              >
+                Use this look
+              </button>
+            </div>
           )}
           {structure && (
             <div className="space-y-3 rounded-xl border border-surface-border p-4">
