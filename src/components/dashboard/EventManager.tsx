@@ -8,6 +8,7 @@ import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListVie
 import { ChannelSelect } from "@/components/admin/pickers";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
+import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
@@ -26,7 +27,6 @@ const KIND_LABEL = { HOME_CLAN: "Clan member", HOME_OTHER: "This server", PARTNE
 const gp = (n: number) => n.toLocaleString("en-GB") + " gp";
 
 const emptyObjective = (): EventObjective => ({ key: "", label: "", description: "", points: 10, evidence: "EITHER", target: 1, repeatLimit: 1, prerequisites: [] });
-const emptyPrize = (): EventPrize => ({ id: "", place: 1, placeTo: 1, kind: "IN_GAME", description: "", amount: 0, percentOfPot: 0, split: "EQUAL" });
 
 /** Runs one event: its stages, objectives, teams and players, progress and proof, standings, and prizes. */
 export function EventManager({ initial, initialClaims, initialStandings, initialAwards, structure, call }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; structure?: GuildStructure; call: EventCall }) {
@@ -65,6 +65,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [newShape, setNewShape] = useState("");
   const [pickedLook, setPickedLook] = useState<string | null>(null);
   const [organiser, setOrganiser] = useState("");
+  const [tplName, setTplName] = useState(initial.event.name.slice(0, 60));
+  const [tplNote, setTplNote] = useState("");
   const [setupDraft, setSetupDraft] = useState<SetupDraft>(setupFromConfig(initial.event.config));
 
   async function refresh() {
@@ -468,6 +470,30 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 </button>
               </div>
             )}
+          </div>
+          <div className="space-y-2 rounded-xl border border-surface-border p-4">
+            <p className="font-medium">Save as a template</p>
+            <p className="text-xs text-muted">
+              Keep this event&apos;s settings, channels and prizes under a name, to make similar events from the event list in one step. Players, progress, board tiles and dates are not kept.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <label className="text-xs text-muted">
+                Template name
+                <input className={`${inputClass} mt-1`} value={tplName} maxLength={60} onChange={(ev) => setTplName(ev.target.value)} />
+              </label>
+              <label className="text-xs text-muted">
+                Note (optional)
+                <input className={`${inputClass} mt-1`} value={tplNote} maxLength={300} onChange={(ev) => setTplNote(ev.target.value)} />
+              </label>
+              <button
+                type="button"
+                className={ghostButton}
+                disabled={pending || tplName.trim().length < 3}
+                onClick={() => run("POST", "events/saved-templates", { eventId: id, name: tplName.trim(), description: tplNote.trim() }, "Saved as a template. Find it under Your templates on the event list.")}
+              >
+                Save as a template
+              </button>
+            </div>
           </div>
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
@@ -973,35 +999,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           <p className="text-sm text-muted">
             A prize goes to one place, or to a range of places. For team events a prize is split equally, given in full to each member, or given to the captain. A prize can be a fixed amount or a share of the pot (needs a buy-in).
           </p>
-          <ul className="space-y-3">
-            {prizes.length === 0 && <li className="text-sm text-muted">No prizes yet.</li>}
-            {prizes.map((p, i) => (
-              <li key={i} className="grid gap-2 rounded-xl border border-surface-border bg-surface p-4 sm:grid-cols-2 2xl:grid-cols-[5rem_5rem_9rem_1fr_7rem_6rem_9rem]">
-                <input className={inputClass} disabled={!detail.editable && awards.length > 0} inputMode="numeric" title="First place" value={p.place} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, place: num(ev.target.value), placeTo: Math.max(x.placeTo, num(ev.target.value)) } : x)))} />
-                <input className={inputClass} inputMode="numeric" title="Last place" value={p.placeTo} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, placeTo: num(ev.target.value) } : x)))} />
-                <select className={inputClass} value={p.kind} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, kind: ev.target.value as EventPrize["kind"] } : x)))}>
-                  <option value="IN_GAME">In game</option>
-                  <option value="CLAN_POINTS">Clan points</option>
-                  <option value="OTHER">Other</option>
-                </select>
-                <input className={`${inputClass} sm:col-span-2 2xl:col-span-1`} placeholder="What it is (e.g. Zaros godsword)" value={p.description} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, description: ev.target.value } : x)))} />
-                <input className={inputClass} inputMode="numeric" title="Fixed amount (points or gp)" placeholder="Amount" value={p.amount} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, amount: num(ev.target.value) } : x)))} />
-                <input className={inputClass} inputMode="decimal" title="Share of the pot, in percent" placeholder="% of pot" value={p.percentOfPot / 100} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, percentOfPot: Math.round(Number(ev.target.value || 0) * 100) } : x)))} />
-                <select className={inputClass} value={p.split} onChange={(ev) => setPrizes(prizes.map((x, j) => (j === i ? { ...x, split: ev.target.value as EventPrize["split"] } : x)))}>
-                  <option value="EQUAL">Team splits equally</option>
-                  <option value="EACH">Each member gets it</option>
-                  <option value="CAPTAIN">Captain gets it</option>
-                </select>
-                <button type="button" className={dangerButton} onClick={() => setPrizes(prizes.filter((_, j) => j !== i))}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          <PrizeListEditor prizes={prizes} onChange={setPrizes} lockPlaces={!detail.editable && awards.length > 0} />
           <div className="flex flex-wrap gap-2">
-            <button type="button" className={ghostButton} onClick={() => setPrizes([...prizes, { ...emptyPrize(), place: prizes.length + 1, placeTo: prizes.length + 1 }])}>
-              Add a prize
-            </button>
             <button type="button" className={primaryButton} disabled={pending} onClick={() => run("PUT", `${base}/prizes`, { prizes }, "Prizes saved.")}>
               Save prizes
             </button>
