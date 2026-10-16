@@ -25,7 +25,7 @@ export interface EventSummary {
     reviewChannelId?: string;
     buyIn?: { enabled?: boolean; kind?: string; amount?: number; showPot?: boolean };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
-    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string };
+    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string };
     bonuses?: EventBonus[];
     lineBonus?: number;
     blackoutBonus?: number;
@@ -101,6 +101,18 @@ export interface EventOrganiser {
   userId: string;
   userName: string | null;
 }
+
+/**
+ * The looks a bingo board can have: what its picture in Discord is drawn on (the bot paints them; the previews are in /public/bingo-looks). A board that
+ * names no look keeps how it was drawn before looks existed: a shape in the template picture, a grid as the plain dark board ("plain" here, never sent).
+ */
+export const BINGO_LOOKS = [
+  { id: "runescape", label: "RuneScape", blurb: "A scene painted for each shape: a desert night, a treasure map, a ritual circle, an old grove. The square grid gets a stone hall." },
+  { id: "classic", label: "Template", blurb: "The original template pictures: a dark teal board with a gold frame." },
+] as const;
+/** What a new bingo gets when its creator doesn't choose. */
+export const DEFAULT_BINGO_LOOK = "runescape";
+export const PLAIN_LOOK = { id: "plain", label: "Plain", blurb: "How square grids were drawn before looks: a flat dark board." } as const;
 
 /** One of the picture shapes a bingo can have instead of a square grid, with how its tiles open up. Tile numbers are as drawn on the picture. */
 export interface BingoLayoutInfo {

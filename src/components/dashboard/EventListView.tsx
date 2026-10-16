@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Card, FormField, formatUtc, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
-import type { EventList, EventStatus } from "@/lib/eventTypes";
+import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { DEFAULT_BINGO_LOOK, type EventList, type EventStatus } from "@/lib/eventTypes";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { choicesOf, type GuildStructure, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
@@ -48,6 +49,7 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
   const [xpPerPoint, setXpPerPoint] = useState("10000");
   const [boardSize, setBoardSize] = useState("5");
   const [boardShape, setBoardShape] = useState("grid");
+  const [boardLook, setBoardLook] = useState<string>(DEFAULT_BINGO_LOOK);
   const [boardPool, setBoardPool] = useState("drops");
   const [unlockMode, setUnlockMode] = useState("auto");
   const [lineBonus, setLineBonus] = useState("50");
@@ -89,6 +91,7 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
       if (boardChannel) config.boardChannelId = boardChannel;
       if (reviewChannel) config.reviewChannelId = reviewChannel;
       const board: Record<string, unknown> = boardShape === "grid" ? { size: Number(boardSize) } : { layout: boardShape };
+      board.look = boardLook;
       if (boardPool !== "drops") board.pool = boardPool;
       if (boardShape !== "grid" && unlockMode !== "auto") board.unlock = unlockMode;
       config.board = board;
@@ -231,6 +234,11 @@ export function EventListView({ initial, structure, guildId, call }: { initial: 
                   </select>
                 </FormField>
               )}
+              <div className="md:col-span-3">
+                <FormField label="Look" as="group" hint="What the board picture in Discord is drawn on. You can change it any time before the event ends.">
+                  <BingoLookPicker shape={boardShape} value={boardLook} onChange={setBoardLook} />
+                </FormField>
+              </div>
               <FormField label="Tiles come from" hint="You can edit, lock and swap any tile afterwards.">
                 <select className={inputClass} value={boardPool} onChange={(e) => setBoardPool(e.target.value)}>
                   <option value="drops">Boss drops</option>

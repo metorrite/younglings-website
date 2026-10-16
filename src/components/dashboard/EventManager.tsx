@@ -6,7 +6,8 @@ import { useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { ChannelSelect } from "@/components/admin/pickers";
-import type { EventAward, EventClaims, EventDetail, EventObjective, EventPrize, EventStandings, EventStatus, BingoCatalog } from "@/lib/eventTypes";
+import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
 type Tab = "overview" | "board" | "objectives" | "players" | "progress" | "standings" | "prizes";
@@ -61,6 +62,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [reviewChannel, setReviewChannel] = useState<string | null>(initial.event.config.reviewChannelId ?? null);
   const [newSize, setNewSize] = useState("");
   const [newShape, setNewShape] = useState("");
+  const [pickedLook, setPickedLook] = useState<string | null>(null);
   const [organiser, setOrganiser] = useState("");
 
   async function refresh() {
@@ -141,6 +143,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
     </button>
   );
   const layout = detail.layout ?? null;
+  /** The look the board's settings name, or null when it names none (it is drawn the way boards were before looks existed). */
+  const currentLook = e.config.board?.look ?? null;
   /** One tile of the board with its lock, edit and points, the same on a square grid and on a shaped board. */
   const renderTile = (key: string, index: number) => {
               const o = detail.objectives.find((x) => x.key === key);
@@ -457,6 +461,26 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             </div>
           ) : (
             <p className="text-sm text-muted">The board is locked now that the event has started.</p>
+          )}
+          {e.status !== "DONE" && e.status !== "CANCELLED" && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <div>
+                <p className="text-sm font-medium">Look</p>
+                <p className="text-xs text-muted">
+                  What the board picture in Discord is drawn on. Only the picture changes, never the tiles or the rules, so it can be changed any time before the event is over
+                  {currentLook ? "" : ` (this board is still drawn the original way: ${layout ? "in the template picture" : "as the plain dark board"})`}.
+                </p>
+              </div>
+              <BingoLookPicker shape={layout?.id ?? "grid"} value={pickedLook ?? currentLook ?? (layout ? "classic" : "plain")} onChange={setPickedLook} allowPlain={!layout} disabled={pending} />
+              <button
+                type="button"
+                className={primaryButton}
+                disabled={pending || !pickedLook || pickedLook === (currentLook ?? (layout ? "classic" : "plain"))}
+                onClick={() => pickedLook && run("POST", `${base}/look`, { look: pickedLook === PLAIN_LOOK.id ? "" : pickedLook }, `The board is now drawn in the ${[...BINGO_LOOKS, PLAIN_LOOK].find((x) => x.id === pickedLook)?.label ?? ""} look.`, () => setPickedLook(null))}
+              >
+                Use this look
+              </button>
+            </div>
           )}
           {structure && (
             <div className="space-y-3 rounded-xl border border-surface-border p-4">
