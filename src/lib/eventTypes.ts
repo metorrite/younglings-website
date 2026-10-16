@@ -25,7 +25,7 @@ export interface EventSummary {
     reviewChannelId?: string;
     buyIn?: { enabled?: boolean; kind?: string; amount?: number; showPot?: boolean };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
-    board?: { size: number; seed: number; keys: string[] };
+    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string };
     bonuses?: EventBonus[];
     lineBonus?: number;
     blackoutBonus?: number;
@@ -102,7 +102,25 @@ export interface EventOrganiser {
   userName: string | null;
 }
 
+/** One of the picture shapes a bingo can have instead of a square grid, with how its tiles open up. Tile numbers are as drawn on the picture. */
+export interface BingoLayoutInfo {
+  id: string;
+  name: string;
+  blurb: string;
+  rule: string;
+  tiles: number;
+  /** Tile numbers in rows from the top of the picture down. */
+  rows: number[][];
+  rowNames: string[];
+  /** Tile number to the numbers of the tiles that must be done first. */
+  requires: Record<string, number[]>;
+  /** Whether those rules are enforced ("locked") or the shape only earns its bonuses ("free"). Only on an event's own detail. */
+  unlock?: "locked" | "free";
+}
+
 export interface EventDetail {
+  /** For a bingo in one of the picture shapes: which one and its rules. Null for a square grid and other kinds. */
+  layout?: BingoLayoutInfo | null;
   /** For a bingo: the boss, item and picture of each tile. Empty for other kinds. */
   tiles: BingoTileInfo[];
   /** People named to run this one event from Discord (start and finish it, decide proof) without being staff. */
