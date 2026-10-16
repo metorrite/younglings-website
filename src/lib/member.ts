@@ -83,6 +83,8 @@ export interface MyEvent {
   points: number;
   objectives: { key: string; label: string; points: number; target: number; repeatLimit: number; done: number }[];
   pendingProof: number;
+  /** Whether the event asks players to be verified, where theirs stands, why it was turned down (only while it is), and what they were told to send. */
+  verification: { required: boolean; state: "NOT_REQUIRED" | "PENDING" | "VERIFIED" | "REJECTED" | "WAIVED"; note: string; instructions: string };
   awards: { place: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number; status: "PENDING" | "PAID" | "REVOKED" | "REFUNDED" }[];
 }
 
@@ -94,11 +96,17 @@ export interface OpenEvent {
   scoringMode: "INDIVIDUAL" | "TEAM";
   signupClosesAt: string | null;
   buyIn: number;
+  /** An organiser has closed signups: players can't join themselves any more. */
+  closed: boolean;
+  /** Players have to be verified to take part. */
+  verification: boolean;
 }
 
 export interface MyEvents {
   events: MyEvent[];
   open: OpenEvent[];
+  /** After a join: whether the player got a place or went on the waitlist. */
+  result?: { waiting: boolean; position: number };
 }
 
 export interface NewMemberPoll {
@@ -165,6 +173,9 @@ export const memberApi = {
   vote: (userId: string, pollId: string, optionNumber: number) => request<{ polls: MyPoll[] }>("POST", "polls/vote", userId, { pollId, optionNumber }),
   createPoll: (userId: string, poll: NewMemberPoll) => request<{ created: boolean; channel: string }>("POST", "polls", userId, { ...poll }),
   myEvents: (userId: string) => request<MyEvents>("GET", "events", userId),
+  /** Sign up for an event by the same rules as /events join: the member has to be in the Discord server. */
+  joinEvent: (userId: string, eventId: string) => request<MyEvents>("POST", "events/join", userId, { eventId }),
+  leaveEvent: (userId: string, eventId: string) => request<MyEvents>("POST", "events/leave", userId, { eventId }),
   myCoffer: (userId: string) => request<MyCoffer>("GET", "coffer", userId),
   mySignups: (userId: string) => request<MySignups>("GET", "signups", userId),
   joinSignup: (userId: string, signupId: string, body: { rsn?: string; fields?: string[] }) => request<MySignups>("POST", "signups/join", userId, { signupId, ...body }),
