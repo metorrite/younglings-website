@@ -9,16 +9,18 @@ import { ChannelSelect } from "@/components/admin/pickers";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
+import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
-type Tab = "overview" | "board" | "objectives" | "teams" | "players" | "progress" | "standings" | "prizes";
+type Tab = "overview" | "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "standings" | "prizes";
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "board", label: "Board" },
   { key: "objectives", label: "Objectives" },
   { key: "teams", label: "Team builder" },
+  { key: "channels", label: "Channels" },
   { key: "players", label: "Teams and players" },
   { key: "progress", label: "Progress and proof" },
   { key: "standings", label: "Standings" },
@@ -363,6 +365,11 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                         {s.key === "verification" && s.state !== "DONE" && (
                           <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
                             Decide on the Teams and players tab
+                          </button>
+                        )}
+                        {s.key === "space" && s.state !== "WAITING" && s.state !== "SKIPPED" && (
+                          <button type="button" className={s.state === "ACTIVE" ? primaryButton : "text-sm text-gold underline"} onClick={() => setTab("channels")}>
+                            {s.state === "ACTIVE" ? "Set up the roles and channels" : "Open the Channels tab"}
                           </button>
                         )}
                         {s.key === "teams" && (s.state === "ACTIVE" || s.state === "DONE") && e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE" && (
@@ -740,6 +747,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       )}
 
       {tab === "teams" && e.scoringMode === "TEAM" && <TeamBuilder detail={detail} call={call} onDetail={setDetail} />}
+
+      {tab === "channels" && <ChannelsTab detail={detail} call={call} structure={structure} onDetail={setDetail} />}
 
       {tab === "players" && (
         <section className="space-y-5">
