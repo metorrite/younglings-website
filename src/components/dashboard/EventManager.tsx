@@ -954,7 +954,15 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 {claims.pending.map((c) => (
                   <li key={c.id} className="space-y-2 rounded-xl border border-surface-border bg-surface p-4 text-sm">
                     <p>
-                      <span className="font-medium">{c.userName ?? nameOf(c.userId)}</span> on <span className="font-medium">{detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective}</span> (×{c.amount})
+                      {c.kind === "VERIFICATION" ? (
+                        <>
+                          <span className="font-medium">{c.userName ?? nameOf(c.userId)}</span> sent proof for <span className="font-medium">verification</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-medium">{c.userName ?? nameOf(c.userId)}</span> on <span className="font-medium">{detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective}</span> (×{c.amount})
+                        </>
+                      )}
                     </p>
                     {c.note && <p className="break-words text-muted">{c.note}</p>}
                     {c.proofUrl && /^https?:\/\//i.test(c.proofUrl) && (
@@ -981,7 +989,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 <ul className="mt-2 divide-y divide-surface-border text-sm">
                   {claims.decided.map((c) => (
                     <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                      <span>{c.userName ?? nameOf(c.userId)} · {detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective}</span>
+                      <span>{c.userName ?? nameOf(c.userId)} · {c.kind === "VERIFICATION" ? "Verification" : (detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective)}</span>
                       <StatusBadge tone={c.status === "APPROVED" ? "good" : "warn"}>{c.status === "APPROVED" ? "Approved" : "Denied"}</StatusBadge>
                     </li>
                   ))}
