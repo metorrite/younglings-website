@@ -9,14 +9,16 @@ import { ChannelSelect } from "@/components/admin/pickers";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
+import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
-type Tab = "overview" | "board" | "objectives" | "players" | "progress" | "standings" | "prizes";
+type Tab = "overview" | "board" | "objectives" | "teams" | "players" | "progress" | "standings" | "prizes";
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "board", label: "Board" },
   { key: "objectives", label: "Objectives" },
+  { key: "teams", label: "Team builder" },
   { key: "players", label: "Teams and players" },
   { key: "progress", label: "Progress and proof" },
   { key: "standings", label: "Standings" },
@@ -266,7 +268,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       </div>
 
       <div role="tablist" className="flex flex-wrap gap-1 border-b border-surface-border">
-        {TABS.filter((t) => t.key !== "board" || e.template === "bingo").map((t) => (
+        {TABS.filter((t) => (t.key !== "board" || e.template === "bingo") && (t.key !== "teams" || e.scoringMode === "TEAM")).map((t) => (
           <button
             key={t.key}
             type="button"
@@ -361,6 +363,11 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                         {s.key === "verification" && s.state !== "DONE" && (
                           <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
                             Decide on the Teams and players tab
+                          </button>
+                        )}
+                        {s.key === "teams" && (s.state === "ACTIVE" || s.state === "DONE") && e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE" && (
+                          <button type="button" className={s.state === "ACTIVE" ? primaryButton : "text-sm text-gold underline"} onClick={() => setTab("teams")}>
+                            {s.state === "ACTIVE" ? "Build the teams" : "Open the team builder"}
                           </button>
                         )}
                       </div>
@@ -732,30 +739,45 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
         </section>
       )}
 
+      {tab === "teams" && e.scoringMode === "TEAM" && <TeamBuilder detail={detail} call={call} onDetail={setDetail} />}
+
       {tab === "players" && (
         <section className="space-y-5">
           <div className="space-y-2">
             <h3 className="font-semibold">Teams</h3>
-            <ul className="flex flex-wrap gap-2">
-              {detail.teams.length === 0 && <li className="text-sm text-muted">No teams. Solo events don&apos;t need any.</li>}
-              {detail.teams.map((t) => (
-                <li key={t.id} className="flex items-center gap-2 rounded-lg border border-surface-border px-3 py-1.5 text-sm">
-                  {t.name}
-                  {editable && (
-                    <button type="button" className="text-xs text-red-400 underline" onClick={() => run("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}>
-                      Remove
+            {e.scoringMode === "TEAM" && (
+              <p className="text-sm text-muted">
+                Teams are built on the{" "}
+                <button type="button" className="text-gold underline" onClick={() => setTab("teams")}>
+                  Team builder
+                </button>{" "}
+                tab. Each player&apos;s team can still be changed from the list below.
+              </p>
+            )}
+            {e.scoringMode !== "TEAM" && (
+              <>
+                <ul className="flex flex-wrap gap-2">
+                  {detail.teams.length === 0 && <li className="text-sm text-muted">No teams. Solo events don&apos;t need any.</li>}
+                  {detail.teams.map((t) => (
+                    <li key={t.id} className="flex items-center gap-2 rounded-lg border border-surface-border px-3 py-1.5 text-sm">
+                      {t.name}
+                      {editable && (
+                        <button type="button" className="text-xs text-red-400 underline" onClick={() => run("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}>
+                          Remove
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {editable && (
+                  <div className="flex flex-wrap gap-2">
+                    <input className={`${inputClass} max-w-xs`} placeholder="New team name" value={teamName} maxLength={40} onChange={(ev) => setTeamName(ev.target.value)} />
+                    <button type="button" className={ghostButton} disabled={pending || !teamName.trim()} onClick={() => run("POST", `${base}/teams`, { name: teamName }, "Team added.", () => setTeamName(""))}>
+                      Add team
                     </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {editable && (
-              <div className="flex flex-wrap gap-2">
-                <input className={`${inputClass} max-w-xs`} placeholder="New team name" value={teamName} maxLength={40} onChange={(ev) => setTeamName(ev.target.value)} />
-                <button type="button" className={ghostButton} disabled={pending || !teamName.trim()} onClick={() => run("POST", `${base}/teams`, { name: teamName }, "Team added.", () => setTeamName(""))}>
-                  Add team
-                </button>
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

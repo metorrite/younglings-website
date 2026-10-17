@@ -65,6 +65,9 @@ export interface EventSetupInfo {
   signupsClosedBy: string | null;
   rosterConfirmedAt: string | null;
   rosterConfirmedBy: string | null;
+  /** When an organiser called the teams final (an event scored by team), and who. */
+  teamsFinalisedAt: string | null;
+  teamsFinalisedBy: string | null;
 }
 
 /** The event's verification settings and how many players are in each state (the waitlist isn't counted). */
@@ -114,6 +117,29 @@ export interface EventPlayer {
   verifiedBy: string | null;
   verifiedAt: string | null;
   verificationNote: string;
+  /** What an organiser thinks of the player's strength, 1 to 5 (null: not rated). Only for an event scored by team. */
+  rating: number | null;
+  /** A rating worked out from their stats compared with the other players' (null: not enough to compare). */
+  suggestedRating: number | null;
+  /** What the player counts as when balancing teams: the organiser's rating, else the suggested one, else average. Null for an event not scored by team. */
+  effectiveRating: number | null;
+  /** The latest stats of their linked RuneScape name, when they have one. */
+  strength: PlayerStrength | null;
+  /** Why they can't be put on a team right now (waitlist, verification), or null when they can. */
+  teamBlock: string | null;
+}
+
+export interface PlayerStrength {
+  rsn: string;
+  totalLevel: number;
+  combatLevel: number;
+  totalXp: number;
+}
+
+/** A starting point for the teams from the bot: where each unplaced player would go. Nothing changes until it is applied. */
+export interface TeamSuggestion {
+  moves: { userId: string; teamId: string | null }[];
+  notes: string[];
 }
 
 export interface EventPrize {
