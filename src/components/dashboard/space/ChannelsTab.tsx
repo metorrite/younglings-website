@@ -85,13 +85,21 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
     setNote(null);
     if (typing.current) clearTimeout(typing.current);
     const ticket = ++asked.current;
-    typing.current = setTimeout(async () => {
+    const preview = async (attempt: number) => {
       const result = await call("POST", `${base}/preview`, next);
       if (ticket !== asked.current) return;
-      if (!result.ok) return setProblem({ title: result.error, items: result.problems });
+      if (!result.ok) {
+        // a burst of edits can use up the allowance for changes: wait a moment and ask once more, rather than shouting about it
+        if (attempt < 2 && /too fast/i.test(result.error)) {
+          typing.current = setTimeout(() => preview(attempt + 1), 1500);
+          return;
+        }
+        return setProblem({ title: result.error, items: result.problems });
+      }
       setProblem(null);
       setView(result.data as SpaceView);
-    }, 450);
+    };
+    typing.current = setTimeout(() => preview(1), 600);
   }
 
   async function save() {
