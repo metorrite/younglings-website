@@ -10,11 +10,12 @@ import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
+import { WrapupTab } from "@/components/dashboard/space/WrapupTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 
-type Tab = "overview" | "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "standings" | "prizes";
+type Tab = "overview" | "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "standings" | "prizes" | "wrapup";
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "board", label: "Board" },
@@ -25,6 +26,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "progress", label: "Progress and proof" },
   { key: "standings", label: "Standings" },
   { key: "prizes", label: "Prizes and payouts" },
+  { key: "wrapup", label: "Wrap-up" },
 ];
 
 const KIND_LABEL = { HOME_CLAN: "Clan member", HOME_OTHER: "This server", PARTNER: "Other server" } as const;
@@ -749,6 +751,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       {tab === "teams" && e.scoringMode === "TEAM" && <TeamBuilder detail={detail} call={call} onDetail={setDetail} />}
 
       {tab === "channels" && <ChannelsTab detail={detail} call={call} structure={structure} onDetail={setDetail} />}
+      {tab === "wrapup" && <WrapupTab detail={detail} call={call} />}
 
       {tab === "players" && (
         <section className="space-y-5">
