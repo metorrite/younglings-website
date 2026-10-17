@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EventJoinButton } from "@/components/profile/EventJoinButton";
 import { Panel, ProgressBar, StatTile } from "@/components/site/blocks";
 import type { MyEvent, MyEvents } from "@/lib/member";
@@ -20,7 +21,11 @@ function EventCard({ e }: { e: MyEvent }) {
     <li className="space-y-4 rounded-xl border border-surface-border bg-surface p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-semibold break-words">{e.name}</h3>
+          <h3 className="font-semibold break-words">
+            <Link href={`/clan-events/${e.id}`} className="hover:text-gold">
+              {e.name}
+            </Link>
+          </h3>
           <p className="text-xs text-muted">
             {TEMPLATE[e.template] ?? "Event"} · {e.scoringMode === "TEAM" ? (e.team ? `Team ${e.team}` : "Teams") : "Solo"}
           </p>
