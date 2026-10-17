@@ -28,6 +28,7 @@ export interface EventSummary {
     setup?: { mode?: "OFF" | "STANDARD" | "FULL" };
     /** Whether players must be verified, by when, and what they are told to send. */
     verification?: { required?: boolean; gate?: VerificationGate; instructions?: string };
+    submissions?: { require?: boolean; receipts?: boolean };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
     board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string };
     bonuses?: EventBonus[];
@@ -234,6 +235,7 @@ export interface EventDetail {
 
 export interface EventClaim {
   id: string;
+  kind: "OBJECTIVE" | "VERIFICATION";
   objective: string;
   userId: string;
   userName: string | null;

@@ -10,6 +10,10 @@ export interface SetupDraft {
   verify: boolean;
   gate: VerificationGate;
   instructions: string;
+  /** Proof only counts when sent with /submit from the player's own event channel. */
+  requireSubmit: boolean;
+  /** A receipt is posted in the player's (or team's) own channel and updated when staff decide. */
+  receipts: boolean;
 }
 
 export const GATES: { id: VerificationGate; label: string; blurb: string }[] = [
@@ -24,15 +28,18 @@ export function setupFromConfig(config: EventSummary["config"] | undefined): Set
     verify: config?.verification?.required ?? false,
     gate: config?.verification?.gate ?? "TEAMS",
     instructions: config?.verification?.instructions ?? "",
+    requireSubmit: config?.submissions?.require ?? false,
+    receipts: config?.submissions?.receipts ?? true,
   };
 }
 
-/** The config with the two setup keys written from the draft; nothing else in it is touched. A mode the form doesn't offer (FULL) is kept as it was. */
+/** The config with the setup, verification and submission keys written from the draft; nothing else in it is touched. A mode the form doesn't offer (FULL) is kept as it was. */
 export function setupToConfig(config: Record<string, unknown>, draft: SetupDraft): Record<string, unknown> {
   const next: Record<string, unknown> = { ...config };
   const before = (config.setup as { mode?: string } | undefined)?.mode;
   next.setup = { mode: draft.follow ? (before && before !== "OFF" ? before : "STANDARD") : "OFF" };
   next.verification = { required: draft.verify, gate: draft.gate, instructions: draft.instructions.trim() };
+  next.submissions = { require: draft.requireSubmit, receipts: draft.receipts };
   return next;
 }
 
@@ -79,6 +86,20 @@ export function EventSetupFields({ value, onChange, disabled = false }: { value:
           </FormField>
         </div>
       )}
+      <Toggle
+        checked={value.requireSubmit}
+        onChange={(requireSubmit) => onChange({ ...value, requireSubmit })}
+        disabled={disabled}
+        label="Proof only from the event's channels"
+        detail="Players must send proof with /submit in their own event channel. Staff and organisers can still send from anywhere."
+      />
+      <Toggle
+        checked={value.receipts}
+        onChange={(receipts) => onChange({ ...value, receipts })}
+        disabled={disabled}
+        label="Post a receipt in the player's channel"
+        detail="Each submission also shows in the player's (or team's) own channel and is updated when staff decide."
+      />
     </div>
   );
 }
