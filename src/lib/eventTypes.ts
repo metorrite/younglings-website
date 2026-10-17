@@ -356,7 +356,20 @@ export interface SpaceChannel {
   access: SpaceGrant[];
 }
 
+/** How far the bot's background setup or removal of an event's roles and channels got. */
+export interface SpaceJob {
+  kind: "setup" | "removal";
+  state: "running" | "done" | "failed";
+  done: number;
+  total: number;
+  message: string;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
 export interface SpaceView {
+  /** The latest setup or removal, running or finished (null when there hasn't been one since the bot started). */
+  job: SpaceJob | null;
   settings: SpaceSettings;
   teamEvent: boolean;
   state: { enabled: boolean; applied: boolean; complete: boolean; appliedAt: string | null; appliedBy: string | null; note: string };

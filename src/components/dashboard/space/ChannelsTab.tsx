@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
-import { formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
+import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import type { EventCall } from "@/components/dashboard/EventListView";
 import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, withPattern, withUse } from "@/lib/eventSpace";
 import type { EventDetail, SpaceAction, SpaceDraft, SpaceSlot, SpaceView } from "@/lib/eventTypes";
@@ -32,7 +32,10 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   const [problem, setProblem] = useState<Problem>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removeUnneeded, setRemoveUnneeded] = useState(false);
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
   const typing = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasRunning = useRef(false);
   // answers that arrive out of order must not replace a newer one
   const asked = useRef(0);
 
@@ -51,6 +54,30 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
       if (typing.current) clearTimeout(typing.current);
     };
   }, [base, call]);
+
+  const running = view?.job?.state === "running";
+
+  // while the bot is working, ask how far it got; when it stops, the checklist on the Overview tab needs the news
+  useEffect(() => {
+    if (!running) return;
+    const timer = setInterval(async () => {
+      const result = await call("GET", base);
+      if (result.ok) setView(result.data as SpaceView);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [running, base, call]);
+
+  useEffect(() => {
+    if (running) {
+      wasRunning.current = true;
+      return;
+    }
+    if (!wasRunning.current) return;
+    wasRunning.current = false;
+    call("GET", `events/${detail.event.id}`).then((refreshed) => {
+      if (refreshed.ok) onDetail(refreshed.data as EventDetail);
+    });
+  }, [running, call, detail.event.id, onDetail]);
 
   /** Shows what the choices would make, a moment after the last change. */
   function change(next: SpaceDraft) {
@@ -83,6 +110,24 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
       setNote("Saved.");
       const refreshed = await call("GET", `events/${detail.event.id}`);
       if (refreshed.ok) onDetail(refreshed.data as EventDetail);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Asks the bot to do something to the roles and channels on Discord; it answers at once and works in the background. */
+  async function act(path: "apply" | "remove" | "sync", body: unknown, done?: string) {
+    setBusy(true);
+    setProblem(null);
+    setNote(null);
+    try {
+      const result = await call("POST", `${base}/${path}`, body);
+      if (!result.ok) return setProblem({ title: result.error, items: result.problems });
+      const next = result.data as SpaceView & { syncFailed?: number };
+      setView(next);
+      setConfirmingRemoval(false);
+      if (path === "sync") setNote(next.syncFailed ? `${next.syncFailed} roles couldn't be given or taken. Try again in a moment.` : "Everyone holds the roles they should.");
+      else if (done) setNote(done);
     } finally {
       setBusy(false);
     }
@@ -152,7 +197,18 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
 
       {draft.enabled && (
         <>
-          <StatusPanel view={view} />
+          <StatusPanel
+            view={view}
+            dirty={dirty}
+            busy={busy}
+            removeUnneeded={removeUnneeded}
+            onRemoveUnneeded={setRemoveUnneeded}
+            confirmingRemoval={confirmingRemoval}
+            onConfirmRemoval={setConfirmingRemoval}
+            onSetUp={() => act("apply", { removeUnneeded }, "Setting up. This takes a little while; you can leave this page.")}
+            onRemove={() => act("remove", { confirm: true }, "Removing.")}
+            onSync={() => act("sync", {})}
+          />
 
           <div className="space-y-3 rounded-xl border border-surface-border p-4">
             <p className="text-sm font-medium">Channels</p>
@@ -262,11 +318,52 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   );
 }
 
-/** Where things stand and what is stopping the setup. */
-function StatusPanel({ view }: { view: SpaceView }) {
+/** Where things stand, what is stopping the setup, how far a running job got, and the buttons that act on Discord. */
+function StatusPanel({
+  view,
+  dirty,
+  busy,
+  removeUnneeded,
+  onRemoveUnneeded,
+  confirmingRemoval,
+  onConfirmRemoval,
+  onSetUp,
+  onRemove,
+  onSync,
+}: {
+  view: SpaceView;
+  dirty: boolean;
+  busy: boolean;
+  removeUnneeded: boolean;
+  onRemoveUnneeded: (value: boolean) => void;
+  confirmingRemoval: boolean;
+  onConfirmRemoval: (value: boolean) => void;
+  onSetUp: () => void;
+  onRemove: () => void;
+  onSync: () => void;
+}) {
   const applied = view.state.applied;
+  const job = view.job;
+  const running = job?.state === "running";
+  const stale = applied && !view.complete;
+  const madeSomething = applied || view.channels.some((c) => c.action === "keep") || view.roles.some((r) => r.action === "keep");
+  const locked = busy || running || dirty;
   return (
-    <div className="space-y-2 rounded-xl border border-surface-border p-4 text-sm">
+    <div className="space-y-3 rounded-xl border border-surface-border p-4 text-sm">
+      {running && job && (
+        <div className="space-y-1.5" role="status">
+          <p className="font-medium">{job.kind === "removal" ? "Removing the roles and channels…" : "Setting up the roles and channels…"}</p>
+          <div className="h-2 overflow-hidden rounded-full bg-surface-border" aria-hidden>
+            <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${Math.min(100, Math.round((job.done / Math.max(1, job.total)) * 100))}%` }} />
+          </div>
+          <p className="text-xs text-muted">
+            {job.done} of {job.total}: {job.message}
+          </p>
+        </div>
+      )}
+      {!running && job && job.state === "failed" && <Notice tone="error" title="The last attempt stopped" items={[job.message, "Nothing is lost: press the button again to carry on where it stopped."]} />}
+      {!running && job && job.state === "done" && <p className="text-xs text-muted">{job.message}</p>}
+
       {applied && (
         <p>
           Set up{view.state.appliedAt ? ` ${formatUtc(view.state.appliedAt)}` : ""}
@@ -289,7 +386,48 @@ function StatusPanel({ view }: { view: SpaceView }) {
           {w}
         </p>
       ))}
-      {view.blockers.length === 0 && !applied && <p className="text-muted">Nothing stops it. The list below is what would be made.</p>}
+
+      <div className="flex flex-wrap items-center gap-2" hidden={running}>
+        {(!applied || stale) && (
+          <button type="button" className={primaryButton} disabled={locked || !view.ready} onClick={onSetUp}>
+            {stale ? "Bring them up to date" : "Set up the roles and channels"}
+          </button>
+        )}
+        {madeSomething && (
+          <button type="button" className={ghostButton} disabled={locked} onClick={onSync}>
+            Check who holds the roles
+          </button>
+        )}
+        {madeSomething && !confirmingRemoval && (
+          <button type="button" className={ghostButton} disabled={locked} onClick={() => onConfirmRemoval(true)}>
+            Remove them…
+          </button>
+        )}
+        {dirty && <span className="text-xs text-muted">Save your changes first.</span>}
+      </div>
+
+      {stale && view.summary.toRemove > 0 && (
+        <label className="flex items-start gap-2 text-xs text-muted">
+          <input type="checkbox" className="mt-0.5" checked={removeUnneeded} disabled={locked} onChange={(ev) => onRemoveUnneeded(ev.target.checked)} />
+          <span>Also remove the {view.summary.toRemove} that this event no longer needs (a deleted team&apos;s channel). Anything said in them is deleted.</span>
+        </label>
+      )}
+
+      {confirmingRemoval && (
+        <div className="space-y-2 rounded-lg border border-red-400/40 p-3">
+          <p>This deletes the roles and channels JonnyBot made for this event from Discord, including everything said in those channels. Channels you chose yourself are left alone.</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={dangerButton} disabled={locked} onClick={onRemove}>
+              Yes, remove them
+            </button>
+            <button type="button" className={ghostButton} disabled={busy} onClick={() => onConfirmRemoval(false)}>
+              Keep them
+            </button>
+          </div>
+        </div>
+      )}
+
+      {view.blockers.length === 0 && !applied && !running && <p className="text-muted">Nothing stops it. The list below is what would be made.</p>}
     </div>
   );
 }
@@ -326,7 +464,9 @@ function Plan({ view }: { view: SpaceView }) {
           ))}
         </ul>
         {view.staffRoles.length > 0 && (
-          <p className="text-xs text-muted">Staff who see everything: {view.staffRoles.map((s) => `@${s.name}`).join(", ")} (the Admin group in the server settings).</p>
+          <p className="text-xs text-muted">
+            Staff who see everything: {view.staffRoles.map((s) => `@${s.name}`).join(", ")} (the Admin group in the server settings), and anyone with the Administrator permission.
+          </p>
         )}
       </div>
 
