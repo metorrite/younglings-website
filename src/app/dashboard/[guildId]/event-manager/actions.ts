@@ -20,6 +20,9 @@ const ALLOWED = [
   /^events\/\d{1,18}\/participants\/\d{1,20}\/(verification|rating)$/,
   /^events\/\d{1,18}\/teams\/(assign|suggest|finalise|reopen)$/,
   /^events\/\d{1,18}\/(teams|participants)\/\d{1,20}$/,
+  // the event's roles and channels: where they stand, the choices, a preview of choices not yet saved, and setting them up, putting role holders right and removing them
+  /^events\/\d{1,18}\/space$/,
+  /^events\/\d{1,18}\/space\/(settings|preview|apply|remove|sync)$/,
   /^events\/\d{1,18}\/participants\/\d{1,20}\/buyin$/,
   /^events\/\d{1,18}\/claims\/\d{1,20}\/(approve|deny)$/,
   /^events\/\d{1,18}\/awards\/\d{1,20}\/status$/,

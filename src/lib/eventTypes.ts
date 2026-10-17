@@ -279,3 +279,108 @@ export interface EventAward {
   status: "PENDING" | "PAID" | "REVOKED" | "REFUNDED";
   history: { from: string; to: string; byName: string | null; note: string; at: string }[];
 }
+
+// ---------- roles and channels ----------
+
+export type SpaceUse = "create" | "existing" | "none";
+export type SpaceAction = "create" | "keep" | "use_existing" | "remove";
+
+/** One of the single channels an event can have (staff, announcements, general, board, review) and how it is provided. */
+export interface SpaceSlot {
+  key: string;
+  label: string;
+  hint: string;
+  /** False when this kind of event doesn't have the channel (only a bingo has a board). */
+  applies: boolean;
+  /** True when the organiser chose it; otherwise it is just the default. */
+  explicit: boolean;
+  use: SpaceUse;
+  channelId: string | null;
+  pattern: string;
+  defaultPattern: string;
+}
+
+/** A name pattern for the category, team and player channels and for the roles. */
+export interface SpaceName {
+  key: string;
+  label: string;
+  hint: string;
+  pattern: string;
+  defaultPattern: string;
+  /** The {variables} the pattern may use. */
+  variables: string[];
+}
+
+export interface SpaceSettings {
+  enabled: boolean;
+  teamChannels: boolean;
+  playerChannels: boolean;
+  slots: SpaceSlot[];
+  names: SpaceName[];
+}
+
+/** What the page sends to preview or save the choices: only what differs from the defaults is needed. */
+export interface SpaceDraft {
+  enabled: boolean;
+  teamChannels: boolean;
+  playerChannels: boolean;
+  slots: Record<string, { use: SpaceUse; channelId?: string }>;
+  names: Record<string, string>;
+}
+
+export interface SpaceGrant {
+  who: "everyone" | "staff" | "organisers" | "participants" | "team" | "player" | "bot";
+  ref: string | null;
+  level: "hidden" | "read" | "chat" | "manage" | "bot";
+}
+
+export interface SpaceRole {
+  key: string;
+  name: string;
+  action: SpaceAction;
+  id: string | null;
+  members: number;
+  note: string;
+}
+
+export interface SpaceChannel {
+  key: string;
+  kind: string;
+  kindLabel: string;
+  name: string;
+  action: SpaceAction;
+  id: string | null;
+  /** The key of the category it goes in. */
+  parent: string | null;
+  note: string;
+  access: SpaceGrant[];
+}
+
+/** How far the bot's background setup or removal of an event's roles and channels got. */
+export interface SpaceJob {
+  kind: "setup" | "removal";
+  state: "running" | "done" | "failed";
+  done: number;
+  total: number;
+  message: string;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface SpaceView {
+  /** The latest setup or removal, running or finished (null when there hasn't been one since the bot started). */
+  job: SpaceJob | null;
+  settings: SpaceSettings;
+  teamEvent: boolean;
+  state: { enabled: boolean; applied: boolean; complete: boolean; appliedAt: string | null; appliedBy: string | null; note: string };
+  /** Nothing stops it from being set up right now. */
+  ready: boolean;
+  /** Everything wanted is already there. */
+  complete: boolean;
+  blockers: string[];
+  warnings: string[];
+  roles: SpaceRole[];
+  channels: SpaceChannel[];
+  staffRoles: { id: string; name: string }[];
+  summary: { newRoles: number; newChannels: number; toRemove: number; players: number; excluded: number };
+}
