@@ -173,6 +173,8 @@ export const memberApi = {
   vote: (userId: string, pollId: string, optionNumber: number) => request<{ polls: MyPoll[] }>("POST", "polls/vote", userId, { pollId, optionNumber }),
   createPoll: (userId: string, poll: NewMemberPoll) => request<{ created: boolean; channel: string }>("POST", "polls", userId, { ...poll }),
   myEvents: (userId: string) => request<MyEvents>("GET", "events", userId),
+  /** One event as the member sees it: the schedule, their team, progress, submissions and channel links. */
+  eventPage: (userId: string, eventId: string) => request<EventPage>("GET", `events/detail?eventId=${encodeURIComponent(eventId)}`, userId),
   /** Sign up for an event by the same rules as /events join: the member has to be in the Discord server. */
   joinEvent: (userId: string, eventId: string) => request<MyEvents>("POST", "events/join", userId, { eventId }),
   leaveEvent: (userId: string, eventId: string) => request<MyEvents>("POST", "events/leave", userId, { eventId }),
@@ -181,3 +183,41 @@ export const memberApi = {
   joinSignup: (userId: string, signupId: string, body: { rsn?: string; fields?: string[] }) => request<MySignups>("POST", "signups/join", userId, { signupId, ...body }),
   leaveSignup: (userId: string, signupId: string) => request<MySignups>("POST", "signups/leave", userId, { signupId }),
 };
+
+/** One event as its player sees it (`/internal/me/events/detail`). A member who isn't in it yet gets `me: null` and only the public part. */
+export interface EventPage {
+  event: {
+    id: string;
+    name: string;
+    description: string;
+    template: string;
+    status: "SIGNUPS" | "RUNNING" | "SCORING" | "DONE" | "CANCELLED";
+    scoringMode: "INDIVIDUAL" | "TEAM";
+    startsAt: string | null;
+    endsAt: string | null;
+    signupClosesAt: string | null;
+    signupsClosed: boolean;
+    maxParticipants: number;
+    players: number;
+    buyIn: { enabled: boolean; amount: number };
+    verificationRequired: boolean;
+    verificationInstructions: string;
+  };
+  me: {
+    waiting: boolean;
+    team: string | null;
+    buyIn: { enabled: boolean; amount: number; status: "NONE" | "DUE" | "PAID" | "REFUNDED" };
+    verification: { required: boolean; state: "NOT_REQUIRED" | "PENDING" | "VERIFIED" | "REJECTED" | "WAIVED"; note: string; waitingProof: boolean };
+  } | null;
+  prizes: { place: number; placeTo: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number }[];
+  // everything below is only present when `me` is
+  teammates?: { name: string; me: boolean }[];
+  standings?: { rows: { rank: number; name: string; points: number; me: boolean }[]; of: number; myRank: number; myPoints: number };
+  objectives?: { key: string; label: string; points: number; target: number; repeatLimit: number; done: number }[];
+  /** A bingo's board for this player, in tile order; `columns` is 0 when the board isn't a square grid (draw it as a list). */
+  board?: { tiles: { n: number; label: string; points: number; done: boolean; locked: boolean }[]; columns: number } | null;
+  submissions?: { id: string; kind: "OBJECTIVE" | "VERIFICATION"; label: string; status: "PENDING" | "APPROVED" | "DENIED"; note: string; decisionNote: string | null; createdAt: string }[];
+  awards?: { place: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number; status: "PENDING" | "PAID" | "REVOKED" | "REFUNDED" }[];
+  channels?: { label: string; url: string }[];
+  canSubmit?: boolean;
+}

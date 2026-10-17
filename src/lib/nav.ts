@@ -32,6 +32,7 @@ export const NAV_GROUPS: { label: string; links: NavLink[] }[] = [
     links: [
       { href: "/events", label: "Upcoming" },
       { href: "/events/calendar", label: "Calendar" },
+      { href: "/clan-events", label: "Clan events" },
       { href: "/signups", label: "Signups" },
       { href: "/polls", label: "Polls" },
     ],
