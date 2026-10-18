@@ -6,15 +6,15 @@ import { askDialog, confirmDialog } from "@/components/ui/Dialogs";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
-import { ChannelSelect } from "@/components/admin/pickers";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
+import { BoardChannelsPanel } from "@/components/dashboard/space/BoardChannelsPanel";
 import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
 import { WrapupTab } from "@/components/dashboard/space/WrapupTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
-import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
+import type { GuildStructure } from "@/lib/jonnybot-admin";
 
 type Tab = "overview" | "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "standings" | "prizes" | "wrapup";
 const TABS: { key: Tab; label: string }[] = [
@@ -75,8 +75,6 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [draftItem, setDraftItem] = useState("");
   const [draftCustom, setDraftCustom] = useState("");
   const [draftPoints, setDraftPoints] = useState("25");
-  const [boardChannel, setBoardChannel] = useState<string | null>(initial.event.config.boardChannelId ?? null);
-  const [reviewChannel, setReviewChannel] = useState<string | null>(initial.event.config.reviewChannelId ?? null);
   const [newSize, setNewSize] = useState("");
   const [newShape, setNewShape] = useState("");
   const [pickedLook, setPickedLook] = useState<string | null>(null);
@@ -131,15 +129,10 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
     return () => clearInterval(timer);
   }, []);
 
-  /** `saveChannelsFirst`: the channel choices on screen are saved before this, so a choice made but not saved can't make the action do nothing. */
-  function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string | ((data: unknown) => string), after?: () => void, saveChannelsFirst = false) {
+  function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string | ((data: unknown) => string), after?: () => void) {
     setProblem(null);
     setNote(null);
     start(async () => {
-      if (saveChannelsFirst && channelsChanged) {
-        const saved = await call("PUT", base, { config: channelConfig() });
-        if (!saved.ok) return setProblem({ title: `The channels couldn't be saved: ${saved.error}`, items: saved.problems });
-      }
       const result = await call(method, path, body);
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const warning = (result.data as { signupWarning?: string } | null)?.signupWarning;
@@ -152,16 +145,6 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
   const e = detail.event;
   const editable = detail.editable;
-  // what the two channel pickers show against what the event has saved
-  const channelsChanged = (boardChannel ?? null) !== (e.config.boardChannelId ?? null) || (reviewChannel ?? null) !== (e.config.reviewChannelId ?? null);
-  function channelConfig(): Record<string, unknown> {
-    const config: Record<string, unknown> = { ...e.config };
-    if (boardChannel) config.boardChannelId = boardChannel;
-    else delete config.boardChannelId;
-    if (reviewChannel) config.reviewChannelId = reviewChannel;
-    else delete config.reviewChannelId;
-    return config;
-  }
 
   function editTile(key: string) {
     const o = detail.objectives.find((x) => x.key === key);
@@ -190,7 +173,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       type="button"
       className={to === "CANCELLED" ? dangerButton : to === "RUNNING" || to === "SIGNUPS" ? primaryButton : ghostButton}
       disabled={pending}
-      onClick={async () => (to !== "CANCELLED" || (await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`, undefined, true)}
+      onClick={async () => (to !== "CANCELLED" || (await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`)}
     >
       {to === "SIGNUPS" ? "Open signups" : to === "RUNNING" ? "Start the event" : to === "SCORING" ? "Move to scoring" : to === "DONE" ? "Finish" : to === "CANCELLED" ? "Cancel event" : `Back to ${STAGE_LABEL[to].toLowerCase()}`}
     </button>
@@ -699,59 +682,43 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               </button>
             </div>
           )}
-          {structure && (
-            <div className="space-y-3 rounded-xl border border-surface-border p-4">
-              <p className="text-sm font-medium">Discord</p>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted">Live board channel</p>
-                  <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={boardChannel} onChange={setBoardChannel} none="No live board" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted">Screenshot review channel</p>
-                  <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={reviewChannel} onChange={setReviewChannel} none="No review channel" />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={ghostButton}
-                  disabled={pending}
-                  onClick={() => run("PUT", base, { config: channelConfig() }, "Channels saved.")}
-                >
-                  Save channels
-                </button>
-                <button
-                  type="button"
-                  className={primaryButton}
-                  disabled={pending || !boardChannel || (e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE")}
-                  title="Posts the board picture, or updates it if it is already there"
-                  onClick={() => {
-                    setProblem(null);
-                    setNote(null);
-                    start(async () => {
-                      if (channelsChanged) {
-                        const saved = await call("PUT", base, { config: channelConfig() });
-                        if (!saved.ok) return setProblem({ title: `The channels couldn't be saved: ${saved.error}`, items: saved.problems });
-                        await refresh();
-                      }
-                      const result = await call("POST", `${base}/board`, {});
-                      if (!result.ok) return setProblem({ title: result.error, items: result.problems });
-                      setNote((result.data as { message?: string } | null)?.message ?? "Done.");
-                    });
-                  }}
-                >
-                  Post or refresh the board
-                </button>
-              </div>
-              {channelsChanged && (
-                <p className="text-xs text-amber-300">
-                  These channel choices aren&apos;t saved yet. Press Save channels, or just start the event or post the board: either saves them first.
-                </p>
-              )}
-              <p className="text-xs text-muted">The board posts itself when the event starts and updates a few seconds after each approval. Players send screenshots with /events submit.</p>
-            </div>
-          )}
+          <div className="space-y-2 rounded-xl border border-surface-border p-4">
+            <p className="text-sm font-medium">Boards</p>
+            <select
+              className={inputClass}
+              value={e.config.board?.display ?? "SHARED"}
+              disabled={pending || e.status === "DONE" || e.status === "CANCELLED"}
+              onChange={(ev) => run("PUT", base, { config: { ...e.config, board: { ...e.config.board, display: ev.target.value } } }, "Saved. Press Post or refresh the boards to update Discord now.")}
+            >
+              <option value="OWN">Each team or player has their own board</option>
+              <option value="SHARED">One board for everyone</option>
+              <option value="BOTH">Both: their own boards and the shared live board</option>
+            </select>
+            <p className="text-xs text-muted">
+              Most events give every team or player a board of their own to work through: it is posted in their own channel and updates as their tiles are approved. The shared board shows how many teams or players have each tile.
+            </p>
+          </div>
+          <BoardChannelsPanel detail={detail} call={call} structure={structure} onOpenChannels={() => setTab("channels")} />
+          <div className="space-y-2">
+            <button
+              type="button"
+              className={primaryButton}
+              disabled={pending || (e.status !== "RUNNING" && e.status !== "SCORING" && e.status !== "DONE")}
+              title="Posts the boards, or updates them where they are already"
+              onClick={() => {
+                setProblem(null);
+                setNote(null);
+                start(async () => {
+                  const result = await call("POST", `${base}/board`, {});
+                  if (!result.ok) return setProblem({ title: result.error, items: result.problems });
+                  setNote((result.data as { message?: string } | null)?.message ?? "Done.");
+                });
+              }}
+            >
+              Post or refresh the boards
+            </button>
+            <p className="text-xs text-muted">The boards post themselves when the event starts and update a few seconds after each approval. Players send screenshots with /submit event in their channel.</p>
+          </div>
           {(e.config.bonuses?.length ?? 0) > 0 && (
             <details>
               <summary className={`${ghostButton} inline-block cursor-pointer`}>Bonuses ({e.config.bonuses?.length})</summary>

@@ -343,12 +343,19 @@ export function summaryLines(schema: OptionSchema, answers: Answers, channelName
   lines.push({ label: "Money", text: `${buyIn ? `Buy-in ${num(getPath(answers, "config.buyIn.amount") ?? 0)} gp` : "No buy-in"} · ${prizes > 0 ? `${prizes} prize${prizes === 1 ? "" : "s"}` : "no prizes yet"}` });
 
   const signup = getPath(answers, "config.signupChannelId");
-  const board = getPath(answers, "config.boardChannelId");
-  const review = getPath(answers, "config.reviewChannelId");
+  const channelsOn = getPath(answers, "config.channels.enabled") === true;
+  const slot = (key: string, label: string) => {
+    const use = getPath(answers, `config.channels.slots.${key}.use`);
+    const id = getPath(answers, `config.channels.slots.${key}.channelId`) ?? getPath(answers, key === "board" ? "config.boardChannelId" : "config.reviewChannelId");
+    if (typeof id === "string" && id && (use === undefined || use === "existing")) return `${label} in #${channelName(id)}`;
+    if (channelsOn && use === "none") return "";
+    return channelsOn && (use === undefined || use === "create") ? `${label} made by JonnyBot` : "";
+  };
   const places = [
     typeof signup === "string" && signup ? `signup in #${channelName(signup)}` : "",
-    typeof board === "string" && board ? `board in #${channelName(board)}` : "",
-    typeof review === "string" && review ? `proof to #${channelName(review)}` : "",
+    channelsOn ? "roles and channels made by JonnyBot" : "",
+    slot("board", "live board"),
+    slot("review", "proof review"),
   ].filter(Boolean);
   lines.push({ label: "Discord", text: places.length > 0 ? places.join(" · ") : "No channels chosen yet" });
 
