@@ -1,17 +1,10 @@
-import Link from "next/link";
-import { formatUtc, ghostButton, StatusBadge } from "@/components/admin/ui";
+import { STATUSES, TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 25;
-const STATUSES = [
-  { value: "ALL", label: "All" },
-  { value: "OPEN", label: "Open" },
-  { value: "CLOSED", label: "Closed" },
-];
-
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -29,76 +22,6 @@ export default async function TicketHistoryPage({ params, searchParams }: { para
     adminApi.listTickets(guild, { status, panel, limit: PAGE_SIZE, offset: page * PAGE_SIZE }).then(dashboardData),
     adminApi.listPanels(guild).then(dashboardData),
   ]);
-  const base = `/dashboard/${guildId}/tickets/history`;
 
-  const link = (change: { status?: string; panel?: string; page?: number }) => {
-    const params = new URLSearchParams();
-    const nextStatus = change.status ?? status;
-    const nextPanel = change.panel ?? panel;
-    if (nextStatus !== "ALL") params.set("status", nextStatus);
-    if (nextPanel) params.set("panel", nextPanel);
-    if (change.page) params.set("page", String(change.page));
-    const qs = params.toString();
-    return `${base}${qs ? `?${qs}` : ""}`;
-  };
-  const chip = (on: boolean) => `rounded-full border px-3 py-1 transition ${on ? "border-gold bg-gold/15" : "border-surface-border text-muted hover:text-foreground"}`;
-
-  return (
-    <div className="space-y-6">
-      <p className="text-sm text-muted">Newest first. Open a ticket to read its answers and saved transcript.</p>
-
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        {STATUSES.map((s) => (
-          <Link key={s.value} href={link({ status: s.value, page: 0 })} className={chip(status === s.value)}>
-            {s.label}
-          </Link>
-        ))}
-        <span className="mx-2 text-muted">|</span>
-        <Link href={link({ panel: "", page: 0 })} className={chip(panel === "")}>
-          Every panel
-        </Link>
-        {panels.map((p) => (
-          <Link key={p.id} href={link({ panel: p.id, page: 0 })} className={chip(panel === p.id)}>
-            {p.name}
-          </Link>
-        ))}
-      </div>
-
-      {tickets.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-surface-border p-10 text-center text-sm text-muted">No tickets match.</div>
-      ) : (
-        <ul className="grid gap-2 xl:grid-cols-2">
-          {tickets.map((ticket) => (
-            <li key={ticket.id}>
-              <Link href={`${base}/${ticket.id}`} className="flex h-full flex-wrap items-center justify-between gap-3 rounded-xl border border-surface-border bg-surface px-5 py-3 transition hover:border-gold/50">
-                <div className="min-w-0">
-                  <p className="font-medium">
-                    <span className="font-mono text-muted">#{String(ticket.number).padStart(4, "0")}</span> {ticket.panelName ?? "(deleted panel)"}
-                    {ticket.routingLabel ? <span className="text-muted"> · {ticket.routingLabel}</span> : null}
-                  </p>
-                  <p className="text-sm text-muted">
-                    {ticket.requesterName ?? ticket.requesterId} · opened {formatUtc(ticket.createdAt)}
-                  </p>
-                </div>
-                <StatusBadge tone={ticket.status === "OPEN" ? "good" : "muted"}>{ticket.status === "OPEN" ? "Open" : "Closed"}</StatusBadge>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="flex items-center gap-3">
-        {page > 0 && (
-          <Link href={link({ page: page - 1 })} className={ghostButton}>
-            ← Newer
-          </Link>
-        )}
-        {hasMore && (
-          <Link href={link({ page: page + 1 })} className={ghostButton}>
-            Older →
-          </Link>
-        )}
-      </div>
-    </div>
-  );
+  return <TicketHistoryList guildId={guildId} status={status} panel={panel} page={page} tickets={tickets} hasMore={hasMore} panels={panels} />;
 }
