@@ -21,6 +21,7 @@ import { ActionMenu } from "@/components/dashboard/ui/ActionMenu";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { Toast } from "@/components/dashboard/ui/Toast";
 import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
@@ -58,8 +59,14 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode] = useViewMode();
   const tabBar = useRef<HTMLDivElement>(null);
+  const problemBox = useRef<HTMLDivElement>(null);
   const id = detail.event.id;
   const base = `events/${id}`;
+
+  // a button far down a long tab can fail: bring the message into view rather than leave it above the fold
+  useEffect(() => {
+    if (problem) problemBox.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [problem]);
 
   // on a narrow screen the tabs scroll sideways: keep the one in use in view
   useEffect(() => {
@@ -316,8 +323,12 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
   return (
     <div className="space-y-5">
-      {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
-      {note && <Notice tone="success" title={note} />}
+      {problem && (
+        <div ref={problemBox} className="scroll-mt-16">
+          <Notice tone="error" title={problem.title} items={problem.items} />
+        </div>
+      )}
+      <Toast message={note} onClose={() => setNote(null)} />
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-surface-border bg-surface p-4">
         <StatusBadge tone={e.status === "RUNNING" ? "good" : e.status === "DONE" || e.status === "CANCELLED" ? "muted" : "warn"}>{STAGE_LABEL[e.status]}</StatusBadge>
