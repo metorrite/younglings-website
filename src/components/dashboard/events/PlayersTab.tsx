@@ -105,7 +105,7 @@ export function PlayersTab({
     <section className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h3 className="text-lg font-semibold">Players</h3>
+          <h2 className="text-lg font-semibold">Players</h2>
           <p className="text-sm text-muted">
             {inEvent} in the event{waiting > 0 ? `, ${waiting} on the waitlist` : ""}
             {e.maxParticipants ? ` (room for ${e.maxParticipants})` : ""}.

@@ -166,6 +166,15 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const e = detail.event;
   const editable = detail.editable;
 
+  /** Closes signups after asking, exactly as the checklist's button does; the Next step card uses it too. */
+  async function closeSignups() {
+    if (!(await confirmDialog({ title: "Close signups?", body: "Players can no longer join themselves, the Discord signup is paused, and the roster is synced one last time. Staff can still add late entries.", confirmLabel: "Close signups" }))) return;
+    run("POST", `${base}/signup/close`, {}, "Signups are closed. The roster was synced one last time: check it, then confirm it.");
+  }
+  function confirmRoster() {
+    run("POST", `${base}/roster/confirm`, {}, "The roster is confirmed.");
+  }
+
   function editTile(key: string) {
     const o = detail.objectives.find((x) => x.key === key);
     const info = detail.tiles.find((x) => x.key === key);
@@ -376,7 +385,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
               title={wants[t.key] ?? notYet[t.key]}
-              className={`shrink-0 px-3 py-2.5 text-sm whitespace-nowrap transition ${tab === t.key ? "border-b-2 border-gold text-gold" : `text-muted hover:text-foreground ${notYet[t.key] && !wants[t.key] ? "opacity-70" : ""}`}`}
+              className={`shrink-0 px-3 py-2.5 text-sm whitespace-nowrap transition ${tab === t.key ? "border-b-2 border-gold text-gold" : `text-muted hover:text-foreground ${notYet[t.key] && !wants[t.key] ? "opacity-80" : ""}`}`}
             >
               {t.label}
               {t.key === "progress" && claims.pending.length > 0 ? ` (${claims.pending.length})` : ""}
@@ -388,7 +397,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
       {tab === "overview" && (
         <section className="space-y-4 text-sm">
-          <EventDashboard detail={detail} proofWaiting={claims.pending.length} onOpen={setTab} />
+          <EventDashboard detail={detail} proofWaiting={claims.pending.length} onOpen={setTab} onCloseSignups={closeSignups} onConfirmRoster={confirmRoster} />
           <PanelGrid min="28rem">
           {e.status !== "CANCELLED" && (
             <div id="event-prep" className="scroll-mt-4">
@@ -432,10 +441,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                             type="button"
                             className={primaryButton}
                             disabled={pending}
-                            onClick={async () =>
-                              (await confirmDialog({ title: "Close signups?", body: "Players can no longer join themselves, the Discord signup is paused, and the roster is synced one last time. Staff can still add late entries.", confirmLabel: "Close signups" })) &&
-                              run("POST", `${base}/signup/close`, {}, "Signups are closed. The roster was synced one last time: check it, then confirm it.")
-                            }
+                            onClick={closeSignups}
                           >
                             Close signups
                           </button>
@@ -452,7 +458,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                         )}
                         {s.key === "roster" && e.status === "SIGNUPS" && detail.setup.signupsClosedAt && (!detail.setup.rosterConfirmedAt || s.state === "ACTIVE") && (
                           <>
-                            <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/roster/confirm`, {}, "The roster is confirmed.")}>
+                            <button type="button" className={primaryButton} disabled={pending} onClick={confirmRoster}>
                               {detail.setup.rosterConfirmedAt ? "Confirm the roster again" : "Confirm the roster"}
                             </button>
                             <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
@@ -782,6 +788,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <p className="text-sm font-medium">Boards</p>
             <select
               className={inputClass}
+              aria-label="Boards"
               value={e.config.board?.display ?? "SHARED"}
               disabled={pending || e.status === "DONE" || e.status === "CANCELLED"}
               onChange={(ev) => run("PUT", base, { config: { ...e.config, board: { ...e.config.board, display: ev.target.value } } }, "Saved. Press Post or refresh the boards to update Discord now.")}
@@ -887,7 +894,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
       {tab === "prizes" && (
         <section className="space-y-5">
-          <p className="text-sm text-muted">
+          <h2 className="text-lg font-semibold">Prizes</h2>
+          <p className="-mt-3 text-sm text-muted">
             A prize goes to one place, or to a range of places. For team events a prize is split equally, given in full to each member, or given to the captain. A prize can be a fixed amount or a share of the pot (needs a buy-in).
           </p>
           <PrizeListEditor prizes={prizes} onChange={setPrizes} lockPlaces={!detail.editable && awards.length > 0} />
@@ -895,7 +903,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
           <div className="space-y-3 border-t border-surface-border pt-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">Payouts</h3>
+              <h2 className="text-lg font-semibold">Payouts</h2>
               <button type="button" className={ghostButton} disabled={pending || (e.status !== "SCORING" && e.status !== "DONE")} onClick={() => run("POST", `${base}/awards`, {}, "Payouts worked out from the standings.")}>
                 Work out who is owed what
               </button>

@@ -94,7 +94,7 @@ export function EventsDashboard({ events, base, onStart }: { events: EventSummar
 
       <PanelGrid min="24rem">
         <div className="rounded-xl border border-surface-border bg-surface p-5">
-          <h3 className="font-semibold">Needs you</h3>
+          <h2 className="font-semibold">Needs you</h2>
           {attention.length === 0 ? (
             <p className="mt-2 text-sm text-muted">{open.length === 0 ? "No events are open. Start one when you're ready." : "Nothing is waiting for a decision. All quiet."}</p>
           ) : (
@@ -116,7 +116,7 @@ export function EventsDashboard({ events, base, onStart }: { events: EventSummar
         </div>
 
         <div className="rounded-xl border border-surface-border bg-surface p-5">
-          <h3 className="font-semibold">Coming up</h3>
+          <h2 className="font-semibold">Coming up</h2>
           {upcoming.length === 0 ? (
             <p className="mt-2 text-sm text-muted">{now === null ? " " : "No start, deadline or finish is coming up."}</p>
           ) : (
