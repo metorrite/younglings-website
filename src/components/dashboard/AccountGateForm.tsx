@@ -7,8 +7,11 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
-import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
   type AccountGate,
@@ -30,7 +33,10 @@ const PRESETS = [1, 3, 7, 14, 30];
 const shape = (s: Draft) =>
   JSON.stringify([s.enabled, s.minAgeDays, s.action, s.alertChannelId]);
 
-/** The minimum account age to join, and what happens to an account that is younger. */
+/**
+ * The minimum account age to join, and what happens to an account that is younger. The order follows what you do: switch it on and pick an age, then say where
+ * you are told. Basic is that, with the alert-only action; Advanced adds kicking the account as well and an age of your own in days (both stay visible once set).
+ */
 export function AccountGateForm({
   initial,
   structure,
@@ -45,6 +51,13 @@ export function AccountGateForm({
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
   const dirty = shape(draft) !== shape(saved);
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
+  const showAction = advanced || saved.action === "KICK";
+  const showOwnAge = advanced || !PRESETS.includes(saved.minAgeDays);
+  const hidden = [!showAction && "removing the account as well (alert and kick)", !showOwnAge && "an age of your own in days"].filter(
+    (name): name is string => typeof name === "string",
+  );
   const channelName = structure.channels.find(
     (c) => c.id === draft.alertChannelId,
   )?.name;
@@ -81,8 +94,8 @@ export function AccountGateForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-      <div className="min-w-0 space-y-4">
+    <div className="space-y-4">
+      <PanelGrid min="22rem">
         <CollapsibleCard
           id="gate-rule"
           title="The rule"
@@ -98,60 +111,66 @@ export function AccountGateForm({
           }
           info="The age is counted from the day the Discord account was made, not the day it joined your server. Bots are never checked."
         >
-          <Toggle
-            checked={draft.enabled}
-            onChange={(on) => change({ enabled: on })}
-            label="Check accounts that join"
-            detail={
+          <SettingRow
+            title="Check accounts that join"
+            hint={
               draft.enabled
                 ? "Accounts younger than the minimum are dealt with."
                 : "Every account can join."
             }
-          />
-          <FormField label="Minimum account age" as="group">
-            <div className="flex flex-wrap items-center gap-2">
-              {PRESETS.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  aria-pressed={draft.minAgeDays === d}
-                  onClick={() => change({ minAgeDays: d })}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${draft.minAgeDays === d ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
-                >
-                  {d} {d === 1 ? "day" : "days"}
-                </button>
-              ))}
-              <span className="flex items-center gap-1.5 text-xs text-muted">
-                or
-                <input
-                  type="number"
-                  min={1}
-                  max={draft.maxAgeDays}
-                  aria-label="Days"
-                  value={draft.minAgeDays}
-                  onChange={(e) =>
-                    change({
-                      minAgeDays: Math.max(
-                        1,
-                        Math.min(
-                          draft.maxAgeDays,
-                          Math.trunc(Number(e.target.value) || 1),
-                        ),
-                      ),
-                    })
-                  }
-                  className={`${inputClass} w-20!`}
-                />
-                days
-              </span>
-            </div>
-          </FormField>
+            checked={draft.enabled}
+            onChange={(on) => change({ enabled: on })}
+            offHint="Off: every account can join. Your choices are kept."
+          >
+            <FormField label="Minimum account age" as="group" size="lg">
+              <div className="flex flex-wrap items-center gap-2">
+                {PRESETS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={draft.minAgeDays === d}
+                    onClick={() => change({ minAgeDays: d })}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${draft.minAgeDays === d ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                  >
+                    {d} {d === 1 ? "day" : "days"}
+                  </button>
+                ))}
+                {showOwnAge && (
+                  <span className="flex items-center gap-1.5 text-xs text-muted">
+                    or
+                    <span className="w-20">
+                      <input
+                        type="number"
+                        min={1}
+                        max={draft.maxAgeDays}
+                        aria-label="Days"
+                        value={draft.minAgeDays}
+                        onChange={(e) =>
+                          change({
+                            minAgeDays: Math.max(
+                              1,
+                              Math.min(
+                                draft.maxAgeDays,
+                                Math.trunc(Number(e.target.value) || 1),
+                              ),
+                            ),
+                          })
+                        }
+                        className={inputClass}
+                      />
+                    </span>
+                    days
+                  </span>
+                )}
+              </div>
+            </FormField>
+          </SettingRow>
         </CollapsibleCard>
 
         <CollapsibleCard
           id="gate-action"
           title="What happens"
-          hint="Be told, or remove them as well."
+          hint="Where you are told, and what the alert looks like."
           defaultOpen
           summary={
             <>
@@ -167,34 +186,7 @@ export function AccountGateForm({
           }
           info="Alert only posts a note in your channel and lets the account stay. Alert and kick also removes it, after a message telling the person when they can come back."
         >
-          <FormField label="Action" as="group">
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["ALERT", "Alert only"],
-                  ["KICK", "Alert and kick"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={draft.action === value}
-                  onClick={() => change({ action: value })}
-                  className={`rounded-md border px-4 py-2 text-sm transition ${draft.action === value ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </FormField>
-          {draft.action === "KICK" && !draft.canKick && (
-            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-              JonnyBot doesn&apos;t have the Kick Members permission, so it
-              can&apos;t remove accounts yet. Give it that in Discord&apos;s
-              server settings first; saving is blocked until then.
-            </p>
-          )}
-          <FormField label="Alert channel" as="group">
+          <FormField label="Alert channel" size="md" as="group">
             <ChannelSelect
               {...choicesOf(structure)}
               onlyPostable
@@ -204,25 +196,41 @@ export function AccountGateForm({
               none="No channel"
             />
           </FormField>
-        </CollapsibleCard>
-
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <div className="xl:sticky xl:top-4">
-          <section className="rounded-xl border border-surface-border bg-surface p-5">
-            <h2 className="font-semibold text-gold">Preview</h2>
-            <p className="mt-1 text-xs text-muted">
+          {showAction && (
+            <FormField label="Action" as="group" size="lg">
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["ALERT", "Alert only"],
+                    ["KICK", "Alert and kick"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={draft.action === value}
+                    onClick={() => change({ action: value })}
+                    className={`rounded-md border px-4 py-2 text-sm transition ${draft.action === value ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </FormField>
+          )}
+          {draft.action === "KICK" && !draft.canKick && (
+            <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+              JonnyBot doesn&apos;t have the Kick Members permission, so it
+              can&apos;t remove accounts yet. Give it that in Discord&apos;s
+              server settings first; saving is blocked until then.
+            </p>
+          )}
+          <section
+            aria-label="Preview"
+            className="max-w-xl rounded-lg border border-surface-border bg-background/40 p-4"
+          >
+            <h3 className="text-sm font-semibold">Preview</h3>
+            <p className="mt-0.5 text-xs text-muted">
               What the alert looks like.
             </p>
             <div className="mt-3 rounded bg-[#313338] p-3 text-sm text-[#dbdee1]">
@@ -258,8 +266,21 @@ export function AccountGateForm({
               </div>
             </div>
           </section>
-        </div>
-      </div>
+        </CollapsibleCard>
+      </PanelGrid>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
+
+      <SaveBar
+        pending={pending}
+        onSave={submit}
+        outcome={outcome}
+        dirty={dirty}
+        onDiscard={() => {
+          setDraft(saved);
+          setOutcome(null);
+        }}
+      />
     </div>
   );
 }

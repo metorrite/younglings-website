@@ -11,6 +11,7 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import type {
   Autopunish,
   AutopunishRule,
@@ -49,7 +50,10 @@ function describe(r: AutopunishRule): string {
 
 const shape = (rules: AutopunishRule[]) => JSON.stringify(rules);
 
-/** Rules that act on a member automatically when their warning count reaches a number. */
+/**
+ * Rules that act on a member automatically when their warning count reaches a number. Most servers only record warnings, so this is a panel of the Advanced view;
+ * once a server has a rule it stays visible in Basic, and Basic says it is there.
+ */
 export function AutopunishEditor({
   initial,
   actions,
@@ -63,6 +67,7 @@ export function AutopunishEditor({
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const dirty = shape(rules) !== shape(saved.rules);
+  const [mode] = useViewMode();
 
   const change = (i: number, patch: Partial<AutopunishRule>) => {
     setRules((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -93,6 +98,10 @@ export function AutopunishEditor({
     (a === "TIMEOUT" && !saved.canTimeout) ||
     (a === "KICK" && !saved.canKick) ||
     (a === "BAN" && !saved.canBan);
+
+  if (mode !== "advanced" && saved.rules.length === 0) {
+    return <MoreInAdvanced>Autopunish: acting on a member automatically (time out, kick or ban) when they reach a number of warnings.</MoreInAdvanced>;
+  }
 
   return (
     <CollapsibleCard

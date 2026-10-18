@@ -7,8 +7,11 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
   type GuildStructure,
@@ -26,7 +29,10 @@ type Draft = Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">;
 const shape = (s: Draft) =>
   JSON.stringify([s.enabled, s.channelId, s.logBans, s.logTimeouts]);
 
-/** Where bans, unbans and timeouts are written, and which of them. */
+/**
+ * Where bans, unbans and timeouts are written, and which of them. Basic is the switch with its channel and a preview; Advanced adds choosing which actions get an
+ * entry (both are logged to begin with, and the choice stays visible once either is switched off).
+ */
 export function ModLogForm({
   initial,
   structure,
@@ -41,6 +47,8 @@ export function ModLogForm({
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
   const dirty = shape(draft) !== shape(saved);
+  const [mode] = useViewMode();
+  const showWhat = mode === "advanced" || !saved.logBans || !saved.logTimeouts;
   const channelName = structure.channels.find(
     (c) => c.id === draft.channelId,
   )?.name;
@@ -77,8 +85,8 @@ export function ModLogForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-      <div className="min-w-0 space-y-4">
+    <div className="space-y-4">
+      <PanelGrid min="22rem">
         <CollapsibleCard
           id="modlog-where"
           title="Where"
@@ -98,52 +106,28 @@ export function ModLogForm({
           }
           info="Pick a channel only your moderators can see. Each ban, unban or timeout is written there as it happens."
         >
-          <Toggle
-            checked={draft.enabled}
-            onChange={(on) => change({ enabled: on })}
-            label="Keep a moderation log"
-            detail={
+          <SettingRow
+            title="Keep a moderation log"
+            hint={
               draft.enabled
                 ? "Entries are written to the channel."
                 : "Nothing is written."
             }
-          />
-          <FormField label="Log channel" as="group">
-            <ChannelSelect
-              {...choicesOf(structure)}
-              onlyPostable
-              allowForums={false}
-              value={draft.channelId}
-              onChange={(id) => change({ channelId: id })}
-              none="Choose a channel…"
-            />
-          </FormField>
-        </CollapsibleCard>
-
-        <CollapsibleCard
-          id="modlog-what"
-          title="What is logged"
-          hint="Choose which actions get an entry."
-          defaultOpen
-          summary={
-            <>
-              {draft.logBans && <Chip>Bans</Chip>}
-              {draft.logTimeouts && <Chip>Timeouts</Chip>}
-              {!draft.logBans && !draft.logTimeouts && <Chip tone="warn">Nothing</Chip>}
-            </>
-          }
-          info="Bans covers both bans and unbans. Timeouts covers a timeout starting and being lifted."
-        >
-          <Toggle
-            checked={draft.logBans}
-            onChange={(on) => change({ logBans: on })}
-            label="Bans and unbans"
-          />
-          <Toggle
-            checked={draft.logTimeouts}
-            onChange={(on) => change({ logTimeouts: on })}
-            label="Timeouts"
-          />
+            checked={draft.enabled}
+            onChange={(on) => change({ enabled: on })}
+            offHint="Off: nothing is written. Your channel and choices are kept."
+          >
+            <FormField label="Log channel" size="md" as="group">
+              <ChannelSelect
+                {...choicesOf(structure)}
+                onlyPostable
+                allowForums={false}
+                value={draft.channelId}
+                onChange={(id) => change({ channelId: id })}
+                none="Choose a channel…"
+              />
+            </FormField>
+          </SettingRow>
           {!draft.canReadAuditLog && (
             <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
               JonnyBot doesn&apos;t have the View Audit Log permission, so entries
@@ -153,23 +137,41 @@ export function ModLogForm({
           )}
         </CollapsibleCard>
 
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <div className="xl:sticky xl:top-4">
-          <section className="rounded-xl border border-surface-border bg-surface p-5">
-            <h2 className="font-semibold text-gold">Preview</h2>
-            <p className="mt-1 text-xs text-muted">How an entry looks.</p>
+        <CollapsibleCard
+          id="modlog-preview"
+          title="What an entry looks like"
+          hint="A ban, as it is written to the channel."
+          defaultOpen
+          summary={
+            <>
+              {draft.logBans && <Chip>Bans</Chip>}
+              {draft.logTimeouts && <Chip>Timeouts</Chip>}
+              {!draft.logBans && !draft.logTimeouts && <Chip tone="warn">Nothing</Chip>}
+            </>
+          }
+        >
+          {showWhat && (
+            <SettingRow
+              title="What is logged"
+              hint="Bans covers both bans and unbans. Timeouts covers a timeout starting and being lifted."
+            >
+              <Toggle
+                checked={draft.logBans}
+                onChange={(on) => change({ logBans: on })}
+                label="Bans and unbans"
+              />
+              <Toggle
+                checked={draft.logTimeouts}
+                onChange={(on) => change({ logTimeouts: on })}
+                label="Timeouts"
+              />
+            </SettingRow>
+          )}
+          <section
+            aria-label="Preview"
+            className="max-w-xl rounded-lg border border-surface-border bg-background/40 p-4"
+          >
+            <h3 className="text-sm font-semibold">Preview</h3>
             <div className="mt-3 rounded bg-[#313338] p-3 text-sm text-[#dbdee1]">
               <p className="mb-2 text-xs text-[#949ba4]">
                 #{channelName ?? "mod-log"}
@@ -201,8 +203,21 @@ export function ModLogForm({
               </div>
             </div>
           </section>
-        </div>
-      </div>
+        </CollapsibleCard>
+      </PanelGrid>
+
+      {!showWhat && <MoreInAdvanced>choosing which actions get an entry (bans and unbans, timeouts).</MoreInAdvanced>}
+
+      <SaveBar
+        pending={pending}
+        onSave={submit}
+        outcome={outcome}
+        dirty={dirty}
+        onDiscard={() => {
+          setDraft(saved);
+          setOutcome(null);
+        }}
+      />
     </div>
   );
 }

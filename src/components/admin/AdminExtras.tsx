@@ -135,6 +135,9 @@ export function TrackingEditor({ groups, channels, forums, threads, save = saveT
 
 // ---------- post a message ----------
 
+/**
+ * Write a message, choose the channel, check it, post it. Tidying plain text into headings and lists first is Advanced (and stays visible once it is ticked).
+ */
 export function PostTool({ channels, forums, threads, post = postMessageAction }: { channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; post?: typeof postMessageAction }) {
   const [text, setText] = useState("");
   const [channelId, setChannelId] = useState("");
@@ -143,6 +146,8 @@ export function PostTool({ channels, forums, threads, post = postMessageAction }
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const showConvert = mode === "advanced" || convert;
 
   function run(dryRun: boolean) {
     setError(null);
@@ -164,13 +169,18 @@ export function PostTool({ channels, forums, threads, post = postMessageAction }
   return (
     <div className="space-y-6">
       <Card title="Post a message" hint="Uses the same post tags as the Discord tools (headings, dividers, colours, images, buttons). Check it first, then post.">
-        <textarea className={`${inputClass} min-h-56 font-mono`} value={text} maxLength={3500} onChange={(e) => setText(e.target.value)} placeholder={"### Weekly Cap Party!\nJoin us at the Citadel on Wednesday.\n~<LS>~\nBring your best gear."} aria-label="Message text" />
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={convert} onChange={(e) => setConvert(e.target.checked)} /> Tidy plain text into headings and lists first
-        </label>
-        <FormField label="Channel">
+        <FormField label="Message" size="lg">
+          <textarea className={`${inputClass} min-h-56 font-mono`} value={text} maxLength={3500} onChange={(e) => setText(e.target.value)} placeholder={"### Weekly Cap Party!\nJoin us at the Citadel on Wednesday.\n~<LS>~\nBring your best gear."} aria-label="Message text" />
+        </FormField>
+        <FormField label="Channel" size="md" as="group">
           <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={channelId || null} onChange={(id) => setChannelId(id ?? "")} none="Choose a channel…" />
         </FormField>
+        {showConvert && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={convert} onChange={(e) => setConvert(e.target.checked)} /> Tidy plain text into headings and lists first
+          </label>
+        )}
+        <MoreInAdvanced>tidying plain text into headings and lists before it is posted.</MoreInAdvanced>
         <div className="flex flex-wrap gap-3">
           <button type="button" className={ghostButton} disabled={pending || !text.trim()} onClick={() => run(true)}>
             Check it
