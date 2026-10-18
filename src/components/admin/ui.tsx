@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
 
 /** Shared look for the admin dashboard, matching the site's existing surface/gold theme. */
@@ -17,15 +17,36 @@ export function Card({ title, hint, info, children }: { title?: string; hint?: R
   return (
     <section className="rounded-xl border border-surface-border bg-surface p-5 sm:p-6">
       {title && (
-        <h2 className="flex items-center gap-2 font-semibold text-gold">
+        <h2 className="flex items-center gap-2 border-b border-surface-border pb-3 text-lg font-semibold text-gold">
           {title}
           {info && <InfoBubble title={title}>{info}</InfoBubble>}
         </h2>
       )}
-      {hint && <p className="mt-1 text-sm text-muted">{hint}</p>}
+      {hint && <p className={`text-sm text-muted ${title ? "mt-3" : "mt-1"}`}>{hint}</p>}
       <div className={title || hint ? "mt-4 space-y-4" : "space-y-4"}>{children}</div>
     </section>
   );
+}
+
+/**
+ * How wide a control is. A control is only as wide as what goes in it, never as wide as the panel it sits in:
+ * `sm` (10rem) for numbers and short codes, `md` (20rem) for names, dates and drop-downs, `lg` (36rem) for long text, descriptions and pickers
+ * with lists, `full` for the rare control that really should fill its space (a table, an editor).
+ */
+export type FieldSize = "sm" | "md" | "lg" | "full";
+
+export const FIELD_WIDTH: Record<FieldSize, string> = { sm: "max-w-40", md: "max-w-80", lg: "max-w-xl", full: "" };
+
+/** The size a control gets when its field doesn't say: a number is small, a one-line input or a drop-down medium, a text area and anything custom (pickers) large. */
+export function defaultFieldSize(children: ReactNode): FieldSize {
+  const parts = Children.toArray(children);
+  if (parts.length === 1 && isValidElement(parts[0])) {
+    const el = parts[0] as ReactElement<{ type?: string }>;
+    if (el.type === "textarea") return "lg";
+    if (el.type === "select") return "md";
+    if (el.type === "input") return el.props.type === "number" ? "sm" : "md";
+  }
+  return "lg";
 }
 
 /**
@@ -36,16 +57,17 @@ export function Card({ title, hint, info, children }: { title?: string; hint?: R
  * The hint sits under the control, not between it and the label: fields side by side then line their controls up however long
  * (or absent) each one's hint is.
  */
-export function FormField({ label, hint, info, required = false, as = "label", children }: { label: string; hint?: ReactNode; info?: ReactNode; required?: boolean; as?: "label" | "group"; children: ReactNode }) {
+export function FormField({ label, hint, info, required = false, as = "label", size, children }: { label: string; hint?: ReactNode; info?: ReactNode; required?: boolean; as?: "label" | "group"; size?: FieldSize; children: ReactNode }) {
+  const width = FIELD_WIDTH[size ?? defaultFieldSize(children)];
   const body = (
     <>
-      <span className="flex items-center gap-1.5 text-sm font-medium">
+      <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
         {label}
         {info && <InfoBubble title={label}>{info}</InfoBubble>}
         {required && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">Required</span>}
       </span>
-      <span className="mt-1 block">{children}</span>
-      {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
+      <span className={`mt-1.5 block ${width}`}>{children}</span>
+      {hint && <span className="mt-1 block max-w-xl text-xs text-muted">{hint}</span>}
     </>
   );
   return as === "group" ? (

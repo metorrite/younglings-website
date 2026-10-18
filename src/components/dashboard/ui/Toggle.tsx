@@ -14,6 +14,7 @@ export function Toggle({
   detail,
   info,
   disabled,
+  trailing,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
@@ -21,6 +22,8 @@ export function Toggle({
   detail?: ReactNode;
   info?: ReactNode;
   disabled?: boolean;
+  /** A small chip after the label. */
+  trailing?: ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -38,6 +41,7 @@ export function Toggle({
       <div className="min-w-0">
         <p className="flex items-center gap-1.5 text-sm font-medium">
           {label}
+          {trailing}
           {info && <InfoBubble title={label}>{info}</InfoBubble>}
         </p>
         {detail && <p className="text-xs text-muted">{detail}</p>}
