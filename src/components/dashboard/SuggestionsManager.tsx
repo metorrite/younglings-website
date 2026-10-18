@@ -17,6 +17,7 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import {
   choicesOf,
   type GuildStructure,
@@ -42,7 +43,11 @@ const DECISIONS = [
   { status: "IMPLEMENTED", label: "Mark implemented", done: "Marked implemented." },
 ];
 
-/** The suggestions channel, and every recent suggestion with its votes and a way to reply to it. */
+/**
+ * The suggestions channel, and every recent suggestion with its votes and a way to reply to it. The suggestions waiting for a reply come first, as cards side by
+ * side, because answering them is what the page is for; the channel is set up once (and is open until it is), and the ones already replied to are folded away.
+ * Nothing here is rarely needed, so there is no Basic / Advanced split.
+ */
 export function SuggestionsManager({
   initial,
   structure,
@@ -86,7 +91,7 @@ export function SuggestionsManager({
         }
         info="Members can only use /suggest once a channel is chosen. JonnyBot needs permission to view it, send messages and embed links there."
       >
-        <FormField label="Channel" as="group">
+        <FormField label="Channel" size="md" as="group">
           <ChannelSelect
             {...choicesOf(structure)}
             onlyPostable
@@ -122,16 +127,18 @@ export function SuggestionsManager({
         )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">
-          Replied to
-        </h2>
+      <CollapsibleCard
+        id="sg-replied"
+        title="Replied to"
+        hint="Suggestions that were approved, denied or marked implemented. Open one to reopen it or change the reply."
+        summary={<Chip>{decided.length === 0 ? "None yet" : `${decided.length} replied to`}</Chip>}
+      >
         {decided.length === 0 ? (
           <Empty text="Nothing has been decided yet." />
         ) : (
           <Cards items={decided} actions={actions} run={run} pending={pending} maxNote={list.maxNote} />
         )}
-      </section>
+      </CollapsibleCard>
     </div>
   );
 }
@@ -153,11 +160,11 @@ function Cards(props: {
 }) {
   const { items, ...rest } = props;
   return (
-    <ul className="grid gap-3 xl:grid-cols-2">
+    <PanelGrid min="24rem" gap="gap-3">
       {items.map((s) => (
         <SuggestionCard key={s.id} s={s} {...rest} />
       ))}
-    </ul>
+    </PanelGrid>
   );
 }
 
@@ -182,7 +189,7 @@ function SuggestionCard({
         ? "warn"
         : "muted";
   return (
-    <li className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5">
+    <div className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted">
           #{s.id} · {s.authorName ?? "Someone who left"} ·{" "}
@@ -196,7 +203,7 @@ function SuggestionCard({
       <p className="text-sm text-muted">
         👍 {s.ups} · 👎 {s.downs}
       </p>
-      <FormField label="Your reply (optional, shown on the message)">
+      <FormField label="Your reply (optional, shown on the message)" size="lg">
         <input
           className={inputClass}
           value={reply}
@@ -241,6 +248,6 @@ function SuggestionCard({
           Delete
         </button>
       </div>
-    </li>
+    </div>
   );
 }

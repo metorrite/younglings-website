@@ -2,14 +2,17 @@
 
 import { useState, useTransition } from "react";
 import {
-  Card,
   FormField,
   formatUtc,
   inputClass,
   Notice,
   primaryButton,
 } from "@/components/admin/ui";
-import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
+import { Advanced, MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { PointsRewardsManager } from "@/components/dashboard/PointsRewardsManager";
 import { PointsSubmissionsQueue } from "@/components/dashboard/PointsSubmissionsQueue";
@@ -44,7 +47,10 @@ function amount(n: number): string {
   return (n > 0 ? "+" : "") + n.toLocaleString("en-GB");
 }
 
-/** Settings, an award form, the leaderboard and the newest ledger entries for a server's points. */
+/**
+ * A server's points, in the order you use them: the settings (open until points are switched on, then folded), the screenshots waiting for review, giving or taking
+ * points beside the leaderboard, and the rewards. Basic is that; Advanced adds what the points are called, the totals and the latest history.
+ */
 export function PointsManager({
   initial,
   submissions,
@@ -70,6 +76,8 @@ export function PointsManager({
   const [problem, setProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
 
   // A decision elsewhere on the page refreshes the server data; follow it so the leaderboard and history stay current.
   const [seen, setSeen] = useState(initial);
@@ -111,24 +119,34 @@ export function PointsManager({
   }
 
   const totals = data.totals;
+  const showUnit = advanced || data.unit !== "points";
+  const hidden = [!showUnit && "what the points are called", !advanced && "the totals and the latest history"].filter((name): name is string => typeof name === "string");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
 
-      <Card title="Settings" hint="Members can check their balance with /points balance and see the leaderboard with /points top once this is on.">
-        <div className="space-y-4">
-          <Toggle
-            checked={enabled}
-            onChange={setEnabled}
-            label="Use points in this server"
-            detail="While off, the /points commands tell members it isn't switched on. Nothing already recorded is lost."
-          />
-          <FormField label="What the points are called" hint="For example points, tickets or coins.">
-            <input className={`${inputClass} max-w-xs`} value={unit} maxLength={20} onChange={(e) => setUnit(e.target.value)} />
-          </FormField>
-          <FormField label="Review channel for screenshots" as="group" hint="Members run /points submit with a screenshot; it is posted here for your staff, then approved or denied below. Leave empty to turn submissions off.">
+      <CollapsibleCard
+        id="points-settings"
+        title="Settings"
+        hint="Members can check their balance with /points balance and see the leaderboard with /points top once this is on."
+        defaultOpen={!initial.enabled}
+        summary={
+          <>
+            <Chip tone={data.enabled ? "good" : "bad"}>{data.enabled ? "On" : "Off"}</Chip>
+            <Chip tone={data.reviewChannelId ? "plain" : "warn"}>{data.reviewChannelId ? `Submissions to #${structure.channels.find((c) => c.id === data.reviewChannelId)?.name ?? "channel"}` : "No submissions"}</Chip>
+          </>
+        }
+      >
+        <SettingRow
+          title="Use points in this server"
+          hint="While off, the /points commands tell members it isn't switched on. Nothing already recorded is lost."
+          checked={enabled}
+          onChange={setEnabled}
+          offHint="Off: nothing is recorded or shown to members. Everything already recorded is kept."
+        >
+          <FormField label="Review channel for screenshots" size="md" as="group" hint="Members run /points submit with a screenshot; it is posted here for your staff, then approved or denied below. Leave empty to turn submissions off.">
             <ChannelSelect
               {...choicesOf(structure)}
               onlyPostable
@@ -138,67 +156,53 @@ export function PointsManager({
               none="No submissions"
             />
           </FormField>
-          <button type="button" className={primaryButton} disabled={pending || !dirty} onClick={saveSettings}>
-            Save settings
-          </button>
-        </div>
-      </Card>
+          {showUnit && (
+            <FormField label="What the points are called" size="sm" hint="For example points, tickets or coins.">
+              <input className={inputClass} value={unit} maxLength={20} onChange={(e) => setUnit(e.target.value)} />
+            </FormField>
+          )}
+        </SettingRow>
+        <button type="button" className={primaryButton} disabled={pending || !dirty} onClick={saveSettings}>
+          Save settings
+        </button>
+      </CollapsibleCard>
 
       <PointsSubmissionsQueue initial={submissions} unit={data.unit} decide={actions.decide} />
 
-      <PointsRewardsManager
-        rewards={rewards}
-        redemptions={redemptions}
-        unit={data.unit}
-        save={actions.saveReward}
-        handle={actions.handleRedemption}
-      />
-
-      <Card
-        title="Give or take points"
-        hint={`One entry can move up to ${data.maxPerEntry.toLocaleString("en-GB")}. A reason is required and stays in the history. Taking points back can't take someone below zero.`}
-      >
-        <div className="grid gap-4 md:grid-cols-[1fr_9rem]">
-          <FormField label="Member's Discord user ID" hint="Right-click them with Developer Mode on, then Copy User ID. Or use a name's Award button on the leaderboard.">
-            <input className={inputClass} value={userId} inputMode="numeric" placeholder="e.g. 231145573753815040" onChange={(e) => setUserId(e.target.value)} />
-          </FormField>
-          <FormField label="Amount" hint="Negative takes back.">
-            <input className={inputClass} value={points} inputMode="numeric" placeholder="50" onChange={(e) => setPoints(e.target.value)} />
-          </FormField>
-          <div className="md:col-span-2">
-            <FormField label="Reason">
-              <input className={inputClass} value={reason} maxLength={200} placeholder="Hosted the Friday raid" onChange={(e) => setReason(e.target.value)} />
+      <PanelGrid min="24rem">
+        <CollapsibleCard
+          id="points-award"
+          title="Give or take points"
+          hint={`One entry can move up to ${data.maxPerEntry.toLocaleString("en-GB")}. A reason is required and stays in the history. Taking points back can't take someone below zero.`}
+          defaultOpen
+        >
+          <FieldGrid>
+            <FormField label="Member's Discord user ID" size="md" hint="Right-click them with Developer Mode on, then Copy User ID. Or use a name's Award button on the leaderboard.">
+              <input className={inputClass} value={userId} inputMode="numeric" placeholder="e.g. 231145573753815040" onChange={(e) => setUserId(e.target.value)} />
             </FormField>
-          </div>
-        </div>
-        <div className="mt-4">
+            <FormField label="Amount" size="sm" hint="Negative takes back.">
+              <input className={inputClass} value={points} inputMode="numeric" placeholder="50" onChange={(e) => setPoints(e.target.value)} />
+            </FormField>
+          </FieldGrid>
+          <FormField label="Reason" size="lg">
+            <input className={inputClass} value={reason} maxLength={200} placeholder="Hosted the Friday raid" onChange={(e) => setReason(e.target.value)} />
+          </FormField>
           <button type="button" className={primaryButton} disabled={pending || !userId.trim() || !points.trim() || !reason.trim()} onClick={award}>
             Record it
           </button>
-        </div>
-      </Card>
+        </CollapsibleCard>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Members with points", totals.members],
-          ["In circulation", totals.outstanding],
-          ["Ever given", totals.awarded],
-          ["Spent or taken back", totals.spent],
-        ].map(([label, value]) => (
-          <div key={label as string} className="rounded-xl border border-surface-border bg-surface p-4">
-            <p className="text-xs text-muted">{label}</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums">{(value as number).toLocaleString("en-GB")}</p>
-          </div>
-        ))}
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <section className="rounded-xl border border-surface-border bg-surface p-5">
-          <h2 className="font-semibold text-gold">Leaderboard</h2>
+        <CollapsibleCard
+          id="points-leaderboard"
+          title="Leaderboard"
+          hint="Who has the most."
+          defaultOpen
+          summary={<Chip>{totals.members === 0 ? "Nobody yet" : `${totals.members.toLocaleString("en-GB")} members with ${data.unit}`}</Chip>}
+        >
           {data.top.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Nobody has any {data.unit} yet.</p>
+            <p className="text-sm text-muted">Nobody has any {data.unit} yet.</p>
           ) : (
-            <ol className="mt-3 space-y-2">
+            <ol className="space-y-2">
               {data.top.map((row, i) => (
                 <li key={row.userId} className="flex items-center justify-between gap-3 text-sm">
                   <span className="min-w-0 truncate">
@@ -215,14 +219,37 @@ export function PointsManager({
               ))}
             </ol>
           )}
-        </section>
+        </CollapsibleCard>
+      </PanelGrid>
 
-        <section className="rounded-xl border border-surface-border bg-surface p-5">
-          <h2 className="font-semibold text-gold">Latest history</h2>
+      <PointsRewardsManager
+        rewards={rewards}
+        redemptions={redemptions}
+        unit={data.unit}
+        save={actions.saveReward}
+        handle={actions.handleRedemption}
+      />
+
+      <Advanced>
+        <PanelGrid min="9rem" gap="gap-3">
+          {[
+            ["Members with points", totals.members],
+            ["In circulation", totals.outstanding],
+            ["Ever given", totals.awarded],
+            ["Spent or taken back", totals.spent],
+          ].map(([label, value]) => (
+            <div key={label as string} className="rounded-xl border border-surface-border bg-surface p-4">
+              <p className="text-xs text-muted">{label}</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{(value as number).toLocaleString("en-GB")}</p>
+            </div>
+          ))}
+        </PanelGrid>
+
+        <CollapsibleCard id="points-history" title="Latest history" hint="Every change, newest first, with its reason." defaultOpen summary={<Chip>{data.recent.length} entries</Chip>}>
           {data.recent.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Nothing has been recorded yet.</p>
+            <p className="text-sm text-muted">Nothing has been recorded yet.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-surface-border">
+            <ul className="divide-y divide-surface-border">
               {data.recent.map((e) => (
                 <li key={e.id} className="py-2 text-sm">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -238,8 +265,10 @@ export function PointsManager({
               ))}
             </ul>
           )}
-        </section>
-      </div>
+        </CollapsibleCard>
+      </Advanced>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
     </div>
   );
 }
