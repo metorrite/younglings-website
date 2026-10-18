@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { EventJoinButton } from "@/components/profile/EventJoinButton";
 import { PageHeader, Panel, ProgressBar, StatTile } from "@/components/site/blocks";
 import type { EventPage } from "@/lib/member";
@@ -19,6 +20,73 @@ function chip(text: string, tone: "good" | "warn" | "bad" | "muted") {
 function when(iso: string | null): string {
   return iso ? shortDate(iso) : "—";
 }
+
+type NextStep = { tone: "good" | "warn" | "bad" | "muted"; title: string; body: ReactNode };
+
+/**
+ * The one thing a player in the event should know first: what to do now (or that there is nothing to do). Worked out from where the event is and what is
+ * still open for them, most urgent first: a turned-down verification, a verification not sent, a buy-in not paid, then the stage of the event.
+ */
+function nextStep(data: EventPage): NextStep | null {
+  const { event, me } = data;
+  if (!me || me.waiting) return null;
+  const v = me.verification;
+  if (v.required && v.state === "REJECTED")
+    return {
+      tone: "bad",
+      title: "Your verification was turned down",
+      body: (
+        <>
+          {v.note ? <>{v.note}{/[.!?]$/.test(v.note.trim()) ? " " : ". "}</> : null}Fix it and send it again with <code>/submit event-verify</code> in Discord.
+        </>
+      ),
+    };
+  if (v.required && v.state === "PENDING")
+    return v.waitingProof
+      ? { tone: "muted", title: "Staff are looking at your proof", body: "You'll be told as soon as they decide. Nothing to do until then." }
+      : {
+          tone: "warn",
+          title: "Verify yourself to take part",
+          body: (
+            <>
+              {event.verificationInstructions ? <>{event.verificationInstructions}{/[.!?]$/.test(event.verificationInstructions.trim()) ? " " : ". "}</> : null}Send it with <code>/submit event-verify</code> in Discord.
+            </>
+          ),
+        };
+  if (me.buyIn.enabled && me.buyIn.status === "DUE")
+    return { tone: "warn", title: "Pay your buy-in", body: <>The buy-in is {compact(me.buyIn.amount)} gp, paid to the host. They mark it paid once they have it.</> };
+  if (event.status === "SIGNUPS")
+    return {
+      tone: "muted",
+      title: "You're in",
+      body:
+        event.scoringMode === "TEAM" && !me.team
+          ? "Organisers build the teams after signups close. You'll get a team role and channel then."
+          : event.startsAt
+            ? `Nothing to do until it starts on ${shortDate(event.startsAt)}.`
+            : "Nothing to do until it starts.",
+    };
+  if (event.status === "RUNNING")
+    return {
+      tone: "good",
+      title: "The event is running",
+      body: (
+        <>
+          Do the objectives, then send proof with <code>/submit event</code> in your channel. Staff decide it, and you can follow it under &ldquo;What you&apos;ve sent&rdquo; below.
+        </>
+      ),
+    };
+  if (event.status === "SCORING") return { tone: "muted", title: "Scoring", body: "Staff are checking the last proof and working out the places." };
+  if (event.status === "DONE") return { tone: "good", title: "This event is finished", body: "Your place and any prizes are below." };
+  return null;
+}
+
+const NEXT_TONE: Record<NextStep["tone"], string> = {
+  good: "border-emerald-500/40 bg-emerald-500/5",
+  warn: "border-gold/50 bg-gold/5",
+  bad: "border-red-400/50 bg-red-500/5",
+  muted: "border-surface-border bg-surface",
+};
 
 function prizeText(p: { kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number }): string {
   return p.kind === "CLAN_POINTS" ? `${p.amount.toLocaleString("en-GB")} clan points` : p.amount > 0 ? `${p.description || "Prize"} (${compact(p.amount)} gp)` : p.description || "Prize";
@@ -83,24 +151,22 @@ export function EventView({ data }: { data: EventPage }) {
         <>
           {me.waiting && <p className="rounded-xl border border-gold/40 p-4 text-sm text-gold">You are on the waitlist. You will be let in if a place opens up.</p>}
 
-          {me.verification.required && !me.waiting && me.verification.state !== "NOT_REQUIRED" && (
+          {(() => {
+            const next = nextStep(data);
+            return next ? (
+              <section className={`rounded-xl border p-5 ${NEXT_TONE[next.tone]}`} aria-label="What to do next">
+                <p className="text-xs font-semibold tracking-wider text-muted uppercase">What to do next</p>
+                <p className="mt-1 text-lg font-semibold">{next.title}</p>
+                <p className="mt-1 text-sm text-muted [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-foreground">{next.body}</p>
+              </section>
+            ) : null;
+          })()}
+
+          {me.verification.required && !me.waiting && (me.verification.state === "VERIFIED" || me.verification.state === "WAIVED") && (
             <Panel title="Verification">
               <div className="space-y-2 text-sm">
                 {me.verification.state === "VERIFIED" && <p>{chip("Verified", "good")}</p>}
                 {me.verification.state === "WAIVED" && <p>{chip("Let through without verification", "good")}</p>}
-                {me.verification.state === "PENDING" && (
-                  <>
-                    <p>{chip(me.verification.waitingProof ? "Waiting for staff to look at your proof" : "Not verified yet", "warn")}</p>
-                    {!me.verification.waitingProof && <p className="text-muted">{event.verificationInstructions} Send it with <code>/submit event-verify</code> in Discord.</p>}
-                  </>
-                )}
-                {me.verification.state === "REJECTED" && (
-                  <>
-                    <p>{chip("Turned down", "bad")}</p>
-                    <p className="text-red-300">{me.verification.note}</p>
-                    <p className="text-muted">Fix it and send it again with <code>/submit event-verify</code>.</p>
-                  </>
-                )}
               </div>
             </Panel>
           )}
