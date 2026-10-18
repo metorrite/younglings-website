@@ -414,10 +414,10 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                             Reopen signups
                           </button>
                         )}
-                        {s.key === "roster" && e.status === "SIGNUPS" && detail.setup.signupsClosedAt && !detail.setup.rosterConfirmedAt && (
+                        {s.key === "roster" && e.status === "SIGNUPS" && detail.setup.signupsClosedAt && (!detail.setup.rosterConfirmedAt || s.state === "ACTIVE") && (
                           <>
                             <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/roster/confirm`, {}, "The roster is confirmed.")}>
-                              Confirm the roster
+                              {detail.setup.rosterConfirmedAt ? "Confirm the roster again" : "Confirm the roster"}
                             </button>
                             <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
                               Check the list first

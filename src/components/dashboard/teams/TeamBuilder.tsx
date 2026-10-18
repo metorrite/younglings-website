@@ -39,6 +39,8 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
   const editable = detail.editable;
   const finalised = Boolean(detail.setup.teamsFinalisedAt);
   const step = teamsStep(detail);
+  // called final, but a player or a team changed since: what was called final isn't what is there now
+  const stale = finalised && step?.state === "ACTIVE";
 
   const proposed: Record<string, string | null> = {};
   proposal?.moves.forEach((m) => {
@@ -178,7 +180,7 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
               Suggest teams
             </button>
           )}
-          {finalised ? (
+          {finalised && !stale ? (
             <>
               <StatusBadge tone="good">Teams are final</StatusBadge>
               {editable && (
@@ -196,7 +198,7 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
                 title={step?.state === "WAITING" ? "Confirm the roster first" : undefined}
                 onClick={() => void send("POST", `${base}/teams/finalise`, {}, "The teams are final.")}
               >
-                Finalise the teams
+                {stale ? "Finalise the teams again" : "Finalise the teams"}
               </button>
             )
           )}
