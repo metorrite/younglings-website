@@ -1,14 +1,36 @@
 "use client";
 
 import { confirmDialog } from "@/components/ui/Dialogs";
-import { useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import type { EventCall } from "@/components/dashboard/EventListView";
 import { PlayerCard } from "@/components/dashboard/teams/TeamParts";
 import { placement, teamsStep, totalsOf } from "@/lib/eventTeams";
 import type { EventDetail, EventPlayer, TeamSuggestion } from "@/lib/eventTypes";
 
 type Problem = { title: string; items: string[] } | null;
+
+// whether drag and drop is switched on, remembered in this browser (on unless it was switched off)
+const DRAG_KEY = "teamBuilder.drag";
+const DRAG_EVENT = "teamBuilder-drag-changed";
+let dragFallback = true;
+function subscribeToDragMode(notify: () => void) {
+  window.addEventListener(DRAG_EVENT, notify);
+  window.addEventListener("storage", notify);
+  return () => {
+    window.removeEventListener(DRAG_EVENT, notify);
+    window.removeEventListener("storage", notify);
+  };
+}
+function readDragMode(): boolean {
+  try {
+    const stored = window.localStorage.getItem(DRAG_KEY);
+    return stored === null ? dragFallback : stored !== "off";
+  } catch {
+    return dragFallback;
+  }
+}
 
 const withoutKey = (record: Record<string, string | null>, key: string) => {
   const next = { ...record };
@@ -28,7 +50,9 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
   // moves the bot hasn't answered yet, shown as if they were done
   const [moves, setMoves] = useState<Record<string, string | null>>({});
   const [proposal, setProposal] = useState<TeamSuggestion | null>(null);
-  const [dragging, setDragging] = useState<string | null>(null);
+  // drag and drop: which player is being carried, where the pointer is, and which column it is over
+  const dragMode = useSyncExternalStore(subscribeToDragMode, readDragMode, () => true);
+  const [carried, setCarried] = useState<{ userId: string; name: string; x: number; y: number } | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [renaming, setRenaming] = useState<{ id: string; value: string } | null>(null);
@@ -114,23 +138,86 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
   const maxRating = Math.max(1, ...populated.map((t) => t.rating));
   const meanRating = populated.length === 0 ? 0 : populated.reduce((sum, t) => sum + t.rating, 0) / populated.length;
 
-  const dropProps = (column: string, teamId: string | null) => ({
-    onDragOver: (ev: DragEvent) => {
-      if (dragging === null) return;
-      ev.preventDefault();
-      setOver(column);
-    },
-    onDragLeave: (ev: DragEvent) => {
-      if (!ev.currentTarget.contains(ev.relatedTarget as Node | null)) setOver((o) => (o === column ? null : o));
-    },
-    onDrop: (ev: DragEvent) => {
-      ev.preventDefault();
-      const userId = ev.dataTransfer.getData("text/plain") || dragging;
-      setDragging(null);
-      setOver(null);
-      if (userId) void move(userId, teamId);
-    },
+  /** Marks a column as somewhere a card can be dropped: the team's id, or empty for "not on a team". */
+  const zone = (column: string, teamId: string | null) => ({ "data-drop": column, "data-team": teamId ?? "" });
+
+  // the latest move(), for the pointer handlers that outlive a render
+  const moveRef = useRef(move);
+  useEffect(() => {
+    moveRef.current = move;
   });
+  function changeDragMode(next: boolean) {
+    try {
+      window.localStorage.setItem(DRAG_KEY, next ? "on" : "off");
+    } catch {
+      // not remembered: the switch still works until the page is reloaded
+      dragFallback = next;
+    }
+    window.dispatchEvent(new Event(DRAG_EVENT));
+  }
+
+  /**
+   * Picks a card up with the mouse or pen anywhere on it (a touch screen uses the grip so the page still scrolls), carries a copy under the pointer, lights up
+   * the column under it and drops it there. Escape puts it back. Buttons, lists and inputs on the card keep working as usual.
+   */
+  function pickUp(ev: React.PointerEvent) {
+    if (!dragMode || ev.button !== 0) return;
+    const target = ev.target as HTMLElement;
+    if (target.closest("button, select, input, textarea, a, label")) return;
+    const card = target.closest<HTMLElement>("[data-player-id]");
+    if (!card || (ev.pointerType === "touch" && !target.closest("[data-grip]"))) return;
+    const userId = card.dataset.playerId!;
+    const player = detail.participants.find((p) => p.userId === userId);
+    if (!player) return;
+    const name = player.userName ?? `Player ${userId}`;
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    let started = false;
+
+    const zoneAt = (x: number, y: number) => {
+      for (const el of document.elementsFromPoint(x, y)) {
+        const z = (el as HTMLElement).closest?.("[data-drop]") as HTMLElement | null;
+        if (z) return z;
+      }
+      return null;
+    };
+    const finish = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+      window.removeEventListener("keydown", onKey);
+      document.body.style.userSelect = "";
+      setCarried(null);
+      setOver(null);
+    };
+    function onMove(e: PointerEvent) {
+      if (!started) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) < 6) return;
+        started = true;
+        document.body.style.userSelect = "none";
+      }
+      setCarried({ userId, name, x: e.clientX, y: e.clientY });
+      setOver(zoneAt(e.clientX, e.clientY)?.dataset.drop ?? null);
+      // near the top or bottom edge the page scrolls, so a far team can be reached
+      if (e.clientY < 80) window.scrollBy(0, -18);
+      else if (e.clientY > window.innerHeight - 80) window.scrollBy(0, 18);
+    }
+    function onUp(e: PointerEvent) {
+      const dropped = started ? zoneAt(e.clientX, e.clientY) : null;
+      finish();
+      if (dropped) void moveRef.current(userId, dropped.dataset.team || null);
+    }
+    function onCancel() {
+      finish();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") finish();
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    window.addEventListener("keydown", onKey);
+  }
 
   const cardFor = (p: EventPlayer, teamId: string | null, captainId: string | null) => (
     <PlayerCard
@@ -146,19 +233,15 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
       onRate={(rating) => void send("PUT", `${base}/participants/${p.userId}/rating`, { rating })}
       onCaptain={teamId === null ? undefined : () => void send("PUT", `${base}/teams/${teamId}`, { captainId: captainId === p.userId ? null : p.userId })}
       onVerify={p.teamBlock && !p.waiting && detail.verification.required ? (state) => void send("PUT", `${base}/participants/${p.userId}/verification`, { state }, state === "verified" ? `${nameOf(p)} is verified.` : `${nameOf(p)} was let through.`) : undefined}
-      dragging={dragging === p.userId}
-      onDragStart={() => setDragging(p.userId)}
-      onDragEnd={() => {
-        setDragging(null);
-        setOver(null);
-      }}
+      dragging={carried?.userId === p.userId}
+      dragEnabled={dragMode}
     />
   );
 
   const columnClass = (column: string) => `space-y-2 rounded-xl border p-3 transition ${over === column ? "border-gold bg-gold/5" : "border-surface-border bg-surface"}`;
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4" onPointerDown={pickUp}>
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
 
@@ -170,7 +253,10 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
             {view.blocked.length > 0 ? ` · ${view.blocked.length} can't be placed yet` : ""}
             {view.waiting.length > 0 ? ` · ${view.waiting.length} waiting` : ""}
           </p>
-          <p className="text-xs text-muted">Drag a player onto a team, or use the Move list on the card. Stars are how strong a player looks (their stats suggest one, and your own rating wins).</p>
+          <p className="text-xs text-muted">
+            {dragMode ? "Drag a player's card onto a team card (or use the Move list on it)." : "Use the Move list on a card to put a player on a team."} Stars are how strong a player looks (their stats suggest one, and your own rating wins).
+          </p>
+          <Toggle checked={dragMode} onChange={changeDragMode} label="Drag and drop" detail="Pick cards up and drop them onto a team. Off, only the Move lists change teams." />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {editable && (
@@ -236,7 +322,7 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
       )}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        <div className={columnClass("pool")} {...dropProps("pool", null)}>
+        <div className={columnClass("pool")} {...zone("pool", null)}>
           <div className="flex items-baseline justify-between gap-2">
             <h3 className="font-semibold">Not on a team</h3>
             <span className="text-xs text-muted">{view.unassigned.length}</span>
@@ -252,7 +338,7 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
           const total = totals.get(t.id)!;
           const delta = populated.length > 1 && total.players > 0 ? Math.round(total.rating - meanRating) : 0;
           return (
-            <div key={t.id} className={columnClass(t.id)} {...dropProps(t.id, t.id)}>
+            <div key={t.id} className={columnClass(t.id)} {...zone(t.id, t.id)}>
               <div className="space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
                   {renaming?.id === t.id ? (
@@ -346,6 +432,11 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
         </details>
       )}
       {finished && <p className="text-sm text-muted">This event is over, so its teams can&apos;t be changed.</p>}
+      {carried && (
+        <div className="pointer-events-none fixed z-[90] rounded-lg border border-gold bg-surface px-3 py-2 text-sm font-medium shadow-2xl" style={{ left: carried.x + 14, top: carried.y + 14 }}>
+          {carried.name}
+        </div>
+      )}
       {!finished && !editable && <p className="text-xs text-muted">The event has started: players can still be moved (a late player needs a team), but teams can&apos;t be added, renamed or removed.</p>}
     </section>
   );

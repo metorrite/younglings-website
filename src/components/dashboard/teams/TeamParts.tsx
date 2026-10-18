@@ -56,8 +56,7 @@ export function PlayerCard({
   onCaptain,
   onVerify,
   dragging,
-  onDragStart,
-  onDragEnd,
+  dragEnabled,
 }: {
   player: EventPlayer;
   teams: { id: string; name: string }[];
@@ -72,31 +71,30 @@ export function PlayerCard({
   onCaptain?: () => void;
   /** Present for a player who can't be put on a team: the two ways through verification. */
   onVerify?: (state: "verified" | "waived") => void;
+  /** This card is being dragged right now. */
   dragging: boolean;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
+  /** Drag and drop is switched on: the card can be picked up (the team builder does the dragging, this only marks the card and shows the grip). */
+  dragEnabled: boolean;
 }) {
   const name = player.userName ?? `Player ${player.userId}`;
   // a bot older than the team builder doesn't send these, which reads as "nothing in the way"
   const block = player.teamBlock ?? null;
-  const canDrag = !locked && !busy && block === null && onDragStart !== undefined;
+  const canDrag = !locked && !busy && block === null && dragEnabled;
   return (
     <li
-      draggable={canDrag}
-      onDragStart={(ev) => {
-        if (!canDrag) return;
-        ev.dataTransfer.setData("text/plain", player.userId);
-        ev.dataTransfer.effectAllowed = "move";
-        onDragStart?.();
-      }}
-      onDragEnd={() => onDragEnd?.()}
-      className={`space-y-1.5 rounded-lg border bg-background p-2.5 text-sm transition ${canDrag ? "cursor-grab active:cursor-grabbing" : ""} ${
+      data-player-id={canDrag ? player.userId : undefined}
+      className={`space-y-1.5 rounded-lg border bg-background p-2.5 text-sm transition ${canDrag ? "cursor-grab select-none active:cursor-grabbing" : ""} ${
         dragging ? "opacity-40" : ""
       } ${block !== null ? "border-amber-500/40" : proposedTeam ? "border-dashed border-gold/70" : "border-surface-border"}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="flex items-center gap-1 font-medium">
+            {canDrag && (
+              <span data-grip className="-ml-1 touch-none px-0.5 text-muted" title="Drag to a team" aria-hidden>
+                ⠿
+              </span>
+            )}
             <span className="truncate">{name}</span>
             {isCaptain && (
               <span title="Captain" className="text-gold" aria-label="Captain">
