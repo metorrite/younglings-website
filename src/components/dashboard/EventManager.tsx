@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 30px pixel-art item icons from /public/items; next/image would only blur them */
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { ChannelSelect } from "@/components/admin/pickers";
@@ -40,12 +40,21 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [claims, setClaims] = useState<EventClaims>(initialClaims);
   const [standings, setStandings] = useState<EventStandings>(initialStandings);
   const [awards, setAwards] = useState<EventAward[]>(initialAwards);
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTabNow] = useState<Tab>("overview");
   const [problem, setProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const id = detail.event.id;
   const base = `events/${id}`;
+
+  /** Changing tab leaves the last tab's message behind: an error from one tab doesn't follow you around (or show up twice when the next tab fails the same way). */
+  function setTab(next: Tab) {
+    setProblem(null);
+    setNote(null);
+    setTabNow(next);
+  }
 
   const [objs, setObjs] = useState<EventObjective[]>(initial.objectives);
   const [prizes, setPrizes] = useState<EventPrize[]>(initial.prizes);
@@ -87,6 +96,39 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
     if (s.ok) setStandings(s.data as EventStandings);
     if (a.ok) setAwards((a.data as { awards: EventAward[] }).awards);
   }
+
+  /**
+   * Asks the bot for the event again without touching anything being edited (the objectives and prizes you are typing stay as they are), so players who
+   * signed up, left or were removed in Discord show up here. Says so when the number of players changed.
+   */
+  async function reload(announce: boolean) {
+    const [d, c] = await Promise.all([call("GET", base), call("GET", `${base}/claims`)]);
+    if (d.ok) {
+      const next = d.data as EventDetail;
+      setDetail((before) => {
+        const was = before.participants.filter((p) => !p.waiting).length;
+        const now = next.participants.filter((p) => !p.waiting).length;
+        if (announce && was !== now) setNote(now > was ? `${now - was} ${now - was === 1 ? "player" : "players"} joined.` : `${was - now} ${was - now === 1 ? "player" : "players"} left.`);
+        return JSON.stringify(before) === JSON.stringify(next) ? before : next;
+      });
+    }
+    if (c.ok) setClaims((before) => (JSON.stringify(before) === JSON.stringify(c.data) ? before : (c.data as EventClaims)));
+    setRefreshedAt(new Date());
+  }
+
+  const latest = useRef({ pending, status: detail.event.status, reload });
+  useEffect(() => {
+    latest.current = { pending, status: detail.event.status, reload };
+  });
+  // while the page is open the roster keeps itself fresh: the bot adds Discord signups every minute and staff can change things elsewhere
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = latest.current;
+      if (document.visibilityState !== "visible" || now.pending || now.status === "DONE" || now.status === "CANCELLED") return;
+      void now.reload(true);
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, []);
 
   /** `saveChannelsFirst`: the channel choices on screen are saved before this, so a choice made but not saved can't make the action do nothing. */
   function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string, after?: () => void, saveChannelsFirst = false) {
@@ -268,6 +310,23 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           {detail.participants.length > active.length ? ` · ${detail.participants.length - active.length} waiting` : ""}
         </span>
         {detail.potVisible || detail.buyInEnabled ? <span className="text-sm">Pot: {gp(detail.pot)}</span> : null}
+        <button
+          type="button"
+          className="text-xs text-muted underline disabled:opacity-50"
+          disabled={refreshing || pending}
+          title="Ask the bot for the latest. This page also refreshes itself every few seconds."
+          onClick={async () => {
+            setRefreshing(true);
+            try {
+              await reload(true);
+            } finally {
+              setRefreshing(false);
+            }
+          }}
+        >
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </button>
+        {refreshedAt && <span className="text-xs text-muted">Updated {refreshedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
         <span className="ml-auto flex flex-wrap gap-2">{detail.nextStages.map(stageButton)}</span>
       </div>
 
