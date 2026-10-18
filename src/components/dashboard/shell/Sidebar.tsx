@@ -7,8 +7,8 @@ import { setFavoritesAction } from "@/app/dashboard/[guildId]/favorites-actions"
 import { Icon } from "./icons";
 import { LinkPending } from "./LinkPending";
 import { QuickJump } from "./QuickJump";
-import { ViewModeSlider } from "@/components/dashboard/ui/ViewMode";
-import { favoriteItems, groupsFor, isActive, type NavItem } from "./nav";
+import { useViewMode, ViewModeSlider } from "@/components/dashboard/ui/ViewMode";
+import { favoriteItems, groupsFor, isActive, visibleGroups, type NavItem } from "./nav";
 
 export interface SidebarServer {
   id: string;
@@ -54,11 +54,13 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const base = where ?? `/dashboard/${server.id}`;
-  const groups = groupsFor(hasClan);
+  const [view, setView] = useViewMode();
   const [starred, setStarred] = useState<string[]>(favorites);
   const [, start] = useTransition();
   const [failed, setFailed] = useState<string | null>(null);
   const starredItems = favoriteItems(starred, hasClan);
+  // the Basic view leaves out the pages most servers never open, except the one being looked at and the ones this person starred
+  const { groups, hidden } = visibleGroups(groupsFor(hasClan), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
 
   /** Stars or unstars a page: it moves at once, then is saved; if the save fails it moves back and says so. */
   function toggleStar(item: NavItem) {
@@ -184,6 +186,11 @@ export function Sidebar({
               {group.title === null && failed && <p className="mt-2 px-3 text-xs text-red-300">{failed}</p>}
             </div>
           ))}
+          {hidden > 0 && (
+            <button type="button" onClick={() => setView("advanced")} className="w-full rounded-md px-3 py-2 text-left text-xs text-muted transition hover:bg-white/5 hover:text-foreground">
+              + {hidden} more {hidden === 1 ? "page" : "pages"} in the Advanced view
+            </button>
+          )}
         </nav>
         {footer && <p className="hidden border-t border-surface-border p-4 text-[11px] leading-relaxed text-muted lg:block">{footer}</p>}
 

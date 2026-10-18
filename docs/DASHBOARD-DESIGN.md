@@ -45,6 +45,7 @@ One setting for the whole dashboard, not one per page: the Basic / Advanced slid
 
 - A page never carries its own switch. It reads the view with `useViewMode()` (no id), or wraps a block in `<Advanced>`.
 - When Basic hides something, say so with `<MoreInAdvanced>what is there</MoreInAdvanced>`: a quiet line with a button that switches to Advanced.
+- The sidebar follows the same switch: a page flagged `advanced: true` in `components/dashboard/shell/nav.ts` is left out of the Basic sidebar (except the page being viewed and starred pages; the search still finds it) and a line says how many pages that is. Flag a page when most servers never open it.
 - Decide per option: if most servers never touch it, it is Advanced. Hide what doesn't apply at all; if it is kept visible, dim it and say why.
 
 ## Folding
