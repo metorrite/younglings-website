@@ -4,7 +4,8 @@ import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard
 import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
-import { useViewMode, ViewModeBar } from "@/components/dashboard/ui/ViewMode";
+import { andList } from "@/components/dashboard/ui/andList";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
 import { BUTTON_MARKER, containerBlocks } from "@/lib/containerPreview";
@@ -109,7 +110,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
   const [draft, setDraft] = useState<WelcomeDraft>(() => toDraft(initial));
   // what was last saved: Basic keeps showing an option that is already in use, so a setting never goes out of sight
   const [saved, setSaved] = useState<WelcomeDraft>(() => toDraft(initial));
-  const [mode, setMode] = useViewMode("welcome");
+  const [mode] = useViewMode();
   const advanced = mode === "advanced";
   const [meta, setMeta] = useState({ serverName: initial.serverName, memberCount: initial.memberCount });
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -252,20 +253,16 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
     footer: advanced || was.footer,
     fields: advanced || was.fields,
   };
-  const EXTRA_NAMES = { dm: "copy by DM", titleLink: "title link", author: "author", images: "images", footer: "footer", fields: "fields" } as const;
-  const hiddenInUse = (Object.keys(EXTRA_NAMES) as (keyof typeof EXTRA_NAMES)[]).filter((k) => !show[k] && now[k] && (k === "dm" || hasEmbed)).map((k) => EXTRA_NAMES[k]);
+  const EXTRA_NAMES = { dm: "a copy by DM", titleLink: "a title link", author: "an author", images: "images", footer: "a footer", fields: "fields" } as const;
+  const hiddenKeys = (Object.keys(EXTRA_NAMES) as (keyof typeof EXTRA_NAMES)[]).filter((k) => !show[k] && (k === "dm" || hasEmbed));
+  const hiddenInUse = hiddenKeys.filter((k) => now[k]).map((k) => EXTRA_NAMES[k]);
+  const hiddenNames = [...hiddenKeys.map((k) => EXTRA_NAMES[k]), ...(!advanced && draft.linkButton && hasEmbed ? ["where the link button sits"] : [])];
   const type = TYPES.find((t) => t.id === draft.messageType) ?? TYPES[0];
   const clip = (text: string) => (text.trim().length > 24 ? `${text.trim().slice(0, 24)}…` : text.trim());
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,27rem)]">
       <div className="min-w-0 space-y-4">
-        <ViewModeBar mode={mode} onChange={setMode}>
-          {advanced
-            ? "Showing everything."
-            : `Showing what most welcomes need. ${hiddenInUse.length > 0 ? `Also in use, and shown in Advanced: ${hiddenInUse.join(", ")}.` : "Switch to Advanced for the rest."}`}
-        </ViewModeBar>
-
         <PanelGrid min="20rem">
           <CollapsibleCard
             id="welcome-delivery"
@@ -456,6 +453,12 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
               <LinkInserter onInsert={(md) => set("description", draft.description ? `${draft.description.trimEnd()} ${md}` : md)} />
             </FormField>
           </CollapsibleCard>
+        )}
+
+        {hiddenNames.length > 0 && (
+          <MoreInAdvanced>
+            {andList(hiddenNames)}.{hiddenInUse.length > 0 ? ` Also in use: ${andList(hiddenInUse)}.` : ""}
+          </MoreInAdvanced>
         )}
 
         {hasEmbed && (show.author || show.images || show.footer || show.fields) && (

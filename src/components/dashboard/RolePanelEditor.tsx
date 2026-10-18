@@ -18,7 +18,8 @@ import {
 import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
-import { useViewMode, ViewModeBar } from "@/components/dashboard/ui/ViewMode";
+import { andList } from "@/components/dashboard/ui/andList";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { colorToHex, hexToColor } from "@/lib/welcomePreview";
 import {
   choicesOf,
@@ -97,7 +98,7 @@ export function RolePanelEditor({
   const [channel, setChannel] = useState<string | null>(initial.channelId);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
-  const [mode, setMode] = useViewMode("role-panel");
+  const [mode] = useViewMode();
   const advanced = mode === "advanced";
   const roles = structure.roles
     .filter((r) => !r.managed && r.id !== undefined)
@@ -208,12 +209,6 @@ export function RolePanelEditor({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
       <div className="min-w-0 space-y-4">
-        <ViewModeBar mode={mode} onChange={setMode}>
-          {advanced
-            ? "Showing everything, including the card colour and the button colours."
-            : `Showing what most panels need. ${hiddenInUse.length > 0 ? `Also in use, and shown in Advanced: ${hiddenInUse.join(", ")}.` : "Switch to Advanced for colours."}`}
-        </ViewModeBar>
-
         <CollapsibleCard
           id="rp-message"
           title="The message"
@@ -434,6 +429,13 @@ export function RolePanelEditor({
             + Add a button
           </button>
         </CollapsibleCard>
+
+        {(!showColour || !showButtonColours) && (
+          <MoreInAdvanced>
+            {andList([!showColour && "the card colour", !showButtonColours && "the button colours"].filter((name): name is string => typeof name === "string"))}.
+            {hiddenInUse.length > 0 ? ` Also in use: ${andList(hiddenInUse)}.` : ""}
+          </MoreInAdvanced>
+        )}
 
         {!isNew && (
           <CollapsibleCard

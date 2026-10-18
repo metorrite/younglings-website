@@ -10,7 +10,8 @@ import {
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
-import { useViewMode, ViewModeBar } from "@/components/dashboard/ui/ViewMode";
+import { andList } from "@/components/dashboard/ui/andList";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import type {
   Autoroles,
   GuildRole,
@@ -71,7 +72,7 @@ export function AutorolesForm({
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
   const [unit, setUnit] = useState(() => unitFor(initial.delaySeconds));
-  const [mode, setMode] = useViewMode("autoroles");
+  const [mode] = useViewMode();
   const advanced = mode === "advanced";
   const giveable = roles.filter((r) => !r.managed);
   const dirty = shape(draft) !== shape(saved);
@@ -113,6 +114,7 @@ export function AutorolesForm({
   // a saved delay of their own stays on screen in Basic, and does not vanish while it is being typed over
   const showCustomDelay = advanced || !PRESETS.some((p) => p.seconds === saved.delaySeconds);
   const showBots = advanced || saved.botRoleIds.length > 0;
+  const hidden = [!showCustomDelay && "a delay of your own", !showBots && "roles for bots"].filter((name): name is string => typeof name === "string");
   const given = draft.enabled ? undefined : " Autoroles are switched off, so nothing is given yet.";
 
   return (
@@ -129,12 +131,6 @@ export function AutorolesForm({
           </ul>
         </div>
       )}
-
-      <ViewModeBar mode={mode} onChange={setMode}>
-        {advanced
-          ? "Showing everything, including a custom delay and roles for bots."
-          : "Showing what most servers need. Switch to Advanced for a custom delay and roles for bots."}
-      </ViewModeBar>
 
       <PanelGrid min="22rem">
         <CollapsibleCard
@@ -273,6 +269,8 @@ export function AutorolesForm({
           </CollapsibleCard>
         )}
       </PanelGrid>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
 
       <SaveBar
         pending={pending}

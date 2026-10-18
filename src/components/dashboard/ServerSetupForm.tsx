@@ -7,7 +7,8 @@ import { ChannelSelect, RoleSelect } from "@/components/admin/pickers";
 import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
-import { useViewMode, ViewModeBar } from "@/components/dashboard/ui/ViewMode";
+import { andList } from "@/components/dashboard/ui/andList";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { choicesOf, type GuildStructure, type ServerSetup, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
@@ -35,7 +36,7 @@ export function ServerSetupForm({
   const dirty = JSON.stringify({ ...setup, clanName: clanDraft.trim() || null }) !== JSON.stringify({ ...saved, clanName: saved.clanName || null });
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
-  const [mode, setMode] = useViewMode("server-setup");
+  const [mode] = useViewMode();
   const advanced = mode === "advanced";
 
   const change = (patch: Partial<ServerSetup>) => {
@@ -68,13 +69,10 @@ export function ServerSetupForm({
   const showEarlyRoles = advanced || saved.unverifiedRoleId !== null || saved.onboardingRoleId !== null;
   const hasClan = clanDraft.trim() !== "";
   const showPause = hasClan && (advanced || !setup.clanEnabled);
+  const hidden = [hasClan && !showPause && "pausing the clan", !showRenameAlerts && "rename alerts", !showEarlyRoles && "the roles for people who haven't linked yet"].filter((name): name is string => typeof name === "string");
 
   return (
     <div className="space-y-4">
-      <ViewModeBar mode={mode} onChange={setMode}>
-        {advanced ? "Showing everything, including pausing the clan, rename alerts and the roles for people who haven't linked." : "Showing what a new server needs. Switch to Advanced for the rest."}
-      </ViewModeBar>
-
       <PanelGrid min="20rem">
         <CollapsibleCard
           id="setup-clan"
@@ -161,6 +159,8 @@ export function ServerSetupForm({
           </FieldGrid>
         </CollapsibleCard>
       </PanelGrid>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
 
       <SaveBar
         pending={pending}
