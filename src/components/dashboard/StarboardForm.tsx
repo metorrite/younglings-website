@@ -7,8 +7,12 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
   type GuildStructure,
@@ -30,7 +34,11 @@ const EMOJI = ["⭐", "🌟", "🔥", "👍", "❤️", "🏆"];
 const shape = (s: Draft) =>
   JSON.stringify([s.enabled, s.channelId, s.emoji, s.threshold, s.selfStar]);
 
-/** A showcase channel: messages that collect enough of a reaction are copied there. */
+/**
+ * A showcase channel: messages that collect enough of a reaction are copied there. The switch owns the channel (it only matters while it is on); the preview sits
+ * under the rules it shows. Basic is the switch, the channel, one of the usual reactions and how many are needed; Advanced adds any other emoji (a server emoji
+ * works too) and letting authors star their own messages, and whatever is already saved there stays visible in Basic.
+ */
 export function StarboardForm({
   initial,
   structure,
@@ -44,10 +52,17 @@ export function StarboardForm({
   const [draft, setDraft] = useState(initial);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
   const dirty = shape(draft) !== shape(saved);
   const channelName = structure.channels.find(
     (c) => c.id === draft.channelId,
   )?.name;
+  const showOwnEmoji = advanced || !EMOJI.includes(saved.emoji);
+  const showSelfStar = advanced || saved.selfStar;
+  const hidden = [!showOwnEmoji && "any other emoji (a server emoji works too)", !showSelfStar && "letting people star their own messages"].filter(
+    (name): name is string => typeof name === "string",
+  );
 
   const change = (patch: Partial<Starboard>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -82,8 +97,8 @@ export function StarboardForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-      <div className="min-w-0 space-y-4">
+    <div className="space-y-4">
+      <PanelGrid min="22rem">
         <CollapsibleCard
           id="starboard-where"
           title="Where and when"
@@ -101,28 +116,30 @@ export function StarboardForm({
               </Chip>
             </>
           }
-          info="Messages that collect enough of the reaction below are copied into this channel, with their author, text, first picture and a link back. It is a good home for the best drops and achievements."
+          info="Messages that collect enough of the reaction are copied into this channel, with their author, text, first picture and a link back. It is a good home for the best drops and achievements."
         >
-          <Toggle
-            checked={draft.enabled}
-            onChange={(on) => change({ enabled: on })}
-            label="Run the starboard"
-            detail={
+          <SettingRow
+            title="Run the starboard"
+            hint={
               draft.enabled
                 ? "Messages that reach the target are copied."
                 : "Nothing is copied."
             }
-          />
-          <FormField label="Starboard channel" as="group">
-            <ChannelSelect
-              {...choicesOf(structure)}
-              onlyPostable
-              allowForums={false}
-              value={draft.channelId}
-              onChange={(id) => change({ channelId: id })}
-              none="Choose a channel…"
-            />
-          </FormField>
+            checked={draft.enabled}
+            onChange={(on) => change({ enabled: on })}
+            offHint="Off: nothing is copied. Your channel and rules are kept."
+          >
+            <FormField label="Starboard channel" size="md" as="group">
+              <ChannelSelect
+                {...choicesOf(structure)}
+                onlyPostable
+                allowForums={false}
+                value={draft.channelId}
+                onChange={(id) => change({ channelId: id })}
+                none="Choose a channel…"
+              />
+            </FormField>
+          </SettingRow>
         </CollapsibleCard>
 
         <CollapsibleCard
@@ -141,7 +158,8 @@ export function StarboardForm({
           <FormField
             label="Reaction"
             as="group"
-            info="Click one, or type or paste any emoji (a custom server emoji works too)."
+            size="lg"
+            info={showOwnEmoji ? "Click one, or type or paste any emoji (a custom server emoji works too)." : "Click one of the usual reactions."}
           >
             <div className="flex flex-wrap items-center gap-2">
               {EMOJI.map((e) => (
@@ -155,16 +173,20 @@ export function StarboardForm({
                   {e}
                 </button>
               ))}
-              <input
-                className={`${inputClass} w-40`}
-                value={draft.emoji}
-                maxLength={64}
-                aria-label="Emoji"
-                onChange={(e) => change({ emoji: e.target.value })}
-              />
+              {showOwnEmoji && (
+                <span className="w-40">
+                  <input
+                    className={inputClass}
+                    value={draft.emoji}
+                    maxLength={64}
+                    aria-label="Emoji"
+                    onChange={(e) => change({ emoji: e.target.value })}
+                  />
+                </span>
+              )}
             </div>
           </FormField>
-          <FormField label="Reactions needed" as="group">
+          <FormField label="Reactions needed" as="group" size="md">
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -173,42 +195,31 @@ export function StarboardForm({
                 value={draft.threshold}
                 aria-label="Reactions needed"
                 onChange={(e) => change({ threshold: Number(e.target.value) })}
-                className="w-56 accent-[var(--color-gold)]"
+                className="min-w-0 flex-1 accent-[var(--color-gold)]"
               />
               <span className="w-8 text-center font-semibold tabular-nums">
                 {draft.threshold}
               </span>
             </div>
           </FormField>
-          <Toggle
-            checked={draft.selfStar}
-            onChange={(on) => change({ selfStar: on })}
-            label="Let people star their own messages"
-            detail={
-              draft.selfStar
-                ? "An author's own reaction counts."
-                : "An author's own reaction is ignored."
-            }
-          />
-        </CollapsibleCard>
-
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <div className="xl:sticky xl:top-4">
-          <section className="rounded-xl border border-surface-border bg-surface p-5">
-            <h2 className="font-semibold text-gold">Preview</h2>
-            <p className="mt-1 text-xs text-muted">
+          {showSelfStar && (
+            <Toggle
+              checked={draft.selfStar}
+              onChange={(on) => change({ selfStar: on })}
+              label="Let people star their own messages"
+              detail={
+                draft.selfStar
+                  ? "An author's own reaction counts."
+                  : "An author's own reaction is ignored."
+              }
+            />
+          )}
+          <section
+            aria-label="Preview"
+            className="max-w-xl rounded-lg border border-surface-border bg-background/40 p-4"
+          >
+            <h3 className="text-sm font-semibold">Preview</h3>
+            <p className="mt-0.5 text-xs text-muted">
               How a message looks once it is on the starboard.
             </p>
             <div className="mt-3 rounded bg-[#313338] p-3 text-sm text-[#dbdee1]">
@@ -230,8 +241,21 @@ export function StarboardForm({
               </div>
             </div>
           </section>
-        </div>
-      </div>
+        </CollapsibleCard>
+      </PanelGrid>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
+
+      <SaveBar
+        pending={pending}
+        onSave={submit}
+        outcome={outcome}
+        dirty={dirty}
+        onDiscard={() => {
+          setDraft(saved);
+          setOutcome(null);
+        }}
+      />
     </div>
   );
 }

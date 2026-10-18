@@ -11,6 +11,8 @@ import {
   primaryButton,
   StatusBadge,
 } from "@/components/admin/ui";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import type {
   PointsSubmission,
   PointsSubmissions,
@@ -54,22 +56,22 @@ export function PointsSubmissionsQueue({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-surface-border bg-surface p-5">
-      <div>
-        <h2 className="font-semibold text-gold">Submissions</h2>
-        <p className="mt-1 text-xs text-muted">
-          Members send a screenshot with /points submit. Approving pays exactly once, even if two staff click at the same time.
-        </p>
-      </div>
+    <CollapsibleCard
+      id="points-submissions"
+      title="Submissions"
+      hint="Members send a screenshot with /points submit. Approving pays exactly once, even if two staff click at the same time."
+      defaultOpen={initial.pending.length > 0}
+      summary={<Chip tone={data.pending.length > 0 ? "warn" : "plain"}>{data.pending.length > 0 ? `${data.pending.length} waiting` : "Nothing waiting"}</Chip>}
+    >
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
 
       {data.pending.length === 0 ? (
         <p className="rounded-lg border border-dashed border-surface-border p-4 text-center text-sm text-muted">Nothing is waiting for review.</p>
       ) : (
-        <ul className="grid gap-4 xl:grid-cols-2">
+        <PanelGrid min="22rem" gap="gap-4">
           {data.pending.map((s) => (
-            <li key={s.id} className="flex flex-col gap-3 rounded-lg border border-surface-border p-4">
+            <div key={s.id} className="flex flex-col gap-3 rounded-lg border border-surface-border p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-semibold">
                   {s.userName ?? "Someone who left"} <span className="text-xs font-normal text-muted">#{s.id}</span>
@@ -81,23 +83,27 @@ export function PointsSubmissionsQueue({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={s.proofUrl} alt={`Proof for submission ${s.id}`} className="max-h-72 w-full rounded-md border border-surface-border object-contain" loading="lazy" />
               </a>
-              <div className="grid gap-2 sm:grid-cols-[8rem_1fr]">
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  placeholder={`${unit} to give`}
-                  aria-label={`Points to give for submission ${s.id}`}
-                  value={amounts[s.id] ?? ""}
-                  onChange={(e) => setAmounts({ ...amounts, [s.id]: e.target.value })}
-                />
-                <input
-                  className={inputClass}
-                  maxLength={200}
-                  placeholder="Note for the member (required to deny)"
-                  aria-label={`Note for submission ${s.id}`}
-                  value={notes[s.id] ?? ""}
-                  onChange={(e) => setNotes({ ...notes, [s.id]: e.target.value })}
-                />
+              <div className="flex flex-wrap gap-2">
+                <div className="w-32">
+                  <input
+                    className={inputClass}
+                    inputMode="numeric"
+                    placeholder={`${unit} to give`}
+                    aria-label={`Points to give for submission ${s.id}`}
+                    value={amounts[s.id] ?? ""}
+                    onChange={(e) => setAmounts({ ...amounts, [s.id]: e.target.value })}
+                  />
+                </div>
+                <div className="min-w-48 max-w-80 flex-1">
+                  <input
+                    className={inputClass}
+                    maxLength={200}
+                    placeholder="Note for the member (required to deny)"
+                    aria-label={`Note for submission ${s.id}`}
+                    value={notes[s.id] ?? ""}
+                    onChange={(e) => setNotes({ ...notes, [s.id]: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" className={primaryButton} disabled={pending} onClick={() => act(s, true)}>
@@ -112,9 +118,9 @@ export function PointsSubmissionsQueue({
                   Deny
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </PanelGrid>
       )}
 
       {data.decided.length > 0 && (
@@ -142,6 +148,6 @@ export function PointsSubmissionsQueue({
           </ul>
         </details>
       )}
-    </section>
+    </CollapsibleCard>
   );
 }
