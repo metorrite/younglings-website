@@ -2,13 +2,14 @@
 
 /* eslint-disable @next/next/no-img-element -- 30px pixel-art item icons from /public/items; next/image would only blur them */
 
-import { askDialog, confirmDialog } from "@/components/ui/Dialogs";
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
+import { PlayersTab } from "@/components/dashboard/events/PlayersTab";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { BoardChannelsPanel } from "@/components/dashboard/space/BoardChannelsPanel";
 import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
@@ -34,7 +35,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "wrapup", label: "Wrap-up" },
 ];
 
-const KIND_LABEL = { HOME_CLAN: "Clan member", HOME_OTHER: "This server", PARTNER: "Other server" } as const;
 const gp = (n: number) => n.toLocaleString("en-GB") + " gp";
 
 const emptyObjective = (): EventObjective => ({ key: "", label: "", description: "", points: 10, evidence: "EITHER", target: 1, repeatLimit: 1, prerequisites: [] });
@@ -64,10 +64,6 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
   const [objs, setObjs] = useState<EventObjective[]>(initial.objectives);
   const [prizes, setPrizes] = useState<EventPrize[]>(initial.prizes);
-  const [teamName, setTeamName] = useState("");
-  const [addUser, setAddUser] = useState("");
-  const [addKind, setAddKind] = useState("HOME_CLAN");
-  const [addTeam, setAddTeam] = useState("");
   const [pUser, setPUser] = useState("");
   const [pObjective, setPObjective] = useState("");
   const [pAmount, setPAmount] = useState("1");
@@ -849,213 +845,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       {tab === "channels" && <ChannelsTab detail={detail} call={call} structure={structure} onDetail={setDetail} />}
       {tab === "wrapup" && <WrapupTab detail={detail} call={call} />}
 
-      {tab === "players" && (
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <h3 className="font-semibold">Teams</h3>
-            {e.scoringMode === "TEAM" && (
-              <p className="text-sm text-muted">
-                Teams are built on the{" "}
-                <button type="button" className="text-gold underline" onClick={() => setTab("teams")}>
-                  Team builder
-                </button>{" "}
-                tab. Each player&apos;s team can still be changed from the list below.
-              </p>
-            )}
-            {e.scoringMode !== "TEAM" && (
-              <>
-                <ul className="flex flex-wrap gap-2">
-                  {detail.teams.length === 0 && <li className="text-sm text-muted">No teams. Solo events don&apos;t need any.</li>}
-                  {detail.teams.map((t) => (
-                    <li key={t.id} className="flex items-center gap-2 rounded-lg border border-surface-border px-3 py-1.5 text-sm">
-                      {t.name}
-                      {editable && (
-                        <button type="button" className="text-xs text-red-400 underline" onClick={() => run("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}>
-                          Remove
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                {editable && (
-                  <div className="flex flex-wrap gap-2">
-                    <input className={`${inputClass} max-w-xs`} placeholder="New team name" value={teamName} maxLength={40} onChange={(ev) => setTeamName(ev.target.value)} />
-                    <button type="button" className={ghostButton} disabled={pending || !teamName.trim()} onClick={() => run("POST", `${base}/teams`, { name: teamName }, "Team added.", () => setTeamName(""))}>
-                      Add team
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {detail.refused.length > 0 && (
-            <div className="space-y-2 rounded-xl border border-gold/40 p-4">
-              <h3 className="font-semibold">Signups that were turned away</h3>
-              <ul className="divide-y divide-surface-border text-sm">
-                {detail.refused.map((r) => (
-                  <li key={r.userId} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                    <span>
-                      <span className="font-medium">{r.userName ?? `Player ${r.userId}`}</span>
-                      <span className="ml-2 text-muted">{r.reason}</span>
-                    </span>
-                    <button type="button" className="text-xs text-gold underline" onClick={() => setAddUser(r.userId)}>
-                      Use their ID below
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-muted">They were told why. To let one in anyway, add them below and choose the kind of player; that overrides the rule that turned them away.</p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <h3 className="font-semibold">Add a player</h3>
-            <div className="flex flex-wrap gap-2">
-              <input className={`${inputClass} max-w-xs`} placeholder="Discord user ID" inputMode="numeric" value={addUser} onChange={(ev) => setAddUser(ev.target.value)} />
-              <select className={`${inputClass} max-w-48`} value={addKind} onChange={(ev) => setAddKind(ev.target.value)}>
-                <option value="HOME_CLAN">Clan member</option>
-                <option value="HOME_OTHER">In this server, not the clan</option>
-                <option value="PARTNER">From another server</option>
-              </select>
-              <select className={`${inputClass} max-w-48`} value={addTeam} onChange={(ev) => setAddTeam(ev.target.value)}>
-                <option value="">No team</option>
-                {detail.teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <button type="button" className={primaryButton} disabled={pending || !addUser.trim()} onClick={() => run("POST", `${base}/participants`, { userId: addUser.trim(), kind: addKind, teamId: addTeam || null }, "Player added.", () => setAddUser(""))}>
-                Add
-              </button>
-            </div>
-            <p className="text-xs text-muted">Staff can add players any time, including after signups close. A full event puts them on the waitlist.</p>
-          </div>
-
-          {detail.verification.required && (
-            <div className="space-y-1 rounded-xl border border-surface-border p-4 text-sm">
-              <p className="font-medium">Verification</p>
-              <p className="text-muted">
-                {detail.verification.verified} verified
-                {detail.verification.waived > 0 ? `, ${detail.verification.waived} let through` : ""}, {detail.verification.pending} waiting for a decision, {detail.verification.rejected} turned down. Players must pass{" "}
-                {GATES.find((g) => g.id === detail.verification.gate)?.label.toLowerCase()}.
-              </p>
-              {detail.verification.instructions && <p className="text-xs text-muted">Players were told: {detail.verification.instructions}</p>}
-            </div>
-          )}
-
-          <ul className="divide-y divide-surface-border">
-            {detail.participants.length === 0 && <li className="py-3 text-sm text-muted">Nobody has joined yet.</li>}
-            {detail.participants.map((p) => (
-              <li key={p.userId} className="flex flex-wrap items-center gap-3 py-2 text-sm">
-                <span className="min-w-0 flex-1">
-                  <span className="font-medium">{p.userName ?? `Player ${p.userId}`}</span> <span className="text-xs text-muted">{KIND_LABEL[p.kind]}</span>
-                  <span className="ml-2 text-xs text-muted" title="Players from the signup follow it: take them off the signup in Discord and they come off here too.">
-                    {p.source === "STAFF" ? "added by staff" : "on the signup"}
-                  </span>
-                  {p.waiting && <span className="ml-2"><StatusBadge tone="warn">Waiting</StatusBadge></span>}
-                </span>
-                {detail.verification.required && !p.waiting && (
-                  <span className="flex flex-wrap items-center gap-2">
-                    <StatusBadge tone={p.verification === "VERIFIED" || p.verification === "WAIVED" ? "good" : "warn"}>
-                      {{ VERIFIED: "Verified", WAIVED: "Waived", PENDING: "Needs verification", REJECTED: "Turned down", NOT_REQUIRED: "Not required" }[p.verification]}
-                    </StatusBadge>
-                    {p.verification !== "VERIFIED" && (
-                      <button type="button" className="text-xs text-gold underline" disabled={pending} onClick={() => run("PUT", `${base}/participants/${p.userId}/verification`, { state: "verified" }, `${nameOf(p.userId)} is verified.`)}>
-                        Verify
-                      </button>
-                    )}
-                    {p.verification !== "VERIFIED" && p.verification !== "WAIVED" && (
-                      <button type="button" className="text-xs text-gold underline" disabled={pending} title="Let them through without proof" onClick={() => run("PUT", `${base}/participants/${p.userId}/verification`, { state: "waived" }, `${nameOf(p.userId)} was let through without proof.`)}>
-                        Waive
-                      </button>
-                    )}
-                    {p.verification !== "REJECTED" && (
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 underline"
-                        disabled={pending}
-                        onClick={async () => {
-                          const answers = await askDialog({ title: `Turn down ${nameOf(p.userId)}'s verification?`, body: "They will see the reason, so they can fix it.", confirmLabel: "Turn down", tone: "danger", fields: [{ key: "why", type: "textarea", label: "Why", required: true, maxLength: 300 }] });
-                          const why = answers ? String(answers.why) : "";
-                          if (why.trim()) run("PUT", `${base}/participants/${p.userId}/verification`, { state: "rejected", note: why.trim() }, `${nameOf(p.userId)}'s verification was turned down.`);
-                        }}
-                      >
-                        Turn down
-                      </button>
-                    )}
-                    {p.verification !== "PENDING" && (
-                      <button type="button" className="text-xs text-muted underline" disabled={pending} onClick={() => run("PUT", `${base}/participants/${p.userId}/verification`, { state: "pending" }, `${nameOf(p.userId)} is waiting for a decision again.`)}>
-                        Reset
-                      </button>
-                    )}
-                    {p.verification === "REJECTED" && p.verificationNote && <span className="basis-full text-xs text-muted">Reason: {p.verificationNote}</span>}
-                  </span>
-                )}
-                <select className={`${inputClass} max-w-40`} value={p.teamId ?? ""} onChange={(ev) => run("PUT", `${base}/participants/${p.userId}`, { teamId: ev.target.value || null }, "Team changed.")}>
-                  <option value="">No team</option>
-                  {detail.teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                {detail.buyInEnabled && (
-                  <span className="flex items-center gap-2">
-                    <StatusBadge tone={p.buyIn === "PAID" ? "good" : "muted"}>{p.buyIn === "PAID" ? "Paid" : p.buyIn === "REFUNDED" ? "Refunded" : "Buy-in due"}</StatusBadge>
-                    {p.buyIn === "DUE" && <button type="button" className="text-xs text-gold underline" onClick={() => run("PUT", `${base}/participants/${p.userId}/buyin`, { status: "paid" }, "Buy-in marked paid.")}>Mark paid</button>}
-                    {p.buyIn === "PAID" && <button type="button" className="text-xs text-gold underline" onClick={async () => (await confirmDialog({ title: "Mark this buy-in as refunded?", confirmLabel: "Mark refunded" })) && run("PUT", `${base}/participants/${p.userId}/buyin`, { status: "refunded" }, "Buy-in marked refunded.")}>Refund</button>}
-                  </span>
-                )}
-                <button type="button" className="text-xs text-red-400 underline" onClick={async () => {
-                  const answers = await askDialog({
-                    title: `Remove ${nameOf(p.userId)} from the event?`,
-                    body: "They leave the roster and their team, and come off the Discord signup.",
-                    confirmLabel: "Remove player",
-                    tone: "danger",
-                    fields: [
-                      { key: "ban", type: "checkbox", label: "Also bar them from this event", hint: "They can't sign up again, in Discord or here, and staff can't add them until you lift it." },
-                      { key: "reason", type: "textarea", label: "Reason", placeholder: "Shown to staff, and to them if they try to come back.", required: true, maxLength: 300, showWhen: "ban" },
-                    ],
-                  });
-                  if (!answers) return;
-                  if (answers.ban === true) run("POST", `${base}/bans`, { userId: p.userId, reason: String(answers.reason) }, `${nameOf(p.userId)} was removed and barred from the event.`);
-                  else run("DELETE", `${base}/participants/${p.userId}`, undefined, "Player removed.");
-                }}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-          {detail.bans.length > 0 && (
-            <div className="mt-4 space-y-2 rounded-xl border border-surface-border p-4 text-sm">
-              <p className="font-medium">Barred from this event</p>
-              <ul className="divide-y divide-surface-border/60">
-                {detail.bans.map((b) => (
-                  <li key={b.userId} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                    <span className="min-w-0">
-                      <span className="font-medium">{b.userName ?? `Player ${b.userId}`}</span>
-                      <span className="block text-xs text-muted">
-                        {b.reason}
-                        {b.bannedBy ? ` · by ${b.bannedBy}` : ""} · {formatUtc(b.at)}
-                      </span>
-                    </span>
-                    <button
-                      type="button"
-                      className="text-xs text-gold underline"
-                      disabled={pending}
-                      onClick={async () => (await confirmDialog({ title: `Let ${b.userName ?? `player ${b.userId}`} take part again?`, body: "They aren't put back on the roster: they sign up again like anyone.", confirmLabel: "Lift the ban" })) && run("DELETE", `${base}/bans/${b.userId}`, undefined, "The ban was lifted.")}
-                    >
-                      Lift the ban
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-      )}
+      {tab === "players" && <PlayersTab detail={detail} base={base} editable={editable} pending={pending} run={run} nameOf={nameOf} onOpenTeams={() => setTab("teams")} />}
 
       {tab === "progress" && (
         <section className="space-y-5">
