@@ -2,8 +2,9 @@
 
 import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { formatUtc, Notice, StatusBadge } from "@/components/admin/ui";
+import { EventsDashboard } from "@/components/dashboard/events/EventsDashboard";
 import { EventStreams, type DraftList, type TemplateList } from "@/components/dashboard/setup/EventStreams";
 import type { EventKind } from "@/lib/eventOptions";
 import type { EventList, EventStatus } from "@/lib/eventTypes";
@@ -36,6 +37,7 @@ export function EventListView({
   const [showArchived, setShowArchived] = useState(false);
   const [listProblem, setListProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [listPending, startList] = useTransition();
+  const startRef = useRef<HTMLDivElement>(null);
 
   const finished = (s: EventStatus) => s === "DONE" || s === "CANCELLED";
   const shown = events.filter((e) => showArchived || !e.archived);
@@ -53,10 +55,18 @@ export function EventListView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <EventsDashboard
+        events={events}
+        base={`/dashboard/${guildId}/event-manager`}
+        onStart={() => {
+          startRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      />
+
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold text-gold">Your events</h2>
+          <h2 className="text-lg font-semibold text-gold">Your events</h2>
           <div className="flex flex-wrap items-center gap-3 text-sm">
             {toArchive > 0 && (
               <button type="button" className="text-gold underline" disabled={listPending} onClick={() => listAction("POST", "events/archive-finished")}>
@@ -90,6 +100,18 @@ export function EventListView({
                     {e.maxParticipants ? ` · up to ${e.maxParticipants} players` : ""} · created {formatUtc(e.createdAt)}
                   </p>
                   {e.description && <p className="line-clamp-2 break-words text-sm text-muted">{e.description}</p>}
+                  {(e.players !== undefined || (e.proofWaiting ?? 0) > 0) && !finished(e.status) && (
+                    <p className="flex flex-wrap items-center gap-2 text-xs">
+                      {e.players !== undefined && (
+                        <span className="rounded-full bg-white/10 px-2.5 py-1 font-medium text-muted">
+                          {e.players}
+                          {e.maxParticipants ? ` of ${e.maxParticipants}` : ""} {e.players === 1 ? "player" : "players"}
+                        </span>
+                      )}
+                      {(e.waiting ?? 0) > 0 && <span className="rounded-full bg-amber-500/15 px-2.5 py-1 font-medium text-amber-300">{e.waiting} waiting</span>}
+                      {(e.proofWaiting ?? 0) > 0 && <span className="rounded-full bg-red-500/15 px-2.5 py-1 font-medium text-red-300">{e.proofWaiting} proof to decide</span>}
+                    </p>
+                  )}
                 </Link>
                 {(finished(e.status) || e.status === "DRAFT") && (
                   <div className="flex flex-wrap items-center justify-end gap-3 border-t border-surface-border px-5 py-2 text-xs">
@@ -117,7 +139,9 @@ export function EventListView({
         <p className="text-xs text-muted">A server can have up to {initial.maxOpen} unfinished events at once.</p>
       </section>
 
-      <EventStreams guildId={guildId} kinds={kinds} initialDrafts={drafts} initialTemplates={templates} structure={structure} call={call} />
+      <div ref={startRef} className="scroll-mt-4">
+        <EventStreams guildId={guildId} kinds={kinds} initialDrafts={drafts} initialTemplates={templates} structure={structure} call={call} />
+      </div>
     </div>
   );
 }

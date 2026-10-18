@@ -7,6 +7,7 @@ import { ChannelSelect } from "@/components/admin/pickers";
 import { FormField, inputClass } from "@/components/admin/ui";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { getPath, isRequired, isoToLocalInput, localInputToIso, type Answers, type OptionDef } from "@/lib/eventOptions";
 import { BINGO_LOOKS, DEFAULT_BINGO_LOOK, type EventPrize } from "@/lib/eventTypes";
@@ -48,6 +49,49 @@ function ShapePicker({ opt, value, look, onChange, disabled }: { opt: OptionDef;
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** The three options that describe one channel of an event (how it is provided, which channel, what it is called) are drawn together as one row. */
+const SLOT_HEAD = /^config\.channels\.slots\.(\w+)\.use$/;
+const SLOT_PART = /^config\.channels\.(?:slots\.\w+\.channelId|names\.\w+)$/;
+
+/**
+ * One of the event's channels as a row: a switch for whether the event has it, and, while it does, a second for who provides it. "JonnyBot makes it" is on to
+ * begin with and shows the name; off, the same place shows a picker for a channel that already exists. It reads and writes the same three answers as the
+ * separate options did, so nothing that reads them changes.
+ */
+function SlotField({ opt, options, answers, onChange, structure, highlight, disabled }: { opt: OptionDef; options: OptionDef[]; answers: Answers; onChange: (path: string, value: unknown) => void; structure: GuildStructure; highlight: boolean; disabled: boolean }) {
+  const match = SLOT_HEAD.exec(opt.path);
+  const key = match ? match[1] : "";
+  const channelPath = `config.channels.slots.${key}.channelId`;
+  const namePath = `config.channels.names.${key}`;
+  const use = String(getPath(answers, opt.path) ?? "create");
+  const channelId = getPath(answers, channelPath);
+  const name = getPath(answers, namePath);
+  const makes = use === "create";
+  const nameHint = options.find((o) => o.path === namePath)?.hint ?? "{event} is the event's name. Leave it empty for the usual name.";
+  return (
+    <div className={highlight ? "rounded-lg ring-1 ring-red-500/60 ring-offset-4 ring-offset-surface" : undefined}>
+      <SettingRow title={opt.label} hint={opt.hint} checked={use !== "none"} disabled={disabled} onChange={(on) => onChange(opt.path, on ? "create" : "none")} offHint="Left out: nothing is made or chosen for this.">
+        <Toggle
+          checked={makes}
+          disabled={disabled}
+          label="JonnyBot makes it"
+          detail={makes ? "Made inside the event's category when you set up the channels." : "Off: pick a channel you already have. JonnyBot uses it but never changes who can see it."}
+          onChange={(on) => onChange(opt.path, on ? "create" : "existing")}
+        />
+        {makes ? (
+          <FormField label="Name" size="md" hint={nameHint}>
+            <input className={inputClass} disabled={disabled} maxLength={100} value={typeof name === "string" ? name : ""} onChange={(e) => onChange(namePath, e.target.value === "" ? undefined : e.target.value)} />
+          </FormField>
+        ) : (
+          <FormField label="Channel to use" size="lg" required as="group">
+            <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={typeof channelId === "string" && channelId !== "" ? channelId : null} onChange={(id) => onChange(channelPath, id ?? undefined)} none="Choose a channel" />
+          </FormField>
+        )}
+      </SettingRow>
     </div>
   );
 }
@@ -182,7 +226,7 @@ function OptionField({
 }
 
 /** Whether an option takes the whole width of the form: a long text, the prize list, or a picture picker. */
-const isWide = (opt: OptionDef) => opt.type === "TEXTAREA" || opt.type === "PRIZES" || opt.widget === "shape" || opt.widget === "look";
+const isWide = (opt: OptionDef) => opt.type === "TEXTAREA" || opt.type === "PRIZES" || opt.widget === "shape" || opt.widget === "look" || SLOT_HEAD.test(opt.path);
 
 /**
  * The questions for a list of options, drawn from what the bot says each one is. {@code onChange} is told the option's path and its new answer (undefined to
@@ -207,11 +251,28 @@ export function OptionFields({
   return (
     <div className="@container">
       <div className="grid gap-x-4 gap-y-5 @xl:grid-cols-2">
-        {options.map((opt) => (
-          <div key={opt.path} className={isWide(opt) ? "@xl:col-span-2" : undefined}>
-            <OptionField opt={opt} answers={answers} onChange={onChange} structure={structure} highlight={highlight.includes(opt.path)} disabled={disabled} />
-          </div>
-        ))}
+        {options
+          .filter((opt) => !SLOT_PART.test(opt.path))
+          .map((opt) => {
+            const slot = SLOT_HEAD.exec(opt.path);
+            return (
+              <div key={opt.path} className={isWide(opt) ? "@xl:col-span-2" : undefined}>
+                {slot ? (
+                  <SlotField
+                    opt={opt}
+                    options={options}
+                    answers={answers}
+                    onChange={onChange}
+                    structure={structure}
+                    highlight={highlight.includes(opt.path) || highlight.includes(`config.channels.slots.${slot[1]}.channelId`)}
+                    disabled={disabled}
+                  />
+                ) : (
+                  <OptionField opt={opt} answers={answers} onChange={onChange} structure={structure} highlight={highlight.includes(opt.path)} disabled={disabled} />
+                )}
+              </div>
+            );
+          })}
       </div>
     </div>
   );
