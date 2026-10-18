@@ -128,6 +128,17 @@ export interface EventPlayer {
   strength: PlayerStrength | null;
   /** Why they can't be put on a team right now (waitlist, verification), or null when they can. */
   teamBlock: string | null;
+  /** Where they came from: the event's Discord signup (the two follow each other), their own join, or an organiser adding them. */
+  source: "SIGNUP" | "SELF" | "STAFF";
+}
+
+/** A player an organiser removed and barred from the event again. */
+export interface EventBan {
+  userId: string;
+  userName: string | null;
+  reason: string;
+  bannedBy: string | null;
+  at: string;
 }
 
 export interface PlayerStrength {
@@ -216,6 +227,8 @@ export interface EventDetail {
   organisers: EventOrganiser[];
   /** Discord signups the event's rules turned away, with the reason. */
   refused: EventRefusal[];
+  /** Players barred from this event. */
+  bans: EventBan[];
   event: EventSummary;
   objectives: EventObjective[];
   teams: { id: string; name: string; captainId: string | null }[];

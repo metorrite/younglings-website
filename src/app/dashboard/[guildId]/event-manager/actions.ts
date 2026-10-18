@@ -17,6 +17,9 @@ const ALLOWED = [
   /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board|organisers|archive|look)$/,
   /^events\/\d{1,18}\/signup\/(sync|close|reopen)$/,
   /^events\/\d{1,18}\/roster\/confirm$/,
+  // barring a player from the event (removes them too) and lifting it
+  /^events\/\d{1,18}\/bans$/,
+  /^events\/\d{1,18}\/bans\/\d{1,20}$/,
   /^events\/\d{1,18}\/participants\/\d{1,20}\/(verification|rating)$/,
   /^events\/\d{1,18}\/teams\/(assign|suggest|finalise|reopen)$/,
   /^events\/\d{1,18}\/(teams|participants)\/\d{1,20}$/,

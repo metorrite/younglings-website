@@ -132,7 +132,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   }, []);
 
   /** `saveChannelsFirst`: the channel choices on screen are saved before this, so a choice made but not saved can't make the action do nothing. */
-  function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string, after?: () => void, saveChannelsFirst = false) {
+  function run(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body: unknown, message: string | ((data: unknown) => string), after?: () => void, saveChannelsFirst = false) {
     setProblem(null);
     setNote(null);
     start(async () => {
@@ -144,7 +144,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const warning = (result.data as { signupWarning?: string } | null)?.signupWarning;
       if (warning) setProblem({ title: `Done, but the signup wasn't updated: ${warning}`, items: [] });
-      else setNote(message);
+      else setNote(typeof message === "function" ? message(result.data) : message);
       after?.();
       await refresh();
     });
@@ -491,12 +491,19 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 </button>
               )}
               {detail.signup.attached && (
-                <button type="button" className={ghostButton} disabled={pending} onClick={() => run("POST", `${base}/signup/sync`, {}, "Everyone who signed up is now in the event.")}>
-                  Add everyone who signed up
+                <button type="button" className={ghostButton} disabled={pending} onClick={() =>
+                  run("POST", `${base}/signup/sync`, {}, (data) => {
+                    const r = data as { synced?: number; removed?: number };
+                    const added = r.synced ?? 0;
+                    const removed = r.removed ?? 0;
+                    return added === 0 && removed === 0 ? "The roster and the signup already match." : `Synced with the signup: ${added} added, ${removed} taken off.`;
+                  })
+                }>
+                  Sync with the signup
                 </button>
               )}
             </div>
-            <p className="text-xs text-muted">The bot also does this every minute. Staff can always add late entries by hand on the Teams and players tab.</p>
+            <p className="text-xs text-muted">The bot keeps the roster and the Discord signup the same, both ways, about every half minute: sign up or leave there or here and the other follows. Players staff added by hand aren&apos;t on the signup, so changes there don&apos;t touch them.</p>
           </div>
           <div className="space-y-2 rounded-xl border border-surface-border p-4">
             <p className="font-medium">Organisers</p>
@@ -915,6 +922,9 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               <li key={p.userId} className="flex flex-wrap items-center gap-3 py-2 text-sm">
                 <span className="min-w-0 flex-1">
                   <span className="font-medium">{p.userName ?? `Player ${p.userId}`}</span> <span className="text-xs text-muted">{KIND_LABEL[p.kind]}</span>
+                  <span className="ml-2 text-xs text-muted" title="Players from the signup follow it: take them off the signup in Discord and they come off here too.">
+                    {p.source === "STAFF" ? "added by staff" : "on the signup"}
+                  </span>
                   {p.waiting && <span className="ml-2"><StatusBadge tone="warn">Waiting</StatusBadge></span>}
                 </span>
                 {detail.verification.required && !p.waiting && (
@@ -969,12 +979,52 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                     {p.buyIn === "PAID" && <button type="button" className="text-xs text-gold underline" onClick={async () => (await confirmDialog({ title: "Mark this buy-in as refunded?", confirmLabel: "Mark refunded" })) && run("PUT", `${base}/participants/${p.userId}/buyin`, { status: "refunded" }, "Buy-in marked refunded.")}>Refund</button>}
                   </span>
                 )}
-                <button type="button" className="text-xs text-red-400 underline" onClick={async () => (await confirmDialog({ title: `Remove ${nameOf(p.userId)} from the event?`, confirmLabel: "Remove player", tone: "danger" })) && run("DELETE", `${base}/participants/${p.userId}`, undefined, "Player removed.")}>
+                <button type="button" className="text-xs text-red-400 underline" onClick={async () => {
+                  const answers = await askDialog({
+                    title: `Remove ${nameOf(p.userId)} from the event?`,
+                    body: "They leave the roster and their team, and come off the Discord signup.",
+                    confirmLabel: "Remove player",
+                    tone: "danger",
+                    fields: [
+                      { key: "ban", type: "checkbox", label: "Also bar them from this event", hint: "They can't sign up again, in Discord or here, and staff can't add them until you lift it." },
+                      { key: "reason", type: "textarea", label: "Reason", placeholder: "Shown to staff, and to them if they try to come back.", required: true, maxLength: 300, showWhen: "ban" },
+                    ],
+                  });
+                  if (!answers) return;
+                  if (answers.ban === true) run("POST", `${base}/bans`, { userId: p.userId, reason: String(answers.reason) }, `${nameOf(p.userId)} was removed and barred from the event.`);
+                  else run("DELETE", `${base}/participants/${p.userId}`, undefined, "Player removed.");
+                }}>
                   Remove
                 </button>
               </li>
             ))}
           </ul>
+          {detail.bans.length > 0 && (
+            <div className="mt-4 space-y-2 rounded-xl border border-surface-border p-4 text-sm">
+              <p className="font-medium">Barred from this event</p>
+              <ul className="divide-y divide-surface-border/60">
+                {detail.bans.map((b) => (
+                  <li key={b.userId} className="flex flex-wrap items-center justify-between gap-3 py-2">
+                    <span className="min-w-0">
+                      <span className="font-medium">{b.userName ?? `Player ${b.userId}`}</span>
+                      <span className="block text-xs text-muted">
+                        {b.reason}
+                        {b.bannedBy ? ` · by ${b.bannedBy}` : ""} · {formatUtc(b.at)}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs text-gold underline"
+                      disabled={pending}
+                      onClick={async () => (await confirmDialog({ title: `Let ${b.userName ?? `player ${b.userId}`} take part again?`, body: "They aren't put back on the roster: they sign up again like anyone.", confirmLabel: "Lift the ban" })) && run("DELETE", `${base}/bans/${b.userId}`, undefined, "The ban was lifted.")}
+                    >
+                      Lift the ban
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
       )}
 
