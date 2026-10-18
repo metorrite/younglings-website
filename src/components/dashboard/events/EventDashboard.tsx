@@ -21,7 +21,20 @@ function nextStep(steps: EventPrepStep[]): EventPrepStep | undefined {
  * A small dashboard for one event, at the top of its Overview: where it stands, how many people are in, what is waiting for a decision and what to do next.
  * It only reads what the page already has, and each tile opens the tab where the thing is dealt with.
  */
-export function EventDashboard({ detail, proofWaiting, onOpen }: { detail: EventDetail; proofWaiting: number; onOpen: (tab: EventDashboardTab) => void }) {
+export function EventDashboard({
+  detail,
+  proofWaiting,
+  onOpen,
+  onCloseSignups,
+  onConfirmRoster,
+}: {
+  detail: EventDetail;
+  proofWaiting: number;
+  onOpen: (tab: EventDashboardTab) => void;
+  /** The checklist's own "Close signups" and "Confirm the roster", so the most common steps are one click from here. */
+  onCloseSignups: () => void;
+  onConfirmRoster: () => void;
+}) {
   const e = detail.event;
   const players = detail.participants.filter((p) => !p.waiting).length;
   const waiting = detail.participants.length - players;
@@ -55,7 +68,10 @@ export function EventDashboard({ detail, proofWaiting, onOpen }: { detail: Event
     heading = next.label;
     line = next.detail;
     const tab = STEP_TAB[next.key];
-    action = tab
+    if (next.key === "signups" && e.status === "SIGNUPS" && !detail.setup.signupsClosedAt) action = { label: "Close signups", run: onCloseSignups };
+    else if (next.key === "roster" && e.status === "SIGNUPS" && detail.setup.signupsClosedAt) action = { label: detail.setup.rosterConfirmedAt ? "Confirm the roster again" : "Confirm the roster", run: onConfirmRoster };
+    else
+      action = tab
       ? { label: next.key === "space" ? "Open the Channels tab" : next.key === "teams" ? "Open the team builder" : "Open the Players tab", run: () => onOpen(tab) }
       : { label: "Go to the checklist", run: () => document.getElementById("event-prep")?.scrollIntoView({ behavior: "smooth", block: "start" }) };
   } else if (detail.prep.ready) {

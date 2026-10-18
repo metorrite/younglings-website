@@ -54,10 +54,10 @@ export function ProgressTab({
   return (
     <section className="space-y-5">
       <div className="space-y-1">
-        <h3 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
+        <h2 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
           Proof waiting for review
           {claims.pending.length > 0 && <StatusBadge tone="warn">{claims.pending.length}</StatusBadge>}
-        </h3>
+        </h2>
         {claims.pending.length === 0 && <p className="text-sm text-muted">Nothing is waiting. Proof players send with /submit shows up here as soon as it arrives.</p>}
       </div>
 

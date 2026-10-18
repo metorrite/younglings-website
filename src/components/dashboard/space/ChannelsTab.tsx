@@ -169,7 +169,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   return (
     <section className="space-y-5">
       <div className="max-w-2xl space-y-1">
-        <h3 className="text-lg font-semibold">Roles and channels</h3>
+        <h2 className="text-lg font-semibold">Roles and channels</h2>
         <p className="text-sm text-muted">
           Once signups are closed, the roster is confirmed{teamEvent ? " and the teams are final" : ""}, JonnyBot can make a role for the players and one for the organisers
           {teamEvent ? ", a role for each team," : ""} and a category with the channels the event needs. Players only see their own part; organisers and staff see everything.
