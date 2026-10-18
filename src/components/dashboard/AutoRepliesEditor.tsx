@@ -13,7 +13,9 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import type {
   AutoReplyDef,
   AutoReplyList,
@@ -73,6 +75,9 @@ const body = (r: AutoReplyDef) => ({
 });
 const shape = (r: AutoReplyDef) => JSON.stringify(body(r));
 
+/** What a reply starts with when it is made; a reply that already differs keeps showing the matching and the wait in Basic. */
+const DEFAULT_COOLDOWN = 30;
+
 function ReplyCard({
   initial,
   limits,
@@ -98,6 +103,10 @@ function ReplyCard({
   const [pending, start] = useTransition();
   const dirty = shape(draft) !== shape(saved);
   const isNew = saved.id === null;
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
+  const showMatch = advanced || saved.match !== "WORD";
+  const showCooldown = advanced || saved.cooldownSeconds !== DEFAULT_COOLDOWN;
 
   const change = (patch: Partial<AutoReplyDef>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -154,28 +163,30 @@ function ReplyCard({
         </>
       }
     >
-      <div className="grid gap-4 lg:grid-cols-2">
-        <FormField label="When a message…" as="group">
-          <div className="flex flex-wrap gap-2">
-            {MATCH.map((m) => (
-              <button
-                key={m.value}
-                type="button"
-                aria-pressed={draft.match === m.value}
-                title={m.blurb}
-                onClick={() => change({ match: m.value })}
-                className={`rounded-full border px-3 py-1 text-xs transition ${draft.match === m.value ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            {MATCH.find((m) => m.value === draft.match)?.blurb} Capital letters
-            don&apos;t matter.
-          </p>
-        </FormField>
-        <FormField label="This text">
+      <FieldGrid>
+        {showMatch && (
+          <FormField label="When a message…" as="group" size="lg">
+            <div className="flex flex-wrap gap-2">
+              {MATCH.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  aria-pressed={draft.match === m.value}
+                  title={m.blurb}
+                  onClick={() => change({ match: m.value })}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${draft.match === m.value ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              {MATCH.find((m) => m.value === draft.match)?.blurb} Capital letters
+              don&apos;t matter.
+            </p>
+          </FormField>
+        )}
+        <FormField label={showMatch ? "This text" : `When a message ${(MATCH.find((m) => m.value === draft.match)?.label ?? "contains").toLowerCase()}`} size="md">
           <input
             className={inputClass}
             value={draft.trigger}
@@ -184,9 +195,10 @@ function ReplyCard({
             onChange={(e) => change({ trigger: e.target.value })}
           />
         </FormField>
-      </div>
+      </FieldGrid>
       <FormField
         label="Reply with"
+        size="lg"
         info="Use {user} to mention the person who wrote the message, and {server} for the server's name. It never pings @everyone or roles."
       >
         <textarea
@@ -198,10 +210,11 @@ function ReplyCard({
           onChange={(e) => change({ reply: e.target.value })}
         />
       </FormField>
-      <div className="grid gap-4 lg:grid-cols-2">
+      {showCooldown && (
         <FormField
           label="Wait before answering again"
           as="group"
+          size="lg"
           info="Stops one busy channel turning a reply into spam. The wait applies across the whole server."
         >
           <div className="flex flex-wrap items-center gap-2">
@@ -218,19 +231,17 @@ function ReplyCard({
             ))}
           </div>
         </FormField>
-        <div className="self-end pb-1">
-          <Toggle
-            checked={draft.enabled}
-            onChange={(on) => change({ enabled: on })}
-            label="Active"
-            detail={
-              draft.enabled
-                ? "JonnyBot answers matching messages."
-                : "Switched off; kept for later."
-            }
-          />
-        </div>
-      </div>
+      )}
+      <Toggle
+        checked={draft.enabled}
+        onChange={(on) => change({ enabled: on })}
+        label="Active"
+        detail={
+          draft.enabled
+            ? "JonnyBot answers matching messages."
+            : "Switched off; kept for later."
+        }
+      />
 
       {problem && (
         <Notice tone="error" title={problem.title} items={problem.items} />
@@ -300,6 +311,9 @@ export function AutoRepliesEditor({
         </div>
       )}
 
+      <MoreInAdvanced>how a message is matched (contains, starts with, is exactly) and how long a reply waits before answering again.</MoreInAdvanced>
+
+      <PanelGrid min="26rem">
       {drafts.map((key) => (
         <ReplyCard
           key={`draft-${key}`}
@@ -329,6 +343,7 @@ export function AutoRepliesEditor({
           onCancel={() => {}}
         />
       ))}
+      </PanelGrid>
     </div>
   );
 }

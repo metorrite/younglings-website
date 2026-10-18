@@ -3,6 +3,8 @@
 import { confirmDialog } from "@/components/ui/Dialogs";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { useState, useTransition } from "react";
 import { markPromotedAction, postMessageAction, saveCommunityAction, saveTrackingAction } from "@/app/admin/(console)/actions";
 import type { ChannelChoices, ForumInfo, ForumThread, GuildStructure, PromotionDue, TrackingGroupConfig } from "@/lib/jonnybot-admin";
@@ -89,11 +91,24 @@ function TrackingGroupCard({ group, choices, save: saveGroup }: { group: Trackin
   );
 }
 
+/** The feeds that are the server's own audit trail rather than the clan's activity: only some servers want them, so they are Advanced. */
+const ADVANCED_SOURCES = ["Discord Admin Log"];
+
 export function TrackingEditor({ groups, channels, forums, threads, save = saveTrackingAction }: { groups: TrackingGroupConfig[]; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; save?: SaveTracking }) {
   const choices: ChannelChoices = { channels, forums: forums ?? [], threads: threads ?? [] };
-  const sources = [...new Set(groups.map((g) => g.source))];
+  const allSources = [...new Set(groups.map((g) => g.source))];
+  const [mode] = useViewMode();
+  // which feeds are in use, as last saved: a source that already posts stays on screen in Basic
+  const [inUse, setInUse] = useState<Record<string, boolean>>(() => Object.fromEntries(groups.map((g) => [g.key, g.enabled && g.channels.length > 0])));
+  const track: SaveTracking = async (key, enabled, channelIds) => {
+    const result = await save(key, enabled, channelIds);
+    if (result.ok) setInUse((all) => ({ ...all, [key]: enabled && channelIds.length > 0 }));
+    return result;
+  };
+  const sources = allSources.filter((source) => mode === "advanced" || !ADVANCED_SOURCES.includes(source) || groups.some((g) => g.source === source && inUse[g.key]));
+  const hidden = allSources.filter((source) => !sources.includes(source));
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {sources.map((source) => (
         <CollapsibleCard
           key={source}
@@ -102,17 +117,18 @@ export function TrackingEditor({ groups, channels, forums, threads, save = saveT
           defaultOpen
           summary={(() => {
             const mine = groups.filter((g) => g.source === source);
-            const on = mine.filter((g) => g.enabled && g.channels.length > 0).length;
+            const on = mine.filter((g) => inUse[g.key]).length;
             return <Chip tone={on === 0 ? "warn" : "good"}>{on === 0 ? "Nothing posting yet" : `${on} of ${mine.length} posting`}</Chip>;
           })()}
         >
-          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+          <PanelGrid min="20rem" gap="gap-3">
             {groups.filter((g) => g.source === source).map((g) => (
-              <TrackingGroupCard key={g.key} group={g} choices={choices} save={save} />
+              <TrackingGroupCard key={g.key} group={g} choices={choices} save={track} />
             ))}
-          </div>
+          </PanelGrid>
         </CollapsibleCard>
       ))}
+      {hidden.length > 0 && <MoreInAdvanced>the Discord admin log: where JonnyBot reports changes to the server&apos;s settings, channels, roles, members and messages.</MoreInAdvanced>}
     </div>
   );
 }
@@ -192,12 +208,18 @@ export function CommunitySettingsForm({ pollChannelId, channels, forums, threads
   }
 
   return (
-    <div className="space-y-6">
-      <Card title="Member polls" hint="Verified members can start polls from the website. They're posted in this channel. Leave it empty to turn member polls off (admins can still post polls anywhere).">
-        <FormField label="Channel for member polls">
+    <div className="space-y-4">
+      <CollapsibleCard
+        id="community-polls"
+        title="Member polls"
+        hint="Verified members can start polls from the website. They're posted in this channel. Leave it empty to turn member polls off (admins can still post polls anywhere)."
+        defaultOpen
+        summary={<Chip tone={value ? "good" : "plain"}>{value ? "Member polls on" : "Member polls off"}</Chip>}
+      >
+        <FormField label="Channel for member polls" size="md" as="group">
           <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={value || null} onChange={(id) => { setValue(id ?? ""); setSaved(false); }} none="None — member polls are off" />
         </FormField>
-      </Card>
+      </CollapsibleCard>
       {error && <Notice tone="error" title={error} />}
       {saved && <Notice tone="success" title="Saved." />}
       <button type="button" className={primaryButton} disabled={pending} onClick={save}>

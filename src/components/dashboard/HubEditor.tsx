@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { FormField, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect } from "@/components/admin/pickers";
@@ -17,6 +18,9 @@ const ROLE = "role:";
  * One command's row: collapsed it shows whether it is on and who and where it is open to; open, switch it on or off, say who may use it and where, and, for Signups, fix its admin channel and limit where its
  * public panel can go. Each card saves on its own. Admins always keep access and are never held to the channel limit, so a card can't
  * lock them out.
+ * <p>
+ * Basic is the switch: on or off. Advanced adds who may use it, where it works and, for Signups, its channels. A command that already has a rule of its own
+ * keeps showing it in Basic.
  */
 function HubCard({
   command,
@@ -41,6 +45,12 @@ function HubCard({
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  // what was last saved: a rule that is already in force stays on screen in Basic
+  const [kept, setKept] = useState({ customAccess: command.customAccess, channels: command.channelIds.length, signup: command.signup });
+  const customised =
+    kept.customAccess || kept.channels > 0 || (kept.signup !== null && kept.signup !== undefined && (kept.signup.adminChannelId !== null || kept.signup.lockAdminChannel || kept.signup.publicChannelIds.length > 0));
+  const showMore = mode === "advanced" || customised;
 
   const dirty = () => setOutcome(null);
   const roleIds = refs.filter((r) => r.startsWith(ROLE)).map((r) => r.slice(ROLE.length));
@@ -58,6 +68,7 @@ function HubCard({
         setOutcome({ tone: "error", title: result.error, items: result.problems });
         return;
       }
+      setKept({ customAccess, channels: channelIds.length, signup });
       setOutcome({ tone: "success", title: "Saved." });
     });
   }
@@ -95,6 +106,8 @@ function HubCard({
           />
       {!enabled && <p className="text-xs text-amber-300">While this is off, nobody in the server can use /{command.slashName}, admins included.</p>}
 
+      {showMore ? (
+      <>
       <div className="border-t border-surface-border pt-4">
       <PanelGrid min="22rem" max="max-content" gap="gap-x-10 gap-y-6">
       <div className="max-w-xl space-y-3">
@@ -217,6 +230,10 @@ function HubCard({
             </div>
           </div>
         </div>
+      )}
+      </>
+      ) : (
+        <MoreInAdvanced>who may use /{command.slashName} and where it works{signup ? ", and its signup channels" : ""}.</MoreInAdvanced>
       )}
 
       <div className="space-y-3 border-t border-surface-border pt-4">
