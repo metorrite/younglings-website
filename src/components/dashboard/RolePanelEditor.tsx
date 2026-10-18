@@ -15,7 +15,10 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
+import { useViewMode, ViewModeBar } from "@/components/dashboard/ui/ViewMode";
 import { colorToHex, hexToColor } from "@/lib/welcomePreview";
 import {
   choicesOf,
@@ -72,7 +75,11 @@ const shape = (
 ) =>
   JSON.stringify([p.name, p.title, p.description, p.color, p.mode, p.buttons]);
 
-/** Makes a message of role buttons: what it says, which roles its buttons give, and where it is posted, with a live preview of how it will look. */
+/**
+ * Makes a message of role buttons: what it says, which roles its buttons give, and where it is posted, with a live preview of how it will look. Whether members
+ * may hold one role or any number is a switch at the top of the buttons. Basic shows the message, the buttons and where to post it; Advanced adds the card colour
+ * and the button colours (kept visible in Basic once they are saved).
+ */
 export function RolePanelEditor({
   initial,
   structure,
@@ -90,6 +97,8 @@ export function RolePanelEditor({
   const [channel, setChannel] = useState<string | null>(initial.channelId);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
+  const [mode, setMode] = useViewMode("role-panel");
+  const advanced = mode === "advanced";
   const roles = structure.roles
     .filter((r) => !r.managed && r.id !== undefined)
     .sort((a, b) => b.position - a.position);
@@ -188,9 +197,23 @@ export function RolePanelEditor({
     (c) => c.id === saved.channelId,
   );
 
+  // Basic keeps what most panels need; whatever is already saved stays on screen, so nothing set is ever out of sight.
+  const showColour = advanced || saved.color !== null;
+  const showButtonColours = advanced || saved.buttons.some((b) => b.style !== "primary");
+  const hiddenInUse = [
+    !showColour && panel.color !== null && "card colour",
+    !showButtonColours && panel.buttons.some((b) => b.style !== "primary") && "button colours",
+  ].filter((name): name is string => typeof name === "string");
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
       <div className="min-w-0 space-y-4">
+        <ViewModeBar mode={mode} onChange={setMode}>
+          {advanced
+            ? "Showing everything, including the card colour and the button colours."
+            : `Showing what most panels need. ${hiddenInUse.length > 0 ? `Also in use, and shown in Advanced: ${hiddenInUse.join(", ")}.` : "Switch to Advanced for colours."}`}
+        </ViewModeBar>
+
         <CollapsibleCard
           id="rp-message"
           title="The message"
@@ -203,28 +226,53 @@ export function RolePanelEditor({
           }
           info="The name is only for you, to tell your panels apart. The title and description are what members read. Leave both empty for a plain 'press a button' message."
         >
-          <FormField
-            label="Name"
-            hint="For your own reference. Members don't see it."
-          >
-            <input
-              className={inputClass}
-              value={panel.name}
-              maxLength={60}
-              placeholder="Team roles"
-              onChange={(e) => change({ name: e.target.value })}
-            />
-          </FormField>
-          <FormField label="Title">
-            <input
-              className={inputClass}
-              value={panel.title}
-              maxLength={256}
-              placeholder="Pick your team"
-              onChange={(e) => change({ title: e.target.value })}
-            />
-          </FormField>
-          <FormField label="Description">
+          <FieldGrid>
+            <FormField
+              label="Name"
+              size="md"
+              hint="For your own reference. Members don't see it."
+            >
+              <input
+                className={inputClass}
+                value={panel.name}
+                maxLength={60}
+                placeholder="Team roles"
+                onChange={(e) => change({ name: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Title" size="md">
+              <input
+                className={inputClass}
+                value={panel.title}
+                maxLength={256}
+                placeholder="Pick your team"
+                onChange={(e) => change({ title: e.target.value })}
+              />
+            </FormField>
+            {showColour && (
+              <FormField label="Colour" size="md" as="group">
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    type="color"
+                    aria-label="Card colour"
+                    className="h-9 w-14 cursor-pointer rounded border border-surface-border bg-background p-1"
+                    value={panel.color === null ? "#5865f2" : colorToHex(panel.color)}
+                    onChange={(e) => change({ color: hexToColor(e.target.value) })}
+                  />
+                  {panel.color !== null && (
+                    <button
+                      type="button"
+                      className={ghostButton}
+                      onClick={() => change({ color: null })}
+                    >
+                      No colour
+                    </button>
+                  )}
+                </div>
+              </FormField>
+            )}
+          </FieldGrid>
+          <FormField label="Description" size="lg">
             <textarea
               className={`${inputClass} min-h-24`}
               rows={3}
@@ -234,66 +282,6 @@ export function RolePanelEditor({
               onChange={(e) => change({ description: e.target.value })}
             />
           </FormField>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium">Colour</span>
-            <input
-              type="color"
-              aria-label="Card colour"
-              className="h-9 w-14 cursor-pointer rounded border border-surface-border bg-background p-1"
-              value={panel.color === null ? "#5865f2" : colorToHex(panel.color)}
-              onChange={(e) => change({ color: hexToColor(e.target.value) })}
-            />
-            {panel.color !== null && (
-              <button
-                type="button"
-                className={ghostButton}
-                onClick={() => change({ color: null })}
-              >
-                No colour
-              </button>
-            )}
-          </div>
-        </CollapsibleCard>
-
-        <CollapsibleCard
-          id="rp-mode"
-          title="How members pick"
-          hint="Any number of roles, or only one."
-          defaultOpen
-          summary={
-            <Chip>{panel.mode === "UNIQUE" ? "Only one" : "Any number"}</Chip>
-          }
-          info="'Any number' lets people press as many buttons as they like; pressing one again removes the role. 'Only one' is for choices that exclude each other, like a team: pressing a new one swaps out the old one (but only roles on this panel are swapped)."
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
-            {(
-              [
-                {
-                  mode: "TOGGLE",
-                  title: "Any number of roles",
-                  blurb:
-                    "Each button works on its own: press to take the role, press again to drop it.",
-                },
-                {
-                  mode: "UNIQUE",
-                  title: "Only one at a time",
-                  blurb:
-                    "Choosing a role swaps out any other role from this panel.",
-                },
-              ] as const
-            ).map((m) => (
-              <button
-                key={m.mode}
-                type="button"
-                aria-pressed={panel.mode === m.mode}
-                onClick={() => change({ mode: m.mode })}
-                className={`rounded-lg border p-4 text-left transition ${panel.mode === m.mode ? "border-gold bg-gold/10" : "border-surface-border hover:border-gold/50"}`}
-              >
-                <p className="font-medium">{m.title}</p>
-                <p className="mt-1 text-xs text-muted">{m.blurb}</p>
-              </button>
-            ))}
-          </div>
         </CollapsibleCard>
 
         <CollapsibleCard
@@ -302,93 +290,107 @@ export function RolePanelEditor({
           hint="Each button gives one role."
           defaultOpen
           summary={
-            <Chip tone={panel.buttons.length === 0 ? "warn" : "good"}>
-              {panel.buttons.length === 0
-                ? "No buttons yet"
-                : `${panel.buttons.length} button${panel.buttons.length === 1 ? "" : "s"}`}
-            </Chip>
+            <>
+              <Chip tone={panel.buttons.length === 0 ? "warn" : "good"}>
+                {panel.buttons.length === 0
+                  ? "No buttons yet"
+                  : `${panel.buttons.length} button${panel.buttons.length === 1 ? "" : "s"}`}
+              </Chip>
+              <Chip>{panel.mode === "UNIQUE" ? "Only one" : "Any number"}</Chip>
+            </>
           }
           info={`Up to ${maxButtons} buttons. JonnyBot only gives ordinary roles that sit below its own role and have no powerful permissions (like Administrator or Ban Members), so a panel can't be used to take over the server. Leave a label empty to use the role's name.`}
         >
+          <SettingRow
+            title="Only one role at a time"
+            hint="Choosing a role swaps out any other role from this panel."
+            info="Switched on, the buttons exclude each other, like a team: pressing a new one swaps out the old one (but only roles on this panel are swapped). Off, people can press as many buttons as they like, and pressing one again removes the role."
+            checked={panel.mode === "UNIQUE"}
+            onChange={(on) => change({ mode: on ? "UNIQUE" : "TOGGLE" })}
+            offHint="Off: each button works on its own. Press it to take the role, press it again to drop the role."
+          />
           {panel.buttons.length === 0 && (
             <p className="text-sm text-muted">No buttons yet. Add one below.</p>
           )}
-          <ul className="space-y-3">
+          <PanelGrid min="18rem" max="18rem" gap="gap-3">
             {panel.buttons.map((b, i) => (
-              <li
+              <div
                 key={i}
                 className="space-y-3 rounded-lg border border-surface-border bg-background/40 p-4"
               >
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7rem]">
-                  <FormField label="Role">
-                    <select
-                      className={inputClass}
-                      value={b.roleId}
-                      onChange={(e) =>
-                        changeButton(i, { roleId: e.target.value })
+                <FormField label="Role" size="md">
+                  <select
+                    className={inputClass}
+                    value={b.roleId}
+                    onChange={(e) => changeButton(i, { roleId: e.target.value })}
+                  >
+                    <option value="">Choose a role…</option>
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
+                  <div className="min-w-0 flex-1 basis-32">
+                    <FormField
+                      label="Label"
+                      size="md"
+                      hint={
+                        b.roleId && roleById.get(b.roleId)
+                          ? `Empty shows “${roleById.get(b.roleId)!.name}”.`
+                          : undefined
                       }
                     >
-                      <option value="">Choose a role…</option>
-                      {roles.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </FormField>
-                  <FormField
-                    label="Label"
-                    hint={
-                      b.roleId && roleById.get(b.roleId)
-                        ? `Empty shows “${roleById.get(b.roleId)!.name}”.`
-                        : undefined
-                    }
-                  >
-                    <input
-                      className={inputClass}
-                      value={b.label}
-                      maxLength={80}
-                      placeholder="Button text"
-                      onChange={(e) =>
-                        changeButton(i, { label: e.target.value })
-                      }
-                    />
-                  </FormField>
-                  <FormField label="Emoji">
-                    <input
-                      className={inputClass}
-                      value={b.emoji ?? ""}
-                      maxLength={64}
-                      placeholder="🔥"
-                      onChange={(e) =>
-                        changeButton(i, { emoji: e.target.value || null })
-                      }
-                    />
-                  </FormField>
+                      <input
+                        className={inputClass}
+                        value={b.label}
+                        maxLength={80}
+                        placeholder="Button text"
+                        onChange={(e) => changeButton(i, { label: e.target.value })}
+                      />
+                    </FormField>
+                  </div>
+                  <div className="w-20">
+                    <FormField label="Emoji" size="sm">
+                      <input
+                        className={inputClass}
+                        value={b.emoji ?? ""}
+                        maxLength={64}
+                        placeholder="🔥"
+                        onChange={(e) =>
+                          changeButton(i, { emoji: e.target.value || null })
+                        }
+                      />
+                    </FormField>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div
-                    className="flex items-center gap-1.5"
-                    role="group"
-                    aria-label="Button colour"
-                  >
-                    {(Object.keys(STYLE) as RolePanelButton["style"][]).map(
-                      (style) => (
-                        <button
-                          key={style}
-                          type="button"
-                          aria-pressed={b.style === style}
-                          title={STYLE[style].label}
-                          onClick={() => changeButton(i, { style })}
-                          className={`h-6 w-6 rounded-full border-2 transition ${b.style === style ? "border-white" : "border-transparent opacity-60 hover:opacity-100"}`}
-                          style={{ backgroundColor: STYLE[style].css }}
-                        >
-                          <span className="sr-only">{STYLE[style].label}</span>
-                        </button>
-                      ),
-                    )}
-                  </div>
-                  <div className="flex gap-1.5">
+                  {showButtonColours && (
+                    <div
+                      className="flex items-center gap-1.5"
+                      role="group"
+                      aria-label="Button colour"
+                    >
+                      {(Object.keys(STYLE) as RolePanelButton["style"][]).map(
+                        (style) => (
+                          <button
+                            key={style}
+                            type="button"
+                            aria-pressed={b.style === style}
+                            title={STYLE[style].label}
+                            onClick={() => changeButton(i, { style })}
+                            className={`h-6 w-6 rounded-full border-2 transition ${b.style === style ? "border-white" : "border-transparent opacity-60 hover:opacity-100"}`}
+                            style={{ backgroundColor: STYLE[style].css }}
+                          >
+                            <span className="sr-only">{STYLE[style].label}</span>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  )}
+                  <div className="ml-auto flex gap-1.5">
                     <button
                       type="button"
                       className={ghostButton}
@@ -420,9 +422,9 @@ export function RolePanelEditor({
                     </button>
                   </div>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </PanelGrid>
           <button
             type="button"
             className={ghostButton}
@@ -454,7 +456,7 @@ export function RolePanelEditor({
                 matches what you see.
               </p>
             )}
-            <FormField label="Channel" as="group">
+            <FormField label="Channel" size="md" as="group">
               <ChannelSelect
                 {...choicesOf(structure)}
                 onlyPostable

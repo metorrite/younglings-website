@@ -7,8 +7,10 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
-import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
+import { useViewMode, ViewModeBar } from "@/components/dashboard/ui/ViewMode";
 import type {
   Autoroles,
   GuildRole,
@@ -46,7 +48,10 @@ const unitFor = (seconds: number) =>
 const shape = (a: Autoroles) =>
   JSON.stringify([a.enabled, a.delaySeconds, a.memberRoleIds, a.botRoleIds]);
 
-/** Roles handed to everyone who joins: one list for people, one for bots, switched on or off as a whole, with an optional delay. */
+/**
+ * Roles handed to everyone who joins: one list for people, one for bots, switched on or off as a whole, with an optional delay. Basic shows the switch, the delay
+ * presets and the roles for people; Advanced adds a custom delay and the roles for bots. A custom delay or bot roles that are already saved stay visible in Basic.
+ */
 export function AutorolesForm({
   initial,
   roles,
@@ -66,6 +71,8 @@ export function AutorolesForm({
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
   const [unit, setUnit] = useState(() => unitFor(initial.delaySeconds));
+  const [mode, setMode] = useViewMode("autoroles");
+  const advanced = mode === "advanced";
   const giveable = roles.filter((r) => !r.managed);
   const dirty = shape(draft) !== shape(saved);
 
@@ -103,6 +110,10 @@ export function AutorolesForm({
   const delayLabel =
     PRESETS.find((p) => p.seconds === draft.delaySeconds)?.label ??
     `${draft.delaySeconds / unit} ${UNITS.find((u) => u.seconds === unit)?.label}`;
+  // a saved delay of their own stays on screen in Basic, and does not vanish while it is being typed over
+  const showCustomDelay = advanced || !PRESETS.some((p) => p.seconds === saved.delaySeconds);
+  const showBots = advanced || saved.botRoleIds.length > 0;
+  const given = draft.enabled ? undefined : " Autoroles are switched off, so nothing is given yet.";
 
   return (
     <div className="space-y-4">
@@ -119,90 +130,105 @@ export function AutorolesForm({
         </div>
       )}
 
-      <CollapsibleCard
-        id="autoroles-when"
-        title="When they join"
-        hint="Switch autoroles on, and choose how long to wait before giving the roles."
-        defaultOpen
-        summary={
-          <>
-            <Chip tone={draft.enabled ? "good" : "bad"}>
-              {draft.enabled ? "On" : "Off"}
-            </Chip>
-            <Chip>{delayLabel}</Chip>
-          </>
-        }
-        info="A delay holds the roles back for a moment after someone joins. That is useful if a role lets people into channels and you want a rules or verification step, or a screening bot, to get there first."
-      >
-        <Toggle
-          checked={draft.enabled}
-          onChange={(on) => change({ enabled: on })}
-          label="Give new members these roles"
-          detail={
-            draft.enabled
-              ? "Everyone who joins gets the roles below."
-              : "Nothing is given until this is on. Your choices below are kept."
-          }
-        />
-        <FormField
-          label="Wait before giving them"
-          as="group"
-          info={`Up to ${Math.round(draft.maxDelaySeconds / 86400)} days.`}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            {PRESETS.map((p) => (
-              <button
-                key={p.seconds}
-                type="button"
-                aria-pressed={draft.delaySeconds === p.seconds}
-                onClick={() => change({ delaySeconds: p.seconds })}
-                className={`rounded-full border px-3 py-1 text-xs transition ${draft.delaySeconds === p.seconds ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
-              >
-                {p.label}
-              </button>
-            ))}
-            <span className="flex items-center gap-1.5 text-xs text-muted">
-              or
-              <input
-                type="number"
-                min={0}
-                value={draft.delaySeconds / unit}
-                aria-label="Delay"
-                onChange={(e) =>
-                  change({
-                    delaySeconds: Math.max(
-                      0,
-                      Math.min(
-                        draft.maxDelaySeconds,
-                        Math.round((Number(e.target.value) || 0) * unit),
-                      ),
-                    ),
-                  })
-                }
-                className={`${inputClass} w-20`}
-              />
-              <select
-                value={unit}
-                aria-label="Delay unit"
-                onChange={(e) => setUnit(Number(e.target.value))}
-                className={`${inputClass} w-28`}
-              >
-                {UNITS.map((u) => (
-                  <option key={u.seconds} value={u.seconds}>
-                    {u.label}
-                  </option>
-                ))}
-              </select>
-            </span>
-          </div>
-        </FormField>
-      </CollapsibleCard>
+      <ViewModeBar mode={mode} onChange={setMode}>
+        {advanced
+          ? "Showing everything, including a custom delay and roles for bots."
+          : "Showing what most servers need. Switch to Advanced for a custom delay and roles for bots."}
+      </ViewModeBar>
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
+      <PanelGrid min="22rem">
+        <CollapsibleCard
+          id="autoroles-when"
+          title="When they join"
+          hint="Switch autoroles on, and choose how long to wait before giving the roles."
+          defaultOpen
+          summary={
+            <>
+              <Chip tone={draft.enabled ? "good" : "bad"}>
+                {draft.enabled ? "On" : "Off"}
+              </Chip>
+              <Chip>{delayLabel}</Chip>
+            </>
+          }
+          info="A delay holds the roles back for a moment after someone joins. That is useful if a role lets people into channels and you want a rules or verification step, or a screening bot, to get there first."
+        >
+          <SettingRow
+            title="Give new members these roles"
+            hint={
+              draft.enabled
+                ? "Everyone who joins gets the roles in the lists."
+                : "Nothing is given until this is on. Your choices are kept."
+            }
+            checked={draft.enabled}
+            onChange={(on) => change({ enabled: on })}
+            offHint="Off: nobody is given a role when they join."
+          >
+            <FormField
+              label="Wait before giving them"
+              as="group"
+              size="lg"
+              info={`Up to ${Math.round(draft.maxDelaySeconds / 86400)} days.`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.seconds}
+                    type="button"
+                    aria-pressed={draft.delaySeconds === p.seconds}
+                    onClick={() => change({ delaySeconds: p.seconds })}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${draft.delaySeconds === p.seconds ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {showCustomDelay && (
+                <span className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                  Or a delay of your own:
+                  <span className="w-20">
+                    <input
+                      type="number"
+                      min={0}
+                      value={draft.delaySeconds / unit}
+                      aria-label="Delay"
+                      onChange={(e) =>
+                        change({
+                          delaySeconds: Math.max(
+                            0,
+                            Math.min(
+                              draft.maxDelaySeconds,
+                              Math.round((Number(e.target.value) || 0) * unit),
+                            ),
+                          ),
+                        })
+                      }
+                      className={inputClass}
+                    />
+                  </span>
+                  <span className="w-28">
+                    <select
+                      value={unit}
+                      aria-label="Delay unit"
+                      onChange={(e) => setUnit(Number(e.target.value))}
+                      className={inputClass}
+                    >
+                      {UNITS.map((u) => (
+                        <option key={u.seconds} value={u.seconds}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                </span>
+              )}
+            </FormField>
+          </SettingRow>
+        </CollapsibleCard>
+
         <CollapsibleCard
           id="autoroles-people"
           title="Roles for people"
-          hint="Given to everyone who joins."
+          hint={<>Given to everyone who joins.{given}</>}
           defaultOpen
           summary={
             <Chip tone={draft.memberRoleIds.length === 0 ? "warn" : "good"}>
@@ -222,29 +248,31 @@ export function AutorolesForm({
           />
         </CollapsibleCard>
 
-        <CollapsibleCard
-          id="autoroles-bots"
-          title="Roles for bots"
-          hint="Given to bots that are added to the server."
-          defaultOpen
-          summary={
-            <Chip tone={draft.botRoleIds.length === 0 ? "plain" : "good"}>
-              {draft.botRoleIds.length === 0
-                ? "None chosen"
-                : `${draft.botRoleIds.length} role${draft.botRoleIds.length === 1 ? "" : "s"}`}
-            </Chip>
-          }
-          info="A separate list so bots can be given a Bots role without people getting it too. Leave it empty if you don't need one."
-        >
-          <RolePicker
-            roles={giveable}
-            value={draft.botRoleIds}
-            max={draft.maxRoles}
-            disabled={false}
-            onChange={(ids) => change({ botRoleIds: ids })}
-          />
-        </CollapsibleCard>
-      </div>
+        {showBots && (
+          <CollapsibleCard
+            id="autoroles-bots"
+            title="Roles for bots"
+            hint={<>Given to bots that are added to the server.{given}</>}
+            defaultOpen
+            summary={
+              <Chip tone={draft.botRoleIds.length === 0 ? "plain" : "good"}>
+                {draft.botRoleIds.length === 0
+                  ? "None chosen"
+                  : `${draft.botRoleIds.length} role${draft.botRoleIds.length === 1 ? "" : "s"}`}
+              </Chip>
+            }
+            info="A separate list so bots can be given a Bots role without people getting it too. Leave it empty if you don't need one."
+          >
+            <RolePicker
+              roles={giveable}
+              value={draft.botRoleIds}
+              max={draft.maxRoles}
+              disabled={false}
+              onChange={(ids) => change({ botRoleIds: ids })}
+            />
+          </CollapsibleCard>
+        )}
+      </PanelGrid>
 
       <SaveBar
         pending={pending}
