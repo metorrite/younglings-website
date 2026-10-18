@@ -5,6 +5,7 @@ import { dangerButton, formatUtc, FormField, ghostButton, inputClass, Notice, pr
 import type { EventCall } from "@/components/dashboard/EventListView";
 import { ChannelSlotRow } from "@/components/dashboard/space/ChannelSlotRow";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
 import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, withPattern } from "@/lib/eventSpace";
@@ -218,6 +219,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
             onSync={() => act("sync", {})}
           />
 
+          <PanelGrid min="32rem">
           <CollapsibleCard
             id="event-channels-list"
             title="Channels"
@@ -231,7 +233,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
               </>
             }
           >
-            <div className="space-y-3">
+            <PanelGrid min="20rem">
               {slots.map((slot) => {
                 const planned = view.channels.find((c) => c.key === slot.key);
                 return (
@@ -264,31 +266,9 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
                   onChange={(on) => change({ ...draft, playerChannels: on })}
                 />
               )}
-            </div>
+            </PanelGrid>
           </CollapsibleCard>
 
-          {mode === "advanced" ? (
-            <CollapsibleCard id="event-channels-names" title="Names" hint="What the category, roles and private channels are called.">
-              <div className="grid gap-4 md:grid-cols-2">
-                {view.settings.names
-                  .filter((n) => nameKeys.includes(n.key))
-                  .map((n) => (
-                    <FormField key={n.key} label={n.label} size="md" hint={`Can use ${n.variables.map((v) => `{${v}}`).join(", ")}`}>
-                      <input
-                        className={inputClass}
-                        value={patternOf(n.key, n.defaultPattern, draft)}
-                        maxLength={100}
-                        disabled={busy}
-                        onChange={(ev) => change(withPattern(draft, n.key, ev.target.value, n.defaultPattern))}
-                      />
-                    </FormField>
-                  ))}
-              </div>
-              <p className="text-xs text-muted">A channel&apos;s name is tidied to the way Discord writes them (lowercase, words joined with dashes).</p>
-            </CollapsibleCard>
-          ) : (
-            <p className="text-xs text-muted">The category, roles and private channels get their usual names. Switch to Advanced to rename them.</p>
-          )}
 
           <CollapsibleCard
             id="event-channels-plan"
@@ -309,6 +289,28 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
           >
             <Plan view={view} />
           </CollapsibleCard>
+          {mode === "advanced" && (
+            <CollapsibleCard id="event-channels-names" title="Names" hint="What the category, roles and private channels are called.">
+              <FieldGrid>
+                {view.settings.names
+                  .filter((n) => nameKeys.includes(n.key))
+                  .map((n) => (
+                    <FormField key={n.key} label={n.label} size="md" hint={`Can use ${n.variables.map((v) => `{${v}}`).join(", ")}`}>
+                      <input
+                        className={inputClass}
+                        value={patternOf(n.key, n.defaultPattern, draft)}
+                        maxLength={100}
+                        disabled={busy}
+                        onChange={(ev) => change(withPattern(draft, n.key, ev.target.value, n.defaultPattern))}
+                      />
+                    </FormField>
+                  ))}
+              </FieldGrid>
+              <p className="text-xs text-muted">A channel&apos;s name is tidied to the way Discord writes them (lowercase, words joined with dashes).</p>
+            </CollapsibleCard>
+          )}
+          </PanelGrid>
+          {mode !== "advanced" && <p className="text-xs text-muted">The category, roles and private channels get their usual names. Switch to Advanced to rename them.</p>}
         </>
       )}
     </section>

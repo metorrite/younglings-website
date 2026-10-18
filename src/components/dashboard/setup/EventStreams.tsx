@@ -4,9 +4,11 @@ import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Card, formatUtc, FormField, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
+import { formatUtc, FormField, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
 import type { EventCall } from "@/components/dashboard/EventListView";
 import { QuickSetup } from "@/components/dashboard/setup/QuickSetup";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid, SubPanel } from "@/components/dashboard/ui/Layout";
 import { localInputToIso, MIN_NAME, type EventDraft, type EventKind, type OptionSchema, type SavedTemplate } from "@/lib/eventOptions";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
 
@@ -46,6 +48,8 @@ export function EventStreams({
   initialTemplates,
   structure,
   call,
+  open,
+  onOpenChange,
 }: {
   guildId: string;
   kinds: EventKind[];
@@ -53,6 +57,9 @@ export function EventStreams({
   initialTemplates: TemplateList;
   structure: GuildStructure;
   call: EventCall;
+  /** The page decides whether the panel is open (a button elsewhere leads into it). */
+  open?: boolean;
+  onOpenChange?: (next: boolean) => void;
 }) {
   const router = useRouter();
   const kinds = [...offered].sort((a, b) => rankOf(a.key) - rankOf(b.key));
@@ -105,99 +112,117 @@ export function EventStreams({
   const atDraftLimit = drafts.drafts.length >= drafts.max;
 
   return (
-    <div className="space-y-6">
-      <Card title="Start a new event" hint="Choose the kind of event, then how much you want to decide yourself. Everything can be changed afterwards while the event is a draft or taking signups.">
-        {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
-        <FormField label="Kind of event" hint={current?.description}>
-          <select className={inputClass} value={kind} onChange={(e) => setKind(e.target.value)}>
-            {kinds.map((k) => (
-              <option key={k.key} value={k.key}>
-                {k.label}
-              </option>
-            ))}
-          </select>
-        </FormField>
+    <CollapsibleCard
+      id="start-event"
+      title="Start a new event"
+      hint="Choose the kind of event, then how much you want to decide yourself. Everything can be changed afterwards while the event is a draft or taking signups."
+      open={open}
+      onOpenChange={onOpenChange}
+      summary={
+        <>
+          {drafts.drafts.length > 0 && <Chip tone="warn">{drafts.drafts.length} unfinished</Chip>}
+          {templates.templates.length > 0 && (
+            <Chip>
+              {templates.templates.length} {templates.templates.length === 1 ? "template" : "templates"}
+            </Chip>
+          )}
+        </>
+      }
+    >
+      {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
+      <FormField label="Kind of event" hint={current?.description}>
+        <select className={inputClass} value={kind} onChange={(e) => setKind(e.target.value)}>
+          {kinds.map((k) => (
+            <option key={k.key} value={k.key}>
+              {k.label}
+            </option>
+          ))}
+        </select>
+      </FormField>
 
-        <div role="radiogroup" aria-label="How to set it up" className="grid gap-3 md:grid-cols-3">
-          {STREAMS.map((s) => {
-            const selected = stream === s.key;
-            return (
-              <button
-                key={s.key}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => setStream(s.key)}
-                className={`rounded-lg border p-3 text-left transition ${selected ? "border-gold bg-gold/10 ring-1 ring-gold/60" : "border-surface-border hover:border-gold/60"}`}
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <span aria-hidden className={`inline-block size-3 rounded-full border ${selected ? "border-gold bg-gold" : "border-muted"}`} />
-                  {s.label}
-                </span>
-                <span className="mt-1 block text-xs text-muted">{s.blurb}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {stream === "guided" ? (
-          <div className="space-y-3 rounded-lg border border-surface-border p-4">
-            <p className="text-sm text-muted">
-              Walks through every option of {current ? `a ${current.label.toLowerCase()}` : "the event"}: the basics, when, the rules, players, buy-in and prizes, Discord channels, and the setup steps and verification.
-              It only stops you going on when something required is missing, and it keeps a draft as you go, so you can stop and come back from the list of unfinished setups.
-            </p>
-            {atDraftLimit && <p className="text-sm text-amber-300">You have {drafts.max} unfinished setups, which is the most. Finish or throw one away first.</p>}
-            <button type="button" className={primaryButton} disabled={pending || atDraftLimit} onClick={startGuided}>
-              {pending ? "Starting…" : "Start the guided setup"}
+      <div role="radiogroup" aria-label="How to set it up" className="grid max-w-4xl gap-3 md:grid-cols-3">
+        {STREAMS.map((s) => {
+          const selected = stream === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setStream(s.key)}
+              className={`rounded-lg border p-3 text-left transition ${selected ? "border-gold bg-gold/10 ring-1 ring-gold/60" : "border-surface-border hover:border-gold/60"}`}
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <span aria-hidden className={`inline-block size-3 rounded-full border ${selected ? "border-gold bg-gold" : "border-muted"}`} />
+                {s.label}
+              </span>
+              <span className="mt-1 block text-xs text-muted">{s.blurb}</span>
             </button>
-          </div>
-        ) : schema ? (
-          <QuickSetup key={`${schema.template}-${stream}`} guildId={guildId} stream={stream} schema={schema} structure={structure} call={call} />
-        ) : loadProblem ? (
-          <Notice tone="error" title={loadProblem.title} items={loadProblem.items} />
-        ) : (
-          <p className="text-sm text-muted">Loading the options…</p>
-        )}
-      </Card>
+          );
+        })}
+      </div>
 
-      {drafts.drafts.length > 0 && (
-        <Card title="Unfinished setups" hint={`Guided setups you started and haven't finished (up to ${drafts.max}). Nothing is created until you finish one.`}>
-          <ul className="divide-y divide-surface-border">
-            {drafts.drafts.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0">
-                  <p className="break-words font-medium">{d.title}</p>
-                  <p className="text-xs text-muted">
-                    {d.templateLabel} · {STREAM_LABEL[d.stream.toLowerCase()] ?? d.stream} · {d.missingCount === 0 ? "ready to create" : `${d.missingCount} ${d.missingCount === 1 ? "thing" : "things"} still needed`} · saved {formatUtc(d.updatedAt)}
-                    {d.createdByName ? ` · started by ${d.createdByName}` : ""}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link href={`/dashboard/${guildId}/event-manager/new?draft=${d.id}`} className="text-gold hover:underline">
-                    Continue
-                  </Link>
-                  <button type="button" className="text-red-400 underline" disabled={pending} onClick={() => deleteDraft(d)}>
-                    Throw away
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      {stream === "guided" ? (
+        <div className="max-w-3xl space-y-3 rounded-lg border border-surface-border p-4">
+          <p className="text-sm text-muted">
+            Walks through every option of {current ? `a ${current.label.toLowerCase()}` : "the event"}: the basics, when, the rules, players, buy-in and prizes, Discord channels, and the setup steps and verification.
+            It only stops you going on when something required is missing, and it keeps a draft as you go, so you can stop and come back from the list of unfinished setups.
+          </p>
+          {atDraftLimit && <p className="text-sm text-amber-300">You have {drafts.max} unfinished setups, which is the most. Finish or throw one away first.</p>}
+          <button type="button" className={primaryButton} disabled={pending || atDraftLimit} onClick={startGuided}>
+            {pending ? "Starting…" : "Start the guided setup"}
+          </button>
+        </div>
+      ) : schema ? (
+        <QuickSetup key={`${schema.template}-${stream}`} guildId={guildId} stream={stream} schema={schema} structure={structure} call={call} />
+      ) : loadProblem ? (
+        <Notice tone="error" title={loadProblem.title} items={loadProblem.items} />
+      ) : (
+        <p className="text-sm text-muted">Loading the options…</p>
       )}
 
-      <Card title="Your templates" hint={`A setup kept under a name, to make similar events from (up to ${templates.max}). Save one from the overview of any event.`}>
-        {templates.templates.length === 0 ? (
-          <p className="text-sm text-muted">None yet. Open an event you set up how you like it and use &ldquo;Save as a template&rdquo; on its overview.</p>
-        ) : (
-          <ul className="divide-y divide-surface-border">
-            {templates.templates.map((t) => (
-              <TemplateRow key={t.id} t={t} guildId={guildId} call={call} onList={setTemplates} />
-            ))}
-          </ul>
-        )}
-      </Card>
-    </div>
+      <div className="border-t border-surface-border pt-4">
+        <PanelGrid min="24rem">
+          {drafts.drafts.length > 0 && (
+            <SubPanel title="Unfinished setups" hint={`Guided setups you started and haven't finished (up to ${drafts.max}). Nothing is created until you finish one.`}>
+              <ul className="divide-y divide-surface-border">
+                {drafts.drafts.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="break-words font-medium">{d.title}</p>
+                      <p className="text-xs text-muted">
+                        {d.templateLabel} · {STREAM_LABEL[d.stream.toLowerCase()] ?? d.stream} · {d.missingCount === 0 ? "ready to create" : `${d.missingCount} ${d.missingCount === 1 ? "thing" : "things"} still needed`} · saved {formatUtc(d.updatedAt)}
+                        {d.createdByName ? ` · started by ${d.createdByName}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
+                      <Link href={`/dashboard/${guildId}/event-manager/new?draft=${d.id}`} className="text-gold hover:underline">
+                        Continue
+                      </Link>
+                      <button type="button" className="text-red-400 underline" disabled={pending} onClick={() => deleteDraft(d)}>
+                        Throw away
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </SubPanel>
+          )}
+
+          <SubPanel title="Your templates" hint={`A setup kept under a name, to make similar events from (up to ${templates.max}). Save one from the overview of any event.`}>
+            {templates.templates.length === 0 ? (
+              <p className="text-sm text-muted">None yet. Open an event you set up how you like it and use &ldquo;Save as a template&rdquo; on its overview.</p>
+            ) : (
+              <ul className="divide-y divide-surface-border">
+                {templates.templates.map((t) => (
+                  <TemplateRow key={t.id} t={t} guildId={guildId} call={call} onList={setTemplates} />
+                ))}
+              </ul>
+            )}
+          </SubPanel>
+        </PanelGrid>
+      </div>
+    </CollapsibleCard>
   );
 }
 

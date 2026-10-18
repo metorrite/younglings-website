@@ -10,6 +10,8 @@ const KEY = "jonnybot-dashboard-open:";
  * it (`summary`: a few short chips, such as the channel chosen or "Not set"), so a page of them reads like a checklist and each one
  * opens only when there is something to change. What is inside stays on the page while closed, so edits that haven't been saved are
  * never lost by folding a section away. Whether it is open is remembered in this browser, per `id`.
+ * <p>
+ * Give it `open` and `onOpenChange` and the page decides instead (a button elsewhere that leads into the panel); it is then not remembered.
  */
 export function CollapsibleCard({
   id,
@@ -18,6 +20,8 @@ export function CollapsibleCard({
   info,
   summary,
   defaultOpen = false,
+  open: controlled,
+  onOpenChange,
   children,
 }: {
   id: string;
@@ -26,21 +30,28 @@ export function CollapsibleCard({
   info?: ReactNode;
   summary?: ReactNode;
   defaultOpen?: boolean;
+  /** The page says whether it is open. */
+  open?: boolean;
+  onOpenChange?: (next: boolean) => void;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [own, setOpen] = useState(defaultOpen);
+  const open = controlled ?? own;
 
   useEffect(() => {
+    if (controlled !== undefined) return;
     try {
       const saved = window.localStorage.getItem(KEY + id);
       if (saved === "1" || saved === "0") setOpen(saved === "1"); // eslint-disable-line react-hooks/set-state-in-effect -- read once after hydration so the server and first paint agree
     } catch {
       // storage can be unavailable (private windows); the section just keeps its default
     }
-  }, [id]);
+  }, [id, controlled]);
 
   const toggle = () => {
     const next = !open;
+    onOpenChange?.(next);
+    if (controlled !== undefined) return;
     setOpen(next);
     try {
       window.localStorage.setItem(KEY + id, next ? "1" : "0");

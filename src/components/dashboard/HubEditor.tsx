@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { FormField, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect } from "@/components/admin/pickers";
@@ -94,8 +95,9 @@ function HubCard({
           />
       {!enabled && <p className="text-xs text-amber-300">While this is off, nobody in the server can use /{command.slashName}, admins included.</p>}
 
-      <div className="grid gap-x-8 gap-y-4 xl:grid-cols-2">
-      <div className="space-y-3 border-t border-surface-border pt-4">
+      <div className="border-t border-surface-border pt-4">
+      <PanelGrid min="22rem" max="max-content" gap="gap-x-10 gap-y-6">
+      <div className="max-w-xl space-y-3">
         <p className="flex items-center gap-1.5 text-sm font-medium">
           Who can use it
           <InfoBubble title="Who can use it">Admins can always use every command, whatever you choose here, so you can never lock yourself out.</InfoBubble>
@@ -159,7 +161,7 @@ function HubCard({
         {!canEditAccess && <p className="text-xs text-muted">Only an Admin can change who may use a command.</p>}
       </div>
 
-      <div className="space-y-2 border-t border-surface-border pt-4">
+      <div className="max-w-xl space-y-2">
         <p className="flex items-center gap-1.5 text-sm font-medium">
           Where members can use it
           <InfoBubble title="Where members can use it">Leave it empty and the command works in every channel. Add channels to limit it to just those. Admins are never held to this limit.</InfoBubble>
@@ -172,6 +174,7 @@ function HubCard({
           onChange={(ids) => { setChannelIds(ids); dirty(); }}
         />
       </div>
+      </PanelGrid>
       </div>
 
       {signup && (

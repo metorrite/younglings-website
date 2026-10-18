@@ -15,6 +15,7 @@ import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
 import { WrapupTab } from "@/components/dashboard/space/WrapupTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
@@ -358,21 +359,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <p className="text-xs text-muted">{viewMode === "basic" ? "Showing what most events need." : "Showing everything, including saving this event as a template."}</p>
             <ViewModeSwitch mode={viewMode} onChange={setViewMode} />
           </div>
-          <CollapsibleCard
-            id="event-details"
-            title="Details"
-            hint="What the event is about and who can join."
-            summary={<Chip>{e.scope === "PRIVATE" ? "Clan only" : e.scope === "ALLIANCE" ? "Clan and allies" : "Everyone"}</Chip>}
-          >
-          {e.description && <p className="break-words whitespace-pre-wrap">{e.description}</p>}
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <div><dt className="text-xs text-muted">Created</dt><dd>{formatUtc(e.createdAt)}</dd></div>
-            <div><dt className="text-xs text-muted">Signups close</dt><dd>{e.config.signupClosesAt ? formatUtc(e.config.signupClosesAt) : "No deadline"}</dd></div>
-            <div><dt className="text-xs text-muted">Who may join</dt><dd>{{ everyone: "Everyone, mixed freely", home: "Only this server", clanVsOutsiders: "Clan members apart from everyone else", separate: "Every kind on its own teams" }[e.config.teamPolicy ?? "everyone"] ?? e.config.teamPolicy}</dd></div>
-            <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
-            <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
-          </dl>
-          </CollapsibleCard>
+          <PanelGrid min="28rem">
           {e.status !== "CANCELLED" && (
             <div id="event-prep" className="scroll-mt-4">
             <CollapsibleCard
@@ -472,6 +459,22 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             </CollapsibleCard>
             </div>
           )}
+          <div className="space-y-4">
+          <CollapsibleCard
+            id="event-details"
+            title="Details"
+            hint="What the event is about and who can join."
+            summary={<Chip>{e.scope === "PRIVATE" ? "Clan only" : e.scope === "ALLIANCE" ? "Clan and allies" : "Everyone"}</Chip>}
+          >
+          {e.description && <p className="break-words whitespace-pre-wrap">{e.description}</p>}
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div><dt className="text-xs text-muted">Created</dt><dd>{formatUtc(e.createdAt)}</dd></div>
+            <div><dt className="text-xs text-muted">Signups close</dt><dd>{e.config.signupClosesAt ? formatUtc(e.config.signupClosesAt) : "No deadline"}</dd></div>
+            <div><dt className="text-xs text-muted">Who may join</dt><dd>{{ everyone: "Everyone, mixed freely", home: "Only this server", clanVsOutsiders: "Clan members apart from everyone else", separate: "Every kind on its own teams" }[e.config.teamPolicy ?? "everyone"] ?? e.config.teamPolicy}</dd></div>
+            <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
+            <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
+          </dl>
+          </CollapsibleCard>
           <CollapsibleCard
             id="event-setup"
             title="Setup and verification"
@@ -621,6 +624,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             </div>
           </CollapsibleCard>
           )}
+          </div>
+          </PanelGrid>
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
           </p>

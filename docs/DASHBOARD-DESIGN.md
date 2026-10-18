@@ -24,6 +24,17 @@ A control is only as wide as what goes in it. `FormField` takes `size`:
 
 Do not stretch a control to fill a panel. Lay panels out so what is in them is a sensible length.
 
+## Use the width: side by side, not one long panel
+
+Controls are narrow now, so a panel stretched across the page is mostly blank. Lay things out by what fits (`components/dashboard/ui/Layout.tsx`); none of it needs a breakpoint, each grid works its columns out from the width it is given, so it holds on a wide screen, beside the sidebar and on a phone.
+
+- `PanelGrid`: panels (cards, boxes) side by side, as many columns as fit (`min`, default 26rem), each only as tall as its own content. One panel alone fills the row. For panels holding a few small controls use `max="max-content"` and cap each panel with `max-w-xl`, so columns sit next to each other instead of far apart.
+- `FieldGrid`: a form's fields in 20rem columns, as many as fit. A long field (text area, list, picture picker) goes in `Span` and takes its own row. Never use a fixed `md:grid-cols-2` for fields: it leaves a gap whenever the controls are narrower than the column.
+- `Span`: take the whole row of either grid. `SubPanel`: a titled box inside a panel.
+- Put a short panel beside a long one (the checklist beside the small panels, the channels beside what they make), not under it.
+- One rule (border) above a group of side-by-side sections, never one rule per column: per-column rules leave a gap in the line.
+- A page is an overview first. Anything that is used once in a while (starting a new event, saving a template) is a button that opens a folded panel (`CollapsibleCard` with `open` / `onOpenChange`), not a form that sits on the page all the time.
+
 ## Fewer controls
 
 Before adding a drop-down plus a text box, ask whether a switch plus one field says it: "JonnyBot makes it" on (default) shows the name; off, the same place shows a picker.

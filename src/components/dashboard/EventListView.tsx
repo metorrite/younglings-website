@@ -38,6 +38,7 @@ export function EventListView({
   const [listProblem, setListProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [listPending, startList] = useTransition();
   const startRef = useRef<HTMLDivElement>(null);
+  const [startOpen, setStartOpen] = useState(false);
 
   const finished = (s: EventStatus) => s === "DONE" || s === "CANCELLED";
   const shown = events.filter((e) => showArchived || !e.archived);
@@ -60,7 +61,9 @@ export function EventListView({
         events={events}
         base={`/dashboard/${guildId}/event-manager`}
         onStart={() => {
-          startRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          setStartOpen(true);
+          // once the panel is open, bring it into view
+          requestAnimationFrame(() => startRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
         }}
       />
 
@@ -140,7 +143,7 @@ export function EventListView({
       </section>
 
       <div ref={startRef} className="scroll-mt-4">
-        <EventStreams guildId={guildId} kinds={kinds} initialDrafts={drafts} initialTemplates={templates} structure={structure} call={call} />
+        <EventStreams guildId={guildId} kinds={kinds} initialDrafts={drafts} initialTemplates={templates} structure={structure} call={call} open={startOpen} onOpenChange={setStartOpen} />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { ChannelSelect } from "@/components/admin/pickers";
 import { FormField, inputClass } from "@/components/admin/ui";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
+import { FieldGrid, PanelGrid, Span } from "@/components/dashboard/ui/Layout";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { getPath, isRequired, isoToLocalInput, localInputToIso, type Answers, type OptionDef } from "@/lib/eventOptions";
@@ -173,7 +174,7 @@ function OptionField({
 
     case "CHANNEL":
       return wrap(
-        <FormField label={opt.label} hint={hint} required={required} as="group">
+        <FormField label={opt.label} hint={hint} required={required} size="md" as="group">
           <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={typeof value === "string" && value !== "" ? value : null} onChange={(id) => set(id ?? undefined)} none="None" />
         </FormField>,
       );
@@ -226,7 +227,7 @@ function OptionField({
 }
 
 /** Whether an option takes the whole width of the form: a long text, the prize list, or a picture picker. */
-const isWide = (opt: OptionDef) => opt.type === "TEXTAREA" || opt.type === "PRIZES" || opt.widget === "shape" || opt.widget === "look" || SLOT_HEAD.test(opt.path);
+const isWide = (opt: OptionDef) => opt.type === "TEXTAREA" || opt.type === "PRIZES" || opt.widget === "shape" || opt.widget === "look";
 
 /**
  * The questions for a list of options, drawn from what the bot says each one is. {@code onChange} is told the option's path and its new answer (undefined to
@@ -247,33 +248,38 @@ export function OptionFields({
   highlight?: string[];
   disabled?: boolean;
 }) {
-  // two columns once the form itself (not the window) is wide enough, since it often sits beside the summary panel
-  return (
-    <div className="@container">
-      <div className="grid gap-x-4 gap-y-5 @xl:grid-cols-2">
-        {options
-          .filter((opt) => !SLOT_PART.test(opt.path))
-          .map((opt) => {
-            const slot = SLOT_HEAD.exec(opt.path);
-            return (
-              <div key={opt.path} className={isWide(opt) ? "@xl:col-span-2" : undefined}>
-                {slot ? (
-                  <SlotField
-                    opt={opt}
-                    options={options}
-                    answers={answers}
-                    onChange={onChange}
-                    structure={structure}
-                    highlight={highlight.includes(opt.path) || highlight.includes(`config.channels.slots.${slot[1]}.channelId`)}
-                    disabled={disabled}
-                  />
-                ) : (
-                  <OptionField opt={opt} answers={answers} onChange={onChange} structure={structure} highlight={highlight.includes(opt.path)} disabled={disabled} />
-                )}
-              </div>
-            );
-          })}
-      </div>
-    </div>
-  );
+  // short fields sit side by side in as many columns as the form is wide enough for; a long one (text, prizes, pictures) takes a row, and the channel
+  // rows, which are panels rather than fields, share a row of their own
+  const shown = options.filter((opt) => !SLOT_PART.test(opt.path));
+  const items: ReactNode[] = [];
+  for (let i = 0; i < shown.length; i++) {
+    const opt = shown[i];
+    if (SLOT_HEAD.test(opt.path)) {
+      const slots: OptionDef[] = [];
+      while (i < shown.length && SLOT_HEAD.test(shown[i].path)) slots.push(shown[i++]);
+      i--;
+      items.push(
+        <Span key={slots[0].path}>
+          <PanelGrid min="22rem" max="36rem">
+            {slots.map((slot) => (
+              <SlotField
+                key={slot.path}
+                opt={slot}
+                options={options}
+                answers={answers}
+                onChange={onChange}
+                structure={structure}
+                highlight={highlight.includes(slot.path) || highlight.includes(`config.channels.slots.${SLOT_HEAD.exec(slot.path)?.[1]}.channelId`)}
+                disabled={disabled}
+              />
+            ))}
+          </PanelGrid>
+        </Span>,
+      );
+      continue;
+    }
+    const field = <OptionField opt={opt} answers={answers} onChange={onChange} structure={structure} highlight={highlight.includes(opt.path)} disabled={disabled} />;
+    items.push(isWide(opt) ? <Span key={opt.path}>{field}</Span> : <div key={opt.path}>{field}</div>);
+  }
+  return <FieldGrid>{items}</FieldGrid>;
 }
