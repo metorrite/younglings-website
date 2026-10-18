@@ -4,7 +4,7 @@ import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
 /** Shared look for the admin dashboard, matching the site's existing surface/gold theme. */
 
 export const inputClass =
-  "w-full rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold disabled:opacity-50";
+  "w-full rounded-md border border-control-border bg-background px-3 py-2 text-sm outline-none focus:border-gold focus:ring-1 focus:ring-gold/50 disabled:opacity-50";
 export const primaryButton =
   "rounded-md bg-gold px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-50";
 export const ghostButton =
