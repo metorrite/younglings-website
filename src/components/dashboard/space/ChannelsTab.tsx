@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChannelSelect } from "@/components/admin/pickers";
-import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
+import { dangerButton, formatUtc, FormField, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import type { EventCall } from "@/components/dashboard/EventListView";
-import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, withPattern, withUse } from "@/lib/eventSpace";
-import type { EventDetail, SpaceAction, SpaceDraft, SpaceSlot, SpaceView } from "@/lib/eventTypes";
-import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
+import { ChannelSlotRow } from "@/components/dashboard/space/ChannelSlotRow";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
+import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
+import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, withPattern } from "@/lib/eventSpace";
+import type { EventDetail, SpaceAction, SpaceDraft, SpaceView } from "@/lib/eventTypes";
+import type { GuildStructure } from "@/lib/jonnybot-admin";
 
 type Problem = { title: string; items: string[] } | null;
 
@@ -16,8 +20,6 @@ const ACTION_LABEL: Record<SpaceAction, { tone: "good" | "muted" | "warn"; text:
   use_existing: { tone: "muted", text: "Existing" },
   remove: { tone: "warn", text: "Not needed" },
 };
-
-const USE_LABEL: Record<SpaceSlot["use"], string> = { create: "JonnyBot makes it", existing: "Use an existing channel", none: "Leave it out" };
 
 /**
  * Chooses and previews the roles and channels of an event: whether JonnyBot makes them, which channels it makes (or uses an existing one for), what everything
@@ -34,6 +36,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   const [busy, setBusy] = useState(false);
   const [removeUnneeded, setRemoveUnneeded] = useState(false);
   const [confirmingRemoval, setConfirmingRemoval] = useState(false);
+  const [mode, setMode] = useViewMode("event-channels");
   const typing = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasRunning = useRef(false);
   // answers that arrive out of order must not replace a newer one
@@ -158,38 +161,36 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   const state = stateLine(view);
   const teamEvent = view.teamEvent;
   const nameKeys = teamEvent ? ["category", "teamChannel", "participantRole", "organiserRole", "teamRole"] : ["category", "playerChannel", "participantRole", "organiserRole"];
+  const slots = view.settings.slots.filter((slot) => slot.applies);
+  const made = slots.filter((slot) => effectiveUse(slot, draft).use === "create").length;
+  const chosen = slots.filter((slot) => effectiveUse(slot, draft).use === "existing").length;
+  const left = slots.length - made - chosen;
 
   return (
     <section className="space-y-5">
-      <div className="space-y-1">
-        <h3 className="font-semibold">Roles and channels</h3>
-        <p className="text-sm text-muted">
-          Once signups are closed, the roster is confirmed{teamEvent ? " and the teams are final" : ""}, JonnyBot can make a role for the players and one for the organisers
-          {teamEvent ? ", a role for each team," : ""} and a category with the channels the event needs. Players only see their own part; organisers and staff see everything.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-2xl space-y-1">
+          <h3 className="text-lg font-semibold">Roles and channels</h3>
+          <p className="text-sm text-muted">
+            Once signups are closed, the roster is confirmed{teamEvent ? " and the teams are final" : ""}, JonnyBot can make a role for the players and one for the organisers
+            {teamEvent ? ", a role for each team," : ""} and a category with the channels the event needs. Players only see their own part; organisers and staff see everything.
+          </p>
+        </div>
+        <ViewModeSwitch mode={mode} onChange={setMode} />
       </div>
 
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
 
-      <label className="flex items-start gap-3 rounded-xl border border-surface-border p-4 text-sm">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={draft.enabled}
-          disabled={busy || finished}
-          onChange={(ev) => change({ ...draft, enabled: ev.target.checked })}
-        />
-        <span>
-          <span className="font-medium">Make roles and channels for this event</span>
-          <span className="mt-0.5 block text-xs text-muted">
-            Off by default. Switching it on adds a step to the checklist, so the event can&apos;t start until they are set up (when it follows the setup steps).
-          </span>
-        </span>
-        <span className="ml-auto shrink-0">
-          <StatusBadge tone={state.tone}>{state.text}</StatusBadge>
-        </span>
-      </label>
+      <SettingRow
+        title="Make roles and channels for this event"
+        hint="Off by default. Switching it on adds a step to the checklist, so the event can't start until they are set up (when it follows the setup steps)."
+        checked={draft.enabled}
+        disabled={busy || finished}
+        onChange={(enabled) => change({ ...draft, enabled })}
+        badge={<StatusBadge tone={state.tone}>{state.text}</StatusBadge>}
+        offHint="Off: nothing is made on Discord for this event, and no channel settings are shown."
+      />
 
       {dirty && (
         <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-gold/50 bg-surface p-3 text-sm">
@@ -218,108 +219,98 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
             onSync={() => act("sync", {})}
           />
 
-          <div className="space-y-3 rounded-xl border border-surface-border p-4">
-            <p className="text-sm font-medium">Channels</p>
-            <p className="text-xs text-muted">
-              For each one, JonnyBot makes it, you pick one that already exists (JonnyBot then uses it but never changes who can see it), or you leave it out. The bar under each
-              name shows what it will be called.
-            </p>
-            <ul className="space-y-4">
-              {view.settings.slots
-                .filter((slot) => slot.applies)
-                .map((slot) => {
-                  const use = effectiveUse(slot, draft);
-                  const planned = view.channels.find((c) => c.key === slot.key);
-                  return (
-                    <li key={slot.key} className="space-y-2 border-t border-surface-border pt-3 first:border-t-0 first:pt-0">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <p className="text-sm font-medium">{slot.label}</p>
-                        <select
-                          aria-label={`${slot.label}: how it is provided`}
-                          className={`${inputClass} w-auto`}
-                          value={use.use}
-                          disabled={busy}
-                          onChange={(ev) => change(withUse(draft, slot.key, ev.target.value as SpaceSlot["use"], use.channelId))}
-                        >
-                          {(Object.keys(USE_LABEL) as SpaceSlot["use"][]).map((u) => (
-                            <option key={u} value={u}>
-                              {USE_LABEL[u]}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <p className="text-xs text-muted">{slot.hint}</p>
-                      {use.use === "existing" && structure && (
-                        <ChannelSelect
-                          {...choicesOf(structure)}
-                          onlyPostable
-                          allowForums={false}
-                          value={use.channelId}
-                          onChange={(id) => change(withUse(draft, slot.key, "existing", id))}
-                          none="Choose a channel"
-                        />
-                      )}
-                      {use.use === "create" && (
-                        <label className="block space-y-1">
-                          <span className="text-xs text-muted">Name (use {"{event}"} for the event&apos;s name)</span>
-                          <input
-                            className={inputClass}
-                            value={patternOf(slot.key, slot.defaultPattern, draft)}
-                            maxLength={100}
-                            disabled={busy}
-                            onChange={(ev) => change(withPattern(draft, slot.key, ev.target.value, slot.defaultPattern))}
-                          />
-                          {planned && planned.action !== "use_existing" && <span className="block text-xs text-gold">#{planned.name}</span>}
-                        </label>
-                      )}
-                    </li>
-                  );
-                })}
-            </ul>
+          <PanelGrid min="32rem">
+          <CollapsibleCard
+            id="event-channels-list"
+            title="Channels"
+            hint="Which channels the event has, and whether JonnyBot makes each one or you pick one you already have."
+            defaultOpen
+            summary={
+              <>
+                <Chip tone="good">{made} made by JonnyBot</Chip>
+                {chosen > 0 && <Chip>{chosen} existing</Chip>}
+                {left > 0 && <Chip>{left} left out</Chip>}
+              </>
+            }
+          >
+            <PanelGrid min="20rem">
+              {slots.map((slot) => {
+                const planned = view.channels.find((c) => c.key === slot.key);
+                return (
+                  <ChannelSlotRow
+                    key={slot.key}
+                    slot={slot}
+                    draft={draft}
+                    onChange={change}
+                    structure={structure}
+                    disabled={busy}
+                    plannedName={planned && planned.action !== "use_existing" ? planned.name : null}
+                    mode={mode}
+                  />
+                );
+              })}
+              {teamEvent ? (
+                <SettingRow
+                  title="A private channel and role for each team"
+                  hint="Each team gets a role, and only that team (and organisers and staff) can see its channel."
+                  checked={draft.teamChannels}
+                  disabled={busy}
+                  onChange={(on) => change({ ...draft, teamChannels: on })}
+                />
+              ) : (
+                <SettingRow
+                  title="A private channel for each player"
+                  hint="Only that player (and organisers and staff) can see theirs. A big event needs a lot of channels, and Discord allows 50 in a category."
+                  checked={draft.playerChannels}
+                  disabled={busy}
+                  onChange={(on) => change({ ...draft, playerChannels: on })}
+                />
+              )}
+            </PanelGrid>
+          </CollapsibleCard>
 
-            {teamEvent ? (
-              <label className="flex items-start gap-3 border-t border-surface-border pt-3 text-sm">
-                <input type="checkbox" className="mt-0.5" checked={draft.teamChannels} disabled={busy} onChange={(ev) => change({ ...draft, teamChannels: ev.target.checked })} />
-                <span>
-                  <span className="font-medium">A private channel and role for each team</span>
-                  <span className="block text-xs text-muted">Each team gets a role, and only that team (and organisers and staff) can see its channel.</span>
-                </span>
-              </label>
-            ) : (
-              <label className="flex items-start gap-3 border-t border-surface-border pt-3 text-sm">
-                <input type="checkbox" className="mt-0.5" checked={draft.playerChannels} disabled={busy} onChange={(ev) => change({ ...draft, playerChannels: ev.target.checked })} />
-                <span>
-                  <span className="font-medium">A private channel for each player</span>
-                  <span className="block text-xs text-muted">Only that player (and organisers and staff) can see theirs. A big event needs a lot of channels, and Discord allows 50 in a category.</span>
-                </span>
-              </label>
-            )}
-          </div>
 
-          <details className="rounded-xl border border-surface-border p-4">
-            <summary className="cursor-pointer text-sm font-medium">What the category, roles and private channels are called</summary>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {view.settings.names
-                .filter((n) => nameKeys.includes(n.key))
-                .map((n) => (
-                  <label key={n.key} className="block space-y-1">
-                    <span className="text-xs text-muted">
-                      {n.label} ({n.variables.map((v) => `{${v}}`).join(", ")})
-                    </span>
-                    <input
-                      className={inputClass}
-                      value={patternOf(n.key, n.defaultPattern, draft)}
-                      maxLength={100}
-                      disabled={busy}
-                      onChange={(ev) => change(withPattern(draft, n.key, ev.target.value, n.defaultPattern))}
-                    />
-                  </label>
-                ))}
-            </div>
-            <p className="mt-2 text-xs text-muted">A channel&apos;s name is tidied to the way Discord writes them (lowercase, words joined with dashes).</p>
-          </details>
-
-          <Plan view={view} />
+          <CollapsibleCard
+            id="event-channels-plan"
+            title="What this makes"
+            hint="The roles and channels JonnyBot would make, and who can see each."
+            defaultOpen
+            summary={
+              <>
+                <Chip tone="good">
+                  {view.summary.newRoles} new {view.summary.newRoles === 1 ? "role" : "roles"}
+                </Chip>
+                <Chip tone="good">
+                  {view.summary.newChannels} new {view.summary.newChannels === 1 ? "channel" : "channels"}
+                </Chip>
+                {view.summary.toRemove > 0 && <Chip tone="warn">{view.summary.toRemove} no longer needed</Chip>}
+              </>
+            }
+          >
+            <Plan view={view} />
+          </CollapsibleCard>
+          {mode === "advanced" && (
+            <CollapsibleCard id="event-channels-names" title="Names" hint="What the category, roles and private channels are called.">
+              <FieldGrid>
+                {view.settings.names
+                  .filter((n) => nameKeys.includes(n.key))
+                  .map((n) => (
+                    <FormField key={n.key} label={n.label} size="md" hint={`Can use ${n.variables.map((v) => `{${v}}`).join(", ")}`}>
+                      <input
+                        className={inputClass}
+                        value={patternOf(n.key, n.defaultPattern, draft)}
+                        maxLength={100}
+                        disabled={busy}
+                        onChange={(ev) => change(withPattern(draft, n.key, ev.target.value, n.defaultPattern))}
+                      />
+                    </FormField>
+                  ))}
+              </FieldGrid>
+              <p className="text-xs text-muted">A channel&apos;s name is tidied to the way Discord writes them (lowercase, words joined with dashes).</p>
+            </CollapsibleCard>
+          )}
+          </PanelGrid>
+          {mode !== "advanced" && <p className="text-xs text-muted">The category, roles and private channels get their usual names. Switch to Advanced to rename them.</p>}
         </>
       )}
     </section>
@@ -449,15 +440,7 @@ function Plan({ view }: { view: SpaceView }) {
   const groups = groupChannels(view.channels);
   const [open, setOpen] = useState<string[]>([]);
   return (
-    <div className="space-y-4 rounded-xl border border-surface-border p-4">
-      <p className="text-sm font-medium">
-        What this makes
-        <span className="ml-2 text-xs font-normal text-muted">
-          {view.summary.newRoles} new {view.summary.newRoles === 1 ? "role" : "roles"}, {view.summary.newChannels} new {view.summary.newChannels === 1 ? "channel or category" : "channels and categories"}
-          {view.summary.toRemove > 0 ? `, ${view.summary.toRemove} no longer needed` : ""}
-        </span>
-      </p>
-
+    <div className="space-y-4">
       <div className="space-y-1">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Roles</p>
         <ul className="space-y-1 text-sm">

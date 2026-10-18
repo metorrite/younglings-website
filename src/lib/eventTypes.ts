@@ -4,6 +4,10 @@ export type EventStatus = "DRAFT" | "SIGNUPS" | "RUNNING" | "SCORING" | "DONE" |
 export interface EventSummary {
   /** Hidden from the main list (only a finished or cancelled event can be archived). */
   archived: boolean;
+  /** Only on the event list: players in, players on the waitlist, and proof (or verification) nobody has decided yet. */
+  players?: number;
+  waiting?: number;
+  proofWaiting?: number;
   id: string;
   name: string;
   description: string;

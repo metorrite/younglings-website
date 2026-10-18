@@ -9,8 +9,11 @@ const TONE: Record<Tone, string> = {
   plain: "text-foreground",
 };
 
-/** One number from the bot at a glance. With an `href` the whole tile is a link to where it is dealt with. */
-export function StatTile({ label, value, hint, tone = "gold", href }: { label: string; value: string | number; hint?: string; tone?: Tone; href?: string }) {
+/**
+ * One number from the bot at a glance. With an `href` the whole tile is a link to where it is dealt with; with `onClick` it is a button for the same thing
+ * where "where" is a tab on the same page.
+ */
+export function StatTile({ label, value, hint, tone = "gold", href, onClick }: { label: string; value: string | number; hint?: string; tone?: Tone; href?: string; onClick?: () => void }) {
   const body = (
     <>
       <p className="text-xs tracking-wider text-muted uppercase">{label}</p>
@@ -19,11 +22,19 @@ export function StatTile({ label, value, hint, tone = "gold", href }: { label: s
     </>
   );
   const className = "block rounded-lg border border-surface-border bg-surface p-4";
-  return href ? (
-    <Link href={href} className={`${className} transition hover:border-gold`}>
-      {body}
-    </Link>
-  ) : (
-    <div className={className}>{body}</div>
-  );
+  if (href) {
+    return (
+      <Link href={href} className={`${className} transition hover:border-gold`}>
+        {body}
+      </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`${className} w-full text-left transition hover:border-gold`}>
+        {body}
+      </button>
+    );
+  }
+  return <div className={className}>{body}</div>;
 }

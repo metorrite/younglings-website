@@ -7,6 +7,8 @@ import { ChannelSelect } from "@/components/admin/pickers";
 import { FormField, inputClass } from "@/components/admin/ui";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
+import { FieldGrid, PanelGrid, Span } from "@/components/dashboard/ui/Layout";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { getPath, isRequired, isoToLocalInput, localInputToIso, type Answers, type OptionDef } from "@/lib/eventOptions";
 import { BINGO_LOOKS, DEFAULT_BINGO_LOOK, type EventPrize } from "@/lib/eventTypes";
@@ -48,6 +50,49 @@ function ShapePicker({ opt, value, look, onChange, disabled }: { opt: OptionDef;
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** The three options that describe one channel of an event (how it is provided, which channel, what it is called) are drawn together as one row. */
+const SLOT_HEAD = /^config\.channels\.slots\.(\w+)\.use$/;
+const SLOT_PART = /^config\.channels\.(?:slots\.\w+\.channelId|names\.\w+)$/;
+
+/**
+ * One of the event's channels as a row: a switch for whether the event has it, and, while it does, a second for who provides it. "JonnyBot makes it" is on to
+ * begin with and shows the name; off, the same place shows a picker for a channel that already exists. It reads and writes the same three answers as the
+ * separate options did, so nothing that reads them changes.
+ */
+function SlotField({ opt, options, answers, onChange, structure, highlight, disabled }: { opt: OptionDef; options: OptionDef[]; answers: Answers; onChange: (path: string, value: unknown) => void; structure: GuildStructure; highlight: boolean; disabled: boolean }) {
+  const match = SLOT_HEAD.exec(opt.path);
+  const key = match ? match[1] : "";
+  const channelPath = `config.channels.slots.${key}.channelId`;
+  const namePath = `config.channels.names.${key}`;
+  const use = String(getPath(answers, opt.path) ?? "create");
+  const channelId = getPath(answers, channelPath);
+  const name = getPath(answers, namePath);
+  const makes = use === "create";
+  const nameHint = options.find((o) => o.path === namePath)?.hint ?? "{event} is the event's name. Leave it empty for the usual name.";
+  return (
+    <div className={highlight ? "rounded-lg ring-1 ring-red-500/60 ring-offset-4 ring-offset-surface" : undefined}>
+      <SettingRow title={opt.label} hint={opt.hint} checked={use !== "none"} disabled={disabled} onChange={(on) => onChange(opt.path, on ? "create" : "none")} offHint="Left out: nothing is made or chosen for this.">
+        <Toggle
+          checked={makes}
+          disabled={disabled}
+          label="JonnyBot makes it"
+          detail={makes ? "Made inside the event's category when you set up the channels." : "Off: pick a channel you already have. JonnyBot uses it but never changes who can see it."}
+          onChange={(on) => onChange(opt.path, on ? "create" : "existing")}
+        />
+        {makes ? (
+          <FormField label="Name" size="md" hint={nameHint}>
+            <input className={inputClass} disabled={disabled} maxLength={100} value={typeof name === "string" ? name : ""} onChange={(e) => onChange(namePath, e.target.value === "" ? undefined : e.target.value)} />
+          </FormField>
+        ) : (
+          <FormField label="Channel to use" size="lg" required as="group">
+            <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={typeof channelId === "string" && channelId !== "" ? channelId : null} onChange={(id) => onChange(channelPath, id ?? undefined)} none="Choose a channel" />
+          </FormField>
+        )}
+      </SettingRow>
     </div>
   );
 }
@@ -129,7 +174,7 @@ function OptionField({
 
     case "CHANNEL":
       return wrap(
-        <FormField label={opt.label} hint={hint} required={required} as="group">
+        <FormField label={opt.label} hint={hint} required={required} size="md" as="group">
           <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={typeof value === "string" && value !== "" ? value : null} onChange={(id) => set(id ?? undefined)} none="None" />
         </FormField>,
       );
@@ -203,16 +248,38 @@ export function OptionFields({
   highlight?: string[];
   disabled?: boolean;
 }) {
-  // two columns once the form itself (not the window) is wide enough, since it often sits beside the summary panel
-  return (
-    <div className="@container">
-      <div className="grid gap-x-4 gap-y-5 @xl:grid-cols-2">
-        {options.map((opt) => (
-          <div key={opt.path} className={isWide(opt) ? "@xl:col-span-2" : undefined}>
-            <OptionField opt={opt} answers={answers} onChange={onChange} structure={structure} highlight={highlight.includes(opt.path)} disabled={disabled} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  // short fields sit side by side in as many columns as the form is wide enough for; a long one (text, prizes, pictures) takes a row, and the channel
+  // rows, which are panels rather than fields, share a row of their own
+  const shown = options.filter((opt) => !SLOT_PART.test(opt.path));
+  const items: ReactNode[] = [];
+  for (let i = 0; i < shown.length; i++) {
+    const opt = shown[i];
+    if (SLOT_HEAD.test(opt.path)) {
+      const slots: OptionDef[] = [];
+      while (i < shown.length && SLOT_HEAD.test(shown[i].path)) slots.push(shown[i++]);
+      i--;
+      items.push(
+        <Span key={slots[0].path}>
+          <PanelGrid min="22rem" max="36rem">
+            {slots.map((slot) => (
+              <SlotField
+                key={slot.path}
+                opt={slot}
+                options={options}
+                answers={answers}
+                onChange={onChange}
+                structure={structure}
+                highlight={highlight.includes(slot.path) || highlight.includes(`config.channels.slots.${SLOT_HEAD.exec(slot.path)?.[1]}.channelId`)}
+                disabled={disabled}
+              />
+            ))}
+          </PanelGrid>
+        </Span>,
+      );
+      continue;
+    }
+    const field = <OptionField opt={opt} answers={answers} onChange={onChange} structure={structure} highlight={highlight.includes(opt.path)} disabled={disabled} />;
+    items.push(isWide(opt) ? <Span key={opt.path}>{field}</Span> : <div key={opt.path}>{field}</div>);
+  }
+  return <FieldGrid>{items}</FieldGrid>;
 }

@@ -8,11 +8,15 @@ import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
+import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { BoardChannelsPanel } from "@/components/dashboard/space/BoardChannelsPanel";
 import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
 import { WrapupTab } from "@/components/dashboard/space/WrapupTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
+import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
 
@@ -47,6 +51,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [pending, start] = useTransition();
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useViewMode("event-overview");
   const id = detail.event.id;
   const base = `events/${id}`;
 
@@ -278,6 +283,21 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   };
   const nameOf = (userId: string) => detail.participants.find((p) => p.userId === userId)?.userName ?? `Player ${userId}`;
   const active = detail.participants.filter((p) => !p.waiting);
+  const stepNow = (key: string) => detail.prep.steps.some((s) => s.key === key && s.state === "ACTIVE" && s.required);
+  const early = e.status === "DRAFT" || e.status === "SIGNUPS";
+  const finished = e.status === "DONE" || e.status === "CANCELLED";
+  /** Tabs with something waiting for a person get a dot; tabs with nothing to show yet are dimmed (and still open) with the reason on hover. */
+  const wants: Partial<Record<Tab, string>> = {};
+  if (early && stepNow("space")) wants.channels = "The roles and channels still need setting up";
+  if (early && stepNow("teams")) wants.teams = "The teams still need building";
+  if (early && (stepNow("roster") || stepNow("verification"))) wants.players = "The roster or verification needs a decision";
+  if (claims.pending.length > 0) wants.progress = `${claims.pending.length} proof waiting for a decision`;
+  const notYet: Partial<Record<Tab, string>> = {};
+  if (early) {
+    notYet.progress = "Nothing to review until the event is running";
+    notYet.standings = "Standings start once the event is running";
+  }
+  if (!finished && e.status !== "SCORING") notYet.wrapup = "Opens up once the event is over";
 
   const num = (v: string) => (v.trim() === "" ? 0 : Number(v.replace(/[, ]/g, "")));
 
@@ -322,30 +342,33 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-sm transition ${tab === t.key ? "border-b-2 border-gold text-gold" : "text-muted hover:text-foreground"}`}
+            title={wants[t.key] ?? notYet[t.key]}
+            className={`px-3 py-2 text-sm transition ${tab === t.key ? "border-b-2 border-gold text-gold" : `text-muted hover:text-foreground ${notYet[t.key] && !wants[t.key] ? "opacity-50" : ""}`}`}
           >
             {t.label}
             {t.key === "progress" && claims.pending.length > 0 ? ` (${claims.pending.length})` : ""}
+            {wants[t.key] && t.key !== "progress" && <span aria-label="needs attention" className="ml-1.5 inline-block size-1.5 rounded-full bg-gold align-middle" />}
           </button>
         ))}
       </div>
 
       {tab === "overview" && (
-        <section className="space-y-3 text-sm">
-          {e.description && <p className="break-words whitespace-pre-wrap">{e.description}</p>}
-          <dl className="grid gap-2 sm:grid-cols-2">
-            <div><dt className="text-xs text-muted">Created</dt><dd>{formatUtc(e.createdAt)}</dd></div>
-            <div><dt className="text-xs text-muted">Signups close</dt><dd>{e.config.signupClosesAt ? formatUtc(e.config.signupClosesAt) : "No deadline"}</dd></div>
-            <div><dt className="text-xs text-muted">Who may join</dt><dd>{{ everyone: "Everyone, mixed freely", home: "Only this server", clanVsOutsiders: "Clan members apart from everyone else", separate: "Every kind on its own teams" }[e.config.teamPolicy ?? "everyone"] ?? e.config.teamPolicy}</dd></div>
-            <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
-            <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
-          </dl>
+        <section className="space-y-4 text-sm">
+          <EventDashboard detail={detail} proofWaiting={claims.pending.length} onOpen={setTab} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-muted">{viewMode === "basic" ? "Showing what most events need." : "Showing everything, including saving this event as a template."}</p>
+            <ViewModeSwitch mode={viewMode} onChange={setViewMode} />
+          </div>
+          <PanelGrid min="28rem">
           {e.status !== "CANCELLED" && (
-            <div className="space-y-3 rounded-xl border border-surface-border p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">Before it starts</p>
-                {detail.prep.ready ? <StatusBadge tone="good">Ready to start</StatusBadge> : e.status === "DRAFT" || e.status === "SIGNUPS" ? <StatusBadge tone="warn">Not ready yet</StatusBadge> : null}
-              </div>
+            <div id="event-prep" className="scroll-mt-4">
+            <CollapsibleCard
+              id="event-prep"
+              title="Before it starts"
+              hint="What is left before this event can start, and the buttons for each step."
+              defaultOpen
+              summary={detail.prep.ready ? <Chip tone="good">Ready to start</Chip> : e.status === "DRAFT" || e.status === "SIGNUPS" ? <Chip tone="warn">Not ready yet</Chip> : null}
+            >
               <ol className="space-y-3">
                 {detail.prep.steps.map((s) => (
                   <li key={s.key} className="flex gap-3">
@@ -433,10 +456,36 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 </p>
               ))}
               {!detail.prep.ready && (e.status === "DRAFT" || e.status === "SIGNUPS") && <p className="text-xs text-muted">It can&apos;t start yet: {detail.prep.blockers.join(" ")}</p>}
+            </CollapsibleCard>
             </div>
           )}
-          <div className="space-y-3 rounded-xl border border-surface-border p-4">
-            <p className="font-medium">Setup and verification</p>
+          <div className="space-y-4">
+          <CollapsibleCard
+            id="event-details"
+            title="Details"
+            hint="What the event is about and who can join."
+            summary={<Chip>{e.scope === "PRIVATE" ? "Clan only" : e.scope === "ALLIANCE" ? "Clan and allies" : "Everyone"}</Chip>}
+          >
+          {e.description && <p className="break-words whitespace-pre-wrap">{e.description}</p>}
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div><dt className="text-xs text-muted">Created</dt><dd>{formatUtc(e.createdAt)}</dd></div>
+            <div><dt className="text-xs text-muted">Signups close</dt><dd>{e.config.signupClosesAt ? formatUtc(e.config.signupClosesAt) : "No deadline"}</dd></div>
+            <div><dt className="text-xs text-muted">Who may join</dt><dd>{{ everyone: "Everyone, mixed freely", home: "Only this server", clanVsOutsiders: "Clan members apart from everyone else", separate: "Every kind on its own teams" }[e.config.teamPolicy ?? "everyone"] ?? e.config.teamPolicy}</dd></div>
+            <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
+            <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
+          </dl>
+          </CollapsibleCard>
+          <CollapsibleCard
+            id="event-setup"
+            title="Setup and verification"
+            hint="Whether this event follows the setup steps, and whether players must be verified."
+            summary={
+              <>
+                <Chip>{(e.config.setup?.mode ?? "OFF") === "OFF" ? "No setup steps" : "Follows the setup steps"}</Chip>
+                <Chip tone={e.config.verification?.required ? "good" : "plain"}>{e.config.verification?.required ? "Verification on" : "No verification"}</Chip>
+              </>
+            }
+          >
             {editable ? (
               <>
                 <EventSetupFields value={setupDraft} onChange={setSetupDraft} disabled={pending} />
@@ -455,9 +504,18 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 {e.config.verification?.required ? `Players must be verified ${GATES.find((g) => g.id === (e.config.verification?.gate ?? "TEAMS"))?.label.toLowerCase()}.` : "Players aren't asked to verify."}
               </p>
             )}
-          </div>
-          <div className="space-y-2 rounded-xl border border-surface-border p-4">
-            <p className="font-medium">Signup panel</p>
+          </CollapsibleCard>
+          <CollapsibleCard
+            id="event-signup-panel"
+            title="Signup panel"
+            hint="The signup message in Discord."
+            summary={
+              <>
+                <Chip tone={detail.signup.attached ? (detail.signup.active ? "good" : "plain") : "warn"}>{!detail.signup.attached ? "Not posted" : detail.signup.active ? "Open" : "Closed"}</Chip>
+                {detail.signup.attached && <Chip>{detail.signup.entries} signed up</Chip>}
+              </>
+            }
+          >
             {!detail.signup.attached ? (
               <p className="text-muted">
                 {detail.signup.channelsChosen ? "No signup has been posted yet." : "No signup panel. Players are added by staff, or choose signup channels in the event settings when creating it."}
@@ -487,9 +545,13 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               )}
             </div>
             <p className="text-xs text-muted">The bot keeps the roster and the Discord signup the same, both ways, about every half minute: sign up or leave there or here and the other follows. Players staff added by hand aren&apos;t on the signup, so changes there don&apos;t touch them.</p>
-          </div>
-          <div className="space-y-2 rounded-xl border border-surface-border p-4">
-            <p className="font-medium">Organisers</p>
+          </CollapsibleCard>
+          <CollapsibleCard
+            id="event-organisers"
+            title="Organisers"
+            hint="People who can run this one event from Discord."
+            summary={<Chip>{detail.organisers.length === 0 ? "Nobody named" : `${detail.organisers.length} named`}</Chip>}
+          >
             <p className="text-xs text-muted">
               Organisers can start and finish this event and approve or deny proof from Discord, without being staff or using the dashboard. Staff can always do all of that for every event.
             </p>
@@ -536,9 +598,9 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 </button>
               </div>
             )}
-          </div>
-          <div className="space-y-2 rounded-xl border border-surface-border p-4">
-            <p className="font-medium">Save as a template</p>
+          </CollapsibleCard>
+          {viewMode === "advanced" && (
+          <CollapsibleCard id="event-template" title="Save as a template" hint="Reuse this event's settings for the next one.">
             <p className="text-xs text-muted">
               Keep this event&apos;s settings, channels and prizes under a name, to make similar events from the event list in one step. Players, progress, board tiles and dates are not kept.
             </p>
@@ -560,7 +622,10 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 Save as a template
               </button>
             </div>
+          </CollapsibleCard>
+          )}
           </div>
+          </PanelGrid>
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
           </p>
