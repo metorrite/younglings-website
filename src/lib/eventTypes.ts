@@ -30,7 +30,7 @@ export interface EventSummary {
     verification?: { required?: boolean; gate?: VerificationGate; instructions?: string };
     submissions?: { require?: boolean; receipts?: boolean };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
-    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string };
+    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string; display?: "SHARED" | "OWN" | "BOTH" };
     bonuses?: EventBonus[];
     lineBonus?: number;
     blackoutBonus?: number;
