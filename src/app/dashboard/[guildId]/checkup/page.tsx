@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { requireGuild } from "@/lib/dashboard";
 import { adminApi, type CheckupFinding } from "@/lib/jonnybot-admin";
@@ -85,9 +86,14 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
       )}
 
       {fine.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">Looking good</h2>
-          <ul className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
+        <CollapsibleCard
+          id="checkup-fine"
+          title="Looking good"
+          hint="What was checked and found fine."
+          defaultOpen={problems.length === 0}
+          summary={<Chip tone="good">{fine.length} fine</Chip>}
+        >
+          <ul className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 20rem), 1fr))" }}>
             {fine.map((f, i) => (
               <li key={`${f.title}-${i}`} className="flex items-start gap-3 rounded-lg border border-surface-border bg-surface/60 px-4 py-3 text-sm">
                 <span aria-hidden="true" className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${LOOK.OK.ring}`}>
@@ -100,7 +106,7 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
               </li>
             ))}
           </ul>
-        </section>
+        </CollapsibleCard>
       )}
     </div>
   );
