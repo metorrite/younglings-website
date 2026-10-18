@@ -7,6 +7,7 @@ import { setFavoritesAction } from "@/app/dashboard/[guildId]/favorites-actions"
 import { Icon } from "./icons";
 import { LinkPending } from "./LinkPending";
 import { QuickJump } from "./QuickJump";
+import { ViewModeSlider } from "@/components/dashboard/ui/ViewMode";
 import { favoriteItems, groupsFor, isActive, type NavItem } from "./nav";
 
 export interface SidebarServer {
@@ -97,15 +98,18 @@ export function Sidebar({
   return (
     <aside aria-label="Server navigation" className="border-b border-surface-border bg-surface/60 lg:w-72 lg:shrink-0 lg:border-r lg:border-b-0">
       <div className="lg:sticky lg:top-0 lg:flex lg:max-h-screen lg:flex-col lg:overflow-y-auto">
-        <div className="flex items-center gap-3 border-b border-surface-border p-4">
-          <ServerIcon server={server} size={44} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{server.name}</p>
-            <p className="text-xs text-muted">{server.role}</p>
+        <div className="space-y-3 border-b border-surface-border p-4">
+          <div className="flex items-center gap-3">
+            <ServerIcon server={server} size={44} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold">{server.name}</p>
+              <p className="text-xs text-muted">{server.role}</p>
+            </div>
+            <Link href="/dashboard" title="Switch server" aria-label="Switch server" className="rounded-md p-1.5 text-muted transition hover:bg-white/5 hover:text-gold">
+              <Icon name="swap" />
+            </Link>
           </div>
-          <Link href="/dashboard" title="Switch server" aria-label="Switch server" className="rounded-md p-1.5 text-muted transition hover:bg-white/5 hover:text-gold">
-            <Icon name="swap" />
-          </Link>
+          <ViewModeSlider />
         </div>
 
         <div className="hidden px-3 pt-3 lg:block">

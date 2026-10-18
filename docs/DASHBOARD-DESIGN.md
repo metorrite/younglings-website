@@ -41,7 +41,11 @@ Before adding a drop-down plus a text box, ask whether a switch plus one field s
 
 ## Basic and advanced
 
-`useViewMode(id)` + `ViewModeSwitch`: panels show the few controls most people need (basic, the default) and everything in advanced. The choice is remembered per browser. Hide what doesn't apply; if it is kept visible, dim it and say why.
+One setting for the whole dashboard, not one per page: the Basic / Advanced slider under the server icon at the top of the sidebar (`ViewModeSlider`). Basic is the default and shows the few controls most servers need; Advanced adds the ones that are rarely changed. The choice is remembered in this browser and applies to every page at once.
+
+- A page never carries its own switch. It reads the view with `useViewMode()` (no id), or wraps a block in `<Advanced>`.
+- When Basic hides something, say so with `<MoreInAdvanced>what is there</MoreInAdvanced>`: a quiet line with a button that switches to Advanced.
+- Decide per option: if most servers never touch it, it is Advanced. Hide what doesn't apply at all; if it is kept visible, dim it and say why.
 
 ## Folding
 

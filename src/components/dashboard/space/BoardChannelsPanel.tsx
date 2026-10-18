@@ -6,7 +6,7 @@ import type { EventCall } from "@/components/dashboard/EventListView";
 import { ChannelSlotRow } from "@/components/dashboard/space/ChannelSlotRow";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
-import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
+import { useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { draftOf, effectiveUse, sameDraft } from "@/lib/eventSpace";
 import type { EventDetail, SpaceDraft, SpaceView } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
@@ -23,7 +23,7 @@ export function BoardChannelsPanel({ detail, call, structure, onOpenChannels }: 
   const [problem, setProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useViewMode("event-channels");
+  const [mode] = useViewMode();
 
   useEffect(() => {
     let cancelled = false;
@@ -78,8 +78,7 @@ export function BoardChannelsPanel({ detail, call, structure, onOpenChannels }: 
         </>
       }
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <ViewModeSwitch mode={mode} onChange={setMode} />
+      <div className="flex justify-end">
         <button type="button" className="text-xs text-gold underline" onClick={onOpenChannels}>
           Roles, category and every channel: open the Channels tab
         </button>

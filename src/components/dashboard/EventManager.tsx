@@ -16,7 +16,7 @@ import { WrapupTab } from "@/components/dashboard/space/WrapupTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
-import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
 
@@ -51,7 +51,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [pending, start] = useTransition();
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useViewMode("event-overview");
+  const [viewMode] = useViewMode();
   const id = detail.event.id;
   const base = `events/${id}`;
 
@@ -355,10 +355,6 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       {tab === "overview" && (
         <section className="space-y-4 text-sm">
           <EventDashboard detail={detail} proofWaiting={claims.pending.length} onOpen={setTab} />
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs text-muted">{viewMode === "basic" ? "Showing what most events need." : "Showing everything, including saving this event as a template."}</p>
-            <ViewModeSwitch mode={viewMode} onChange={setViewMode} />
-          </div>
           <PanelGrid min="28rem">
           {e.status !== "CANCELLED" && (
             <div id="event-prep" className="scroll-mt-4">
@@ -626,6 +622,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           )}
           </div>
           </PanelGrid>
+          <MoreInAdvanced>saving this event as a template.</MoreInAdvanced>
           <p className="text-muted">
             {editable ? "Objectives, teams and prizes can be changed until the event starts." : "The event has started, so its setup is locked. Progress, proof and payouts still work."}
           </p>
