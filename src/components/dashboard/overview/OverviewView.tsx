@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Icon } from "@/components/dashboard/shell/icons";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { StatTile } from "@/components/dashboard/overview/StatTile";
+import { DEFAULT_QUICK_PATHS, favoriteItems, itemsByPath } from "@/components/dashboard/shell/nav";
 import type { Overview, ServerSetup } from "@/lib/jonnybot-admin";
 
 const MANAGE = "shrink-0 rounded-md border border-surface-border px-3 py-1.5 text-sm text-muted transition hover:border-gold hover:text-foreground";
@@ -10,7 +11,10 @@ const MANAGE = "shrink-0 rounded-md border border-surface-border px-3 py-1.5 tex
 export type FeatureRow = { id: string; label: string; detail: string; done: boolean; href?: string; action?: string; where?: string };
 
 /** The Overview's layout, kept apart from fetching so it can be looked at with made-up numbers. */
-export function OverviewView({ base, overview, setup, rows, owner, checkup }: { base: string; overview: Overview; setup: Pick<ServerSetup, "clanActive" | "clanName">; rows: FeatureRow[]; owner?: ReactNode; checkup?: { errors: number; warnings: number; checked: number } | null }) {
+export function OverviewView({ base, overview, setup, rows, owner, checkup, favorites = [] }: { base: string; overview: Overview; setup: Pick<ServerSetup, "clanActive" | "clanName">; rows: FeatureRow[]; /** The pages this person starred in the sidebar, which become the quick links. */ favorites?: string[]; owner?: ReactNode; checkup?: { errors: number; warnings: number; checked: number } | null }) {
+  const hasClan = setup.clanActive;
+  const starred = favoriteItems(favorites, hasClan);
+  const quickLinks = (starred.length > 0 ? starred : [...DEFAULT_QUICK_PATHS].map((p) => itemsByPath(hasClan).get(p)).filter((i) => i !== undefined)).map((item) => ({ label: item.label, path: item.path ?? "", icon: item.icon }));
   const doneCount = rows.filter((row) => row.done).length;
   const percent = rows.length === 0 ? 0 : Math.round((doneCount / rows.length) * 100);
   const m = overview.members;
@@ -142,12 +146,7 @@ export function OverviewView({ base, overview, setup, rows, owner, checkup }: { 
           <section className="rounded-xl border border-surface-border bg-surface p-5">
             <h2 className="font-semibold text-gold">Quick links</h2>
             <ul className="mt-3 space-y-1">
-              {[
-                { label: "Server setup", path: "/settings", icon: "sliders" as const },
-                { label: "Roles & permissions", path: "/permissions", icon: "shield" as const },
-                { label: "Commands", path: "/commands", icon: "terminal" as const },
-                { label: "Welcome message", path: "/welcome", icon: "smile" as const },
-              ].map((link) => (
+              {quickLinks.map((link) => (
                 <li key={link.path}>
                   <Link href={`${base}${link.path}`} className="flex items-center gap-3 rounded-md px-2 py-2 text-sm text-muted transition hover:bg-white/5 hover:text-foreground">
                     <Icon name={link.icon} />
@@ -156,6 +155,7 @@ export function OverviewView({ base, overview, setup, rows, owner, checkup }: { 
                 </li>
               ))}
             </ul>
+            <p className="mt-3 text-xs text-muted">{favorites.length > 0 ? "Your starred pages. Star or unstar a page with the ☆ beside it in the sidebar." : "Star a page with the ☆ beside it in the sidebar and it shows here."}</p>
           </section>
           {owner}
         </aside>
