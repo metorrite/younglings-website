@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { EventWizard } from "@/components/dashboard/setup/EventWizard";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
@@ -28,10 +27,11 @@ export default async function NewEventPage({ params, searchParams }: { params: P
 
   return (
     <div className="space-y-6">
-      <PageHeader title={`New ${schema.label.toLowerCase()}`} description="Every option, a step at a time. What you enter is saved as a draft as you go, so you can leave and come back." />
-      <Link href={back} className="text-sm text-gold hover:underline">
-        All events
-      </Link>
+      <PageHeader
+        back={{ href: back, label: "Event manager" }}
+        title={`New ${schema.label.toLowerCase()}`}
+        description="Every option, a step at a time. What you enter is saved as a draft as you go, so you can leave and come back."
+      />
       <EventWizard guildId={guildId} initial={draft} schema={schema} structure={structure} call={eventApiAction.bind(null, guildId)} />
     </div>
   );
