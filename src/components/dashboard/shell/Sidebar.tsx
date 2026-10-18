@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import { setFavoritesAction } from "@/app/dashboard/[guildId]/favorites-actions";
 import { Icon } from "./icons";
 import { LinkPending } from "./LinkPending";
@@ -30,6 +30,58 @@ function ServerIcon({ server, size }: { server: SidebarServer; size: number }) {
   return <img src={`${server.iconUrl}?size=96`} alt="" width={size} height={size} className="shrink-0 rounded-full" />;
 }
 
+const FOLDED_KEY = "jonnybot-nav-folded";
+const FOLDED_EVENT = "jonnybot-nav-folded-changed";
+
+function subscribeFolded(notify: () => void) {
+  window.addEventListener(FOLDED_EVENT, notify);
+  window.addEventListener("storage", notify);
+  return () => {
+    window.removeEventListener(FOLDED_EVENT, notify);
+    window.removeEventListener("storage", notify);
+  };
+}
+
+/** The titles of the groups this person folded away in the sidebar, remembered in this browser. */
+function useFoldedGroups(): [string[], (title: string) => void] {
+  const raw = useSyncExternalStore(
+    subscribeFolded,
+    () => {
+      try {
+        return window.localStorage.getItem(FOLDED_KEY) ?? "[]";
+      } catch {
+        return "[]";
+      }
+    },
+    () => "[]",
+  );
+  let folded: string[] = [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) folded = parsed.filter((x): x is string => typeof x === "string");
+  } catch {
+    // a damaged value just means nothing is folded
+  }
+  const toggle = (title: string) => {
+    // read what is stored right now, so two quick clicks never undo each other
+    let current = folded;
+    try {
+      const stored: unknown = JSON.parse(window.localStorage.getItem(FOLDED_KEY) ?? "[]");
+      if (Array.isArray(stored)) current = stored.filter((x): x is string => typeof x === "string");
+    } catch {
+      // keep what this render knew
+    }
+    const next = current.includes(title) ? current.filter((x) => x !== title) : [...current, title];
+    try {
+      window.localStorage.setItem(FOLDED_KEY, JSON.stringify(next));
+    } catch {
+      // not remembered across visits
+    }
+    window.dispatchEvent(new Event(FOLDED_EVENT));
+  };
+  return [folded, toggle];
+}
+
 /**
  * One server's navigation. On a wide screen it is a column down the left edge of the screen, as tall as the page, whose contents stay in
  * view while the page scrolls; on a narrow one it becomes a row of buttons above the page, so the pages themselves can use the whole width.
@@ -55,6 +107,7 @@ export function Sidebar({
   const router = useRouter();
   const base = where ?? `/dashboard/${server.id}`;
   const [view, setView] = useViewMode();
+  const [folded, toggleFolded] = useFoldedGroups();
   const [starred, setStarred] = useState<string[]>(favorites);
   const [, start] = useTransition();
   const [failed, setFailed] = useState<string | null>(null);
@@ -120,10 +173,27 @@ export function Sidebar({
 
         {/* wide screens: the full list */}
         <nav className="hidden flex-1 space-y-5 p-3 lg:block">
-          {groups.map((group) => (
+          {groups.map((group) => {
+            // a group can be folded away to shorten the list, but never the one holding the page being looked at
+            const holdsActive = group.items.some((item) => isActive(item, base, pathname));
+            const closed = group.title !== null && folded.includes(group.title) && !holdsActive;
+            return (
             <div key={group.title ?? "top"}>
-              {group.title && <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-muted/80 uppercase">{group.title}</p>}
-              <ul className="space-y-0.5">
+              {group.title && (
+                <button
+                  type="button"
+                  aria-expanded={!closed}
+                  onClick={() => toggleFolded(group.title as string)}
+                  className="mb-1.5 flex w-full items-center gap-1.5 rounded px-3 text-left text-[11px] font-semibold tracking-wider text-muted/80 uppercase transition hover:text-foreground"
+                >
+                  <span aria-hidden className={`text-[9px] transition-transform ${closed ? "" : "rotate-90"}`}>
+                    ▶
+                  </span>
+                  {group.title}
+                  {closed && <span className="ml-auto rounded-full bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-normal normal-case">{group.items.length}</span>}
+                </button>
+              )}
+              <ul className="space-y-0.5" hidden={closed}>
                 {group.items.map((item) => {
                   const active = isActive(item, base, pathname);
                   const body = (
@@ -185,7 +255,8 @@ export function Sidebar({
               )}
               {group.title === null && failed && <p className="mt-2 px-3 text-xs text-red-300">{failed}</p>}
             </div>
-          ))}
+            );
+          })}
           {hidden > 0 && (
             <button type="button" onClick={() => setView("advanced")} className="w-full rounded-md px-3 py-2 text-left text-xs text-muted transition hover:bg-white/5 hover:text-foreground">
               + {hidden} more {hidden === 1 ? "page" : "pages"} in the Advanced view
