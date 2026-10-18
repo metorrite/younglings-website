@@ -103,6 +103,24 @@ export function groupsFor(hasClan: boolean): NavGroup[] {
   return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasClan || !item.clanOnly) })).filter((group) => group.items.length > 0);
 }
 
+/** Every page of the sidebar by its path, for a server that has (or hasn't) a clan. */
+export function itemsByPath(hasClan: boolean): Map<string, NavItem> {
+  const map = new Map<string, NavItem>();
+  for (const group of groupsFor(hasClan)) {
+    for (const item of group.items) if (item.path !== undefined && item.path !== "" && !item.soon) map.set(item.path, item);
+  }
+  return map;
+}
+
+/** The starred pages as sidebar items, in the order they were starred; a path that is no longer a page (or isn't one of this server's) is left out. */
+export function favoriteItems(paths: readonly string[], hasClan: boolean): NavItem[] {
+  const all = itemsByPath(hasClan);
+  return paths.map((p) => all.get(p)).filter((item): item is NavItem => item !== undefined);
+}
+
+/** The quick links of the Overview: the starred pages, or four usual ones until something is starred. */
+export const DEFAULT_QUICK_PATHS = ["/settings", "/permissions", "/commands", "/welcome"] as const;
+
 /** Whether the page at `pathname` belongs to `item`, for highlighting. */
 export function isActive(item: NavItem, base: string, pathname: string): boolean {
   if (item.path === undefined) return false;

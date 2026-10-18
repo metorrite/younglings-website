@@ -1381,6 +1381,9 @@ export const adminApi = {
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
   notices: (ctx: ApiContext) => call<{ notices: BotNotice[] }>(ctx, "GET", "notices"),
+  /** The pages this person starred in the sidebar of this server, in the order they starred them. */
+  favorites: (ctx: ApiContext) => call<{ paths: string[] }>(ctx, "GET", "prefs/favorites"),
+  saveFavorites: (ctx: ApiContext, paths: string[]) => call<{ paths: string[] }>(ctx, "PUT", "prefs/favorites", { paths }),
   addNotice: (ctx: ApiContext, severity: BotNotice["severity"], body: string) => call<{ notices: BotNotice[] }>(ctx, "POST", "notices", { severity, body }),
   removeNotice: (ctx: ApiContext, id: string) => call<{ notices: BotNotice[] }>(ctx, "DELETE", `notices/${encodeURIComponent(id)}`),
   audit: (ctx: ApiContext, query: { limit?: number; actor?: string; q?: string } = {}) => {
