@@ -56,7 +56,7 @@ export function EventDashboard({ detail, proofWaiting, onOpen }: { detail: Event
     line = next.detail;
     const tab = STEP_TAB[next.key];
     action = tab
-      ? { label: next.key === "space" ? "Open the Channels tab" : next.key === "teams" ? "Open the team builder" : "Open the Teams and players tab", run: () => onOpen(tab) }
+      ? { label: next.key === "space" ? "Open the Channels tab" : next.key === "teams" ? "Open the team builder" : "Open the Players tab", run: () => onOpen(tab) }
       : { label: "Go to the checklist", run: () => document.getElementById("event-prep")?.scrollIntoView({ behavior: "smooth", block: "start" }) };
   } else if (detail.prep.ready) {
     heading = "Ready to start";

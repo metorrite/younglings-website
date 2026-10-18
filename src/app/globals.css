@@ -7,12 +7,15 @@
   --foreground: #e5e7eb;
   --muted: #9ca3af;
   --gold: #d4af37;
+  /* the edge of an input, select or switch: at least 3:1 against the page and the panels (WCAG 1.4.11); --surface-border stays for decorative lines */
+  --control-border: #6b7280;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-border: var(--surface-border);
+  --color-control-border: var(--control-border);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-gold: var(--gold);
@@ -29,6 +32,19 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* One keyboard focus ring for links, buttons, tabs, switches and summaries; inputs show focus with their gold border instead. */
+:where(a, button, summary, [role="tab"], [role="switch"], [role="radio"], [tabindex]):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Native checkboxes and radio buttons in the site's gold. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--gold);
 }
 
 /* Slim, dark scrollbars so scrolling lists (who's online, adventure log) match the theme. */

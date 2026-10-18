@@ -3,12 +3,13 @@
 /* eslint-disable @next/next/no-img-element -- 30px pixel-art item icons from /public/items; next/image would only blur them */
 
 import { askDialog, confirmDialog } from "@/components/ui/Dialogs";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
+import { ObjectivesTab } from "@/components/dashboard/events/ObjectivesTab";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { BoardChannelsPanel } from "@/components/dashboard/space/BoardChannelsPanel";
 import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
@@ -21,17 +22,18 @@ import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventD
 import type { GuildStructure } from "@/lib/jonnybot-admin";
 
 type Tab = "overview" | "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "standings" | "prizes" | "wrapup";
-const TABS: { key: Tab; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "board", label: "Board" },
-  { key: "objectives", label: "Objectives" },
-  { key: "teams", label: "Team builder" },
-  { key: "channels", label: "Channels" },
-  { key: "players", label: "Teams and players" },
-  { key: "progress", label: "Progress and proof" },
-  { key: "standings", label: "Standings" },
-  { key: "prizes", label: "Prizes and payouts" },
-  { key: "wrapup", label: "Wrap-up" },
+/** In the order the work is done; `group` is where a thin divider goes: the overview, then setting it up, then running it. */
+const TABS: { key: Tab; label: string; group: number }[] = [
+  { key: "overview", label: "Overview", group: 0 },
+  { key: "board", label: "Board", group: 1 },
+  { key: "objectives", label: "Objectives", group: 1 },
+  { key: "players", label: "Players", group: 1 },
+  { key: "teams", label: "Team builder", group: 1 },
+  { key: "channels", label: "Channels", group: 1 },
+  { key: "progress", label: "Progress and proof", group: 2 },
+  { key: "standings", label: "Standings", group: 2 },
+  { key: "prizes", label: "Prizes and payouts", group: 2 },
+  { key: "wrapup", label: "Wrap-up", group: 2 },
 ];
 
 const KIND_LABEL = { HOME_CLAN: "Clan member", HOME_OTHER: "This server", PARTNER: "Other server" } as const;
@@ -52,8 +54,20 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode] = useViewMode();
+  const tabBar = useRef<HTMLDivElement>(null);
   const id = detail.event.id;
   const base = `events/${id}`;
+
+  // on a narrow screen the tabs scroll sideways: keep the one in use in view
+  useEffect(() => {
+    const list = tabBar.current;
+    const active = list?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!list || !active) return;
+    const left = active.offsetLeft;
+    const right = left + active.offsetWidth;
+    if (left < list.scrollLeft) list.scrollTo({ left: left - 8, behavior: "smooth" });
+    else if (right > list.scrollLeft + list.clientWidth) list.scrollTo({ left: right - list.clientWidth + 8, behavior: "smooth" });
+  }, [tab]);
 
   /** Changing tab leaves the last tab's message behind: an error from one tab doesn't follow you around (or show up twice when the next tab fails the same way). */
   function setTab(next: Tab) {
@@ -334,21 +348,23 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
         <span className="ml-auto flex flex-wrap gap-2">{detail.nextStages.map(stageButton)}</span>
       </div>
 
-      <div role="tablist" className="flex flex-wrap gap-1 border-b border-surface-border">
-        {TABS.filter((t) => (t.key !== "board" || e.template === "bingo") && (t.key !== "teams" || e.scoringMode === "TEAM")).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => setTab(t.key)}
-            title={wants[t.key] ?? notYet[t.key]}
-            className={`px-3 py-2 text-sm transition ${tab === t.key ? "border-b-2 border-gold text-gold" : `text-muted hover:text-foreground ${notYet[t.key] && !wants[t.key] ? "opacity-50" : ""}`}`}
-          >
-            {t.label}
-            {t.key === "progress" && claims.pending.length > 0 ? ` (${claims.pending.length})` : ""}
-            {wants[t.key] && t.key !== "progress" && <span aria-label="needs attention" className="ml-1.5 inline-block size-1.5 rounded-full bg-gold align-middle" />}
-          </button>
+      <div ref={tabBar} role="tablist" aria-label="This event" className="sticky top-0 z-20 -mx-1 flex items-stretch gap-1 overflow-x-auto border-b border-surface-border bg-background/95 px-1 backdrop-blur">
+        {TABS.filter((t) => (t.key !== "board" || e.template === "bingo") && (t.key !== "teams" || e.scoringMode === "TEAM")).map((t, i, shown) => (
+          <Fragment key={t.key}>
+            {i > 0 && shown[i - 1].group !== t.group && <span aria-hidden className="mx-1 my-2 w-px shrink-0 bg-surface-border" />}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => setTab(t.key)}
+              title={wants[t.key] ?? notYet[t.key]}
+              className={`shrink-0 px-3 py-2.5 text-sm whitespace-nowrap transition ${tab === t.key ? "border-b-2 border-gold text-gold" : `text-muted hover:text-foreground ${notYet[t.key] && !wants[t.key] ? "opacity-70" : ""}`}`}
+            >
+              {t.label}
+              {t.key === "progress" && claims.pending.length > 0 ? ` (${claims.pending.length})` : ""}
+              {wants[t.key] && t.key !== "progress" && <span aria-label="needs attention" className="ml-1.5 inline-block size-1.5 rounded-full bg-gold align-middle" />}
+            </button>
+          </Fragment>
         ))}
       </div>
 
@@ -428,7 +444,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                         )}
                         {s.key === "verification" && s.state !== "DONE" && (
                           <button type="button" className="text-sm text-gold underline" onClick={() => setTab("players")}>
-                            Decide on the Teams and players tab
+                            Decide on the Players tab
                           </button>
                         )}
                         {s.key === "space" && s.state !== "WAITING" && s.state !== "SKIPPED" && (
@@ -798,50 +814,15 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       )}
 
       {tab === "objectives" && (
-        <section className="space-y-4">
-          <p className="text-sm text-muted">Each objective is something a player or team can complete for points: a bingo tile, a boss kill, a step. Proof means members send a screenshot for you to approve; an organiser can always record progress by hand.</p>
-          {objs.length === 0 && <p className="rounded-xl border border-dashed border-surface-border p-4 text-center text-sm text-muted">No objectives yet.</p>}
-          <ul className="space-y-3">
-            {objs.map((o, i) => (
-              <li key={i} className="grid gap-2 rounded-xl border border-surface-border bg-surface p-4 md:grid-cols-[1fr_6rem_6rem_6rem_9rem]">
-                <input className={inputClass} disabled={!editable} placeholder="Title" value={o.label} onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, label: ev.target.value } : x)))} />
-                <input className={inputClass} disabled={!editable} inputMode="numeric" title="Points" placeholder="Points" value={o.points} onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, points: num(ev.target.value) } : x)))} />
-                <input className={inputClass} disabled={!editable} inputMode="numeric" title="Amount needed to complete it" placeholder="Needed" value={o.target} onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, target: num(ev.target.value) } : x)))} />
-                <input className={inputClass} disabled={!editable} inputMode="numeric" title="How many times it can count" placeholder="Times" value={o.repeatLimit} onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, repeatLimit: num(ev.target.value) } : x)))} />
-                <select className={inputClass} disabled={!editable} value={o.evidence} onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, evidence: ev.target.value as EventObjective["evidence"] } : x)))}>
-                  <option value="EITHER">Proof or automatic</option>
-                  <option value="PROOF">Proof only</option>
-                  <option value="AUTO">Automatic only</option>
-                  <option value="ORGANISER">Organiser only</option>
-                </select>
-                <input className={`${inputClass} md:col-span-3`} disabled={!editable} placeholder="Description (optional)" value={o.description} onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, description: ev.target.value } : x)))} />
-                <input
-                  className={`${inputClass} md:col-span-1`}
-                  disabled={!editable}
-                  placeholder="Needs (keys, comma separated)"
-                  value={o.prerequisites.join(", ")}
-                  onChange={(ev) => setObjs(objs.map((x, j) => (j === i ? { ...x, prerequisites: ev.target.value.split(",").map((k) => k.trim()).filter(Boolean) } : x)))}
-                />
-                {editable && (
-                  <button type="button" className={dangerButton} onClick={() => setObjs(objs.filter((_, j) => j !== i))}>
-                    Remove
-                  </button>
-                )}
-                <p className="text-xs text-muted md:col-span-5">Key: {o.key || "made from the title when saved"}</p>
-              </li>
-            ))}
-          </ul>
-          {editable && (
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className={ghostButton} onClick={() => setObjs([...objs, emptyObjective()])}>
-                Add an objective
-              </button>
-              <button type="button" className={primaryButton} disabled={pending} onClick={() => run("PUT", `${base}/objectives`, { objectives: objs.map((o) => ({ ...o })) }, "Objectives saved.")}>
-                Save objectives
-              </button>
-            </div>
-          )}
-        </section>
+        <ObjectivesTab
+          objectives={objs}
+          saved={detail.objectives}
+          onChange={setObjs}
+          editable={editable}
+          pending={pending}
+          onAdd={() => setObjs([...objs, emptyObjective()])}
+          onSave={() => run("PUT", `${base}/objectives`, { objectives: objs.map((o) => ({ ...o })) }, "Objectives saved.")}
+        />
       )}
 
       {tab === "teams" && e.scoringMode === "TEAM" && <TeamBuilder detail={detail} call={call} onDetail={setDetail} />}
