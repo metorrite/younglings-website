@@ -23,6 +23,10 @@ const ALLOWED = [
   // the event's roles and channels: where they stand, the choices, a preview of choices not yet saved, and setting them up, putting role holders right and removing them
   /^events\/\d{1,18}\/space$/,
   /^events\/\d{1,18}\/space\/(settings|preview|apply|remove|sync)$/,
+  // wrapping an event up once it is over: where it stands, the settings, locking, taking the roles back, archiving, compressing, exporting and deleting
+  /^events\/\d{1,18}\/wrapup$/,
+  /^events\/\d{1,18}\/wrapup\/(settings|lock|unlock|roles|archive|compress|export|delete)$/,
+  /^events\/\d{1,18}\/wrapup\/export\/file$/,
   /^events\/\d{1,18}\/participants\/\d{1,20}\/buyin$/,
   /^events\/\d{1,18}\/claims\/\d{1,20}\/(approve|deny)$/,
   /^events\/\d{1,18}\/awards\/\d{1,20}\/status$/,

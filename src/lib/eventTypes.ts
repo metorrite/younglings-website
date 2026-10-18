@@ -386,3 +386,24 @@ export interface SpaceView {
   staffRoles: { id: string; name: string }[];
   summary: { newRoles: number; newChannels: number; toRemove: number; players: number; excluded: number };
 }
+
+/** What happens to an event's roles and channels once it is over (`events/{id}/wrapup`). Days: 0 is straight away, -1 is never (an organiser decides). */
+export interface WrapupSettings {
+  lockOnFinish: boolean;
+  rolesDays: number;
+  channelsDays: number;
+  channelsAction: "NONE" | "ARCHIVE" | "DELETE";
+  archiveCategoryId: string | null;
+}
+
+export interface WrapupView {
+  over: boolean;
+  status: EventStatus;
+  settings: WrapupSettings;
+  state: { finishedAt: string | null; lockedAt: string | null; rolesRemovedAt: string | null; channelsDoneAt: string | null; channelsHow: string | null; exportedAt: string | null };
+  /** When each step happens by itself; null when it won't (never, or already done). */
+  schedule: { lockAt: string | null; rolesAt: string | null; channelsAt: string | null };
+  counts: { channels: number; categories: number; roles: number; chosenChannels: number; privateChannels: number };
+  job: { kind: string; state: "running" | "done" | "failed"; done: number; total: number; message: string; startedAt: string; finishedAt: string | null } | null;
+  export: { name: string; size: number; madeAt: string; channels: number; messages: number; images: number; links: number } | null;
+}
