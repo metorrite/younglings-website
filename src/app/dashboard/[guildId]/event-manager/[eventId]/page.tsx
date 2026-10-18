@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { EventManager } from "@/components/dashboard/EventManager";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
@@ -24,10 +23,11 @@ export default async function EventPage({ params }: { params: Promise<{ guildId:
 
   return (
     <div className="space-y-6">
-      <PageHeader title={detail.event.name} description="Build the event, run it and pay it out. Everything here is checked again by the bot, and every change is kept in the audit log." />
-      <Link href={`/dashboard/${guildId}/event-manager`} className="text-sm text-gold hover:underline">
-        All events
-      </Link>
+      <PageHeader
+        back={{ href: `/dashboard/${guildId}/event-manager`, label: "Event manager" }}
+        title={detail.event.name}
+        description="Build the event, run it and pay it out. Everything here is checked again by the bot, and every change is kept in the audit log."
+      />
       <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} structure={structure} call={eventApiAction.bind(null, guildId)} />
     </div>
   );
