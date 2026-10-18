@@ -7,7 +7,7 @@ import { ChannelSlotRow } from "@/components/dashboard/space/ChannelSlotRow";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
-import { useViewMode, ViewModeSwitch } from "@/components/dashboard/ui/ViewMode";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, withPattern } from "@/lib/eventSpace";
 import type { EventDetail, SpaceAction, SpaceDraft, SpaceView } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
@@ -36,7 +36,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   const [busy, setBusy] = useState(false);
   const [removeUnneeded, setRemoveUnneeded] = useState(false);
   const [confirmingRemoval, setConfirmingRemoval] = useState(false);
-  const [mode, setMode] = useViewMode("event-channels");
+  const [mode] = useViewMode();
   const typing = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasRunning = useRef(false);
   // answers that arrive out of order must not replace a newer one
@@ -168,15 +168,12 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
 
   return (
     <section className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-2xl space-y-1">
-          <h3 className="text-lg font-semibold">Roles and channels</h3>
-          <p className="text-sm text-muted">
-            Once signups are closed, the roster is confirmed{teamEvent ? " and the teams are final" : ""}, JonnyBot can make a role for the players and one for the organisers
-            {teamEvent ? ", a role for each team," : ""} and a category with the channels the event needs. Players only see their own part; organisers and staff see everything.
-          </p>
-        </div>
-        <ViewModeSwitch mode={mode} onChange={setMode} />
+      <div className="max-w-2xl space-y-1">
+        <h3 className="text-lg font-semibold">Roles and channels</h3>
+        <p className="text-sm text-muted">
+          Once signups are closed, the roster is confirmed{teamEvent ? " and the teams are final" : ""}, JonnyBot can make a role for the players and one for the organisers
+          {teamEvent ? ", a role for each team," : ""} and a category with the channels the event needs. Players only see their own part; organisers and staff see everything.
+        </p>
       </div>
 
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
@@ -310,7 +307,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
             </CollapsibleCard>
           )}
           </PanelGrid>
-          {mode !== "advanced" && <p className="text-xs text-muted">The category, roles and private channels get their usual names. Switch to Advanced to rename them.</p>}
+          <MoreInAdvanced>renaming the category, the roles and the private channels.</MoreInAdvanced>
         </>
       )}
     </section>
