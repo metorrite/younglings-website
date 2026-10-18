@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { PanelEditor, type PanelEditorWhere } from "@/components/admin/PanelEditor";
+import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
 import { deleteGuildPanelAction, postGuildPanelAction, saveGuildPanelAction } from "../../actions";
@@ -19,13 +19,8 @@ export default async function EditPanelPage({ params }: { params: Promise<{ guil
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link href={base} className="text-sm text-muted hover:text-foreground">
-          ← Ticket panels
-        </Link>
-        <h2 className="mt-2 text-xl font-semibold">{panel.name}</h2>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title={panel.name} description="Change what members see, who handles the tickets and the form, then save. Post it again to show the changes in Discord." back={{ href: base, label: "Ticket panels" }} />
       {/* Keyed by the panel and its posted message so the editor starts fresh after a successful post. */}
       <PanelEditor key={`${panel.id}-${panel.postedMessageId ?? ""}`} initial={panel} structure={structure} where={where} />
     </div>

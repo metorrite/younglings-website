@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Card, formatUtc, StatusBadge } from "@/components/admin/ui";
+import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
 
@@ -12,17 +12,12 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ g
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/dashboard/${guildId}/tickets/history`} className="text-sm text-muted hover:text-foreground">
-          ← Tickets
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h2 className="text-xl font-semibold">
-            <span className="font-mono text-muted">#{String(ticket.number).padStart(4, "0")}</span> {ticket.panelName ?? "(deleted panel)"}
-          </h2>
-          <StatusBadge tone={ticket.status === "OPEN" ? "good" : "muted"}>{ticket.status === "OPEN" ? "Open" : "Closed"}</StatusBadge>
-        </div>
-      </div>
+      <PageHeader
+        title={`#${String(ticket.number).padStart(4, "0")} ${ticket.panelName ?? "(deleted panel)"}`}
+        description={ticket.status === "OPEN" ? "An open ticket: its answers, and the transcript once it is closed." : "A closed ticket: its answers and saved transcript."}
+        actions={<StatusBadge tone={ticket.status === "OPEN" ? "good" : "muted"}>{ticket.status === "OPEN" ? "Open" : "Closed"}</StatusBadge>}
+        back={{ href: `/dashboard/${guildId}/tickets/history`, label: "Tickets" }}
+      />
 
       <div className="grid items-start gap-6 xl:grid-cols-[22rem_minmax(0,1fr)]">
         <div className="space-y-6">

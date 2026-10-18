@@ -11,7 +11,7 @@ export default async function CommandsPage({ params }: { params: Promise<{ guild
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Commands" description="The slash commands members can use in this server. Open one to turn it off, choose who may use it (admins always can), limit the channels it works in, and for Signups fix the admin channel and choose where the public panel can go." />
+      <PageHeader title="Commands" description="The slash commands members can use in this server. Open one to turn it off. The Advanced view adds who may use it (admins always can), the channels it works in and, for Signups, the admin channel and where the public panel can go." />
       <HubEditor hub={hub} structure={structure} canEditAccess={guild.tier === "ADMIN"} save={saveHubCommandAction.bind(null, guildId)} />
     </div>
   );
