@@ -117,15 +117,15 @@ export function EventListView({
                   )}
                 </Link>
                 {(finished(e.status) || e.status === "DRAFT") && (
-                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-surface-border px-5 py-2 text-xs">
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-surface-border px-5 py-2.5 text-xs">
                     {finished(e.status) && (
-                      <button type="button" className="text-gold underline" disabled={listPending} onClick={() => listAction("POST", `events/${e.id}/archive`, { archived: !e.archived })}>
+                      <button type="button" className="rounded-md border border-control-border px-3 py-1.5 text-gold transition hover:border-gold disabled:opacity-50" disabled={listPending} onClick={() => listAction("POST", `events/${e.id}/archive`, { archived: !e.archived })}>
                         {e.archived ? "Bring back" : "Archive"}
                       </button>
                     )}
                     <button
                       type="button"
-                      className="text-red-400 underline"
+                      className="rounded-md border border-red-500/40 px-3 py-1.5 text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
                       disabled={listPending}
                       onClick={async () =>
                         (await confirmDialog({ title: `Delete "${e.name}" for good?`, body: "Its players, progress, proof and prizes go with it. Clan points already paid stay in the points history.", confirmLabel: "Delete event", tone: "danger" })) && listAction("DELETE", `events/${e.id}`)
