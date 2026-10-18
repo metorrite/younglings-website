@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { createPluginTokenAction, deletePluginDataAction, revokePluginTokenAction, savePluginConsentAction } from "@/app/profile/pluginActions";
@@ -55,8 +56,8 @@ export function PluginPanel({ initial }: { initial: PluginView }) {
     });
   }
 
-  function wipe() {
-    if (!window.confirm("Delete everything the plugin has reported about you, and all your plugin tokens and choices? This can't be undone.")) return;
+  async function wipe() {
+    if (!(await confirmDialog({ title: "Delete everything the plugin has reported about you?", body: "That includes all your plugin tokens and choices. This can't be undone.", confirmLabel: "Delete it all", tone: "danger" }))) return;
     setNote(null);
     setFresh(null);
     start(async () => {

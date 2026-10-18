@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
@@ -164,12 +165,10 @@ export function RolePanelEditor({
     });
   }
 
-  function remove() {
+  async function remove() {
     if (
       !saved.id ||
-      !window.confirm(
-        `Delete the panel "${saved.name}"? If it is posted, its message is taken down too.`,
-      )
+      !(await confirmDialog({ title: `Delete the panel "${saved.name}"?`, body: "If it is posted, its message is taken down too.", confirmLabel: "Delete panel", tone: "danger" }))
     )
       return;
     start(async () => {

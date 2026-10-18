@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -99,8 +100,8 @@ export function EventWizard({ guildId, initial, schema, structure, call }: { gui
     });
   }
 
-  function discard() {
-    if (!window.confirm("Throw this draft away? Nothing you entered is kept.")) return;
+  async function discard() {
+    if (!(await confirmDialog({ title: "Throw this draft away?", body: "Nothing you entered is kept.", confirmLabel: "Throw away", tone: "danger" }))) return;
     setProblem(null);
     start(async () => {
       setFinished(true);

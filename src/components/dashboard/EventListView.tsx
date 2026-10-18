@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { formatUtc, Notice, StatusBadge } from "@/components/admin/ui";
@@ -101,8 +102,8 @@ export function EventListView({
                       type="button"
                       className="text-red-400 underline"
                       disabled={listPending}
-                      onClick={() =>
-                        window.confirm(`Delete "${e.name}" for good? Its players, progress, proof and prizes go with it. Clan points already paid stay in the points history.`) && listAction("DELETE", `events/${e.id}`)
+                      onClick={async () =>
+                        (await confirmDialog({ title: `Delete "${e.name}" for good?`, body: "Its players, progress, proof and prizes go with it. Clan points already paid stay in the points history.", confirmLabel: "Delete event", tone: "danger" })) && listAction("DELETE", `events/${e.id}`)
                       }
                     >
                       Delete

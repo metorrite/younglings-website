@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useState, useTransition } from "react";
 import {
   dangerButton,
@@ -118,9 +119,9 @@ function ReplyCard({
     });
   }
 
-  function remove() {
+  async function remove() {
     if (isNew) return onCancel();
-    if (!window.confirm(`Delete the reply to "${saved.trigger}"?`)) return;
+    if (!(await confirmDialog({ title: `Delete the reply to "${saved.trigger}"?`, confirmLabel: "Delete reply", tone: "danger" }))) return;
     start(async () => {
       const result = await actions.remove(saved.id!);
       if (!result.ok)

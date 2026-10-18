@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import {
@@ -232,8 +233,8 @@ function SuggestionCard({
           type="button"
           className={dangerButton}
           disabled={pending}
-          onClick={() =>
-            window.confirm("Delete this suggestion? Its message is taken down.") &&
+          onClick={async () =>
+            (await confirmDialog({ title: "Delete this suggestion?", body: "Its message is taken down.", confirmLabel: "Delete", tone: "danger" })) &&
             run(() => actions.remove(s.id), "Deleted.")
           }
         >

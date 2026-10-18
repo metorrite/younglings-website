@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useState, useTransition } from "react";
 import { cancelScheduledAction, schedulePostAction } from "@/app/admin/(console)/actions";
 import type { ForumInfo, ForumThread, GuildStructure, ScheduledPost } from "@/lib/jonnybot-admin";
@@ -73,8 +74,8 @@ export function ScheduledPosts({ initial, channels, forums, threads, actions }: 
                   type="button"
                   className={dangerButton}
                   disabled={pending}
-                  onClick={() => {
-                    if (!window.confirm("Cancel this scheduled post?")) return;
+                  onClick={async () => {
+                    if (!(await confirmDialog({ title: "Cancel this scheduled post?", confirmLabel: "Cancel post", tone: "danger" }))) return;
                     start(async () => {
                       const r = await cancelPost(p.id);
                       if (r.ok) setPosts(r.data);

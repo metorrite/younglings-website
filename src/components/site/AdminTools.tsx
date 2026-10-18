@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createPollAction, createSignupAction, endPollAction, signupAdminAction } from "@/app/community/actions";
@@ -94,8 +95,8 @@ export function PollAdminBar({ pollId }: { pollId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  function end() {
-    if (!window.confirm("End this poll now? The result is final and the Discord message closes too.")) return;
+  async function end() {
+    if (!(await confirmDialog({ title: "End this poll now?", body: "The result is final and the Discord message closes too.", confirmLabel: "End poll", tone: "danger" }))) return;
     setError(null);
     start(async () => {
       const result = await endPollAction(pollId);
@@ -216,8 +217,8 @@ export function SignupAdminBar({ sheet }: { sheet: AdminSignupSheet }) {
   const [winner, setWinner] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  function run(action: string, confirmText?: string, userId?: string) {
-    if (confirmText && !window.confirm(confirmText)) return;
+  async function run(action: string, confirmText?: string, userId?: string) {
+    if (confirmText && !(await confirmDialog({ title: confirmText, confirmLabel: "Yes, do it" }))) return;
     setError(null);
     setWinner(null);
     start(async () => {

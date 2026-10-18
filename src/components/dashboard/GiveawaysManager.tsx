@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import {
@@ -229,10 +230,8 @@ export function GiveawaysManager({
               type="button"
               className={dangerButton}
               disabled={pending}
-              onClick={() =>
-                window.confirm(
-                  `Delete the giveaway for "${g.prize}"? Its message is taken down.`,
-                ) && run(() => actions.remove(g.id), "Deleted.")
+              onClick={async () =>
+                (await confirmDialog({ title: `Delete the giveaway for "${g.prize}"?`, body: "Its message is taken down.", confirmLabel: "Delete", tone: "danger" })) && run(() => actions.remove(g.id), "Deleted.")
               }
             >
               Delete
@@ -254,8 +253,8 @@ export function GiveawaysManager({
               type="button"
               className={dangerButton}
               disabled={pending}
-              onClick={() =>
-                window.confirm(`Delete the giveaway for "${g.prize}"?`) &&
+              onClick={async () =>
+                (await confirmDialog({ title: `Delete the giveaway for "${g.prize}"?`, confirmLabel: "Delete", tone: "danger" })) &&
                 run(() => actions.remove(g.id), "Deleted.")
               }
             >

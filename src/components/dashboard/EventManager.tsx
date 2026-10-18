@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- 30px pixel-art item icons from /public/items; next/image would only blur them */
 
+import { askDialog, confirmDialog } from "@/components/ui/Dialogs";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
@@ -189,7 +190,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       type="button"
       className={to === "CANCELLED" ? dangerButton : to === "RUNNING" || to === "SIGNUPS" ? primaryButton : ghostButton}
       disabled={pending}
-      onClick={() => (to !== "CANCELLED" || window.confirm("Cancel this event? It can't be reopened.")) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`, undefined, true)}
+      onClick={async () => (to !== "CANCELLED" || (await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`, undefined, true)}
     >
       {to === "SIGNUPS" ? "Open signups" : to === "RUNNING" ? "Start the event" : to === "SCORING" ? "Move to scoring" : to === "DONE" ? "Finish" : to === "CANCELLED" ? "Cancel event" : `Back to ${STAGE_LABEL[to].toLowerCase()}`}
     </button>
@@ -395,8 +396,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                             type="button"
                             className={primaryButton}
                             disabled={pending}
-                            onClick={() =>
-                              window.confirm("Close signups? Players can no longer join themselves, the Discord signup is paused, and the roster is synced one last time. Staff can still add late entries.") &&
+                            onClick={async () =>
+                              (await confirmDialog({ title: "Close signups?", body: "Players can no longer join themselves, the Discord signup is paused, and the roster is synced one last time. Staff can still add late entries.", confirmLabel: "Close signups" })) &&
                               run("POST", `${base}/signup/close`, {}, "Signups are closed. The roster was synced one last time: check it, then confirm it.")
                             }
                           >
@@ -408,7 +409,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                             type="button"
                             className={ghostButton}
                             disabled={pending}
-                            onClick={() => window.confirm("Reopen signups? Players can join again, and the roster has to be confirmed again once you close them.") && run("POST", `${base}/signup/reopen`, {}, "Signups are open again.")}
+                            onClick={async () => (await confirmDialog({ title: "Reopen signups?", body: "Players can join again, and the roster has to be confirmed again once you close them.", confirmLabel: "Reopen signups" })) && run("POST", `${base}/signup/reopen`, {}, "Signups are open again.")}
                           >
                             Reopen signups
                           </button>
@@ -635,7 +636,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 type="button"
                 className={ghostButton}
                 disabled={pending || !newSize}
-                onClick={() => window.confirm("Change the size? That makes a fresh board and drops locks.") && run("POST", `${base}/bingo`, { size: Number(newSize) }, "New board made.", () => { setNewSize(""); setLocked([]); })}
+                onClick={async () => (await confirmDialog({ title: "Change the size?", body: "That makes a fresh board and drops locks.", confirmLabel: "Change size", tone: "danger" })) && run("POST", `${base}/bingo`, { size: Number(newSize) }, "New board made.", () => { setNewSize(""); setLocked([]); })}
               >
                 Change size
               </button>
@@ -655,8 +656,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 type="button"
                 className={ghostButton}
                 disabled={pending || !newShape}
-                onClick={() =>
-                  window.confirm("Change the shape? That makes a fresh board and drops locks.") &&
+                onClick={async () =>
+                  (await confirmDialog({ title: "Change the shape?", body: "That makes a fresh board and drops locks.", confirmLabel: "Change shape", tone: "danger" })) &&
                   run("POST", `${base}/bingo`, newShape === "grid" ? { layout: "grid", size: 5 } : { layout: newShape }, "New board made.", () => { setNewShape(""); setLocked([]); })
                 }
               >
@@ -936,9 +937,10 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                         type="button"
                         className="text-xs text-red-400 underline"
                         disabled={pending}
-                        onClick={() => {
-                          const why = window.prompt(`Why is ${nameOf(p.userId)}'s verification turned down? They will see this.`);
-                          if (why && why.trim()) run("PUT", `${base}/participants/${p.userId}/verification`, { state: "rejected", note: why.trim() }, `${nameOf(p.userId)}'s verification was turned down.`);
+                        onClick={async () => {
+                          const answers = await askDialog({ title: `Turn down ${nameOf(p.userId)}'s verification?`, body: "They will see the reason, so they can fix it.", confirmLabel: "Turn down", tone: "danger", fields: [{ key: "why", type: "textarea", label: "Why", required: true, maxLength: 300 }] });
+                          const why = answers ? String(answers.why) : "";
+                          if (why.trim()) run("PUT", `${base}/participants/${p.userId}/verification`, { state: "rejected", note: why.trim() }, `${nameOf(p.userId)}'s verification was turned down.`);
                         }}
                       >
                         Turn down
@@ -964,10 +966,10 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   <span className="flex items-center gap-2">
                     <StatusBadge tone={p.buyIn === "PAID" ? "good" : "muted"}>{p.buyIn === "PAID" ? "Paid" : p.buyIn === "REFUNDED" ? "Refunded" : "Buy-in due"}</StatusBadge>
                     {p.buyIn === "DUE" && <button type="button" className="text-xs text-gold underline" onClick={() => run("PUT", `${base}/participants/${p.userId}/buyin`, { status: "paid" }, "Buy-in marked paid.")}>Mark paid</button>}
-                    {p.buyIn === "PAID" && <button type="button" className="text-xs text-gold underline" onClick={() => window.confirm("Mark this buy-in as refunded?") && run("PUT", `${base}/participants/${p.userId}/buyin`, { status: "refunded" }, "Buy-in marked refunded.")}>Refund</button>}
+                    {p.buyIn === "PAID" && <button type="button" className="text-xs text-gold underline" onClick={async () => (await confirmDialog({ title: "Mark this buy-in as refunded?", confirmLabel: "Mark refunded" })) && run("PUT", `${base}/participants/${p.userId}/buyin`, { status: "refunded" }, "Buy-in marked refunded.")}>Refund</button>}
                   </span>
                 )}
-                <button type="button" className="text-xs text-red-400 underline" onClick={() => window.confirm("Remove this player?") && run("DELETE", `${base}/participants/${p.userId}`, undefined, "Player removed.")}>
+                <button type="button" className="text-xs text-red-400 underline" onClick={async () => (await confirmDialog({ title: `Remove ${nameOf(p.userId)} from the event?`, confirmLabel: "Remove player", tone: "danger" })) && run("DELETE", `${base}/participants/${p.userId}`, undefined, "Player removed.")}>
                   Remove
                 </button>
               </li>
@@ -1126,8 +1128,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                     <span className="flex items-center gap-2">
                       <StatusBadge tone={a.status === "PAID" ? "good" : "muted"}>{{ PENDING: "Not paid yet", PAID: "Paid", REVOKED: "Revoked", REFUNDED: "Refunded" }[a.status]}</StatusBadge>
                       {a.status === "PENDING" && <button type="button" className="text-xs text-gold underline" onClick={() => run("POST", `${base}/awards/${a.id}/status`, { status: "paid" }, "Marked as paid.")}>Mark paid</button>}
-                      {(a.status === "PENDING" || a.status === "PAID") && <button type="button" className="text-xs text-red-400 underline" onClick={() => window.confirm("Revoke this prize?") && run("POST", `${base}/awards/${a.id}/status`, { status: "revoked" }, "Revoked.")}>Revoke</button>}
-                      {a.status === "PAID" && <button type="button" className="text-xs text-red-400 underline" onClick={() => window.confirm("Refund this prize?") && run("POST", `${base}/awards/${a.id}/status`, { status: "refunded" }, "Refunded.")}>Refund</button>}
+                      {(a.status === "PENDING" || a.status === "PAID") && <button type="button" className="text-xs text-red-400 underline" onClick={async () => (await confirmDialog({ title: "Revoke this prize?", confirmLabel: "Revoke", tone: "danger" })) && run("POST", `${base}/awards/${a.id}/status`, { status: "revoked" }, "Revoked.")}>Revoke</button>}
+                      {a.status === "PAID" && <button type="button" className="text-xs text-red-400 underline" onClick={async () => (await confirmDialog({ title: "Refund this prize?", confirmLabel: "Refund", tone: "danger" })) && run("POST", `${base}/awards/${a.id}/status`, { status: "refunded" }, "Refunded.")}>Refund</button>}
                     </span>
                   </div>
                   {a.history.length > 0 && (
