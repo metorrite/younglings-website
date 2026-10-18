@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useMemo, useState, useTransition } from "react";
 import {
   dangerButton,
@@ -98,8 +99,8 @@ export function WarningsManager({
                   type="button"
                   className={dangerButton}
                   disabled={pending}
-                  onClick={() =>
-                    window.confirm("Take back this warning?") && remove(w.id)
+                  onClick={async () =>
+                    (await confirmDialog({ title: "Take back this warning?", confirmLabel: "Take back", tone: "danger" })) && remove(w.id)
                   }
                 >
                   Take back

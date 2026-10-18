@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useRouter } from "next/navigation";
 import { Fragment, useState, useTransition } from "react";
 import { joinEventAction, leaveEventAction } from "@/app/profile/actions";
@@ -27,8 +28,8 @@ export function EventJoinButton({ eventId, mode }: { eventId: string; mode: "joi
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ tone: "error" | "info"; text: string } | null>(null);
 
-  function press() {
-    if (mode === "leave" && !window.confirm("Leave this event?")) return;
+  async function press() {
+    if (mode === "leave" && !(await confirmDialog({ title: "Leave this event?", confirmLabel: "Leave", tone: "danger" }))) return;
     setMessage(null);
     start(async () => {
       const result = await (mode === "join" ? joinEventAction : leaveEventAction)(eventId);

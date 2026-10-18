@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deletePanelAction, postPanelAction, savePanelAction } from "@/app/admin/(console)/tickets/actions";
@@ -141,8 +142,8 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
     });
   }
 
-  function remove() {
-    if (!saved.id || !window.confirm(`Delete the panel "${saved.name}"? Closed tickets and transcripts are kept.`)) return;
+  async function remove() {
+    if (!saved.id || !(await confirmDialog({ title: `Delete the panel "${saved.name}"?`, body: "Closed tickets and transcripts are kept.", confirmLabel: "Delete panel", tone: "danger" }))) return;
     setError(null);
     startTransition(async () => {
       const result = await where.remove(saved.id!);

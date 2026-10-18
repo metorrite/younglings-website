@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -91,8 +92,8 @@ export function EventStreams({
     });
   }
 
-  function deleteDraft(d: EventDraft) {
-    if (!window.confirm(`Throw away the unfinished setup "${d.title}"?`)) return;
+  async function deleteDraft(d: EventDraft) {
+    if (!(await confirmDialog({ title: `Throw away the unfinished setup "${d.title}"?`, confirmLabel: "Throw away", tone: "danger" }))) return;
     setProblem(null);
     start(async () => {
       const result = await call("DELETE", `events/drafts/${d.id}`);
@@ -235,8 +236,8 @@ function TemplateRow({ t, guildId, call, onList }: { t: SavedTemplate; guildId: 
       return null;
     });
 
-  const remove = () => {
-    if (!window.confirm(`Delete the template "${t.name}"? Events already made from it stay.`)) return;
+  const remove = async () => {
+    if (!(await confirmDialog({ title: `Delete the template "${t.name}"?`, body: "Events already made from it stay.", confirmLabel: "Delete template", tone: "danger" }))) return;
     run(async () => {
       const result = await call("DELETE", `events/saved-templates/${t.id}`);
       if (!result.ok) return { title: result.error, items: result.problems };

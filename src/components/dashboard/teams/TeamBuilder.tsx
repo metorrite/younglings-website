@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useState, type DragEvent } from "react";
 import { formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import type { EventCall } from "@/components/dashboard/EventListView";
@@ -284,7 +285,7 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
                       type="button"
                       className="shrink-0 text-xs text-red-400 underline disabled:opacity-40"
                       disabled={busy}
-                      onClick={() => window.confirm(`Remove the team ${t.name}? Its players stay in the event, without a team.`) && void send("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}
+                      onClick={async () => (await confirmDialog({ title: `Remove the team ${t.name}?`, body: "Its players stay in the event, without a team.", confirmLabel: "Remove team", tone: "danger" })) && void send("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}
                     >
                       Remove
                     </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
@@ -121,7 +122,7 @@ export function PointsRewardsManager({
                     type="button"
                     className={dangerButton}
                     disabled={pending}
-                    onClick={() => window.confirm("Cancel this and refund the member?") && act(r.id, false)}
+                    onClick={async () => (await confirmDialog({ title: "Cancel this and refund the member?", confirmLabel: "Cancel and refund", tone: "danger" })) && act(r.id, false)}
                   >
                     Cancel and refund
                   </button>

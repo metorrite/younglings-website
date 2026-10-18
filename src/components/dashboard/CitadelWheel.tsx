@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- the wheel's GIF is a one-off picture served by our own route; next/image would re-encode (and flatten) it */
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { FormField, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
@@ -112,8 +113,8 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
     }
   }
 
-  function mark(next: boolean) {
-    if (!window.confirm(next ? `Mark ${w.winner}'s prize as given? Use this when it was paid some way other than the clan coffer.` : `Mark ${w.winner}'s prize as not given?`)) return;
+  async function mark(next: boolean) {
+    if (!(await confirmDialog({ title: next ? `Mark ${w.winner}'s prize as given?` : `Mark ${w.winner}'s prize as not given?`, body: next ? "Use this when it was paid some way other than the clan coffer." : undefined, confirmLabel: next ? "Mark as given" : "Mark as not given", tone: next ? "default" : "danger" }))) return;
     start(async () => {
       const r = await actions.markPrize(w.end, w.place, next);
       if (r.ok) onWeek(r.data);
@@ -121,10 +122,10 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
     });
   }
 
-  function record() {
+  async function record() {
     if (parsed === null || payer === null || !ready) return;
     const text = `Record ${gpText(parsed)} gp paid by ${payer.name ?? `user ${payer.userId}`} to ${w.winner}${w.linkedUserName ? ` (${w.linkedUserName})` : ""} in the clan coffer?\n\nThe gp comes out of ${payer.name ?? "their"} balance in the coffer and can't be undone from here.`;
-    if (!window.confirm(text)) return;
+    if (!(await confirmDialog({ title: "Record this payment?", body: text, confirmLabel: "Record it" }))) return;
     start(async () => {
       const r = await actions.recordPrize(w.end, w.place, { amount: amount.trim(), paidBy, recipient: needsRecipient ? recipient.trim() : null, note });
       if (!r.ok) return setProblem({ tone: "error", title: r.error, items: r.problems });
@@ -472,12 +473,12 @@ export function CitadelWheel({
     changeEntries(last.before);
   }
 
-  function lockWinners() {
+  async function lockWinners() {
     if (!winner || winnerIndex < 0) return;
     const batch: Picked[] = [...picked, { name: winner, labels, index: winnerIndex, before: entries }];
     const label = weekLabel(week.start, week.end);
     const names = batch.map((b, i) => `${ordinal(i + 1)}: ${b.name}`).join("\n");
-    if (!window.confirm(`Lock in ${batch.length === 1 ? "this winner" : `these ${batch.length} winners`} for ${label}?\n\n${names}\n\nThe week can't be spun again unless you unlock it, and each winner's wheel GIF is kept so you can post it any time.`)) return;
+    if (!(await confirmDialog({ title: `Lock in ${batch.length === 1 ? "this winner" : `these ${batch.length} winners`} for ${label}?`, body: `${names}\n\nThe week can't be spun again unless you unlock it, and each winner's wheel GIF is kept so you can post it any time.`, confirmLabel: "Lock in" }))) return;
     startLock(async () => {
       setLockNote(null);
       let latest: WheelWeek | null = null;
@@ -499,9 +500,9 @@ export function CitadelWheel({
     });
   }
 
-  function unlockWeek(w: WheelWeek) {
+  async function unlockWeek(w: WheelWeek) {
     const label = weekLabel(w.start, w.end);
-    if (!window.confirm(`Unlock ${label}?\n\nThe winner${w.winners.length === 1 ? "" : "s"} (${w.winners.map((x) => x.winner).join(", ")}) and their GIFs are deleted, and the week can be spun again.`)) return;
+    if (!(await confirmDialog({ title: `Unlock ${label}?`, body: `The winner${w.winners.length === 1 ? "" : "s"} (${w.winners.map((x) => x.winner).join(", ")}) and their GIFs are deleted, and the week can be spun again.`, confirmLabel: "Unlock", tone: "danger" }))) return;
     startLock(async () => {
       setLockNote(null);
       const result = await actions.unlock(w.end);

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { useState, useTransition } from "react";
@@ -158,7 +159,7 @@ export function PostTool({ channels, forums, threads, post = postMessageAction }
           <button type="button" className={ghostButton} disabled={pending || !text.trim()} onClick={() => run(true)}>
             Check it
           </button>
-          <button type="button" className={primaryButton} disabled={pending || !text.trim() || !channelId} onClick={() => { if (window.confirm("Post this message to the channel now?")) run(false); }}>
+          <button type="button" className={primaryButton} disabled={pending || !text.trim() || !channelId} onClick={async () => { if (await confirmDialog({ title: "Post this message?", body: "It goes to the channel now.", confirmLabel: "Post it" })) run(false); }}>
             {pending ? "Working…" : "Post to channel"}
           </button>
           <button type="button" className={dangerButton} disabled={!text} onClick={() => setText("")}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
@@ -136,7 +137,7 @@ function AllianceCard({
           type="button"
           className={dangerButton}
           disabled={pending}
-          onClick={() => window.confirm(`Leave ${alliance.name}? You'll stop seeing each other's events.`) && run(() => actions.leave(alliance.id), `You left ${alliance.name}.`)}
+          onClick={async () => (await confirmDialog({ title: `Leave ${alliance.name}?`, body: "You'll stop seeing each other's events.", confirmLabel: "Leave", tone: "danger" })) && run(() => actions.leave(alliance.id), `You left ${alliance.name}.`)}
         >
           Leave
         </button>
@@ -157,7 +158,7 @@ function AllianceCard({
                   type="button"
                   className="text-xs text-red-400 underline"
                   disabled={pending}
-                  onClick={() => window.confirm(`Remove ${m.name} from the alliance?`) && run(() => actions.remove(alliance.id, m.guildId), `${m.name} was removed.`)}
+                  onClick={async () => (await confirmDialog({ title: `Remove ${m.name} from the alliance?`, confirmLabel: "Remove", tone: "danger" })) && run(() => actions.remove(alliance.id, m.guildId), `${m.name} was removed.`)}
                 >
                   Remove
                 </button>
