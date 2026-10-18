@@ -11,13 +11,16 @@ import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraf
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
 import { ObjectivesTab } from "@/components/dashboard/events/ObjectivesTab";
 import { PlayersTab } from "@/components/dashboard/events/PlayersTab";
+import { ProgressTab } from "@/components/dashboard/events/ProgressTab";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { BoardChannelsPanel } from "@/components/dashboard/space/BoardChannelsPanel";
 import { ChannelsTab } from "@/components/dashboard/space/ChannelsTab";
 import { WrapupTab } from "@/components/dashboard/space/WrapupTab";
 import { TeamBuilder } from "@/components/dashboard/teams/TeamBuilder";
+import { ActionMenu } from "@/components/dashboard/ui/ActionMenu";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
+import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
@@ -78,11 +81,6 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
   const [objs, setObjs] = useState<EventObjective[]>(initial.objectives);
   const [prizes, setPrizes] = useState<EventPrize[]>(initial.prizes);
-  const [pUser, setPUser] = useState("");
-  const [pObjective, setPObjective] = useState("");
-  const [pAmount, setPAmount] = useState("1");
-  const [pNote, setPNote] = useState("");
-  const [decisions, setDecisions] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState<string[]>([]);
   const [catalog, setCatalog] = useState<BingoCatalog | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -187,8 +185,13 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       key={to}
       type="button"
       className={to === "CANCELLED" ? dangerButton : to === "RUNNING" || to === "SIGNUPS" ? primaryButton : ghostButton}
-      disabled={pending}
-      onClick={async () => (to !== "CANCELLED" || (await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`)}
+      disabled={pending || (to === "RUNNING" && !detail.prep.ready)}
+      title={to === "RUNNING" && !detail.prep.ready ? `Can't start yet: ${detail.prep.blockers.join(" ")}` : undefined}
+      onClick={async () => {
+        if (to === "CANCELLED" && !(await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) return;
+        if (to === "RUNNING" && !(await confirmDialog({ title: "Start the event?", body: "Players can start scoring, and the objectives, teams and prizes are locked once it is running.", confirmLabel: "Start the event" }))) return;
+        run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`);
+      }}
     >
       {to === "SIGNUPS" ? "Open signups" : to === "RUNNING" ? "Start the event" : to === "SCORING" ? "Move to scoring" : to === "DONE" ? "Finish" : to === "CANCELLED" ? "Cancel event" : `Back to ${STAGE_LABEL[to].toLowerCase()}`}
     </button>
@@ -213,11 +216,11 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   <div className="flex items-center justify-between gap-2 text-xs text-muted">
                     <span className="tabular-nums">#{index + 1}</span>
                     {editable && !isEditing && (
-                      <span className="flex gap-3">
-                        <button type="button" aria-pressed={isLocked} className={isLocked ? "text-gold underline" : "underline"} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
+                      <span className="flex gap-2">
+                        <button type="button" aria-pressed={isLocked} className={`rounded border px-2 py-1 transition ${isLocked ? "border-gold bg-gold/10 text-gold" : "border-control-border hover:border-gold hover:text-foreground"}`} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
                           {isLocked ? "Locked" : "Lock"}
                         </button>
-                        <button type="button" className="text-gold underline" onClick={() => editTile(key)}>
+                        <button type="button" className="rounded border border-control-border px-2 py-1 text-gold transition hover:border-gold" onClick={() => editTile(key)}>
                           Edit
                         </button>
                       </span>
@@ -342,6 +345,14 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
         </button>
         {refreshedAt && <span className="text-xs text-muted">Updated {refreshedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
         <span className="ml-auto flex flex-wrap gap-2">{detail.nextStages.map(stageButton)}</span>
+        {detail.nextStages.includes("RUNNING") && !detail.prep.ready && detail.prep.blockers.length > 0 && (
+          <p className="basis-full text-xs text-muted">
+            Can&apos;t start yet: {detail.prep.blockers.join(" ")}{" "}
+            <button type="button" className="text-gold underline" onClick={() => setTab("overview")}>
+              See the checklist
+            </button>
+          </p>
+        )}
       </div>
 
       <div ref={tabBar} role="tablist" aria-label="This event" className="sticky top-0 z-20 -mx-1 flex items-stretch gap-1 overflow-x-auto border-b border-surface-border bg-background/95 px-1 backdrop-blur">
@@ -828,91 +839,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
 
       {tab === "players" && <PlayersTab detail={detail} base={base} editable={editable} pending={pending} run={run} nameOf={nameOf} onOpenTeams={() => setTab("teams")} />}
 
-      {tab === "progress" && (
-        <section className="space-y-5">
-          <div className="space-y-2">
-            <h3 className="font-semibold">Record progress by hand</h3>
-            {e.status !== "RUNNING" && <p className="text-sm text-muted">Progress counts while the event is running.</p>}
-            <div className="flex flex-wrap gap-2">
-              <select className={`${inputClass} max-w-52`} value={pUser} onChange={(ev) => setPUser(ev.target.value)}>
-                <option value="">Player…</option>
-                {active.map((p) => (
-                  <option key={p.userId} value={p.userId}>
-                    {p.userName ?? p.userId}
-                  </option>
-                ))}
-              </select>
-              <select className={`${inputClass} max-w-52`} value={pObjective} onChange={(ev) => setPObjective(ev.target.value)}>
-                <option value="">Objective…</option>
-                {detail.objectives.map((o) => (
-                  <option key={o.key} value={o.key}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <input className={`${inputClass} w-24!`} inputMode="numeric" value={pAmount} onChange={(ev) => setPAmount(ev.target.value)} aria-label="Amount (negative takes progress back)" />
-              <input className={`${inputClass} max-w-xs`} placeholder="Note (optional)" value={pNote} maxLength={300} onChange={(ev) => setPNote(ev.target.value)} />
-              <button type="button" className={primaryButton} disabled={pending || !pUser || !pObjective} onClick={() => run("POST", `${base}/progress`, { userId: pUser, objective: pObjective, amount: num(pAmount) || 1, note: pNote }, "Progress recorded.", () => setPNote(""))}>
-                Record
-              </button>
-            </div>
-            <p className="text-xs text-muted">A negative amount takes earlier progress back. Objectives that need others finished first stay locked until then.</p>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-semibold">Proof waiting for review</h3>
-            {claims.pending.length === 0 ? (
-              <p className="text-sm text-muted">Nothing is waiting.</p>
-            ) : (
-              <ul className="grid gap-3 xl:grid-cols-2">
-                {claims.pending.map((c) => (
-                  <li key={c.id} className="space-y-2 rounded-xl border border-surface-border bg-surface p-4 text-sm">
-                    <p>
-                      {c.kind === "VERIFICATION" ? (
-                        <>
-                          <span className="font-medium">{c.userName ?? nameOf(c.userId)}</span> sent proof for <span className="font-medium">verification</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-medium">{c.userName ?? nameOf(c.userId)}</span> on <span className="font-medium">{detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective}</span> (×{c.amount})
-                        </>
-                      )}
-                    </p>
-                    {c.note && <p className="break-words text-muted">{c.note}</p>}
-                    {c.proofUrl && /^https?:\/\//i.test(c.proofUrl) && (
-                      <a href={c.proofUrl} target="_blank" rel="noreferrer noopener" className="text-gold underline">
-                        View proof
-                      </a>
-                    )}
-                    <input className={inputClass} placeholder="Note for the player (required to deny)" value={decisions[c.id] ?? ""} maxLength={300} onChange={(ev) => setDecisions({ ...decisions, [c.id]: ev.target.value })} />
-                    <div className="flex gap-2">
-                      <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `${base}/claims/${c.id}/approve`, { note: decisions[c.id] ?? "" }, "Approved and counted.")}>
-                        Approve
-                      </button>
-                      <button type="button" className={dangerButton} disabled={pending || !(decisions[c.id] ?? "").trim()} onClick={() => run("POST", `${base}/claims/${c.id}/deny`, { note: decisions[c.id] ?? "" }, "Denied.")}>
-                        Deny
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {claims.decided.length > 0 && (
-              <details>
-                <summary className={`${ghostButton} inline-block cursor-pointer`}>Recently decided ({claims.decided.length})</summary>
-                <ul className="mt-2 divide-y divide-surface-border text-sm">
-                  {claims.decided.map((c) => (
-                    <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                      <span>{c.userName ?? nameOf(c.userId)} · {c.kind === "VERIFICATION" ? "Verification" : (detail.objectives.find((o) => o.key === c.objective)?.label ?? c.objective)}</span>
-                      <StatusBadge tone={c.status === "APPROVED" ? "good" : "warn"}>{c.status === "APPROVED" ? "Approved" : "Denied"}</StatusBadge>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </div>
-        </section>
-      )}
+      {tab === "progress" && <ProgressTab detail={detail} claims={claims} base={base} pending={pending} run={run} nameOf={nameOf} />}
 
       {tab === "standings" && (
         <section className="space-y-3">
@@ -953,11 +880,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             A prize goes to one place, or to a range of places. For team events a prize is split equally, given in full to each member, or given to the captain. A prize can be a fixed amount or a share of the pot (needs a buy-in).
           </p>
           <PrizeListEditor prizes={prizes} onChange={setPrizes} lockPlaces={!detail.editable && awards.length > 0} />
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className={primaryButton} disabled={pending} onClick={() => run("PUT", `${base}/prizes`, { prizes }, "Prizes saved.")}>
-              Save prizes
-            </button>
-          </div>
+          <SaveBar pending={pending} onSave={() => run("PUT", `${base}/prizes`, { prizes }, "Prizes saved.")} outcome={null} dirty={JSON.stringify(prizes) !== JSON.stringify(detail.prizes)} onDiscard={() => setPrizes(detail.prizes)} label="Save prizes" />
 
           <div className="space-y-3 border-t border-surface-border pt-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -977,9 +900,23 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                     </span>
                     <span className="flex items-center gap-2">
                       <StatusBadge tone={a.status === "PAID" ? "good" : "muted"}>{{ PENDING: "Not paid yet", PAID: "Paid", REVOKED: "Revoked", REFUNDED: "Refunded" }[a.status]}</StatusBadge>
-                      {a.status === "PENDING" && <button type="button" className="text-xs text-gold underline" onClick={() => run("POST", `${base}/awards/${a.id}/status`, { status: "paid" }, "Marked as paid.")}>Mark paid</button>}
-                      {(a.status === "PENDING" || a.status === "PAID") && <button type="button" className="text-xs text-red-400 underline" onClick={async () => (await confirmDialog({ title: "Revoke this prize?", confirmLabel: "Revoke", tone: "danger" })) && run("POST", `${base}/awards/${a.id}/status`, { status: "revoked" }, "Revoked.")}>Revoke</button>}
-                      {a.status === "PAID" && <button type="button" className="text-xs text-red-400 underline" onClick={async () => (await confirmDialog({ title: "Refund this prize?", confirmLabel: "Refund", tone: "danger" })) && run("POST", `${base}/awards/${a.id}/status`, { status: "refunded" }, "Refunded.")}>Refund</button>}
+                      {a.status === "PENDING" && (
+                        <button type="button" className="rounded-md border border-gold/60 px-3 py-2 text-sm font-medium text-gold transition hover:bg-gold/10 disabled:opacity-50" disabled={pending} onClick={() => run("POST", `${base}/awards/${a.id}/status`, { status: "paid" }, "Marked as paid.")}>
+                          Mark paid
+                        </button>
+                      )}
+                      {(a.status === "PENDING" || a.status === "PAID") && (
+                        <ActionMenu
+                          label={`More for ${a.userName ?? `player ${a.userId}`}'s prize`}
+                          disabled={pending}
+                          items={[
+                            ...(a.status === "PAID"
+                              ? [{ label: "Refund this prize…", tone: "danger" as const, onSelect: async () => (await confirmDialog({ title: "Refund this prize?", confirmLabel: "Refund", tone: "danger" })) && run("POST", `${base}/awards/${a.id}/status`, { status: "refunded" }, "Refunded.") }]
+                              : []),
+                            { label: "Revoke this prize…", tone: "danger" as const, onSelect: async () => (await confirmDialog({ title: "Revoke this prize?", confirmLabel: "Revoke", tone: "danger" })) && run("POST", `${base}/awards/${a.id}/status`, { status: "revoked" }, "Revoked.") },
+                          ]}
+                        />
+                      )}
                     </span>
                   </div>
                   {a.history.length > 0 && (
