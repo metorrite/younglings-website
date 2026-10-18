@@ -60,6 +60,21 @@ One setting for the whole dashboard, not one per page: the Basic / Advanced slid
 
 A page of settings is a list of `CollapsibleCard`s with a one-line summary each, so it reads like a checklist and opens only what needs changing.
 
+## Building blocks to reach for (and why)
+
+| Need | Use | Why |
+|---|---|---|
+| A page inside another (one event, one ticket) | `PageHeader back={{ href, label }}` | A button above the title that goes up a level, instead of finding the way out by the sidebar. |
+| Several actions on one row (a player, a payout) | one main button + `ActionMenu` | A row shows the one thing that most likely needs doing; the rare or risky ones are behind `⋯`. Tiny underlined links are too small to hit (WCAG 2.5.8 wants 24 px). |
+| A list that can be empty | an empty state: what it will hold + one button | Never a bare heading or a table with no rows. |
+| A form with a Save button | `SaveBar` with `dirty` and `onDiscard` | Stays in view, says when changes are unsaved, warns before leaving. |
+| The result of a button on a long page | `Toast` for success, a `Notice` that scrolls into view for errors | A message at the top of a long page is invisible from the button that caused it. |
+| A numeric or short field | visible label (`FormField`), never a placeholder or tooltip as the only label | Placeholders vanish when typing and fail contrast. |
+| A main button that can't work yet | disabled, with the reason beside it | A primary button that fails when pressed is worse than one that says why not. |
+| A page that fetches from the bot | nothing extra: `[guildId]/loading.tsx` shows a skeleton, `[guildId]/error.tsx` keeps the sidebar | Navigation always shows something; one failing page never takes the dashboard with it. |
+
+The research behind these, with sources, is in `DASHBOARD-UX.md`. `axe-core` (inject it from cdnjs into the preview page and run `axe.run`) is a quick way to catch the mechanical failures before a PR: names missing from controls, heading order, contrast.
+
 ## Checking a change
 
 Signed-in pages need a Discord login, so a new building block is looked at in the git-excluded preview harness (`/dev-preview?v=...`, see `src/app/dev-preview`) and the page itself is reviewed from screenshots.
