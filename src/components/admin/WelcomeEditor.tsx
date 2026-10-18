@@ -1,6 +1,11 @@
 "use client";
 
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { andList } from "@/components/dashboard/ui/andList";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { useState, useTransition } from "react";
 import { DiscordText } from "@/components/site/DiscordText";
 import { BUTTON_MARKER, containerBlocks } from "@/lib/containerPreview";
@@ -103,6 +108,10 @@ export interface WelcomeActions {
 
 export function WelcomeEditor({ initial, channels, forums, threads, actions }: { initial: WelcomeConfig; channels: GuildStructure["channels"]; forums?: ForumInfo[]; threads?: ForumThread[]; actions: WelcomeActions }) {
   const [draft, setDraft] = useState<WelcomeDraft>(() => toDraft(initial));
+  // what was last saved: Basic keeps showing an option that is already in use, so a setting never goes out of sight
+  const [saved, setSaved] = useState<WelcomeDraft>(() => toDraft(initial));
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
   const [meta, setMeta] = useState({ serverName: initial.serverName, memberCount: initial.memberCount });
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
@@ -205,6 +214,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
         return;
       }
       setDraft(toDraft(result.data));
+      setSaved(toDraft(result.data));
       setMeta({ serverName: result.data.serverName, memberCount: result.data.memberCount });
       setOutcome({ tone: "success", title: draft.enabled ? "Saved. New members will be welcomed." : "Saved. The welcome is switched off, so nothing will be sent yet." });
     });
@@ -223,79 +233,87 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
     });
   }
 
+  // Which options are shown. Basic keeps what most welcomes need and anything already saved stays on screen, so a setting never goes out of sight;
+  // Advanced shows the rest. What is in use but hidden in the current view is said in the bar at the top.
+  const usedIn = (d: WelcomeDraft) => ({
+    dm: d.alsoDm,
+    titleLink: d.titleUrl.trim() !== "",
+    author: !!(d.authorName || d.authorIconUrl),
+    images: !!(d.thumbnailUrl || d.imageUrl),
+    footer: !!(d.footerText || d.footerIconUrl) || d.footerStyle !== "small",
+    fields: d.fields.length > 0,
+  });
+  const was = usedIn(saved);
+  const now = usedIn(draft);
+  const show = {
+    dm: advanced || was.dm,
+    titleLink: advanced || was.titleLink,
+    author: advanced || was.author,
+    images: advanced || was.images,
+    footer: advanced || was.footer,
+    fields: advanced || was.fields,
+  };
+  const EXTRA_NAMES = { dm: "a copy by DM", titleLink: "a title link", author: "an author", images: "images", footer: "a footer", fields: "fields" } as const;
+  const hiddenKeys = (Object.keys(EXTRA_NAMES) as (keyof typeof EXTRA_NAMES)[]).filter((k) => !show[k] && (k === "dm" || hasEmbed));
+  const hiddenInUse = hiddenKeys.filter((k) => now[k]).map((k) => EXTRA_NAMES[k]);
+  const hiddenNames = [...hiddenKeys.map((k) => EXTRA_NAMES[k]), ...(!advanced && draft.linkButton && hasEmbed ? ["where the link button sits"] : [])];
+  const type = TYPES.find((t) => t.id === draft.messageType) ?? TYPES[0];
+  const clip = (text: string) => (text.trim().length > 24 ? `${text.trim().slice(0, 24)}…` : text.trim());
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,27rem)]">
-      <div className="min-w-0 space-y-6">
-        <CollapsibleCard
-          id="welcome-delivery"
-          title="Delivery"
-          hint="Where the welcome goes. The channel always gets it; a DM is sent as well when you ask for one and the member's DMs are open."
-          defaultOpen
-          summary={
-            <>
-              <Chip tone={draft.enabled ? "good" : "bad"}>{draft.enabled ? "On" : "Off"}</Chip>
-              <Chip tone={draft.channelId ? "plain" : "warn"}>{draft.channelId ? `#${(channels.find((c) => c.id === draft.channelId)?.name ?? "channel")}` : "No channel"}</Chip>
-              {draft.alsoDm && <Chip>Also by DM</Chip>}
-            </>
-          }
-        >
-          <label className="flex items-start gap-3">
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-gold)]" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
-            <span>
-              <span className="text-sm font-medium">Welcome new members</span>
-              <span className="block text-xs text-muted">If Dyno&apos;s Welcome module is still on, turn it off when you switch this on, or each new member is greeted twice.</span>
-            </span>
-          </label>
+      <div className="min-w-0 space-y-4">
+        <PanelGrid min="20rem">
+          <CollapsibleCard
+            id="welcome-delivery"
+            title="Delivery"
+            hint="Where the welcome goes. The channel always gets it; a DM is sent as well when you ask for one and the member's DMs are open."
+            defaultOpen
+            summary={
+              <>
+                <Chip tone={draft.enabled ? "good" : "bad"}>{draft.enabled ? "On" : "Off"}</Chip>
+                <Chip tone={draft.channelId ? "plain" : "warn"}>{draft.channelId ? `#${(channels.find((c) => c.id === draft.channelId)?.name ?? "channel")}` : "No channel"}</Chip>
+                {draft.alsoDm && <Chip>Also by DM</Chip>}
+              </>
+            }
+          >
+            <SettingRow
+              title="Welcome new members"
+              hint="If Dyno's Welcome module is still on, turn it off when you switch this on, or each new member is greeted twice."
+              checked={draft.enabled}
+              onChange={(on) => set("enabled", on)}
+              offHint="Off: nobody is welcomed. Sending a test still works."
+            >
+              {show.dm && (
+                <Toggle
+                  checked={draft.alsoDm}
+                  onChange={(on) => set("alsoDm", on)}
+                  label="Also send a copy by DM"
+                  detail="Skipped quietly if the member has DMs closed. The DM never has the link button, since that button only works inside the server."
+                />
+              )}
+            </SettingRow>
+            <FormField label="Welcome channel" size="md" as="group" hint="Only channels JonnyBot can post in are listed.">
+              <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={draft.channelId} onChange={(id) => set("channelId", id)} none="Choose a channel…" />
+            </FormField>
+          </CollapsibleCard>
 
-          <fieldset>
-            <legend className="text-sm font-medium">Message type</legend>
-            <p className="mt-0.5 text-xs text-muted">
-              Not sure? Start with Embed and use what you need: the editor switches to Container by itself when you ask for something only a container can do, such as the button inside the message or a brighter footer.
-            </p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {TYPES.map((t) => (
-                <label key={t.id} className={`flex cursor-pointer flex-col rounded-md border px-3 py-2 text-sm ${draft.messageType === t.id ? "border-gold bg-gold/10" : "border-surface-border bg-background/40"}`}>
-                  <span className="flex items-center gap-2 font-medium">
-                    <input type="radio" name="welcome-type" className="accent-[var(--color-gold)]" checked={draft.messageType === t.id} onChange={() => chooseType(t.id)} />
-                    {t.label}
-                  </span>
-                  <span className="mt-0.5 text-xs text-muted">{t.hint}</span>
-                </label>
-              ))}
-            </div>
-            {autoNote && (
-              <div role="status" className="mt-3 flex items-start justify-between gap-3 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-xs">
-                <span>{autoNote}</span>
-                <button type="button" className="shrink-0 text-muted hover:text-foreground" aria-label="Dismiss" onClick={() => setAutoNote(null)}>
-                  ✕
-                </button>
-              </div>
-            )}
-          </fieldset>
-
-          <FormField label="Welcome channel" hint="Only channels JonnyBot can post in are listed.">
-            <ChannelSelect channels={channels} forums={forums} threads={threads} onlyPostable value={draft.channelId} onChange={(id) => set("channelId", id)} none="Choose a channel…" />
-          </FormField>
-
-          <label className="flex items-start gap-3">
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-gold)]" checked={draft.alsoDm} onChange={(e) => set("alsoDm", e.target.checked)} />
-            <span>
-              <span className="text-sm font-medium">Also send a copy by DM</span>
-              <span className="block text-xs text-muted">Skipped quietly if the member has DMs closed. The DM never has the link button, since that button only works inside the server.</span>
-            </span>
-          </label>
-
-          <label className="flex items-start gap-3">
-            <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-gold)]" checked={draft.linkButton} onChange={(e) => set("linkButton", e.target.checked)} />
-            <span>
-              <span className="text-sm font-medium">Add a “link your RuneScape name” button</span>
-              <span className="block text-xs text-muted">Opens the same flow as /rs, so a new member can start verification from the welcome.</span>
-            </span>
-          </label>
-          {draft.linkButton && (
-            <div className="space-y-3">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField label="Button label" hint={container ? "Beside a line of text (like the footer) a long label squeezes the text, so keep it short there, such as Link RS name." : undefined}>
+          <CollapsibleCard
+            id="welcome-button"
+            title="Link button"
+            hint="A button on the welcome that starts a new member's RuneScape name link."
+            defaultOpen
+            summary={<Chip tone={draft.linkButton ? "good" : "plain"}>{draft.linkButton ? `On: ${draft.linkButtonLabel.trim() || "Link your RuneScape name"}` : "Off"}</Chip>}
+          >
+            <SettingRow
+              title="Add a “link your RuneScape name” button"
+              hint="Opens the same flow as /rs, so a new member can start verification from the welcome."
+              checked={draft.linkButton}
+              onChange={(on) => set("linkButton", on)}
+              offHint="Off: the welcome has no button."
+            >
+              <FieldGrid>
+                <FormField label="Button label" size="md" hint={container ? "Beside a line of text (like the footer) a long label squeezes the text, so keep it short there, such as Link RS name." : undefined}>
                   <input id="welcome-button-label" className={inputClass} value={draft.linkButtonLabel} maxLength={80} onChange={(e) => set("linkButtonLabel", e.target.value)} />
                 </FormField>
                 <FormField label="Button colour" as="group">
@@ -314,128 +332,191 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                     ))}
                   </div>
                 </FormField>
-              </div>
-              <p className="text-xs text-muted">
-                {container ? (
-                  <>
-                    Write <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description, a field&apos;s value or the footer to put the button on that line, with that line&apos;s text beside it.
-                    Leave it out and the button goes at the bottom. Put it in the footer in <strong>Grey</strong> for a quiet look.
-                  </>
-                ) : (
-                  <>
-                    The button sits underneath the message: Discord can&apos;t put a button inside an embed. To place it inside, use one of these, or write{" "}
-                    <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description or footer, and the message switches to a Container for you.
-                  </>
-                )}
-              </p>
-              {draft.messageType !== "MESSAGE" && (
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" className={ghostButton} onClick={() => placeButton("footer")}>
-                    Put it in the footer
-                  </button>
-                  <button type="button" className={ghostButton} onClick={() => placeButton("description")}>
-                    Put it after the description
-                  </button>
-                </div>
+              </FieldGrid>
+              {advanced && (
+                <>
+                  <p className="text-xs text-muted">
+                    {container ? (
+                      <>
+                        Write <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description, a field&apos;s value or the footer to put the button on that line, with that line&apos;s text beside it.
+                        Leave it out and the button goes at the bottom. Put it in the footer in <strong>Grey</strong> for a quiet look.
+                      </>
+                    ) : (
+                      <>
+                        The button sits underneath the message: Discord can&apos;t put a button inside an embed. To place it inside, use one of these, or write{" "}
+                        <code className="rounded bg-white/10 px-1 text-gold">{BUTTON_MARKER}</code> in the description or footer, and the message switches to a Container for you.
+                      </>
+                    )}
+                  </p>
+                  {draft.messageType !== "MESSAGE" && (
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" className={ghostButton} onClick={() => placeButton("footer")}>
+                        Put it in the footer
+                      </button>
+                      <button type="button" className={ghostButton} onClick={() => placeButton("description")}>
+                        Put it after the description
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
+            </SettingRow>
+          </CollapsibleCard>
+        </PanelGrid>
+
+        <CollapsibleCard
+          id="welcome-message"
+          title="Message"
+          hint="What new members are greeted with."
+          defaultOpen
+          summary={
+            <>
+              <Chip>{type.label}</Chip>
+              {hasText && <Chip tone={draft.content.trim() ? "plain" : "warn"}>{draft.content.trim() ? `${draft.content.trim().length} characters` : "No text"}</Chip>}
+            </>
+          }
+          info="Not sure? Start with Embed and use what you need: the editor switches to Container by itself when you ask for something only a container can do, such as the button inside the message or a brighter footer."
+        >
+          <FormField label="Message type" as="group" size="lg" hint={type.hint}>
+            <div className="flex flex-wrap gap-1.5">
+              {TYPES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={draft.messageType === t.id}
+                  onClick={() => chooseType(t.id)}
+                  className={`rounded-md border px-3 py-1.5 text-sm transition ${draft.messageType === t.id ? "border-gold bg-gold/10 font-medium" : "border-surface-border text-muted hover:text-foreground"}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </FormField>
+          {autoNote && (
+            <div role="status" className="flex items-start justify-between gap-3 rounded-md border border-gold/40 bg-gold/10 px-3 py-2 text-xs">
+              <span>{autoNote}</span>
+              <button type="button" className="shrink-0 text-muted hover:text-foreground" aria-label="Dismiss" onClick={() => setAutoNote(null)}>
+                ✕
+              </button>
             </div>
           )}
-        </CollapsibleCard>
-
-        {hasText && (
-          <CollapsibleCard
-            id="welcome-text"
-            title="Message text"
-            hint="The plain line above the embed. Markdown works, and so do the variables below."
-            defaultOpen
-            summary={<Chip tone={draft.content.trim() ? "plain" : "warn"}>{draft.content.trim() ? `${draft.content.trim().length} characters` : "Empty"}</Chip>}
-          >
-            <FormField label="Text">
+          {hasText && (
+            <FormField label="Text" size="lg" hint={draft.messageType === "MESSAGE" ? "The whole message. Markdown works, and so do the variables below." : "The plain line above the embed. Markdown works, and so do the variables below."}>
               <textarea id="welcome-content" className={`${inputClass} min-h-28`} rows={4} value={draft.content} onChange={(e) => set("content", e.target.value)} placeholder="Welcome to **{server}**, {user} 👋" />
+              <span className="block text-right">
+                <Counter value={draft.content} max={MAX.content} />
+              </span>
             </FormField>
-            <div className="text-right">
-              <Counter value={draft.content} max={MAX.content} />
-            </div>
-          </CollapsibleCard>
-        )}
+          )}
+        </CollapsibleCard>
 
         {hasEmbed && (
           <CollapsibleCard
             id="welcome-embed"
             defaultOpen
-            summary={<Chip>{container ? "Container" : "Embed"}</Chip>}
+            summary={<Chip tone={draft.title.trim() || draft.description.trim() ? "plain" : "warn"}>{draft.title.trim() ? clip(draft.title) : draft.description.trim() ? "No title" : "Empty"}</Chip>}
             title={container ? "Container" : "Embed"}
             hint={container ? "Every part is optional. Everything here is text Discord formats, so **bold** and [links](https://example.com) work in every part, and the footer is small grey text. Inline fields and the author and footer icons don't exist in a container." : "Every part is optional."}
           >
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm font-medium">Colour</span>
-              <input
-                id="welcome-color"
-                type="color"
-                aria-label="Embed colour"
-                className="h-9 w-14 cursor-pointer rounded border border-surface-border bg-background p-1"
-                value={colorToHex(draft.color)}
-                onChange={(e) => set("color", hexToColor(e.target.value))}
-              />
-              <span className="font-mono text-xs text-muted">{draft.color === null ? "none" : colorToHex(draft.color)}</span>
-              {draft.color !== null && (
-                <button type="button" className={ghostButton} onClick={() => set("color", null)}>
-                  No colour
-                </button>
-              )}
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Title">
+            <FieldGrid>
+              <FormField label="Title" size="md">
                 <input id="welcome-title" className={inputClass} value={draft.title} onChange={(e) => set("title", e.target.value)} />
                 <Counter value={draft.title} max={MAX.title} />
               </FormField>
-              <FormField label="Title link" hint="Optional. Makes the title clickable.">
-                <input id="welcome-title-url" className={inputClass} value={draft.titleUrl} placeholder="https://" onChange={(e) => set("titleUrl", e.target.value)} />
+              {show.titleLink && (
+                <FormField label="Title link" size="md" hint="Optional. Makes the title clickable.">
+                  <input id="welcome-title-url" className={inputClass} value={draft.titleUrl} placeholder="https://" onChange={(e) => set("titleUrl", e.target.value)} />
+                </FormField>
+              )}
+              <FormField label="Colour" size="md" as="group">
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    id="welcome-color"
+                    type="color"
+                    aria-label="Embed colour"
+                    className="h-9 w-14 cursor-pointer rounded border border-surface-border bg-background p-1"
+                    value={colorToHex(draft.color)}
+                    onChange={(e) => set("color", hexToColor(e.target.value))}
+                  />
+                  <span className="font-mono text-xs text-muted">{draft.color === null ? "none" : colorToHex(draft.color)}</span>
+                  {draft.color !== null && (
+                    <button type="button" className={ghostButton} onClick={() => set("color", null)}>
+                      No colour
+                    </button>
+                  )}
+                </div>
               </FormField>
-            </div>
-
-            <FormField label="Description">
+            </FieldGrid>
+            <FormField label="Description" size="lg">
               <textarea id="welcome-description" className={`${inputClass} min-h-32`} rows={6} value={draft.description} onChange={(e) => set("description", e.target.value)} />
               <Counter value={draft.description} max={MAX.description} />
               <LinkInserter onInsert={(md) => set("description", draft.description ? `${draft.description.trimEnd()} ${md}` : md)} />
             </FormField>
+          </CollapsibleCard>
+        )}
 
-            <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.author}>
-              <summary className="cursor-pointer text-sm font-medium">Author</summary>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Author name" hint={container ? "Shown as small grey text above the title. Markdown works." : "Shown beside the author icon. Like the footer, it can't use **markdown**; use Bold instead."}>
-                  <input id="welcome-author" className={inputClass} value={draft.authorName} onChange={(e) => set("authorName", e.target.value)} />
-                  {!container && <BoldToggle value={draft.authorName} onChange={(v) => set("authorName", v)} />}
-                </FormField>
-                {!container && (
-                  <FormField label="Author icon" hint="A picture address. Needs an author name.">
-                    <ImageUrlField id="welcome-author-icon" slot="author_icon" value={draft.authorIconUrl} onChange={(v) => set("authorIconUrl", v)} uploads={uploads} />
+        {hiddenNames.length > 0 && (
+          <MoreInAdvanced>
+            {andList(hiddenNames)}.{hiddenInUse.length > 0 ? ` Also in use: ${andList(hiddenInUse)}.` : ""}
+          </MoreInAdvanced>
+        )}
+
+        {hasEmbed && (show.author || show.images || show.footer || show.fields) && (
+          <PanelGrid min="20rem">
+            {show.author && (
+              <CollapsibleCard
+                id="welcome-author"
+                title="Author"
+                hint={container ? "Small grey text above the title." : "A name, and a small picture, above the title."}
+                defaultOpen={open.author}
+                summary={<Chip tone={draft.authorName.trim() ? "plain" : "plain"}>{draft.authorName.trim() ? clip(draft.authorName) : "Empty"}</Chip>}
+              >
+                <FieldGrid>
+                  <FormField label="Author name" size="md" hint={container ? "Shown as small grey text above the title. Markdown works." : "Shown beside the author icon. Like the footer, it can't use **markdown**; use Bold instead."}>
+                    <input id="welcome-author" className={inputClass} value={draft.authorName} onChange={(e) => set("authorName", e.target.value)} />
+                    {!container && <BoldToggle value={draft.authorName} onChange={(v) => set("authorName", v)} />}
                   </FormField>
-                )}
-              </div>
-            </details>
+                  {!container && (
+                    <FormField label="Author icon" hint="A picture address. Needs an author name.">
+                      <ImageUrlField id="welcome-author-icon" slot="author_icon" value={draft.authorIconUrl} onChange={(v) => set("authorIconUrl", v)} uploads={uploads} />
+                    </FormField>
+                  )}
+                </FieldGrid>
+              </CollapsibleCard>
+            )}
 
-            <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.images}>
-              <summary className="cursor-pointer text-sm font-medium">Image and thumbnail</summary>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Thumbnail" hint="The small picture top right. {avatar} uses the new member's.">
-                  <ImageUrlField id="welcome-thumbnail" slot="thumbnail" value={draft.thumbnailUrl} onChange={(v) => set("thumbnailUrl", v)} uploads={uploads} />
-                </FormField>
-                <FormField label="Image" hint="The large picture at the bottom.">
-                  <ImageUrlField id="welcome-image" slot="image" value={draft.imageUrl} onChange={(v) => set("imageUrl", v)} uploads={uploads} />
-                </FormField>
-              </div>
-            </details>
+            {show.images && (
+              <CollapsibleCard
+                id="welcome-images"
+                title="Image and thumbnail"
+                hint="A small picture top right, and a large one at the bottom."
+                defaultOpen={open.images}
+                summary={<Chip>{draft.thumbnailUrl && draft.imageUrl ? "Thumbnail and image" : draft.thumbnailUrl ? "Thumbnail" : draft.imageUrl ? "Image" : "None"}</Chip>}
+              >
+                <FieldGrid>
+                  <FormField label="Thumbnail" hint="The small picture top right. {avatar} uses the new member's.">
+                    <ImageUrlField id="welcome-thumbnail" slot="thumbnail" value={draft.thumbnailUrl} onChange={(v) => set("thumbnailUrl", v)} uploads={uploads} />
+                  </FormField>
+                  <FormField label="Image" hint="The large picture at the bottom.">
+                    <ImageUrlField id="welcome-image" slot="image" value={draft.imageUrl} onChange={(v) => set("imageUrl", v)} uploads={uploads} />
+                  </FormField>
+                </FieldGrid>
+              </CollapsibleCard>
+            )}
 
-            <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.footer}>
-              <summary className="cursor-pointer text-sm font-medium">Footer</summary>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <FormField label="Footer text" hint={container ? "Shown as small grey text at the bottom. Markdown works, so **bold** and [links](https://example.com) do." : "Discord doesn't format footer text, so **stars** would show as stars. Use Bold to make it stand out."}>
-                  <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
-                  {container ? <LinkInserter onInsert={(md) => set("footerText", draft.footerText ? `${draft.footerText} ${md}` : md)} /> : <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />}
-                </FormField>
-                {
+            {show.footer && (
+              <CollapsibleCard
+                id="welcome-footer"
+                title="Footer"
+                hint="A line at the bottom, with its look."
+                defaultOpen={open.footer}
+                summary={<Chip>{draft.footerText.trim() ? clip(draft.footerText) : "Empty"}</Chip>}
+              >
+                <FieldGrid>
+                  <FormField label="Footer text" size="md" hint={container ? "Shown as small grey text at the bottom. Markdown works, so **bold** and [links](https://example.com) do." : "Discord doesn't format footer text, so **stars** would show as stars. Use Bold to make it stand out."}>
+                    <input id="welcome-footer" className={inputClass} value={draft.footerText} onChange={(e) => set("footerText", e.target.value)} />
+                    {container ? <LinkInserter onInsert={(md) => set("footerText", draft.footerText ? `${draft.footerText} ${md}` : md)} /> : <BoldToggle value={draft.footerText} onChange={(v) => set("footerText", v)} />}
+                  </FormField>
                   <FormField
                     label="Footer look"
                     as="group"
@@ -460,28 +541,35 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                       ))}
                     </div>
                   </FormField>
-                }
-                {!container && (
-                  <FormField label="Footer icon" hint="Needs footer text.">
-                    <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
-                  </FormField>
-                )}
-              </div>
-            </details>
+                  {!container && (
+                    <FormField label="Footer icon" hint="Needs footer text.">
+                      <ImageUrlField id="welcome-footer-icon" slot="footer_icon" value={draft.footerIconUrl} onChange={(v) => set("footerIconUrl", v)} uploads={uploads} />
+                    </FormField>
+                  )}
+                </FieldGrid>
+              </CollapsibleCard>
+            )}
 
-            <details className="rounded-md border border-surface-border bg-background/40 p-3" open={open.fields}>
-              <summary className="cursor-pointer text-sm font-medium">Fields ({draft.fields.length})</summary>
-              <div className="mt-3 space-y-3">
+            {show.fields && (
+              <CollapsibleCard
+                id="welcome-fields"
+                title="Fields"
+                hint="Short headed lines under the description."
+                defaultOpen={open.fields}
+                summary={<Chip>{draft.fields.length === 0 ? "None" : `${draft.fields.length} field${draft.fields.length === 1 ? "" : "s"}`}</Chip>}
+              >
                 {draft.fields.map((field, i) => (
-                  <div key={i} className="space-y-2 rounded-md border border-surface-border p-3">
-                    <div className={container ? "" : "grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"}>
-                      <input
-                        aria-label={`Field ${i + 1} name`}
-                        className={inputClass}
-                        placeholder={container ? "Field name (a link works: [Website](https://example.com))" : "Field name (a link here switches to a Container)"}
-                        value={field.name}
-                        onChange={(e) => setField(i, { name: e.target.value })}
-                      />
+                  <div key={i} className="space-y-2 rounded-md border border-surface-border bg-background/40 p-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="w-full max-w-80">
+                        <input
+                          aria-label={`Field ${i + 1} name`}
+                          className={inputClass}
+                          placeholder={container ? "Field name (a link works: [Website](https://example.com))" : "Field name (a link here switches to a Container)"}
+                          value={field.name}
+                          onChange={(e) => setField(i, { name: e.target.value })}
+                        />
+                      </div>
                       {!container && (
                         <label className="flex items-center gap-2 text-sm" title="Inline fields sit side by side, up to three to a row, instead of one under another.">
                           <input type="checkbox" className="accent-[var(--color-gold)]" checked={field.inline} onChange={(e) => setField(i, { inline: e.target.checked })} />
@@ -489,7 +577,9 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                         </label>
                       )}
                     </div>
-                    <textarea aria-label={`Field ${i + 1} value`} className={`${inputClass} min-h-16`} rows={2} placeholder={container ? "Field value (optional: a name alone is a single line)" : "Field value"} value={field.value} onChange={(e) => setField(i, { value: e.target.value })} />
+                    <div className="max-w-xl">
+                      <textarea aria-label={`Field ${i + 1} value`} className={`${inputClass} min-h-16`} rows={2} placeholder={container ? "Field value (optional: a name alone is a single line)" : "Field value"} value={field.value} onChange={(e) => setField(i, { value: e.target.value })} />
+                    </div>
                     <button type="button" className={ghostButton} onClick={() => set("fields", draft.fields.filter((_, j) => j !== i))}>
                       Remove field
                     </button>
@@ -500,9 +590,9 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
                     + Add field
                   </button>
                 )}
-              </div>
-            </details>
-          </CollapsibleCard>
+              </CollapsibleCard>
+            )}
+          </PanelGrid>
         )}
 
         <div className="space-y-3">
@@ -519,7 +609,7 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
             >
               Send test
             </button>
-            <span className="text-xs text-muted">
+            <span className="min-w-0 flex-1 basis-60 text-xs text-muted">
               {draft.channelId
                 ? "The test posts a real message in the welcome channel as if you had just joined. It uses what's on screen, saved or not, and works while the welcome is switched off."
                 : "Choose a welcome channel above to send a test. The welcome itself can stay switched off: a test works either way."}
@@ -529,14 +619,14 @@ export function WelcomeEditor({ initial, channels, forums, threads, actions }: {
         </div>
 
         <CollapsibleCard id="welcome-variables" title="Variables" hint="Use these anywhere in the text boxes. They match Dyno's, so a message can be copied across as it is." summary={<Chip>{String(WELCOME_VARIABLES.length)} available</Chip>}>
-          <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+          <FieldGrid className="text-sm">
             {WELCOME_VARIABLES.map((v) => (
-              <div key={v.token} className="flex gap-2">
-                <dt className="shrink-0 font-mono text-gold">{v.token}</dt>
-                <dd className="text-muted">{v.meaning}</dd>
-              </div>
+              <p key={v.token} className="flex gap-2">
+                <code className="shrink-0 font-mono text-gold">{v.token}</code>
+                <span className="text-muted">{v.meaning}</span>
+              </p>
             ))}
-          </dl>
+          </FieldGrid>
           <p className="text-xs text-muted">
             In a title, author or footer a mention shows as a name, because Discord can&apos;t draw mentions there. You can also paste a mention as Discord writes it, such as &lt;#123456&gt; for a channel.
           </p>

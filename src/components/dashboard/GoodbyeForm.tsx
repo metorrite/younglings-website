@@ -7,8 +7,9 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
-import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import {
   choicesOf,
   type Goodbye,
@@ -33,7 +34,10 @@ const VARIABLES = [
 const shape = (g: Pick<Goodbye, "enabled" | "channelId" | "content">) =>
   JSON.stringify([g.enabled, g.channelId, g.content]);
 
-/** A line posted when someone leaves, with clickable variables and a live preview. */
+/**
+ * A line posted when someone leaves, with clickable variables and a live preview. The channel belongs to the switch (it only matters while it is on) and the
+ * preview sits under the text it shows, so the page is two panels side by side. There is nothing here a new server doesn't need, so no Basic / Advanced switch.
+ */
 export function GoodbyeForm({
   initial,
   structure,
@@ -107,8 +111,8 @@ export function GoodbyeForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-      <div className="min-w-0 space-y-4">
+    <div className="space-y-4">
+      <PanelGrid min="22rem">
         <CollapsibleCard
           id="goodbye-where"
           title="Where and when"
@@ -126,26 +130,28 @@ export function GoodbyeForm({
           }
           info="Posted when a person leaves or is removed from the server. Bots leaving aren't announced, and nothing in the message can ping anyone."
         >
-          <Toggle
-            checked={draft.enabled}
-            onChange={(on) => change({ enabled: on })}
-            label="Announce people who leave"
-            detail={
+          <SettingRow
+            title="Announce people who leave"
+            hint={
               draft.enabled
                 ? "A message is posted when someone leaves."
                 : "Nothing is posted."
             }
-          />
-          <FormField label="Channel" as="group">
-            <ChannelSelect
-              {...choicesOf(structure)}
-              onlyPostable
-              allowForums={false}
-              value={draft.channelId}
-              onChange={(id) => change({ channelId: id })}
-              none="Choose a channel…"
-            />
-          </FormField>
+            checked={draft.enabled}
+            onChange={(on) => change({ enabled: on })}
+            offHint="Off: nothing is posted. Your channel and message are kept."
+          >
+            <FormField label="Channel" size="md" as="group">
+              <ChannelSelect
+                {...choicesOf(structure)}
+                onlyPostable
+                allowForums={false}
+                value={draft.channelId}
+                onChange={(id) => change({ channelId: id })}
+                none="Choose a channel…"
+              />
+            </FormField>
+          </SettingRow>
         </CollapsibleCard>
 
         <CollapsibleCard
@@ -162,7 +168,7 @@ export function GoodbyeForm({
           }
           info="Markdown works (**bold**, _italics_). Leave it empty to use the default message."
         >
-          <FormField label="Text">
+          <FormField label="Text" size="lg">
             <textarea
               ref={box}
               className={`${inputClass} min-h-28`}
@@ -190,25 +196,12 @@ export function GoodbyeForm({
               </button>
             ))}
           </div>
-        </CollapsibleCard>
-
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <div className="xl:sticky xl:top-4">
-          <section className="rounded-xl border border-surface-border bg-surface p-5">
-            <h2 className="font-semibold text-gold">Preview</h2>
-            <p className="mt-1 text-xs text-muted">
+          <section
+            aria-label="Preview"
+            className="max-w-xl rounded-lg border border-surface-border bg-background/40 p-4"
+          >
+            <h3 className="text-sm font-semibold">Preview</h3>
+            <p className="mt-0.5 text-xs text-muted">
               Roughly how it will look, for an example member called PvmRyan.
             </p>
             <div className="mt-3 rounded bg-[#313338] p-3 text-sm whitespace-pre-wrap text-[#dbdee1]">
@@ -216,8 +209,19 @@ export function GoodbyeForm({
               <FormattedLine text={preview.trim() || "—"} />
             </div>
           </section>
-        </div>
-      </div>
+        </CollapsibleCard>
+      </PanelGrid>
+
+      <SaveBar
+        pending={pending}
+        onSave={submit}
+        outcome={outcome}
+        dirty={dirty}
+        onDiscard={() => {
+          setDraft(saved);
+          setOutcome(null);
+        }}
+      />
     </div>
   );
 }
