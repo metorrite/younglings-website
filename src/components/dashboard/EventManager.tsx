@@ -185,8 +185,13 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       key={to}
       type="button"
       className={to === "CANCELLED" ? dangerButton : to === "RUNNING" || to === "SIGNUPS" ? primaryButton : ghostButton}
-      disabled={pending}
-      onClick={async () => (to !== "CANCELLED" || (await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) && run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`)}
+      disabled={pending || (to === "RUNNING" && !detail.prep.ready)}
+      title={to === "RUNNING" && !detail.prep.ready ? `Can't start yet: ${detail.prep.blockers.join(" ")}` : undefined}
+      onClick={async () => {
+        if (to === "CANCELLED" && !(await confirmDialog({ title: "Cancel this event?", body: "It can't be reopened.", confirmLabel: "Cancel event", tone: "danger" }))) return;
+        if (to === "RUNNING" && !(await confirmDialog({ title: "Start the event?", body: "Players can start scoring, and the objectives, teams and prizes are locked once it is running.", confirmLabel: "Start the event" }))) return;
+        run("POST", `${base}/status`, { status: to.toLowerCase() }, `The event is now ${STAGE_LABEL[to].toLowerCase()}.`);
+      }}
     >
       {to === "SIGNUPS" ? "Open signups" : to === "RUNNING" ? "Start the event" : to === "SCORING" ? "Move to scoring" : to === "DONE" ? "Finish" : to === "CANCELLED" ? "Cancel event" : `Back to ${STAGE_LABEL[to].toLowerCase()}`}
     </button>
@@ -211,11 +216,11 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   <div className="flex items-center justify-between gap-2 text-xs text-muted">
                     <span className="tabular-nums">#{index + 1}</span>
                     {editable && !isEditing && (
-                      <span className="flex gap-3">
-                        <button type="button" aria-pressed={isLocked} className={isLocked ? "text-gold underline" : "underline"} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
+                      <span className="flex gap-2">
+                        <button type="button" aria-pressed={isLocked} className={`rounded border px-2 py-1 transition ${isLocked ? "border-gold bg-gold/10 text-gold" : "border-control-border hover:border-gold hover:text-foreground"}`} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
                           {isLocked ? "Locked" : "Lock"}
                         </button>
-                        <button type="button" className="text-gold underline" onClick={() => editTile(key)}>
+                        <button type="button" className="rounded border border-control-border px-2 py-1 text-gold transition hover:border-gold" onClick={() => editTile(key)}>
                           Edit
                         </button>
                       </span>
@@ -340,6 +345,14 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
         </button>
         {refreshedAt && <span className="text-xs text-muted">Updated {refreshedAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
         <span className="ml-auto flex flex-wrap gap-2">{detail.nextStages.map(stageButton)}</span>
+        {detail.nextStages.includes("RUNNING") && !detail.prep.ready && detail.prep.blockers.length > 0 && (
+          <p className="basis-full text-xs text-muted">
+            Can&apos;t start yet: {detail.prep.blockers.join(" ")}{" "}
+            <button type="button" className="text-gold underline" onClick={() => setTab("overview")}>
+              See the checklist
+            </button>
+          </p>
+        )}
       </div>
 
       <div ref={tabBar} role="tablist" aria-label="This event" className="sticky top-0 z-20 -mx-1 flex items-stretch gap-1 overflow-x-auto border-b border-surface-border bg-background/95 px-1 backdrop-blur">
