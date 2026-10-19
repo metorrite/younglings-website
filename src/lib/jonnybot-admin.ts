@@ -731,6 +731,25 @@ export interface ModerationSettings {
   protectedRoleIds: string[];
 }
 
+/** A server's honeypot: a decoy channel and/or role, and what happens to whoever uses it. Off until switched on. */
+export interface Honeypot {
+  enabled: boolean;
+  channelId: string | null;
+  roleId: string | null;
+  action: "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+  exemptRoleIds: string[];
+  /** For a ban: days of their messages to delete, 0 to 7. */
+  deleteDays: number;
+  maxExemptRoles: number;
+  /** What JonnyBot is allowed to do here; each action needs its own Discord permission. */
+  canBan: boolean;
+  canKick: boolean;
+  canTimeout: boolean;
+}
+
+export type HoneypotDraft = Pick<Honeypot, "enabled" | "channelId" | "roleId" | "action" | "timeoutMinutes" | "exemptRoleIds" | "deleteDays">;
+
 export interface ModerationOverview {
   settings: ModerationSettings;
   maxProtectedRoles: number;
@@ -1443,6 +1462,8 @@ export const adminApi = {
   savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string; reviewChannelId: string | null }) => call<PointsOverview>(ctx, "PUT", "points", body),
   awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
     call<PointsOverview>(ctx, "POST", "points/award", body),
+  honeypot: (ctx: ApiContext) => call<Honeypot>(ctx, "GET", "honeypot"),
+  saveHoneypot: (ctx: ApiContext, body: HoneypotDraft) => call<Honeypot>(ctx, "PUT", "honeypot", body),
   moderation: (ctx: ApiContext) => call<ModerationOverview>(ctx, "GET", "moderation"),
   moderationOfUser: (ctx: ApiContext, userId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/user/${encodeURIComponent(userId)}`),
   moderationByModerator: (ctx: ApiContext, moderatorId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/moderator/${encodeURIComponent(moderatorId)}`),

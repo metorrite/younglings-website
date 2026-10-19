@@ -29,6 +29,7 @@ import { WarningsManager } from "@/components/dashboard/WarningsManager";
 import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
+import { HoneypotForm } from "@/components/dashboard/HoneypotForm";
 import { ModerationManager } from "@/components/dashboard/ModerationManager";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
@@ -357,6 +358,16 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "honeypot" && (
+            <>
+              <PageHeader title="Honeypot" description="A decoy channel or role that no real member should touch." />
+              <HoneypotForm
+                initial={{ enabled: false, channelId: null, roleId: null, action: "TIMEOUT", timeoutMinutes: 1440, exemptRoleIds: [], deleteDays: 0, maxExemptRoles: 25, canBan: true, canKick: true, canTimeout: false }}
+                structure={structure}
+                save={async (draft) => ({ ok: true, data: { ...draft, maxExemptRoles: 25, canBan: true, canKick: true, canTimeout: false } })}
+              />
+            </>
+          )}
           {view === "moderation" && (
             <>
               <PageHeader title="Moderation cases" description="Every ban, kick, timeout and warning is a numbered case." />
