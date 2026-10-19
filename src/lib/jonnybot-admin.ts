@@ -731,6 +731,23 @@ export interface ModerationSettings {
   protectedRoleIds: string[];
 }
 
+/** A server's server-tag moderation: members showing the tag of a flagged server are reported or acted on. Off until switched on; alert-only by default. */
+export interface ServerTagRule {
+  enabled: boolean;
+  flaggedGuildIds: string[];
+  action: "ALERT" | "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+  alertChannelId: string | null;
+  exemptRoleIds: string[];
+  maxFlagged: number;
+  maxExemptRoles: number;
+  canBan: boolean;
+  canKick: boolean;
+  canTimeout: boolean;
+}
+
+export type ServerTagDraft = Pick<ServerTagRule, "enabled" | "flaggedGuildIds" | "action" | "timeoutMinutes" | "alertChannelId" | "exemptRoleIds">;
+
 /** A server's honeypot: a decoy channel and/or role, and what happens to whoever uses it. Off until switched on. */
 export interface Honeypot {
   enabled: boolean;
@@ -1462,6 +1479,8 @@ export const adminApi = {
   savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string; reviewChannelId: string | null }) => call<PointsOverview>(ctx, "PUT", "points", body),
   awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
     call<PointsOverview>(ctx, "POST", "points/award", body),
+  serverTag: (ctx: ApiContext) => call<ServerTagRule>(ctx, "GET", "servertag"),
+  saveServerTag: (ctx: ApiContext, body: ServerTagDraft) => call<ServerTagRule>(ctx, "PUT", "servertag", body),
   honeypot: (ctx: ApiContext) => call<Honeypot>(ctx, "GET", "honeypot"),
   saveHoneypot: (ctx: ApiContext, body: HoneypotDraft) => call<Honeypot>(ctx, "PUT", "honeypot", body),
   moderation: (ctx: ApiContext) => call<ModerationOverview>(ctx, "GET", "moderation"),
