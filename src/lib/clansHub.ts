@@ -146,3 +146,6 @@ export function withAlpha(hex: string, alpha: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
+
+/** Milliseconds until a moment (negative once it has passed). Kept out of the pages so they stay free of `Date.now()`. */
+export const msUntil = (iso: string): number => Date.parse(iso) - Date.now();

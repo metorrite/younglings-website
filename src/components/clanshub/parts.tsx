@@ -177,7 +177,7 @@ export function EventCard({ event, site }: { event: HubEvent; site: SiteInfo }) 
 
 /** XP as 302.2M / 41.5K, so a ranking fits on a card. */
 export function compact(n: number): string {
-  return new Intl.NumberFormat("en-GB", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }
 
 export function Unavailable() {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { gateHub } from "@/components/clanshub/gate";
 import { ClanCard, ClanMark, compact, EventCard, SectionHeader, Stat, Unavailable } from "@/components/clanshub/parts";
-import { allEvents, clanAccent, FOCUSES, leaderboard, listClans, RECRUITING, withAlpha } from "@/lib/clansHub";
+import { allEvents, clanAccent, FOCUSES, leaderboard, listClans, msUntil, RECRUITING, withAlpha } from "@/lib/clansHub";
 import { currentSite } from "@/lib/siteHostsServer";
 import { hubHref } from "@/lib/siteHosts";
 
@@ -49,7 +49,7 @@ export default async function ClansHubHome({ searchParams }: { searchParams: Pro
 
   const recruitingNow = all?.filter((c) => c.recruiting.key === "OPEN").length ?? 0;
   const totalXp = week?.reduce((sum, e) => sum + e.xpGained, 0) ?? 0;
-  const soon = events?.filter((e) => e.status === "ACTIVE" || Date.parse(e.startTime) - Date.now() < 7 * 24 * 3600 * 1000).length ?? 0;
+  const soon = events?.filter((e) => e.status === "ACTIVE" || msUntil(e.startTime) < 7 * 24 * 3600 * 1000).length ?? 0;
   const topWeek = week?.slice(0, 5) ?? [];
   const topXp = topWeek[0]?.xpGained ?? 1;
 
