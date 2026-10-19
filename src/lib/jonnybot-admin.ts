@@ -439,6 +439,46 @@ export interface BetaGuild {
   name: string | null;
 }
 
+export type FormQuestionKind = "SHORT" | "PARAGRAPH" | "CHOICE" | "CHECKBOX" | "RSN";
+
+export interface FormQuestion {
+  id: string;
+  label: string;
+  kind: FormQuestionKind;
+  required: boolean;
+  options: string[];
+  maxLength: number;
+}
+
+/** One web form as the dashboard edits it. Ids are strings (Discord snowflakes). */
+export interface WebFormAdmin {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+  panelId: string | null;
+  channelId: string | null;
+  roleId: string | null;
+  onePerUser: boolean;
+  cooldownHours: number;
+  questions: FormQuestion[];
+  submissionCount: number;
+}
+
+export interface WebFormList {
+  forms: WebFormAdmin[];
+  panels: { id: string; name: string; enabled: boolean }[];
+  max: number;
+  limits: { questions: number; options: number; answerLength: number; cooldownHours: number };
+}
+
+export interface WebFormSubmissions {
+  formId: string;
+  total: number;
+  submissions: { id: string; userId: string; userName: string | null; at: string; ticketId: string | null; answers: { label: string; value: string }[] }[];
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1463,6 +1503,11 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  webForms: (ctx: ApiContext) => call<WebFormList>(ctx, "GET", "forms"),
+  createWebForm: (ctx: ApiContext, template: string | null) => call<WebFormList>(ctx, "POST", "forms", template ? { template } : {}),
+  saveWebForm: (ctx: ApiContext, id: string, form: Record<string, unknown>) => call<WebFormList>(ctx, "PUT", `forms/${encodeURIComponent(id)}`, form),
+  deleteWebForm: (ctx: ApiContext, id: string) => call<WebFormList>(ctx, "DELETE", `forms/${encodeURIComponent(id)}`),
+  webFormSubmissions: (ctx: ApiContext, id: string) => call<WebFormSubmissions>(ctx, "GET", `forms/${encodeURIComponent(id)}/submissions`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
