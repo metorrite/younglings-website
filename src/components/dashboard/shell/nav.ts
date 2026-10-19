@@ -84,6 +84,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Post a message", icon: "send", path: "/post" },
       { label: "Scheduled posts", icon: "clock", path: "/scheduled", advanced: true },
       { label: "Feeds", icon: "swap", path: "/feeds" },
+      { label: "Twitch alerts", icon: "bell", path: "/twitch" },
     ],
   },
   {

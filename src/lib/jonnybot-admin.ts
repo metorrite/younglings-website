@@ -659,6 +659,34 @@ export interface AutoCleanList {
 }
 
 /** One followed YouTube channel or subreddit. `problem` says why it cannot post, when it cannot. */
+/** One Twitch streamer a server follows. */
+export interface TwitchStreamer {
+  id: string;
+  login: string;
+  displayName: string;
+  channelId: string;
+  pingRoleId: string | null;
+  message: string | null;
+  enabled: boolean;
+  liveNow: boolean;
+  /** Why alerts for this streamer cannot post right now (the channel is gone, a permission is missing), or null. */
+  problem: string | null;
+}
+
+export type TwitchOfflineAction = "EDIT" | "DELETE" | "KEEP";
+
+export interface TwitchOverview {
+  /** Whether the bot has a Twitch app (its owner added the id and secret). Without one nothing can be switched on. */
+  configured: boolean;
+  enabled: boolean;
+  offlineAction: TwitchOfflineAction;
+  streamers: TwitchStreamer[];
+  max: number;
+  maxMessage: number;
+  defaultMessage: string;
+  envNames: string[];
+}
+
 export interface FeedItem {
   id: string;
   kind: "YOUTUBE" | "REDDIT";
@@ -1357,6 +1385,12 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  twitch: (ctx: ApiContext) => call<TwitchOverview>(ctx, "GET", "twitch"),
+  saveTwitchSettings: (ctx: ApiContext, settings: { enabled: boolean; offlineAction: TwitchOfflineAction }) => call<TwitchOverview>(ctx, "PUT", "twitch/settings", settings),
+  addTwitchStreamer: (ctx: ApiContext, streamer: { login: string; channelId: string; pingRoleId: string | null; message: string }) => call<TwitchOverview>(ctx, "POST", "twitch/streamers", streamer),
+  saveTwitchStreamer: (ctx: ApiContext, id: string, streamer: { channelId: string; pingRoleId: string | null; message: string; enabled: boolean }) =>
+    call<TwitchOverview>(ctx, "PUT", `twitch/streamers/${encodeURIComponent(id)}`, streamer),
+  deleteTwitchStreamer: (ctx: ApiContext, id: string) => call<TwitchOverview>(ctx, "DELETE", `twitch/streamers/${encodeURIComponent(id)}`),
   feeds: (ctx: ApiContext) => call<FeedList>(ctx, "GET", "feeds"),
   saveFeed: (ctx: ApiContext, feed: FeedInput) => call<FeedList>(ctx, "PUT", "feeds", feed),
   deleteFeed: (ctx: ApiContext, id: string) => call<FeedList>(ctx, "DELETE", `feeds/${encodeURIComponent(id)}`),
