@@ -2,13 +2,21 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { createHelpPanelsAction, postHelpGuidelinesAction, saveHelpSettingsAction } from "@/app/admin/(console)/pvm-help/actions";
+import type { HelpActionResult } from "@/app/admin/(console)/pvm-help/actions";
 import { choicesOf } from "@/lib/jonnybot-admin";
 import type { GuildStructure, HelpSettings } from "@/lib/jonnybot-admin";
 import { ChannelSelect, RoleSelect } from "./pickers";
 import { Card, FormField, ghostButton, inputClass, Notice, primaryButton } from "./ui";
 
 const MAX_GUIDELINES = 3500;
+
+/** The Server Actions the form calls, and where a ticket panel is edited: the dashboard and the old /admin page each pass their own. */
+export interface PvmHelpBindings {
+  save: (input: unknown) => Promise<HelpActionResult<HelpSettings>>;
+  createPanels: () => Promise<HelpActionResult<HelpSettings>>;
+  postGuidelines: (channelId: string) => Promise<HelpActionResult<HelpSettings>>;
+  panelHref: (panelId: number | string) => string;
+}
 
 /** One audience's ping timing: whether helpers are pinged when the ticket opens, and the wait before the next role up is pinged. */
 function PingTimers({
@@ -47,7 +55,7 @@ function PingTimers({
  * The PvM Help system's settings: the two helper roles, the guidelines members agree to, when member and guest tickets ping helpers, and the
  * earlier-attempts rule for Master and above. These are the same settings as /configure's PvM Help section in Discord.
  */
-export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; structure: GuildStructure }) {
+export function PvmHelpForm({ initial, structure, bindings }: { initial: HelpSettings; structure: GuildStructure; bindings: PvmHelpBindings }) {
   const [settings, setSettings] = useState(initial);
   const [error, setError] = useState<{ message: string; problems: string[] } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -65,7 +73,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const result = await saveHelpSettingsAction(settings);
+      const result = await bindings.save(settings);
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
@@ -80,7 +88,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const result = await createHelpPanelsAction();
+      const result = await bindings.createPanels();
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
@@ -100,7 +108,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const result = await postHelpGuidelinesAction(postChannel);
+      const result = await bindings.postGuidelines(postChannel);
       if (!result.ok) {
         setError({ message: result.error, problems: result.problems });
         return;
@@ -186,7 +194,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
                       {panel.helpKind === "CA" ? "CA Help" : "PvM Help"} · {panel.postedChannelId ? `posted in ${channel ? `#${channel.name}` : "a channel"}` : "not posted yet"}
                     </span>
                   </span>
-                  <Link href={`/admin/tickets/panels/${panel.id}`} className="text-gold hover:underline">
+                  <Link href={bindings.panelHref(panel.id)} className="text-gold hover:underline">
                     Edit and post
                   </Link>
                 </li>

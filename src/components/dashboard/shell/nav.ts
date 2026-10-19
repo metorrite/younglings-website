@@ -44,6 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Goodbye message", icon: "door", path: "/goodbye" },
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
+      { label: "Self roles", icon: "tag", path: "/self-roles" },
     ],
   },
   {
@@ -54,6 +55,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Automatic replies", icon: "chat", path: "/autoresponder", advanced: true },
       { label: "Polls & signups", icon: "poll", path: "/community" },
       { label: "Tickets", icon: "ticket", path: "/tickets" },
+      { label: "PvM Help", icon: "bulb", path: "/pvm-help", advanced: true },
     ],
   },
   {
@@ -94,6 +96,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
+      { label: "Needs attention", icon: "alert", path: "/attention", clanOnly: true },
+      { label: "Promotions", icon: "trophy", path: "/promotions", clanOnly: true },
+      { label: "Clan points & ranks", icon: "list", path: "/clan-points", clanOnly: true },
+      { label: "Clan website", icon: "swap", path: "/clan-website", clanOnly: true, advanced: true },
     ],
   },
   {

@@ -1,4 +1,5 @@
 import { ClanWebsiteForm } from "@/components/admin/SiteSettingsForms";
+import { saveClanWebsiteAction } from "../actions";
 import { requireAdmin, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
 
@@ -15,7 +16,7 @@ export default async function ClanWebsitePage() {
         <h1 className="text-2xl font-semibold">Clan website</h1>
         <p className="mt-1 text-sm text-muted">Where the clan name in Discord should link to.</p>
       </div>
-      <ClanWebsiteForm initial={websiteUrl} />
+      <ClanWebsiteForm initial={websiteUrl} save={saveClanWebsiteAction} />
     </div>
   );
 }
