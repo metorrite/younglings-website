@@ -32,7 +32,8 @@ export function ClansNavbar({ site }: { site: SiteInfo }) {
           href={site.hubHost ? `${site.jonnybotOrigin}/dashboard` : jonnybotHref(site, "/dashboard")}
           className="ml-auto shrink-0 rounded-xl bg-gold px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110 md:ml-0"
         >
-          List your clan
+          <span className="sm:hidden">List</span>
+          <span className="hidden sm:inline">List your clan</span>
         </a>
       </div>
     </header>
