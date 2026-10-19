@@ -566,6 +566,13 @@ export interface Starboard {
   threshold: number;
   selfStar: boolean;
   maxThreshold: number;
+  /** Source channels that need a different number of reactions than {@link threshold}. */
+  channelThresholds: { channelId: string; threshold: number }[];
+  /** Never copy out of a channel @everyone can't see. */
+  skipHiddenChannels: boolean;
+  /** When not empty, only these channels are copied from. */
+  onlyChannels: string[];
+  maxChannelRules: number;
 }
 
 /** One automatic reply: when a message matches the trigger, the bot answers. */
@@ -1093,6 +1100,8 @@ export interface ServerSetup {
   verifiedNonClanRoleId: string | null;
   unverifiedRoleId: string | null;
   onboardingRoleId: string | null;
+  /** The server's Discord invite (https://discord.gg/...), shown to players who must join the server first. */
+  inviteUrl: string | null;
 }
 
 
@@ -1133,6 +1142,8 @@ export interface HubCommandConfig {
   channelIds: string[];
   /** Only the Signups card has these. */
   signup?: { adminChannelId: string | null; lockAdminChannel: boolean; publicChannelIds: string[] };
+  /** Only the Away status card has these: the nickname tag, the channels where away status is ignored, and who is away now. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; away: { userId: string; name: string; reason: string; since: string }[] };
 }
 
 export interface HubConfig {
@@ -1143,7 +1154,10 @@ export interface HubConfig {
 }
 
 /** What a card sends on save (the fields it doesn't send keep their value). */
-export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup">;
+export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup"> & {
+  /** Away status settings; clearUserIds takes those members off the away list as the card is saved. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; clearUserIds: string[] };
+};
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -1449,7 +1463,7 @@ export const adminApi = {
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
-  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   welcomeCard: (ctx: ApiContext) => call<WelcomeCard>(ctx, "GET", "welcome-card"),
   saveWelcomeCard: (ctx: ApiContext, draft: WelcomeCardDraft) => call<WelcomeCard>(ctx, "PUT", "welcome-card", draft),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
