@@ -106,10 +106,30 @@ const BOT_PERMISSION_BITS = [
   38, // Send Messages in Threads
 ];
 
-/** The link that asks Discord to add JonnyBot to a server the person picks, or null if the bot's application id isn't configured. */
+/**
+ * Permissions a server can add on top of the minimal set, each only for features it switches on. They are left off the default link so a server
+ * that never uses them never grants them; the install page offers them as checkboxes.
+ */
+export const OPTIONAL_PERMISSIONS = [
+  { id: "moderation", label: "Moderation actions", detail: "Kick, Ban and Timeout. Needed for warning punishments (timeout, kick, ban after enough warnings) and for kicking brand-new accounts.", bits: [1, 2, 40] },
+] as const;
+
+const permissionsOf = (bits: readonly number[]) => bits.reduce((sum, bit) => sum + 2 ** bit, 0);
+const BASE_PERMISSIONS = permissionsOf(BOT_PERMISSION_BITS);
+
+function inviteLink(clientId: string, permissions: number): string {
+  return `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=${permissions}&scope=${encodeURIComponent("bot applications.commands")}`;
+}
+
+/** The link that asks Discord to add JonnyBot to a server the person picks, or null if the bot's application id isn't configured. Minimal permissions only. */
 export function installUrl(): string | null {
   const clientId = process.env.DISCORD_BOT_CLIENT_ID ?? process.env.DISCORD_CLIENT_ID;
+  return clientId ? inviteLink(clientId, BASE_PERMISSIONS) : null;
+}
+
+/** What the install page needs to build a link with the optional extras the person ticks: the app id, the minimal permissions and each extra's value. */
+export function installOptions(): { clientId: string; base: number; extras: { id: string; label: string; detail: string; value: number }[] } | null {
+  const clientId = process.env.DISCORD_BOT_CLIENT_ID ?? process.env.DISCORD_CLIENT_ID;
   if (!clientId) return null;
-  const permissions = BOT_PERMISSION_BITS.reduce((sum, bit) => sum + 2 ** bit, 0);
-  return `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=${permissions}&scope=${encodeURIComponent("bot applications.commands")}`;
+  return { clientId, base: BASE_PERMISSIONS, extras: OPTIONAL_PERMISSIONS.map((e) => ({ id: e.id, label: e.label, detail: e.detail, value: permissionsOf(e.bits) })) };
 }
