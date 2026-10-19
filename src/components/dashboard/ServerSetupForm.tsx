@@ -158,6 +158,25 @@ export function ServerSetupForm({
             )}
           </FieldGrid>
         </CollapsibleCard>
+
+        <CollapsibleCard
+          id="setup-invite"
+          title="Invite link"
+          hint="Shown to players who need to join the server before they can take part in an event."
+          defaultOpen
+          summary={setup.inviteUrl ? <Chip tone="good">{setup.inviteUrl.replace("https://", "")}</Chip> : <Chip tone="warn">Not set</Chip>}
+          info="Use a permanent invite that doesn't expire (Server Settings, then Invites). If you leave this empty, events use your clan profile's apply link instead, and without either the player is told to ask an organiser."
+        >
+          <FormField label="Discord invite" size="md" hint="Like https://discord.gg/abc123 or https://discord.com/invite/abc123.">
+            <input
+              className={inputClass}
+              value={setup.inviteUrl ?? ""}
+              maxLength={100}
+              placeholder="https://discord.gg/..."
+              onChange={(e) => change({ inviteUrl: e.target.value.trim() === "" ? null : e.target.value })}
+            />
+          </FormField>
+        </CollapsibleCard>
       </PanelGrid>
 
       {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
