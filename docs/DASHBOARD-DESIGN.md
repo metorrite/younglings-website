@@ -2,6 +2,15 @@
 
 Written 2026-10-18 after the first hands-on test of the event manager. The Overview page is the model: calm, grouped, each thing in its own panel. Every settings page should read like it.
 
+## Which surface a control goes on
+
+Drake, 2026-10-19. Bot behaviour lives on the JonnyBot dashboard (`/dashboard`) only. Website behaviour lives on `/admin`, plus its owner-only super-admin area.
+
+- **Dashboard:** roles, command on/off, channels the bot posts to, tracking, tickets, welcome, events (including the ones the site displays), member and points data. Anything that makes the bot do something differently.
+- **`/admin`:** what the Younglings site shows (home-page news-feed channels, site options) and the owner-only super-admin area (premium servers, beta servers, JonnyBot / hub / dashboard access switches, users allowed into restricted content). It may read bot data, but never changes bot behaviour.
+- Never roles or command toggles on `/admin`; never site-feed settings on the dashboard.
+- A control that has no meaning on one of the two can be skipped there. Say why in the PR.
+
 ## Levels of heading (so nothing looks like its neighbour)
 
 | Level | What | Look | Where it comes from |
