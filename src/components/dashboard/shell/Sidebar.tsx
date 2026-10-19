@@ -9,7 +9,7 @@ import { Icon } from "./icons";
 import { LinkPending } from "./LinkPending";
 import { QuickJump } from "./QuickJump";
 import { useViewMode, ViewModeSlider } from "@/components/dashboard/ui/ViewMode";
-import { favoriteItems, groupsFor, isActive, visibleGroups, type NavItem } from "./nav";
+import { favoriteItems, groupsFor, isActive, restrictGroups, visibleGroups, type NavItem } from "./nav";
 
 export interface SidebarServer {
   id: string;
@@ -94,7 +94,8 @@ export function Sidebar({
   base: where,
   favorites = [],
   savedView,
-  canStar = true,
+  canStar: canStarProp = true,
+  restrictTo,
 }: {
   server: SidebarServer;
   footer?: string;
@@ -106,7 +107,10 @@ export function Sidebar({
   savedView?: "basic" | "advanced" | null;
   /** False where there is nothing to save the stars to (the preview). */
   canStar?: boolean;
+  /** Show only these pages (an Event coordinator sees the event manager and nothing else): no search, no stars, no Basic/Advanced switch. */
+  restrictTo?: readonly string[];
 }) {
+  const canStar = canStarProp && !restrictTo;
   const pathname = usePathname();
   const router = useRouter();
   const base = where ?? `/dashboard/${server.id}`;
@@ -129,7 +133,7 @@ export function Sidebar({
   const [failed, setFailed] = useState<string | null>(null);
   const starredItems = favoriteItems(starred, hasClan);
   // the Basic view leaves out the pages most servers never open, except the one being looked at and the ones this person starred
-  const { groups, hidden } = visibleGroups(groupsFor(hasClan), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
+  const { groups, hidden } = visibleGroups(restrictGroups(groupsFor(hasClan), restrictTo), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
 
   /** Stars or unstars a page: it moves at once, then is saved; if the save fails it moves back and says so. */
   function toggleStar(item: NavItem) {
@@ -180,12 +184,14 @@ export function Sidebar({
               <Icon name="swap" />
             </Link>
           </div>
-          <ViewModeSlider onChange={canStar ? (next) => void setViewModeAction(server.id, next) : undefined} />
+          {!restrictTo && <ViewModeSlider onChange={canStar ? (next) => void setViewModeAction(server.id, next) : undefined} />}
         </div>
 
-        <div className="hidden px-3 pt-3 lg:block">
-          <QuickJump base={base} hasClan={hasClan} />
-        </div>
+        {!restrictTo && (
+          <div className="hidden px-3 pt-3 lg:block">
+            <QuickJump base={base} hasClan={hasClan} />
+          </div>
+        )}
 
         {/* wide screens: the full list */}
         <nav className="hidden flex-1 space-y-5 p-3 lg:block">

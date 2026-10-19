@@ -1,6 +1,6 @@
 import { EventManager } from "@/components/dashboard/EventManager";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
-import { dashboardData, requireGuild } from "@/lib/dashboard";
+import { dashboardData, requireEventAccess } from "@/lib/dashboard";
 import type { EventAward, EventClaims, EventDetail, EventStandings } from "@/lib/eventTypes";
 import { adminApi } from "@/lib/jonnybot-admin";
 import { eventApiAction } from "../actions";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EventPage({ params }: { params: Promise<{ guildId: string; eventId: string }> }) {
   const { guildId, eventId } = await params;
-  const guild = await requireGuild(guildId);
+  const guild = await requireEventAccess(guildId);
   if (!/^\d{1,18}$/.test(eventId)) throw new Error("That isn't a valid event.");
   const [structureResult, ...rest] = await Promise.all([
     adminApi.structure(guild).then(dashboardData),

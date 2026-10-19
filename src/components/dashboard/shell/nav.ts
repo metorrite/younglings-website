@@ -110,6 +110,12 @@ export function groupsFor(hasClan: boolean): NavGroup[] {
   return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasClan || !item.clanOnly) })).filter((group) => group.items.length > 0);
 }
 
+/** The groups cut down to the pages in `only` (by path), leaving out any group that empties; all of them when `only` is not given. */
+export function restrictGroups(groups: NavGroup[], only?: readonly string[]): NavGroup[] {
+  if (!only) return groups;
+  return groups.map((group) => ({ ...group, items: group.items.filter((item) => item.path !== undefined && only.includes(item.path)) })).filter((group) => group.items.length > 0);
+}
+
 /**
  * The groups as the sidebar shows them in the Basic or the Advanced view. In Basic an `advanced` page is left out unless `keep` says to show it (the page
  * being looked at, a starred one), and a group left empty goes too. `hidden` is how many pages Basic leaves out, for the line that offers them.
