@@ -777,13 +777,32 @@ export interface PointsRedemptions {
 
 /** One automod rule. `limit` and `seconds` mean different things per rule (the form labels them); `words` is the blocked words, or the allowed websites for links. */
 export interface AutomodRule {
-  key: "INVITES" | "LINKS" | "BLOCKED_WORDS" | "CAPS" | "MENTIONS" | "SPAM" | "REPEAT" | "EMOJI";
+  key:
+    | "INVITES"
+    | "LINKS"
+    | "PHISHING"
+    | "BLOCKED_WORDS"
+    | "CAPS"
+    | "MENTIONS"
+    | "SPAM"
+    | "REPEAT"
+    | "EMOJI"
+    | "IMAGE_SPAM"
+    | "NEWLINES"
+    | "STICKERS"
+    | "SPOILERS"
+    | "MASKED_LINKS"
+    | "ZALGO";
   label: string;
   enabled: boolean;
   warn: boolean;
   limit: number;
   seconds: number;
   words: string[];
+  /** What the writer is told instead of the standard note ({user}, {rule}, {reason} are filled in). Missing from an older bot. */
+  response?: string;
+  /** A channel this rule also reports each removed message to, or null. Missing from an older bot. */
+  logChannelId?: string | null;
 }
 
 /** A server's automod: which rules are on, what they allow, and who is never checked. `canDelete` says whether JonnyBot may delete messages. */
@@ -795,6 +814,9 @@ export interface Automod {
   canDelete: boolean;
   maxWords: number;
   maxDomains: number;
+  maxResponse?: number;
+  /** How many scam websites the Phishing rule knows right now (0 until the list has been downloaded). */
+  phishingListSize?: number;
 }
 
 /** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
