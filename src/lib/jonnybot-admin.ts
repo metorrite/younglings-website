@@ -1118,6 +1118,8 @@ export interface HubCommandConfig {
   channelIds: string[];
   /** Only the Signups card has these. */
   signup?: { adminChannelId: string | null; lockAdminChannel: boolean; publicChannelIds: string[] };
+  /** Only the Away status card has these: the nickname tag, the channels where away status is ignored, and who is away now. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; away: { userId: string; name: string; reason: string; since: string }[] };
 }
 
 export interface HubConfig {
@@ -1128,7 +1130,10 @@ export interface HubConfig {
 }
 
 /** What a card sends on save (the fields it doesn't send keep their value). */
-export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup">;
+export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup"> & {
+  /** Away status settings; clearUserIds takes those members off the away list as the card is saved. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; clearUserIds: string[] };
+};
 
 export type ApiResult<T> =
   | { ok: true; data: T }
