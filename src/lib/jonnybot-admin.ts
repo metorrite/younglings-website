@@ -566,6 +566,13 @@ export interface Starboard {
   threshold: number;
   selfStar: boolean;
   maxThreshold: number;
+  /** Source channels that need a different number of reactions than {@link threshold}. */
+  channelThresholds: { channelId: string; threshold: number }[];
+  /** Never copy out of a channel @everyone can't see. */
+  skipHiddenChannels: boolean;
+  /** When not empty, only these channels are copied from. */
+  onlyChannels: string[];
+  maxChannelRules: number;
 }
 
 /** One automatic reply: when a message matches the trigger, the bot answers. */
@@ -649,6 +656,38 @@ export interface AutoCleanList {
   minAge: number;
   maxAge: number;
   maxRules: number;
+}
+
+/** One followed YouTube channel or subreddit. `problem` says why it cannot post, when it cannot. */
+export interface FeedItem {
+  id: string;
+  kind: "YOUTUBE" | "REDDIT";
+  source: string;
+  flair: string;
+  channelId: string;
+  channelName: string | null;
+  template: string;
+  enabled: boolean;
+  problem: string | null;
+}
+
+export interface FeedList {
+  feeds: FeedItem[];
+  maxPerKind: number;
+  maxTemplate: number;
+  maxFlair: number;
+  defaultTemplates: Record<"YOUTUBE" | "REDDIT", string>;
+}
+
+/** What the feeds form sends: no id adds a feed, an id changes that one. */
+export interface FeedInput {
+  id?: string;
+  kind: "YOUTUBE" | "REDDIT";
+  source: string;
+  flair: string;
+  channelId: string;
+  template: string;
+  enabled: boolean;
 }
 
 /** A warning given with /warn. Names are null when the person has left the server. */
@@ -1046,6 +1085,8 @@ export interface ServerSetup {
   verifiedNonClanRoleId: string | null;
   unverifiedRoleId: string | null;
   onboardingRoleId: string | null;
+  /** The server's Discord invite (https://discord.gg/...), shown to players who must join the server first. */
+  inviteUrl: string | null;
 }
 
 
@@ -1086,6 +1127,8 @@ export interface HubCommandConfig {
   channelIds: string[];
   /** Only the Signups card has these. */
   signup?: { adminChannelId: string | null; lockAdminChannel: boolean; publicChannelIds: string[] };
+  /** Only the Away status card has these: the nickname tag, the channels where away status is ignored, and who is away now. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; away: { userId: string; name: string; reason: string; since: string }[] };
 }
 
 export interface HubConfig {
@@ -1096,7 +1139,10 @@ export interface HubConfig {
 }
 
 /** What a card sends on save (the fields it doesn't send keep their value). */
-export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup">;
+export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup"> & {
+  /** Away status settings; clearUserIds takes those members off the away list as the card is saved. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; clearUserIds: string[] };
+};
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -1311,6 +1357,9 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  feeds: (ctx: ApiContext) => call<FeedList>(ctx, "GET", "feeds"),
+  saveFeed: (ctx: ApiContext, feed: FeedInput) => call<FeedList>(ctx, "PUT", "feeds", feed),
+  deleteFeed: (ctx: ApiContext, id: string) => call<FeedList>(ctx, "DELETE", `feeds/${encodeURIComponent(id)}`),
   /** Who capped at the Clan Citadel in the week that ended on `end` (a Wednesday), or the week that just finished. */
   citadelCappers: (ctx: ApiContext, end: string | null) => call<import("./citadelTypes").CitadelCappers>(ctx, "GET", end ? `citadel/cappers/${encodeURIComponent(end)}` : "citadel/cappers"),
   /** The settings for announcing the Citadel wheel's winner (auto-post, channel, message). */
@@ -1399,7 +1448,7 @@ export const adminApi = {
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
-  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
@@ -1420,6 +1469,9 @@ export const adminApi = {
   notices: (ctx: ApiContext) => call<{ notices: BotNotice[] }>(ctx, "GET", "notices"),
   /** The pages this person starred in the sidebar of this server, in the order they starred them. */
   favorites: (ctx: ApiContext) => call<{ paths: string[] }>(ctx, "GET", "prefs/favorites"),
+  /** The Basic/Advanced view this admin chose in this server, null if they never have. */
+  viewMode: (ctx: ApiContext) => call<{ mode: "basic" | "advanced" | null }>(ctx, "GET", "prefs/view"),
+  saveViewMode: (ctx: ApiContext, mode: "basic" | "advanced") => call<{ mode: "basic" | "advanced" | null }>(ctx, "PUT", "prefs/view", { mode }),
   saveFavorites: (ctx: ApiContext, paths: string[]) => call<{ paths: string[] }>(ctx, "PUT", "prefs/favorites", { paths }),
   addNotice: (ctx: ApiContext, severity: BotNotice["severity"], body: string) => call<{ notices: BotNotice[] }>(ctx, "POST", "notices", { severity, body }),
   removeNotice: (ctx: ApiContext, id: string) => call<{ notices: BotNotice[] }>(ctx, "DELETE", `notices/${encodeURIComponent(id)}`),

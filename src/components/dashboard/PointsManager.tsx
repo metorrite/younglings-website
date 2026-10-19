@@ -211,7 +211,7 @@ export function PointsManager({
                   </span>
                   <span className="flex shrink-0 items-center gap-3">
                     <span className="font-medium tabular-nums">{row.points.toLocaleString("en-GB")}</span>
-                    <button type="button" className="text-xs text-gold underline" onClick={() => setUserId(row.userId)}>
+                    <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={() => setUserId(row.userId)}>
                       Award
                     </button>
                   </span>

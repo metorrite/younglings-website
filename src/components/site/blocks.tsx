@@ -59,10 +59,10 @@ export function RankBadge({ rank, color }: { rank: string; color: string }) {
   );
 }
 
-export function ProgressBar({ value, max, color = "#d4af37" }: { value: number; max: number; color?: string }) {
+export function ProgressBar({ value, max, color = "#d4af37", label = "Progress" }: { value: number; max: number; color?: string; label?: string }) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label={label} aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
       <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
     </div>
   );

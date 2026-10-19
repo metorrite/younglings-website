@@ -481,7 +481,7 @@ function Plan({ view }: { view: SpaceView }) {
               {g.channels.length === 0 && <li className="text-xs text-muted">Nothing goes in it yet.</li>}
               {g.channels.length > SHORT_LIST && (
                 <li>
-                  <button type="button" className="text-xs text-gold underline" onClick={() => setOpen((o) => (o.includes(g.key) ? o.filter((k) => k !== g.key) : [...o, g.key]))}>
+                  <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={() => setOpen((o) => (o.includes(g.key) ? o.filter((k) => k !== g.key) : [...o, g.key]))}>
                     {open.includes(g.key) ? "Show fewer" : `Show all ${g.channels.length} channels`}
                   </button>
                 </li>
