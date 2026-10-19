@@ -20,6 +20,7 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/suggest", who: "Everyone (changeable)", what: "Post an idea in the suggestions channel for everyone to vote on with the up and down buttons." },
   { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
   { name: "/events", who: "Everyone (changeable)", what: "Your events (place, points, buy-in, prizes), the ones open for signup, and join or leave. Events themselves are made and run from the dashboard." },
+  { name: "/price", who: "Everyone (changeable)", what: "A RuneScape 3 item's Grand Exchange price with its 7 and 30 day change and a link to the wiki. Pick the item from the suggestions." },
 ];
 
 const DASHBOARD: [string, string][] = [
