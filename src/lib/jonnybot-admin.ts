@@ -915,10 +915,14 @@ export interface Alliance {
   members: { guildId: string; name: string; slug: string | null; status: "INVITED" | "ACTIVE"; founder: boolean; you: boolean }[];
 }
 
+/** What this clan's public hub page says about its alliances. Missing from an older bot, which means HIDDEN. */
+export type AllianceVisibility = "HIDDEN" | "NO_ALLIES" | "SHOWN";
+
 export interface AllianceList {
   alliances: Alliance[];
   maxPerServer: number;
   maxMembers: number;
+  visibility?: AllianceVisibility;
 }
 
 /** An alliance's shared calendar: events its active clans share with allies (or with everyone), soonest first. */
@@ -1387,6 +1391,7 @@ export const adminApi = {
   /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
   eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  saveAllianceVisibility: (ctx: ApiContext, visibility: AllianceVisibility) => call<AllianceList>(ctx, "PUT", "alliances/visibility", { visibility }),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
     ctx: ApiContext,

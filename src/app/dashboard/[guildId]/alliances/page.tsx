@@ -8,6 +8,7 @@ import {
   inviteToAllianceAction,
   leaveAllianceAction,
   removeFromAllianceAction,
+  setAllianceVisibilityAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,7 @@ export default async function AlliancesPage({
           accept: acceptAllianceAction.bind(null, guildId),
           leave: leaveAllianceAction.bind(null, guildId),
           remove: removeFromAllianceAction.bind(null, guildId),
+          setVisibility: setAllianceVisibilityAction.bind(null, guildId),
         }}
         eventsHref={`/dashboard/${guildId}/events`}
       />
