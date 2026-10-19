@@ -1064,6 +1064,21 @@ export interface WelcomeConfig {
   serverIconUrl: string | null;
 }
 
+/** The optional welcome picture (a 700x300 card). The server name and member count only feed the preview. */
+export interface WelcomeCard {
+  enabled: boolean;
+  /** 0xRRGGBB */
+  backgroundColor: number;
+  backgroundImageUrl: string;
+  textColor: number;
+  title: string;
+  description: string;
+  serverName: string;
+  memberCount: number;
+}
+
+export type WelcomeCardDraft = Omit<WelcomeCard, "serverName" | "memberCount">;
+
 /** What the browser may change; the preview-only fields come back from the bot but are never sent. */
 export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
 
@@ -1435,6 +1450,8 @@ export const adminApi = {
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  welcomeCard: (ctx: ApiContext) => call<WelcomeCard>(ctx, "GET", "welcome-card"),
+  saveWelcomeCard: (ctx: ApiContext, draft: WelcomeCardDraft) => call<WelcomeCard>(ctx, "PUT", "welcome-card", draft),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
