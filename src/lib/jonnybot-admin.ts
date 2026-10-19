@@ -1085,6 +1085,8 @@ export interface ServerSetup {
   verifiedNonClanRoleId: string | null;
   unverifiedRoleId: string | null;
   onboardingRoleId: string | null;
+  /** The server's Discord invite (https://discord.gg/...), shown to players who must join the server first. */
+  inviteUrl: string | null;
 }
 
 
