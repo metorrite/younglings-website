@@ -614,6 +614,31 @@ export interface GiveawayList {
   maxPrize: number;
 }
 
+/** A reminder JonnyBot posts in a channel, once (`everyMinutes` null) or repeating, optionally pinging a role. */
+export interface ServerReminderItem {
+  id: string;
+  channelId: string;
+  channelName: string | null;
+  text: string;
+  roleId: string | null;
+  roleName: string | null;
+  everyMinutes: number | null;
+  nextAt: string;
+  status: "ACTIVE" | "DONE" | "CANCELLED" | "FAILED";
+  createdByName: string;
+  lastSentAt: string | null;
+  sendCount: number;
+  error: string | null;
+}
+
+export interface ServerReminderList {
+  reminders: ServerReminderItem[];
+  maxText: number;
+  maxActive: number;
+  minEveryMinutes: number;
+  maxEveryMinutes: number;
+}
+
 export interface GiveawayStart {
   prize: string;
   channelId: string;
@@ -1436,6 +1461,10 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  serverReminders: (ctx: ApiContext) => call<ServerReminderList>(ctx, "GET", "server-reminders"),
+  createServerReminder: (ctx: ApiContext, body: { channelId: string; text: string; roleId: string | null; startAt: string; everyMinutes: number | null }) => call<ServerReminderList>(ctx, "POST", "server-reminders", body),
+  cancelServerReminder: (ctx: ApiContext, id: string) => call<ServerReminderList>(ctx, "DELETE", `server-reminders/${encodeURIComponent(id)}`),
+
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
