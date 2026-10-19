@@ -29,6 +29,7 @@ import { WarningsManager } from "@/components/dashboard/WarningsManager";
 import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
+import { ModerationManager } from "@/components/dashboard/ModerationManager";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
@@ -53,7 +54,7 @@ import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/OverviewView";
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
-import type { GuildStructure, Overview, ServerSetup } from "@/lib/jonnybot-admin";
+import type { GuildStructure, ModerationCase, Overview, ServerSetup } from "@/lib/jonnybot-admin";
 
 // A throwaway harness for looking at the dashboard's new design with made-up data. Not committed (see .git/info/exclude).
 const overview: Overview = {
@@ -164,6 +165,11 @@ const hub = {
     { key: "poll", tags: ["functional", "utility"], title: "Polls", slashName: "poll", description: "Start a poll in a channel.", defaultAccess: "Admins", enabled: false, customAccess: false, allowedRefs: [], channelIds: [] },
   ],
 };
+const modCases = [
+  { caseNo: "5", userId: "111", userName: "troublemaker", moderatorId: "222", moderatorName: "Mod Mia", action: "TIMEOUT", actionLabel: "Timeout", reason: "Spamming links in #general", durationMinutes: 90, source: "COMMAND", createdAt: "2026-10-19T20:12:00Z", editedAt: null, editedBy: null, originalReason: null },
+  { caseNo: "4", userId: "333", userName: "raidbot123", moderatorId: "999", moderatorName: "JonnyBot", action: "BAN", actionLabel: "Ban", reason: "Autopunish: 3 warnings", durationMinutes: null, source: "AUTOPUNISH", createdAt: "2026-10-19T18:02:00Z", editedAt: null, editedBy: null, originalReason: null },
+  { caseNo: "3", userId: "111", userName: "troublemaker", moderatorId: "222", moderatorName: "Mod Mia", action: "WARN", actionLabel: "Warning", reason: "Off topic", durationMinutes: null, source: "WARN", createdAt: "2026-10-18T09:30:00Z", editedAt: "2026-10-18T10:00:00Z", editedBy: "222", originalReason: "off-topic" },
+] as const;
 const perms = {
   maxCustomGroups: 10, maxRolesPerGroup: 10, maxNameLength: 30,
   groups: [
@@ -351,6 +357,20 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "moderation" && (
+            <>
+              <PageHeader title="Moderation cases" description="Every ban, kick, timeout and warning is a numbered case." />
+              <ModerationManager
+                initial={{ settings: { dmReason: true, showModerator: false, appealUrl: null, protectedRoleIds: ["r1"] }, maxProtectedRoles: 25, limit: 100, cases: modCases as never }}
+                roles={structure.roles}
+                actions={{
+                  save: async (settings) => ({ ok: true, data: { settings, maxProtectedRoles: 25, limit: 100, cases: modCases as never } }),
+                  editReason: async (caseNo, reason) => ({ ok: true, data: { ...(modCases.find((c) => c.caseNo === caseNo) as never as ModerationCase), reason } }),
+                  lookUp: async () => ({ ok: true, data: modCases.filter((c) => c.userId === "111") as never }),
+                }}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />
