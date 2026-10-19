@@ -7,7 +7,7 @@ import { throttle } from "@/lib/ratelimit";
  * It is public and draws only what the address says, so the pictures it is willing to fetch are limited to Discord's CDN and this
  * site's own uploads (nothing else on the internet, or on a private network), and the texts are capped.
  */
-export const CARD_SIZE = { width: 700, height: 300 };
+const CARD_SIZE = { width: 700, height: 300 };
 
 const HEX = /^[0-9a-f]{6}$/i;
 
