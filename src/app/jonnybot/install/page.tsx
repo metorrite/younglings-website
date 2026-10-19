@@ -13,6 +13,7 @@ const PERMISSIONS: [string, string][] = [
   ["View Channels, Send Messages, Embed Links, Attach Files, Read Message History", "Posts the clan feed, welcome messages and ticket transcripts, and reads ticket replies."],
   ["Mention @everyone, @here and All Roles", "Only for pings you set up yourself, such as a ticket's staff role."],
   ["Add Reactions, Use External Emojis, Manage Messages", "Reactions on posts, JonnyBot's own emojis, and cleaning up its own messages."],
+  ["Change Nickname", "Lets your server give JonnyBot its own nickname on the Bot appearance page."],
   ["View Audit Log", "Lets the audit-log relay show who changed what, if you switch it on."],
 ];
 
