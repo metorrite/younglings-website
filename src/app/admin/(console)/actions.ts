@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireOwner } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type AccessGrantList, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -248,4 +248,35 @@ export async function cancelScheduledAction(id: number): Promise<ActionResult<Sc
   const result = await adminApi.cancelScheduled(ctx, id);
   if (result.ok) revalidatePath("/admin/scheduled");
   return result.ok ? { ok: true, data: result.data.posts } : { ok: false, error: result.error };
+}
+
+// ---------- restricted-content access list (owner only) ----------
+
+export async function addAccessGrantAction(input: unknown): Promise<ActionResult<AccessGrantList>> {
+  const ctx = await requireOwner("/admin/access");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (typeof input !== "object" || input === null) return { ok: false, error: "That entry could not be read." };
+  const g = input as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const subject = g.subject === "server" ? "server" : "user";
+  const result = await adminApi.addAccessGrant(ctx, {
+    area: str(g.area, 40),
+    subject,
+    ...(subject === "user" ? { userId: str(g.userId, 25) } : { guildId: str(g.guildId, 25), level: str(g.level, 40) }),
+    note: str(g.note, 120),
+    expiresOn: str(g.expiresOn, 10),
+  });
+  if (result.ok) revalidatePath("/admin/access");
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+}
+
+export async function removeAccessGrantAction(id: string): Promise<ActionResult<AccessGrantList>> {
+  const ctx = await requireOwner("/admin/access");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (!/^\d{1,18}$/.test(id)) return { ok: false, error: "That is not an entry." };
+  const result = await adminApi.removeAccessGrant(ctx, id);
+  if (result.ok) revalidatePath("/admin/access");
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
 }
