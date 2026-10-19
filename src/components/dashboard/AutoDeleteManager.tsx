@@ -13,6 +13,7 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
 import {
   choicesOf,
@@ -30,7 +31,10 @@ export interface AutoDeleteActions {
 
 type Problem = { title: string; items: string[] } | null;
 
-/** Channels that remove invites, links or files the moment they are posted: the rules in force, and a form to add or change one. */
+/**
+ * Channels that remove invites, links or files the moment they are posted: the rules in force, and a form to add or change one. A rule is only a channel and what
+ * to delete there, so nothing is split off into the Advanced view.
+ */
 export function AutoDeleteManager({
   initial,
   structure,
@@ -66,7 +70,7 @@ export function AutoDeleteManager({
   const changing = list.rules.some((r) => r.channelId === channelId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <CollapsibleCard
         id="ad-rule"
         title={changing ? "Change a channel's rule" : "Add a rule"}
@@ -79,7 +83,7 @@ export function AutoDeleteManager({
         }
         info="A message that breaks the rule is deleted at once and the person is told why in a note that disappears after a few seconds. Bots and anyone who can manage messages in that channel are never affected. JonnyBot needs View Channel and Manage Messages there."
       >
-        <FormField label="Channel" as="group">
+        <FormField label="Channel" size="md" as="group">
           <ChannelSelect
             {...choicesOf(structure)}
             onlyPostable={false}
@@ -89,7 +93,7 @@ export function AutoDeleteManager({
             none="Choose a channel…"
           />
         </FormField>
-        <FormField label="Delete messages that contain" as="group">
+        <FormField label="Delete messages that contain" as="group" size="md">
           <div className="space-y-3">
             {list.available.map((a) => (
               <Toggle
@@ -127,9 +131,9 @@ export function AutoDeleteManager({
             No channel has a rule.
           </p>
         ) : (
-          <ul className="grid gap-3 xl:grid-cols-2">
+          <PanelGrid min="22rem" gap="gap-3">
             {list.rules.map((r) => (
-              <li
+              <div
                 key={r.channelId}
                 className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5"
               >
@@ -173,9 +177,9 @@ export function AutoDeleteManager({
                     Remove
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </PanelGrid>
         )}
       </section>
     </div>

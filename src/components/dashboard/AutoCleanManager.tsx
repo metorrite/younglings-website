@@ -14,7 +14,10 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
   type AutoCleanList,
@@ -52,7 +55,11 @@ export function describeAge(minutes: number): string {
   return `${minutes} minutes`;
 }
 
-/** Channels that delete their own old messages: the rules in force, and a form to add or change one. */
+/**
+ * Channels that delete their own old messages: the rules in force, and a form to add or change one. Basic is a channel and how long messages stay (the usual
+ * lengths); Advanced adds a length of your own in minutes and deleting pinned messages too. A length that isn't one of the usual ones and a rule that deletes pins
+ * stay visible while you change them.
+ */
 export function AutoCleanManager({
   initial,
   structure,
@@ -69,6 +76,13 @@ export function AutoCleanManager({
   const [problem, setProblem] = useState<Problem>(null);
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
+  const showOwnLength = advanced || !AGES.some((a) => a.minutes === minutes);
+  const showPins = advanced || !keepPinned;
+  const hidden = [!showOwnLength && "a length of your own in minutes", !showPins && "deleting pinned messages too"].filter(
+    (name): name is string => typeof name === "string",
+  );
 
   function run(work: () => Result, done: string, after?: () => void) {
     setProblem(null);
@@ -94,7 +108,7 @@ export function AutoCleanManager({
   const changing = list.rules.some((r) => r.channelId === channelId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <CollapsibleCard
         id="ac-rule"
         title={changing ? "Change a channel's rule" : "Clean a channel"}
@@ -107,7 +121,7 @@ export function AutoCleanManager({
         }
         info="Messages older than the age you choose are deleted for good, checked every ten minutes. Pinned messages are kept unless you turn that off. JonnyBot needs View Channel, Read Message History and Manage Messages in the channel."
       >
-        <FormField label="Channel" as="group">
+        <FormField label="Channel" size="md" as="group">
           <ChannelSelect
             {...choicesOf(structure)}
             onlyPostable={false}
@@ -117,7 +131,7 @@ export function AutoCleanManager({
             none="Choose a channel…"
           />
         </FormField>
-        <FormField label="Delete messages older than" as="group">
+        <FormField label="Delete messages older than" as="group" size="lg">
           <div className="flex flex-wrap items-center gap-2">
             {AGES.map((a) => (
               <button
@@ -130,30 +144,37 @@ export function AutoCleanManager({
                 {a.label}
               </button>
             ))}
-            <span className="flex items-center gap-1.5 text-xs text-muted">
-              or
-              <input
-                type="number"
-                min={list.minAge}
-                max={list.maxAge}
-                value={minutes}
-                aria-label="Minutes"
-                onChange={(e) => setMinutes(Math.trunc(Number(e.target.value) || list.minAge))}
-                className={`${inputClass} w-24!`}
-              />
-              minutes
-            </span>
+            {showOwnLength && (
+              <span className="flex items-center gap-1.5 text-xs text-muted">
+                or
+                <span className="w-24">
+                  <input
+                    type="number"
+                    min={list.minAge}
+                    max={list.maxAge}
+                    value={minutes}
+                    aria-label="Minutes"
+                    onChange={(e) => setMinutes(Math.trunc(Number(e.target.value) || list.minAge))}
+                    className={inputClass}
+                  />
+                </span>
+                minutes
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-muted">
             Between {describeAge(list.minAge)} and {describeAge(list.maxAge)}.
           </p>
         </FormField>
-        <Toggle
-          checked={keepPinned}
-          onChange={setKeepPinned}
-          label="Keep pinned messages"
-          detail="Pinned messages are never deleted."
-        />
+        {showPins && (
+          <Toggle
+            checked={keepPinned}
+            onChange={setKeepPinned}
+            label="Keep pinned messages"
+            detail="Pinned messages are never deleted."
+          />
+        )}
+        {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
         <button
           type="button"
           className={primaryButton}
@@ -183,9 +204,9 @@ export function AutoCleanManager({
             No channel is being cleaned.
           </p>
         ) : (
-          <ul className="grid gap-3 xl:grid-cols-2">
+          <PanelGrid min="22rem" gap="gap-3">
             {list.rules.map((r) => (
-              <li
+              <div
                 key={r.channelId}
                 className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5"
               >
@@ -227,9 +248,9 @@ export function AutoCleanManager({
                     Stop cleaning
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </PanelGrid>
         )}
       </section>
     </div>
