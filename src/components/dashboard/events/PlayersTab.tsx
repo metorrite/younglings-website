@@ -309,7 +309,7 @@ export function PlayersTab({
                 <li key={t.id} className="flex items-center gap-2 rounded-lg border border-surface-border px-3 py-1.5 text-sm">
                   {t.name}
                   {editable && (
-                    <button type="button" className="text-xs text-red-400 underline" onClick={() => run("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}>
+                    <button type="button" className="inline-flex min-h-6 items-center text-xs text-red-400 underline" onClick={() => run("DELETE", `${base}/teams/${t.id}`, undefined, "Team removed.")}>
                       Remove
                     </button>
                   )}

@@ -209,7 +209,7 @@ export function SetupWizard({ guildId, guildName, data, quick, full, initialPath
         <p className="text-xs uppercase tracking-wide text-muted">
           Step {index + 1} of {steps.length} · {path === "custom" ? `Custom, ${stepDepth}` : `${stepDepth === "quick" ? "Quick" : "Full"} setup`}
         </p>
-        <div className="h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={index}>
+        <div className="h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Setup steps done" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={index}>
           <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${(index / steps.length) * 100}%` }} />
         </div>
         <h2 className="text-xl font-semibold">{step.title}</h2>

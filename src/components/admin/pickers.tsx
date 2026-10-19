@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { discordColorCss, type ForumInfo, type ForumThread, type GuildRole, type GuildStructure } from "@/lib/jonnybot-admin";
+import { useFieldLabelId } from "./fieldLabel";
 import { inputClass } from "./ui";
 
 /** Pickers fed by the bot's live view of the server, so only roles/channels that exist can be chosen. */
@@ -12,16 +13,20 @@ export function RoleSelect({
   onChange,
   none = "None",
   disabled = false,
+  label,
 }: {
   roles: GuildRole[];
   value: string | null;
   onChange: (id: string | null) => void;
   none?: string;
   disabled?: boolean;
+  /** Names the control when it isn't inside a labelled FormField. */
+  label?: string;
 }) {
+  const labelledBy = useFieldLabelId();
   const missing = value !== null && !roles.some((r) => r.id === value);
   return (
-    <select className={inputClass} value={value ?? ""} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
+    <select className={inputClass} aria-label={label} aria-labelledby={label ? undefined : labelledBy} value={value ?? ""} disabled={disabled} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">{none}</option>
       {missing && <option value={value}>(deleted role)</option>}
       {roles.map((role) => (
@@ -77,14 +82,17 @@ export function CategorySelect({
   categories,
   value,
   onChange,
+  label,
 }: {
   categories: GuildStructure["categories"];
   value: string | null;
   onChange: (id: string | null) => void;
+  label?: string;
 }) {
+  const labelledBy = useFieldLabelId();
   const missing = value !== null && !categories.some((c) => c.id === value);
   return (
-    <select className={inputClass} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
+    <select className={inputClass} aria-label={label} aria-labelledby={label ? undefined : labelledBy} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
       <option value="">No category (top of the channel list)</option>
       {missing && <option value={value}>(deleted category)</option>}
       {categories.map((category) => (
@@ -116,6 +124,7 @@ export function ChannelSelect({
   onlyPostable = false,
   allowForums = true,
   exclude = [],
+  label,
 }: {
   channels: GuildStructure["channels"];
   forums?: ForumInfo[];
@@ -127,7 +136,9 @@ export function ChannelSelect({
   allowForums?: boolean;
   /** Ids already taken (for a list that adds one at a time), left out of the options. */
   exclude?: string[];
+  label?: string;
 }) {
+  const labelledBy = useFieldLabelId();
   const offerForums = allowForums && forums.length > 0;
   const savedThread = threads.find((t) => t.id === value);
   const [forumId, setForumId] = useState<string | null>(savedThread?.forumId ?? null);
@@ -158,7 +169,7 @@ export function ChannelSelect({
   const forum = forums.find((f) => f.id === shownForum);
   return (
     <div>
-      <select className={inputClass} value={mainValue} onChange={(e) => pickMain(e.target.value)}>
+      <select className={inputClass} aria-label={label} aria-labelledby={label ? undefined : labelledBy} value={mainValue} onChange={(e) => pickMain(e.target.value)}>
         <option value="">{none}</option>
         {missing && <option value={value ?? ""}>(deleted channel)</option>}
         {options.map((channel) => (

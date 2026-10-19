@@ -56,8 +56,7 @@ export function PublicEventsManager({ initial, profileHref, actions }: { initial
           No upcoming events. Create one in Discord (Events in your server) and it will appear here.
         </p>
       ) : (
-        <ul>
-          <PanelGrid min="22rem" gap="gap-3">
+        <PanelGrid as="ul" min="22rem" gap="gap-3">
           {data.events.map((e) => (
             <li key={e.id} className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5">
               <div>
@@ -93,8 +92,7 @@ export function PublicEventsManager({ initial, profileHref, actions }: { initial
               </div>
             </li>
           ))}
-          </PanelGrid>
-        </ul>
+        </PanelGrid>
       )}
     </div>
   );

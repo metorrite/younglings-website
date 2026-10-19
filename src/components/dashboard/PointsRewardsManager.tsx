@@ -167,7 +167,7 @@ export function PointsRewardsManager({
         ) : (
           <PanelGrid min="20rem" gap="gap-3" className="mt-2">
             {list.rewards.map((r) => (
-              <div key={r.id} className={`flex flex-col gap-1 rounded-lg border border-surface-border p-3 text-sm ${r.active ? "" : "opacity-60"}`}>
+              <div key={r.id} className={`flex flex-col gap-1 rounded-lg border p-3 text-sm ${r.active ? "border-surface-border" : "border-dashed border-control-border"}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-semibold">{r.name}</span>
                   <span className="tabular-nums">
