@@ -296,16 +296,7 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
         </PanelGrid>
         {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
 
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
+
       </div>
 
       <div className="min-w-0">
@@ -338,6 +329,17 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               {meta.memberCount > 0 && <p className="mt-3 text-xs text-muted">{meta.memberCount} members</p>}
             </div>
           </section>
+          <SaveBar
+          inline
+          pending={pending}
+          onSave={submit}
+          outcome={outcome}
+          dirty={dirty}
+          onDiscard={() => {
+            setDraft(saved);
+            setOutcome(null);
+          }}
+        />
           {moderationHref && (
             <a href={moderationHref} className="block text-sm text-gold hover:underline">
               Moderate the directory →

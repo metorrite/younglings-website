@@ -17,6 +17,7 @@ export function SaveBar({
   label = "Save changes",
   dirty = false,
   onDiscard,
+  inline = false,
   children,
 }: {
   pending: boolean;
@@ -25,6 +26,8 @@ export function SaveBar({
   label?: string;
   dirty?: boolean;
   onDiscard?: () => void;
+  /** A panel that sits where it is put (under a preview, say) instead of a bar stuck to the bottom of the screen. */
+  inline?: boolean;
   children?: ReactNode;
 }) {
   useEffect(() => {
@@ -38,7 +41,7 @@ export function SaveBar({
 
   return (
     <div
-      className={`sticky bottom-4 z-10 flex flex-wrap items-center gap-3 rounded-xl border bg-surface/95 p-3 shadow-xl shadow-black/40 backdrop-blur transition-colors ${dirty ? "border-gold/60" : "border-surface-border"}`}
+      className={`${inline ? "" : "sticky bottom-4 z-10 "}flex flex-wrap items-center gap-3 rounded-xl border bg-surface/95 p-3 shadow-xl shadow-black/40 backdrop-blur transition-colors ${dirty ? "border-gold/60" : "border-surface-border"}`}
     >
       <div className="min-w-0 flex-1 text-sm">
         {outcome ? (
