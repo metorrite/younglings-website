@@ -908,6 +908,30 @@ export interface PluginCoverage {
   consent: { key: string; label: string; players: number }[];
 }
 
+/** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
+export interface DevSnapshotMeta {
+  /** snap-yyyyMMdd-HHmmss-xxxx */
+  id: string;
+  guildId: string;
+  createdAt: string;
+  sizeBytes: number;
+  requestedBy: string;
+  /** event:12, ticket:34, member:<id> or empty. */
+  focus: string;
+}
+
+export interface DevSnapshotList {
+  snapshots: DevSnapshotMeta[];
+  keepDays: number;
+  maxBytes: number;
+}
+
+/** A snapshot with its zip, as the bot sends it. */
+export interface DevSnapshotFile extends DevSnapshotMeta {
+  filename: string;
+  zipBase64: string;
+}
+
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
 export interface PremiumGuilds {
   guilds: BetaGuild[];
@@ -1411,6 +1435,11 @@ export const adminApi = {
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
   saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
+  devSnapshots: (ctx: ApiContext) => call<DevSnapshotList>(ctx, "GET", "dev/snapshots"),
+  devSnapshot: (ctx: ApiContext, id: string) => call<DevSnapshotFile>(ctx, "GET", `dev/snapshots/${encodeURIComponent(id)}`),
+  takeDevSnapshot: (ctx: ApiContext, focus: string, siteCommit: string) =>
+    call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
+  deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
