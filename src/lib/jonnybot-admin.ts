@@ -598,6 +598,11 @@ export interface GiveawayItem {
   endsAt: string;
   entries: number;
   requiredRoleId: string | null;
+  /** Given to every winner, if the giveaway has one. */
+  winnerRoleId: string | null;
+  dmWinners: boolean;
+  /** People can also enter with a party-popper reaction. */
+  reactionEntry: boolean;
   winners: string[];
 }
 
@@ -613,6 +618,9 @@ export interface GiveawayStart {
   durationMinutes: number;
   winners: number;
   requiredRoleId: string | null;
+  winnerRoleId?: string | null;
+  dmWinners?: boolean;
+  reactionEntry?: boolean;
 }
 
 /** A suggestion as the dashboard lists it. */

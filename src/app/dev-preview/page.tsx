@@ -277,9 +277,9 @@ const evCatalog = { bosses: [
   { name: "Kalphite King", image: "/bosses/kalphite_king.png", items: [{ name: "Drygore mace", key: "drygore_mace", rarity: "1/500", icon: true }, { name: "Drygore rapier", key: "drygore_rapier", rarity: "1/500", icon: true }] },
 ] };
 const evCall = async (_m: string, path: string) => (path === "events/bingo-catalog" ? { ok: true as const, data: evCatalog } : { ok: false as const, error: "Preview only", problems: [] });
-const giveaways = { maxWinners: 20, maxPrize: 200, giveaways: [
-  { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winners: [] },
-  { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winners: ["5"] },
+const giveaways = { maxWinners: 50, maxPrize: 200, giveaways: [
+  { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winnerRoleId: "r2", dmWinners: true, reactionEntry: true, winners: [] },
+  { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winnerRoleId: null, dmWinners: false, reactionEntry: false, winners: ["5"] },
 ] };
 const suggestions = { channelId: "2", maxNote: 500, suggestions: [
   { id: "3", authorId: "5", authorName: "PvmRyan", content: "Add a weekly boss of the week event with a prize for the most kills.", status: "PENDING" as const, note: null, decidedBy: null, ups: 12, downs: 2, createdAt: "2026-10-10T12:00:00Z" },
