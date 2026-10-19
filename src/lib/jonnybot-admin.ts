@@ -590,6 +590,21 @@ export interface HighlightSettings {
   limits: { maxKeywords: number; minCooldown: number; maxCooldown: number; maxList: number };
 }
 
+/** A server's message and voice logs: edits, deletes and voice moves written to channels, with message text kept only briefly. */
+export interface MessageLogSettings {
+  enabled: boolean;
+  retentionDays: number;
+  excludedChannels: string[];
+  editChannelId: string | null;
+  deleteChannelId: string | null;
+  voiceChannelId: string | null;
+  /** How many messages' text is being kept right now. */
+  remembered: number;
+  /** False when the bot runs without the Message Content intent, so there is no message text to log. */
+  messageContent: boolean;
+  limits: { minDays: number; maxDays: number; maxExcluded: number };
+}
+
 /** One automatic reply: when a message matches the trigger, the bot answers. */
 export interface AutoReplyDef {
   id: string | null;
@@ -1464,6 +1479,9 @@ export const adminApi = {
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   highlights: (ctx: ApiContext) => call<HighlightSettings>(ctx, "GET", "highlights"),
   saveHighlights: (ctx: ApiContext, body: Pick<HighlightSettings, "enabled" | "maxKeywords" | "cooldownSeconds" | "excludedChannels" | "allowedRoles">) => call<HighlightSettings>(ctx, "PUT", "highlights", body),
+  messageLogs: (ctx: ApiContext) => call<MessageLogSettings>(ctx, "GET", "message-logs"),
+  saveMessageLogs: (ctx: ApiContext, body: Pick<MessageLogSettings, "enabled" | "retentionDays" | "excludedChannels" | "editChannelId" | "deleteChannelId" | "voiceChannelId">) => call<MessageLogSettings>(ctx, "PUT", "message-logs", body),
+  clearMessageLogs: (ctx: ApiContext) => call<MessageLogSettings>(ctx, "POST", "message-logs/clear", {}),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
