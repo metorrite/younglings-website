@@ -1,4 +1,5 @@
 import { botCall } from "@/lib/botCall";
+import { demoClan, demoClanEvents, demoClans, demoEvents, demoLeaderboard } from "@/lib/clansHubDemo";
 
 /**
  * What the clans hub shows, read straight from JonnyBot's public directory (the same data the public API serves). Server-only: it carries
@@ -69,10 +70,13 @@ export const RECRUITING: { key: string; label: string }[] = [
   { key: "CLOSED", label: "Not recruiting" },
 ];
 
+/** Local review only: `HUB_DEMO=true` fills the hub with made-up clans, events and rankings so a layout can be judged with a full directory. Never set on a real server. */
+const demoOn = () => process.env.HUB_DEMO === "true";
+
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export async function listClans(filter: { q?: string; recruiting?: string; focus?: string } = {}): Promise<ClanSummary[] | null> {
-  const answer = await botCall<{ clans?: ClanSummary[] }>("/internal/directory/clans", { revalidate: 30 });
+  const answer = demoOn() ? { status: 200, json: { clans: demoClans() } } : await botCall<{ clans?: ClanSummary[] }>("/internal/directory/clans", { revalidate: 30 });
   if (!answer || answer.status !== 200) return null;
   const q = (filter.q ?? "").trim().toLowerCase().slice(0, 60);
   return (answer.json.clans ?? [])
@@ -88,6 +92,7 @@ export async function listClans(filter: { q?: string; recruiting?: string; focus
 /** One clan's profile, or `undefined` when there is no such clan (as opposed to `null`: the bot is unreachable). */
 export async function getClan(slug: string): Promise<ClanDetail | null | undefined> {
   if (!SLUG.test(slug) || slug.length > 40) return undefined;
+  if (demoOn()) return demoClan(slug);
   const answer = await botCall<ClanDetail>(`/internal/directory/clans/${slug}`, { revalidate: 30 });
   if (!answer) return null;
   if (answer.status === 404) return undefined;
@@ -96,16 +101,19 @@ export async function getClan(slug: string): Promise<ClanDetail | null | undefin
 
 export async function clanEvents(slug: string): Promise<HubEvent[]> {
   if (!SLUG.test(slug) || slug.length > 40) return [];
+  if (demoOn()) return demoClanEvents(slug);
   const answer = await botCall<{ events?: HubEvent[] }>(`/internal/directory/clans/${slug}/events`, { revalidate: 60 });
   return answer && answer.status === 200 ? (answer.json.events ?? []) : [];
 }
 
 export async function allEvents(): Promise<HubEvent[] | null> {
+  if (demoOn()) return demoEvents();
   const answer = await botCall<{ events?: HubEvent[] }>("/internal/directory/events", { revalidate: 60 });
   return answer && answer.status === 200 ? (answer.json.events ?? []) : null;
 }
 
 export async function leaderboard(period: "week" | "month"): Promise<LeaderboardEntry[] | null> {
+  if (demoOn()) return demoLeaderboard(period);
   const answer = await botCall<{ entries?: LeaderboardEntry[] }>(`/internal/directory/leaderboards?period=${period}`, { revalidate: 300 });
   return answer && answer.status === 200 ? (answer.json.entries ?? []) : null;
 }
@@ -114,3 +122,30 @@ export async function leaderboard(period: "week" | "month"): Promise<Leaderboard
 export function accent(colour: number | null | undefined): string {
   return colour === null || colour === undefined ? "#d4af37" : "#" + (colour >>> 0).toString(16).padStart(6, "0").slice(-6);
 }
+
+/**
+ * A clan's colour for the hub. A clan that picked one keeps it; one that did not gets a colour made from its slug, so the defaults differ from
+ * clan to clan instead of every card being the same gold.
+ */
+export function clanAccent(clan: { slug?: string; name: string; colour: number | null | undefined }): string {
+  if (clan.colour !== null && clan.colour !== undefined) return accent(clan.colour);
+  const key = clan.slug ?? clan.name;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  const hue = hash % 360;
+  const l = 0.58;
+  const c = 0.62 * (1 - Math.abs(2 * l - 1));
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = l - c / 2;
+  const [r, g, b] = hue < 60 ? [c, x, 0] : hue < 120 ? [x, c, 0] : hue < 180 ? [0, c, x] : hue < 240 ? [0, x, c] : hue < 300 ? [x, 0, c] : [c, 0, x];
+  return "#" + [r, g, b].map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("");
+}
+
+/** A `#rrggbb` colour as `rgba()` with the given opacity, for tints and glows. */
+export function withAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+/** Milliseconds until a moment (negative once it has passed). Kept out of the pages so they stay free of `Date.now()`. */
+export const msUntil = (iso: string): number => Date.parse(iso) - Date.now();
