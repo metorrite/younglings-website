@@ -1,7 +1,8 @@
 import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
-import { installUrl } from "@/lib/dashboard";
+import { InstallButton } from "@/components/jonnybot/InstallButton";
+import { installOptions } from "@/lib/dashboard";
 import { jonnybotHref } from "@/lib/siteHosts";
 import { currentSite } from "@/lib/siteHostsServer";
 
@@ -15,13 +16,14 @@ const PERMISSIONS: [string, string][] = [
   ["Add Reactions, Use External Emojis, Manage Messages", "Reactions on posts, JonnyBot's own emojis, and cleaning up its own messages."],
   ["Change Nickname", "Lets your server give JonnyBot its own nickname on the Bot appearance page."],
   ["View Audit Log", "Lets the audit-log relay show who changed what, if you switch it on."],
+  ["Optional: Kick, Ban and Timeout Members", "Only if you tick it on this page: warning punishments (timeout, kick, ban) and kicking brand-new accounts. Not asked for by default."],
 ];
 
 export default async function InstallPage() {
   const gated = await gateJonnyBot();
   if (gated) return gated;
   const site = await currentSite();
-  const install = installUrl();
+  const install = installOptions();
 
   return (
     <Page title="Install JonnyBot" intro="Adding it takes a minute. It starts with nothing switched on, so you choose what it does in your server.">
@@ -30,13 +32,7 @@ export default async function InstallPage() {
           <p className="font-semibold">Add JonnyBot to a server</p>
           <p className="text-sm text-muted">You need the Manage Server permission in the server. Discord asks which one.</p>
         </div>
-        {install ? (
-          <a href={install} target="_blank" rel="noopener noreferrer" className="rounded-md bg-[#5865F2] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4752c4]">
-            Add to Discord
-          </a>
-        ) : (
-          <span className="text-sm text-muted">The install link isn&apos;t set up on this site yet.</span>
-        )}
+        {install ? <InstallButton options={install} /> : <span className="text-sm text-muted">The install link isn&apos;t set up on this site yet.</span>}
       </div>
 
       <Section title="After it joins">
