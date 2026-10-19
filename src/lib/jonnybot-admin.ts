@@ -68,6 +68,7 @@ export interface WhoAmI {
   /** Whether the person may use JonnyBot's website while it is closed: the clan's admins, or admins of a trusted beta server. Absent from an older bot. */
   beta?: boolean;
   /** The server the answer is about; only present when the user is allowed in. */
+  guildId?: string;
   guildName?: string;
   guildIconUrl?: string | null;
 }
