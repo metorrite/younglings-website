@@ -97,6 +97,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     pages: [
       { href: "/admin/super", label: "Super admin", blurb: "Overview of the owner-only controls." },
       { href: "/admin/polling-plan", label: "Premium servers", blurb: "Which servers' clans are refreshed on the faster premium plan." },
+      { href: "/admin/site-access", label: "Site access", blurb: "Open or close the JonnyBot website, the clans hub and the bot dashboard without a redeploy." },
       { href: "/admin/beta-access", label: "Beta servers", blurb: "Trusted servers whose admins can use JonnyBot's website while it is closed to everyone else." },
       { href: "/admin/health", label: "Bot health", blurb: "Platform-wide: connection, database, refresh cycle and memory at a glance." },
     ],

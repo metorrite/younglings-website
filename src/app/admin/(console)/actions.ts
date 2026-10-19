@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireOwner } from "@/lib/admin";
+import { forgetSwitches } from "@/lib/siteSwitches";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig, type SiteSwitchInfo } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -248,4 +249,19 @@ export async function cancelScheduledAction(id: number): Promise<ActionResult<Sc
   const result = await adminApi.cancelScheduled(ctx, id);
   if (result.ok) revalidatePath("/admin/scheduled");
   return result.ok ? { ok: true, data: result.data.posts } : { ok: false, error: result.error };
+}
+
+// ---------- site access switches (owner only) ----------
+
+export async function saveSiteSwitchAction(key: string, enabled: boolean): Promise<ActionResult<SiteSwitchInfo[]>> {
+  const ctx = await requireOwner("/admin/site-access");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (key !== "jonnybot" && key !== "hub" && key !== "dashboard") return { ok: false, error: "That isn't a switch." };
+  const result = await adminApi.saveSiteSwitch(ctx, key, enabled === true);
+  if (result.ok) {
+    forgetSwitches(); // this server notices straight away; others within about 15 seconds
+    revalidatePath("/admin/site-access");
+  }
+  return result.ok ? { ok: true, data: result.data.switches } : { ok: false, error: result.error };
 }

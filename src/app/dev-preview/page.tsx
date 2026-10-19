@@ -34,6 +34,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { SiteAccessForm } from "@/components/admin/SiteAccessForm";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -344,6 +345,18 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "siteaccess" && (
+            <>
+              <PageHeader title="Site access" description="Open the JonnyBot website, the clans hub and the bot dashboard to everyone, or close them again." />
+              <SiteAccessForm
+                initial={[
+                  { key: "jonnybot", label: "JonnyBot website", description: "Home, docs, install and FAQ.", enabled: false, envName: "JONNYBOT_PUBLIC", source: "live" },
+                  { key: "hub", label: "Clans hub", description: "The public directory of clans.", enabled: true, envName: "HUB_PUBLIC", source: "live" },
+                  { key: "dashboard", label: "Bot dashboard", description: "The per-server dashboard.", enabled: false, envName: "DASHBOARD_PUBLIC", source: "env-closed" },
+                ]}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />

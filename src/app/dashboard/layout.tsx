@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { UnderDevelopment } from "@/components/jonnybot/UnderDevelopment";
 import { requireDashboardUser } from "@/lib/dashboard";
 import { canSeeJonnyBot } from "@/lib/jonnybotAccess";
+import { switchOpen } from "@/lib/siteSwitches";
 import { currentSite } from "@/lib/siteHostsServer";
 
 export const metadata = { title: "JonnyBot dashboard — beta" };
@@ -13,7 +14,7 @@ export const metadata = { title: "JonnyBot dashboard — beta" };
  * navigation. It adds no width limit of its own: the server pages use the whole screen, and the server picker sets its own.
  */
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const open = process.env.DASHBOARD_PUBLIC === "true";
+  const open = await switchOpen("dashboard");
   // While the dashboard is closed, everyone but the clan's admins gets the same "under development" page the rest of JonnyBot's site shows.
   if (!open && !(await canSeeJonnyBot())) return <UnderDevelopment site={await currentSite()} />;
   await requireDashboardUser();

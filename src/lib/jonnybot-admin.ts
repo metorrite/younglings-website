@@ -441,6 +441,14 @@ export interface BetaGuild {
   name: string | null;
 }
 
+/** One live site-access switch as the owner sees it. */
+export interface SiteSwitchInfo {
+  key: "jonnybot" | "hub" | "dashboard";
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1465,6 +1473,8 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  siteSwitches: (ctx: ApiContext) => call<{ switches: SiteSwitchInfo[] }>(ctx, "GET", "site-switches"),
+  saveSiteSwitch: (ctx: ApiContext, key: string, enabled: boolean) => call<{ switches: SiteSwitchInfo[] }>(ctx, "PUT", `site-switches/${encodeURIComponent(key)}`, { enabled }),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),

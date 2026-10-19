@@ -7,6 +7,7 @@ import { LinkModalGate } from "@/components/link/LinkModalGate";
 import { DialogProvider } from "@/components/ui/Dialogs";
 import { JonnyBotNavbar } from "@/components/jonnybot/JonnyBotNavbar";
 import { ClansNavbar } from "@/components/clanshub/ClansNavbar";
+import { hubOpen } from "@/lib/hubAccess";
 import { publicSiteOpen } from "@/lib/jonnybotAccess";
 import { currentSite } from "@/lib/siteHostsServer";
 
@@ -28,8 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
       title: { default: "Clans Hub", template: "%s | Clans Hub" },
       description: "Find a RuneScape 3 clan: who is recruiting, what they do and what they have coming up.",
-      // closed to search engines until HUB_PUBLIC=true
-      ...(process.env.HUB_PUBLIC === "true" ? {} : { robots: { index: false, follow: false } }),
+      // closed to search engines until the hub is opened
+      ...((await hubOpen()) ? {} : { robots: { index: false, follow: false } }),
     };
   }
   if (site.jonnybot) {
@@ -37,8 +38,8 @@ export async function generateMetadata(): Promise<Metadata> {
       metadataBase: new URL(site.split ? site.jonnybotOrigin : (process.env.NEXTAUTH_URL ?? "http://localhost:3000")),
       title: { default: "JonnyBot", template: "%s | JonnyBot" },
       description: "A Discord bot for RuneScape 3 clans and communities.",
-      // closed until JONNYBOT_PUBLIC: not for search engines yet
-      ...(publicSiteOpen() ? {} : { robots: { index: false, follow: false } }),
+      // closed until the site is opened: not for search engines yet
+      ...((await publicSiteOpen()) ? {} : { robots: { index: false, follow: false } }),
     };
   }
   return {

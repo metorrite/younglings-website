@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/dashboard/shell/Sidebar";
 import { NoticeBanners } from "@/components/dashboard/overview/NoticeBanners";
 import { requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { switchOpen } from "@/lib/siteSwitches";
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", DEVELOPER: "Developer" };
 
@@ -15,7 +16,7 @@ export default async function GuildLayout({ children, params }: { children: Reac
   const guild = await requireGuild(guildId);
   // A failed lookup just means no banners: the dashboard works without them.
   const [notices, setup, favorites, view] = await Promise.all([adminApi.notices(guild), adminApi.serverSetup(guild), adminApi.favorites(guild), adminApi.viewMode(guild)]);
-  const open = process.env.DASHBOARD_PUBLIC === "true";
+  const open = await switchOpen("dashboard");
 
   return (
     <div className="flex min-h-[calc(100vh-4.1rem)] flex-col lg:flex-row">
