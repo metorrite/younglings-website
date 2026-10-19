@@ -9,9 +9,9 @@ import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import type { HelpExtras, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
-type Draft = Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays">;
+type Draft = Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays" | "relatedTickets" | "groupBosses">;
 
-const shape = (d: Draft) => JSON.stringify([d.eventButton, d.eventStartHours, d.eventDays]);
+const shape = (d: Draft) => JSON.stringify([d.eventButton, d.eventStartHours, d.eventDays, d.relatedTickets, d.groupBosses]);
 
 /**
  * The optional extras of the help tickets, one card each, all off until switched on. The switch owns the settings of its extra, which only matter while it is on.
@@ -31,7 +31,7 @@ export function HelpExtrasForm({ initial, save }: { initial: HelpExtras; save: (
   function submit() {
     setOutcome(null);
     start(async () => {
-      const result = await save({ eventButton: draft.eventButton, eventStartHours: draft.eventStartHours, eventDays: draft.eventDays });
+      const result = await save({ eventButton: draft.eventButton, eventStartHours: draft.eventStartHours, eventDays: draft.eventDays, relatedTickets: draft.relatedTickets, groupBosses: draft.groupBosses });
       if (!result.ok) return setOutcome({ tone: "error", title: result.error, items: result.problems });
       setSaved(result.data);
       setDraft(result.data);
@@ -74,6 +74,32 @@ export function HelpExtrasForm({ initial, save }: { initial: HelpExtras; save: (
             </FormField>
             <FormField label="Runs for (days)" size="sm" info={`1 to ${draft.maxDays}.`}>
               {number(draft.eventDays, draft.maxDays, 1, (n) => change({ eventDays: n }), "Days the event runs")}
+            </FormField>
+          </SettingRow>
+        </CollapsibleCard>
+
+        <CollapsibleCard
+          id="help-extras-related"
+          title="Related tickets"
+          hint="Offer to link or merge tickets about the same group boss."
+          defaultOpen
+          summary={
+            <>
+              <Chip tone={draft.relatedTickets ? "good" : "bad"}>{draft.relatedTickets ? "On" : "Off"}</Chip>
+              {draft.relatedTickets && <Chip>{draft.groupBosses.split(",").filter((b) => b.trim()).length} group bosses</Chip>}
+            </>
+          }
+          info="When a help ticket names one of these bosses and another open ticket names the same one, the new ticket gets a notice for helpers and staff listing it. Link connects the two (each says where the other is); Merge, for staff and admins only, moves the member into the other ticket and closes the new one with its transcript saved."
+        >
+          <SettingRow
+            title="Offer to link or merge related tickets"
+            hint={draft.relatedTickets ? "A notice with Link and Merge buttons appears in the new ticket." : "No notice is shown."}
+            checked={draft.relatedTickets}
+            onChange={(on) => change({ relatedTickets: on })}
+            offHint="Off: no notice. Your boss list is kept."
+          >
+            <FormField label="Group bosses" size="lg" info="Comma separated, matched ignoring case against the boss a ticket names. Only these bosses are matched.">
+              <input className={inputClass} aria-label="Group bosses" value={draft.groupBosses} maxLength={400} onChange={(e) => change({ groupBosses: e.target.value })} />
             </FormField>
           </SettingRow>
         </CollapsibleCard>

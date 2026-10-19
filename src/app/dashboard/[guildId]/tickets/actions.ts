@@ -93,6 +93,8 @@ export async function saveGuildHelpExtrasAction(guildId: string, input: unknown)
     eventButton: s.eventButton === true,
     eventStartHours: intOrNull(s.eventStartHours) ?? 24,
     eventDays: intOrNull(s.eventDays) ?? 1,
+    relatedTickets: s.relatedTickets === true,
+    groupBosses: typeof s.groupBosses === "string" ? s.groupBosses.slice(0, 400) : "",
   });
   revalidatePath(`/dashboard/${guildId}/tickets/help-extras`);
   return outcome(result);
