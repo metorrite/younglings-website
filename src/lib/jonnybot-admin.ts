@@ -845,6 +845,13 @@ export interface AutoDeleteRule {
   channelId: string;
   channelName: string | null;
   filters: string[];
+  /** Messages containing any of these are deleted (the TEXT filter). */
+  words: string[];
+  /** EVERYONE, or the rule is only for (ONLY_WITH) or never for (EXCEPT_WITH) people holding one of `roleIds`. */
+  roleMode: "EVERYONE" | "ONLY_WITH" | "EXCEPT_WITH";
+  roleIds: string[];
+  /** Seconds to wait before deleting; 0 deletes at once. */
+  delaySeconds: number;
   problem: string | null;
 }
 
@@ -852,7 +859,14 @@ export interface AutoDeleteList {
   rules: AutoDeleteRule[];
   available: { key: string; label: string }[];
   maxRules: number;
+  maxDelaySeconds: number;
+  maxWords: number;
+  minWordLength: number;
+  maxRoles: number;
 }
+
+/** What a rule is saved with (the channel is separate). */
+export type AutoDeleteDraft = Pick<AutoDeleteRule, "filters" | "words" | "roleMode" | "roleIds" | "delaySeconds">;
 
 /** A server's clan profile: what it shares publicly, and the read-only facts about verification and listing. */
 export interface ClanProfileData {
@@ -1414,7 +1428,7 @@ export const adminApi = {
   saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId">) =>
     call<AccountGate>(ctx, "PUT", "accountgate", body),
   autoDelete: (ctx: ApiContext) => call<AutoDeleteList>(ctx, "GET", "autodelete"),
-  saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
+  saveAutoDelete: (ctx: ApiContext, channelId: string, rule: AutoDeleteDraft) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, ...rule }),
   deleteAutoDelete: (ctx: ApiContext, channelId: string) => call<AutoDeleteList>(ctx, "DELETE", `autodelete/${encodeURIComponent(channelId)}`),
   clanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "GET", "clan-profile"),
   saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn">) =>
