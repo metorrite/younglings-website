@@ -558,6 +558,20 @@ export interface BrandingSave {
   removeBanner?: boolean;
 }
 
+/** One RuneScape timer reminder: posted to a channel, optionally pinging an opt-in role. Off by default. */
+export interface LookupReminder {
+  kind: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+  channelId: string | null;
+  roleId: string | null;
+}
+
+export interface LookupSettings {
+  reminders: LookupReminder[];
+}
+
 /** A server's starboard: messages with enough of one reaction are copied to a showcase channel. */
 export interface Starboard {
   enabled: boolean;
@@ -1447,6 +1461,8 @@ export const adminApi = {
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
+  lookups: (ctx: ApiContext) => call<LookupSettings>(ctx, "GET", "lookups"),
+  saveLookups: (ctx: ApiContext, body: { reminders: Pick<LookupReminder, "kind" | "enabled" | "channelId" | "roleId">[] }) => call<LookupSettings>(ctx, "PUT", "lookups", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),

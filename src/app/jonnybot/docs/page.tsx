@@ -21,6 +21,7 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
   { name: "/events", who: "Everyone (changeable)", what: "Your events (place, points, buy-in, prizes), the ones open for signup, and join or leave. Events themselves are made and run from the dashboard." },
   { name: "/price", who: "Everyone (changeable)", what: "A RuneScape 3 item's Grand Exchange price with its 7 and 30 day change and a link to the wiki. Pick the item from the suggestions." },
+  { name: "/worldevents", who: "Everyone (changeable)", what: "The Voice of Seren right now and the events that come round by themselves with how often, from the RuneScape Wiki. Hourly Voice of Seren reminders can be switched on from the RuneScape timers page." },
 ];
 
 const DASHBOARD: [string, string][] = [
