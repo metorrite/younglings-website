@@ -1090,6 +1090,12 @@ export interface ServerSetup {
 }
 
 
+/** The language JonnyBot uses for its messages in a server, and the languages the bot has. */
+export interface LanguageConfig {
+  language: string;
+  languages: { code: string; name: string }[];
+}
+
 /** A named set of server roles that works as one permission level. Admin, Support and Developer always exist; the rest are the server's own. */
 export interface PermissionGroupConfig {
   key: string;
@@ -1445,6 +1451,9 @@ export const adminApi = {
   createAutoReply: (ctx: ApiContext, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "POST", "autoresponders", reply),
   updateAutoReply: (ctx: ApiContext, id: string, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "PUT", `autoresponders/${encodeURIComponent(id)}`, reply),
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
+  language: (ctx: ApiContext) => call<LanguageConfig>(ctx, "GET", "language"),
+  saveLanguage: (ctx: ApiContext, language: string) => call<LanguageConfig>(ctx, "PUT", "language", { language }),
+
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),

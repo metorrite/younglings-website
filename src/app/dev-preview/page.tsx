@@ -29,6 +29,8 @@ import { WarningsManager } from "@/components/dashboard/WarningsManager";
 import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
+import { LanguageForm } from "@/components/dashboard/LanguageForm";
+import { messagesFor, t } from "@/lib/i18n";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
@@ -344,6 +346,16 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "language" && (
+            <>
+              <PageHeader title={t("en", "dashboard.language.title")} description={t("en", "dashboard.language.description")} />
+              <LanguageForm
+                initial={{ language: "en", languages: [{ code: "en", name: "English" }] }}
+                texts={messagesFor("en", ["dashboard.language.panel", "dashboard.language.description", "dashboard.language.field", "dashboard.language.hint", "dashboard.language.only", "dashboard.language.saved", "dashboard.language.title"] as const)}
+                save={async (language) => ({ ok: true, data: { language, languages: [{ code: "en", name: "English" }] } })}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />
