@@ -34,7 +34,7 @@ export interface EventSummary {
     verification?: { required?: boolean; gate?: VerificationGate; instructions?: string };
     submissions?: { require?: boolean; receipts?: boolean };
     /** Bingo only: the board's size, seed and the objective keys in tile order, plus the bonuses for lines and the blackout. */
-    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string; display?: "SHARED" | "OWN" | "BOTH"; title?: string; subtitle?: string; fog?: boolean; names?: boolean; numbers?: boolean; accent?: string; curve?: string; freeCentre?: boolean };
+    board?: { size: number; seed: number; keys: string[]; layout?: string; unlock?: "locked" | "free"; pool?: string; look?: string; display?: "SHARED" | "OWN" | "BOTH"; shapeSize?: number; title?: string; subtitle?: string; fog?: boolean; names?: boolean; numbers?: boolean; accent?: string; curve?: string; freeCentre?: boolean };
     bonuses?: EventBonus[];
     lineBonus?: number;
     blackoutBonus?: number;
@@ -220,6 +220,9 @@ export interface BingoLayoutInfo {
   requires: Record<string, number[]>;
   /** Whether those rules are enforced ("locked") or the shape only earns its bonuses ("free"). Only on an event's own detail. */
   unlock?: "locked" | "free";
+  /** The size a shape drawn in code was made at (pyramid base, path length, rings, levels); 0 for the painted picture. */
+  size?: number;
+  generated?: boolean;
 }
 
 export interface EventDetail {
