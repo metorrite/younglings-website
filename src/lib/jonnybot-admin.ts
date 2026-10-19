@@ -1455,6 +1455,9 @@ export const adminApi = {
   notices: (ctx: ApiContext) => call<{ notices: BotNotice[] }>(ctx, "GET", "notices"),
   /** The pages this person starred in the sidebar of this server, in the order they starred them. */
   favorites: (ctx: ApiContext) => call<{ paths: string[] }>(ctx, "GET", "prefs/favorites"),
+  /** The Basic/Advanced view this admin chose in this server, null if they never have. */
+  viewMode: (ctx: ApiContext) => call<{ mode: "basic" | "advanced" | null }>(ctx, "GET", "prefs/view"),
+  saveViewMode: (ctx: ApiContext, mode: "basic" | "advanced") => call<{ mode: "basic" | "advanced" | null }>(ctx, "PUT", "prefs/view", { mode }),
   saveFavorites: (ctx: ApiContext, paths: string[]) => call<{ paths: string[] }>(ctx, "PUT", "prefs/favorites", { paths }),
   addNotice: (ctx: ApiContext, severity: BotNotice["severity"], body: string) => call<{ notices: BotNotice[] }>(ctx, "POST", "notices", { severity, body }),
   removeNotice: (ctx: ApiContext, id: string) => call<{ notices: BotNotice[] }>(ctx, "DELETE", `notices/${encodeURIComponent(id)}`),
