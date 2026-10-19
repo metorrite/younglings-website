@@ -9,6 +9,7 @@ const TABS = [
   { path: "", label: "Panels" },
   { path: "/history", label: "Tickets" },
   { path: "/settings", label: "Settings" },
+  { path: "/help-extras", label: "Help extras" },
   { path: "/defaults", label: "Panel defaults" },
 ];
 
