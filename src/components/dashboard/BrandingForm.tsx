@@ -1,24 +1,80 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { FormField, inputClass, Notice } from "@/components/admin/ui";
+import { useRef, useState, useTransition } from "react";
+import { FormField, ghostButton, inputClass, Notice } from "@/components/admin/ui";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { Advanced } from "@/components/dashboard/ui/ViewMode";
-import type { BotBranding, WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { prepareImage } from "@/lib/imagePrep";
+import type { BotBranding, BrandingSave, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
-type Draft = { displayName: string; nickname: string };
+/** What is being edited. A picture is only here once one was chosen (`data`) or removal was asked for; the saved picture is never sent back. */
+type Draft = { displayName: string; nickname: string; bio: string; avatar: string | null; banner: string | null; removeAvatar: boolean; removeBanner: boolean };
 
-const toDraft = (b: BotBranding): Draft => ({ displayName: b.displayName ?? "", nickname: b.nickname ?? "" });
-const shape = (d: Draft) => JSON.stringify([d.displayName.trim(), d.nickname.trim()]);
+const toDraft = (b: BotBranding): Draft => ({ displayName: b.displayName ?? "", nickname: b.nickname ?? "", bio: b.bio ?? "", avatar: null, banner: null, removeAvatar: false, removeBanner: false });
+const shape = (d: Draft) => JSON.stringify([d.displayName.trim(), d.nickname.trim(), d.bio.trim(), d.avatar !== null, d.banner !== null, d.removeAvatar, d.removeBanner]);
+
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
+/** A picture to choose: what is shown now (or what was just chosen), a button to pick another, and one to remove it. */
+function PictureField({ label, slot, shape: look, current, pending, removed, hasSaved, onPick, onRemove, hint }: { label: string; slot: "avatar" | "banner"; shape: "round" | "wide"; current: string | null; pending: string | null; removed: boolean; hasSaved: boolean; onPick: (dataUrl: string) => void; onRemove: () => void; hint: string }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const shown = removed ? null : (pending ?? current);
+
+  async function choose(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return setError("Choose a PNG, JPEG, GIF or WebP picture.");
+    const prepared = await prepareImage(file, slot);
+    if (prepared.size > 2 * 1024 * 1024) return setError("That picture is too big. Keep it under 2 MB.");
+    onPick(await readAsDataUrl(prepared));
+    if (input.current) input.current.value = "";
+  }
+
+  return (
+    <FormField label={label} as="group" size="lg" hint={hint}>
+      <div className="flex flex-wrap items-center gap-4">
+        {shown ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a picture just chosen (a data URL) or Discord's own address
+          <img src={shown} alt="" className={look === "round" ? "h-16 w-16 rounded-full border border-surface-border object-cover" : "h-16 w-32 rounded-lg border border-surface-border object-cover"} />
+        ) : (
+          <span aria-hidden className={`flex items-center justify-center border border-dashed border-surface-border text-xs text-muted ${look === "round" ? "h-16 w-16 rounded-full" : "h-16 w-32 rounded-lg"}`}>
+            {hasSaved && !removed ? "Set" : "None"}
+          </span>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" id={`pic-${slot}`} onChange={(e) => void choose(e.target.files?.[0])} />
+          <label htmlFor={`pic-${slot}`} className={`${ghostButton} cursor-pointer`}>
+            {pending ? "Choose another" : hasSaved || current ? "Replace" : "Choose a picture"}
+          </label>
+          {(hasSaved || current || pending) && !removed && (
+            <button type="button" className={ghostButton} onClick={onRemove}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+      {pending && <p className="mt-2 text-xs text-amber-300">New picture chosen. It is used once you save.</p>}
+      {removed && <p className="mt-2 text-xs text-amber-300">Will be removed when you save.</p>}
+      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+    </FormField>
+  );
+}
 
 /**
  * How JonnyBot appears in this server. Two panels: the name its messages use for the server (a display name, else the clan name, else the
- * server's name) and the bot's own nickname here. Avatar, banner and bio are for premium servers and shown under Advanced.
+ * server's name) and the bot's own nickname here. Avatar, banner and bio are for servers on the premium list and shown under Advanced.
  */
-export function BrandingForm({ initial, save }: { initial: BotBranding; save: (draft: { displayName: string | null; nickname: string | null }) => Promise<WelcomeActionResult<BotBranding>> }) {
+export function BrandingForm({ initial, save }: { initial: BotBranding; save: (draft: BrandingSave & { displayName: string | null; nickname: string | null }) => Promise<WelcomeActionResult<BotBranding>> }) {
   const [saved, setSaved] = useState(initial);
   const [draft, setDraft] = useState<Draft>(toDraft(initial));
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -35,7 +91,16 @@ export function BrandingForm({ initial, save }: { initial: BotBranding; save: (d
   function submit() {
     setOutcome(null);
     start(async () => {
-      const result = await save({ displayName: draft.displayName.trim() || null, nickname: draft.nickname.trim() || null });
+      const body: BrandingSave & { displayName: string | null; nickname: string | null } = { displayName: draft.displayName.trim() || null, nickname: draft.nickname.trim() || null };
+      // The profile is sent only when it changed, so a server that is not on the premium list never trips over it.
+      if (saved.premium) {
+        if (draft.bio.trim() !== (saved.bio ?? "")) body.bio = draft.bio.trim();
+        if (draft.avatar) body.avatar = draft.avatar;
+        else if (draft.removeAvatar) body.removeAvatar = true;
+        if (draft.banner) body.banner = draft.banner;
+        else if (draft.removeBanner) body.removeBanner = true;
+      }
+      const result = await save(body);
       if (!result.ok) return setOutcome({ tone: "error", title: result.error, items: result.problems });
       setSaved(result.data);
       setDraft(toDraft(result.data));
@@ -86,12 +151,41 @@ export function BrandingForm({ initial, save }: { initial: BotBranding; save: (d
           title="Avatar, banner and bio"
           hint="A picture and profile of its own in this server."
           summary={<Chip tone={saved.premium ? "good" : "plain"}>{saved.premium ? "Premium server" : "Premium only"}</Chip>}
+          info="Shown on JonnyBot's profile card in this server only. Other servers keep the normal ones."
         >
-          <p className="text-sm text-muted">
-            {saved.premium
-              ? "This server is on the premium list, so it will be able to give JonnyBot its own avatar, banner and bio here. That setting is coming next."
-              : "A server avatar, banner and bio are for premium servers. Ask the bot's owner to add this server to the premium list."}
-          </p>
+          {!saved.premium ? (
+            <p className="text-sm text-muted">A server avatar, banner and bio are for premium servers. Ask the bot&apos;s owner to add this server to the premium list.</p>
+          ) : (
+            <>
+              <PictureField
+                label="Avatar"
+                slot="avatar"
+                shape="round"
+                current={saved.avatarUrl}
+                pending={draft.avatar}
+                removed={draft.removeAvatar}
+                hasSaved={!!saved.avatarUrl}
+                hint="A square picture works best. PNG, JPEG, GIF or WebP, up to 2 MB."
+                onPick={(data) => change({ avatar: data, removeAvatar: false })}
+                onRemove={() => change({ avatar: null, removeAvatar: !!saved.avatarUrl })}
+              />
+              <PictureField
+                label="Banner"
+                slot="banner"
+                shape="wide"
+                current={null}
+                pending={draft.banner}
+                removed={draft.removeBanner}
+                hasSaved={saved.bannerSet}
+                hint="A wide picture behind the profile card. Discord doesn't show an uploaded banner back, so it appears as “Set”."
+                onPick={(data) => change({ banner: data, removeBanner: false })}
+                onRemove={() => change({ banner: null, removeBanner: saved.bannerSet })}
+              />
+              <FormField label="Bio" size="lg" hint={`Up to ${saved.maxBio} characters. Shown on the profile card.`}>
+                <textarea className={`${inputClass} min-h-24`} value={draft.bio} maxLength={saved.maxBio} onChange={(e) => change({ bio: e.target.value })} />
+              </FormField>
+            </>
+          )}
         </CollapsibleCard>
       </Advanced>
 

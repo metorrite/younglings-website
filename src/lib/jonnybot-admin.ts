@@ -537,8 +537,25 @@ export interface BotBranding {
   canChangeNickname: boolean;
   /** Whether the server is on the premium list (avatar, banner and bio are for those servers). */
   premium: boolean;
+  /** The bot's server avatar (Discord's address for it), or null when it has none. */
+  avatarUrl: string | null;
+  /** Whether a server banner was uploaded here (Discord does not return the banner itself). */
+  bannerSet: boolean;
+  bio: string | null;
+  maxBio: number;
   maxDisplayName: number;
   maxNickname: number;
+}
+
+/** What the Bot appearance page may send: only the fields it names are changed. Pictures are base64 (a data URL is fine). */
+export interface BrandingSave {
+  displayName?: string | null;
+  nickname?: string | null;
+  bio?: string | null;
+  avatar?: string;
+  banner?: string;
+  removeAvatar?: boolean;
+  removeBanner?: boolean;
 }
 
 /** A server's starboard: messages with enough of one reaction are copied to a showcase channel. */
@@ -1380,7 +1397,7 @@ export const adminApi = {
   updateAutoReply: (ctx: ApiContext, id: string, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "PUT", `autoresponders/${encodeURIComponent(id)}`, reply),
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
-  saveBranding: (ctx: ApiContext, body: { displayName: string | null; nickname: string | null }) => call<BotBranding>(ctx, "PUT", "branding", body),
+  saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),

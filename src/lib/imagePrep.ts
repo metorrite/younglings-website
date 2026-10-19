@@ -8,7 +8,7 @@
  */
 
 /** The longest side worth keeping, by place: what Discord shows each at, with room to spare for sharp screens. */
-const MAX_SIDE: Record<string, number> = { thumbnail: 256, author_icon: 128, footer_icon: 128, image: 1024 };
+const MAX_SIDE: Record<string, number> = { thumbnail: 256, author_icon: 128, footer_icon: 128, image: 1024, avatar: 512, banner: 1280 };
 
 /** A picture this small is sent as it is. */
 const SMALL_ENOUGH = 300 * 1024;
