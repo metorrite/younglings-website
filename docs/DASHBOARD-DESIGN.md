@@ -77,4 +77,4 @@ The research behind these, with sources, is in `DASHBOARD-UX.md`. `axe-core` (in
 
 ## Checking a change
 
-Signed-in pages need a Discord login, so a new building block is looked at in the git-excluded preview harness (`/dev-preview?v=...`, see `src/app/dev-preview`) and the page itself is reviewed from screenshots.
+Signed-in pages need a Discord login, so a new building block is looked at in the preview harness (`/dev-preview?v=<view>&mode=basic|advanced`, in `src/app/dev-preview`). It is committed, type-checked and linted like everything else, and a production build answers 404 for it. When you add a page or a building block, add its view there with made-up data so it can be looked at without signing in or running the bot; the page itself is then reviewed from screenshots or on the real localhost.
