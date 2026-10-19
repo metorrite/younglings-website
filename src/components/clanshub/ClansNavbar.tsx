@@ -1,29 +1,37 @@
 import Image from "next/image";
 import Link from "next/link";
+import { HubNavLinks } from "@/components/clanshub/HubNavLinks";
 import { hubHref, jonnybotHref, type SiteInfo } from "@/lib/siteHosts";
 
-/** The clans hub's own header: where to look for a clan, and a way for a clan to list itself. */
+/** The clans hub's own header: sticky, as wide as the page, with a search that works from anywhere and a way for a clan to list itself. */
 export function ClansNavbar({ site }: { site: SiteInfo }) {
   const links = [
-    { label: "Clans", href: hubHref(site, "/") },
-    { label: "Events", href: hubHref(site, "/events") },
-    { label: "Leaderboards", href: hubHref(site, "/leaderboards") },
+    { label: "Clans", href: hubHref(site, "/"), path: "/" },
+    { label: "Events", href: hubHref(site, "/events"), path: "/events" },
+    { label: "Leaderboards", href: hubHref(site, "/leaderboards"), path: "/leaderboards" },
   ];
   return (
-    <header className="relative z-40 border-b border-surface-border bg-surface/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href={hubHref(site, "/")} className="flex shrink-0 items-center gap-2" aria-label="Clans Hub home">
-          <Image src="/clan-logo.png" alt="" width={32} height={32} className="rounded-full" />
-          <span className="font-semibold tracking-wide">Clans Hub</span>
+    <header className="sticky top-0 z-40 border-b border-surface-border bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 w-full max-w-[96rem] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <Link href={hubHref(site, "/")} className="flex shrink-0 items-center gap-2.5" aria-label="Clans Hub home">
+          <Image src="/clan-logo.png" alt="" width={34} height={34} className="rounded-xl" />
+          <span className="hidden text-lg font-semibold tracking-tight sm:inline">
+            Clans <span className="text-gold">Hub</span>
+          </span>
         </Link>
-        <nav className="ml-2 flex flex-1 items-center gap-5 overflow-x-auto text-sm" aria-label="Main">
-          {links.map((l) => (
-            <Link key={l.label} href={l.href} className="shrink-0 text-muted transition hover:text-foreground">
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-        <a href={site.hubHost ? `${site.jonnybotOrigin}/dashboard` : jonnybotHref(site, "/dashboard")} className="hidden shrink-0 rounded-lg border border-gold/60 px-3 py-1.5 text-sm font-semibold text-gold transition hover:bg-gold/10 sm:inline-block">
+        <HubNavLinks links={links} />
+        <form action={hubHref(site, "/")} method="get" role="search" className="ml-auto hidden min-w-0 md:block">
+          <input
+            name="q"
+            placeholder="Search clans"
+            aria-label="Search clans"
+            className="w-56 rounded-xl border border-surface-border bg-surface px-3.5 py-2 text-sm placeholder:text-muted/70 focus:border-gold focus:outline-none lg:w-72"
+          />
+        </form>
+        <a
+          href={site.hubHost ? `${site.jonnybotOrigin}/dashboard` : jonnybotHref(site, "/dashboard")}
+          className="ml-auto shrink-0 rounded-xl bg-gold px-4 py-2 text-sm font-semibold text-black transition hover:brightness-110 md:ml-0"
+        >
           List your clan
         </a>
       </div>
