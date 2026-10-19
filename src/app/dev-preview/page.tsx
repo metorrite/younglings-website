@@ -46,6 +46,7 @@ import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
+import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
 import { StarboardForm } from "@/components/dashboard/StarboardForm";
 import { PointsManager } from "@/components/dashboard/PointsManager";
 import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
@@ -377,6 +378,7 @@ function Preview() {
               />
             </>
           )}
+          {view === "bingo-options" && (<><PageHeader title="Board options" description="The extra bingo board options on the event's Board tab." /><div className="max-w-3xl space-y-4"><BingoOptionsCard board={{ title: "Winter Bingo", names: true }} shaped={false} canReroll disabled={false} save={() => {}} /><BingoOptionsCard board={{ fog: true }} shaped canReroll={false} disabled={false} save={() => {}} /></div></>)}
           {view === "starboard" && (<><PageHeader title="Starboard" description="Copy the best messages to a showcase channel." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "⭐", threshold: 3, selfStar: false, maxThreshold: 15, channelThresholds: [], skipHiddenChannels: false, onlyChannels: [], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "starboard-custom" && (<><PageHeader title="Starboard" description="With an emoji of its own and self-starring on (they stay visible)." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "<:gz:1234>", threshold: 5, selfStar: true, maxThreshold: 15, channelThresholds: [{ channelId: "1", threshold: 8 }], skipHiddenChannels: true, onlyChannels: ["2"], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
