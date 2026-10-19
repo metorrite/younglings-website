@@ -61,6 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Starboard", icon: "star", path: "/starboard" },
       { label: "Giveaways", icon: "gift", path: "/giveaways" },
+      { label: "Chat levels", icon: "trophy", path: "/chat-levels", advanced: true },
       { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
       { label: "Points", icon: "trophy", path: "/points" },

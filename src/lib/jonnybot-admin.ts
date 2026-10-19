@@ -575,6 +575,31 @@ export interface Starboard {
   maxChannelRules: number;
 }
 
+/** A server's chat levels: XP for chatting, level roles and a leaderboard. Separate from the points ledger. */
+export interface ChatLevelSettings {
+  enabled: boolean;
+  minXp: number;
+  maxXp: number;
+  cooldownSeconds: number;
+  announce: boolean;
+  /** Where level-ups are announced; null is the channel the member was chatting in. */
+  announceChannelId: string | null;
+  announceMessage: string;
+  removeOldRoles: boolean;
+  ignoredChannels: string[];
+  ignoredRoles: string[];
+  channelMultipliers: { channelId: string; multiplier: number }[];
+  roleMultipliers: { roleId: string; multiplier: number }[];
+  levelRoles: { level: number; roleId: string }[];
+  members: number;
+  limits: { maxXp: number; minCooldown: number; maxCooldown: number; maxMultiplier: number; maxList: number; maxRoles: number; maxMessage: number; maxLevel: number };
+}
+
+export interface ChatLevelTop {
+  top: { rank: number; userId: string; name: string; level: number; xp: number; messages: number }[];
+  members: number;
+}
+
 /** One automatic reply: when a message matches the trigger, the bot answers. */
 export interface AutoReplyDef {
   id: string | null;
@@ -1447,6 +1472,10 @@ export const adminApi = {
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
+  chatLevels: (ctx: ApiContext) => call<ChatLevelSettings>(ctx, "GET", "chat-levels"),
+  saveChatLevels: (ctx: ApiContext, body: Omit<ChatLevelSettings, "members" | "limits">) => call<ChatLevelSettings>(ctx, "PUT", "chat-levels", body),
+  chatLevelsTop: (ctx: ApiContext) => call<ChatLevelTop>(ctx, "GET", "chat-levels/top"),
+  resetChatLevels: (ctx: ApiContext, body: { userId?: string; all?: boolean }) => call<ChatLevelTop>(ctx, "POST", "chat-levels/reset", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),

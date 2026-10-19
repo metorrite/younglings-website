@@ -109,6 +109,11 @@ export interface MyEvents {
   result?: { waiting: boolean; position: number };
 }
 
+/** A member's own chat level (XP for chatting). `enabled` is false when the server hasn't switched chat levels on. */
+export type MyChatLevel =
+  | { enabled: false }
+  | { enabled: true; level: number; xp: number; intoLevel: number; toNext: number; maxed: boolean; rank: number | null; messages: number; members: number };
+
 export interface NewMemberPoll {
   title: string;
   options: string[];
@@ -164,6 +169,7 @@ export const memberApi = {
   cancelLink: (userId: string) => request<LinkResult>("DELETE", "link", userId),
   settings: (userId: string) => request<MemberSettings>("GET", "settings", userId),
   saveSettings: (userId: string, settings: Omit<MemberSettings, "rsns">) => request<MemberSettings>("PUT", "settings", userId, settings),
+  chatLevel: (userId: string) => request<MyChatLevel>("GET", "level", userId),
   goals: (userId: string) => request<{ goals: Goal[] }>("GET", "goals", userId),
   addGoal: (userId: string, skillId: number, targetLevel: number) => request<{ goals: Goal[] }>("POST", "goals", userId, { skillId, targetLevel }),
   deleteGoal: (userId: string, goalId: string) => request<{ goals: Goal[] }>("DELETE", `goals?id=${encodeURIComponent(goalId)}`, userId),
