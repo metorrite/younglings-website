@@ -153,6 +153,7 @@ const hub = {
   commands: [
     { key: "rs", title: "RuneScape stats", slashName: "rs", description: "Look up a player and link a RuneScape name.", defaultAccess: "Everyone", enabled: true, customAccess: false, allowedRefs: [], channelIds: [] },
     { key: "signup", title: "Signups", slashName: "signup", description: "Create sign-up sheets for events.", defaultAccess: "Admins", enabled: true, customAccess: true, allowedRefs: ["group:support"], channelIds: ["2"], signup: { adminChannelId: null, lockAdminChannel: false, publicChannelIds: [] } },
+    { key: "afk", title: "Away status", slashName: "afk", description: "Mark yourself away: people who mention you are told, and it clears when you next speak.", defaultAccess: "Everyone", enabled: true, customAccess: false, allowedRefs: [], channelIds: [], afk: { nicknameTag: true, ignoreChannelIds: ["2"], away: [{ userId: "11", name: "Axley", reason: "Raids tonight", since: "2026-10-19T09:00:00Z" }, { userId: "12", name: "Berserker87", reason: "", since: "2026-10-18T20:00:00Z" }] } },
     { key: "poll", title: "Polls", slashName: "poll", description: "Start a poll in a channel.", defaultAccess: "Admins", enabled: false, customAccess: false, allowedRefs: [], channelIds: [] },
   ],
 };
@@ -346,7 +347,7 @@ function Preview() {
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />
-              <HubEditor hub={hub} structure={structure} canEditAccess save={async (_k, d) => ({ ok: true, data: { ...hub.commands[0], ...d } })} />
+              <HubEditor hub={hub} structure={structure} canEditAccess save={async (_k, d) => ({ ok: true, data: { ...hub.commands[0], ...d, afk: undefined } })} />
             </>
           )}
           {view === "permissions" && (
