@@ -439,6 +439,29 @@ export interface BetaGuild {
   name: string | null;
 }
 
+/** One bulk role job, the dry run or a running one. */
+export interface RoleBulkJob {
+  id: string;
+  mode: "ADD" | "REMOVE";
+  status: "PLANNED" | "RUNNING" | "PAUSED" | "DONE" | "CANCELLED";
+  sourceRoleId: string;
+  sourceName: string | null;
+  targetRoleId: string;
+  targetName: string | null;
+  total: number;
+  done: number;
+  failed: number;
+  createdAt: string;
+  /** The first names the job would change; only on a single job. */
+  preview?: { id: string; name: string | null }[];
+}
+
+export interface RoleToolkit {
+  groups: { key: string; name: string; roleIds: string[] }[];
+  jobs: RoleBulkJob[];
+  maxMembers: number;
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1463,6 +1486,11 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  roleToolkit: (ctx: ApiContext) => call<RoleToolkit>(ctx, "GET", "role-toolkit"),
+  saveRoleAllow: (ctx: ApiContext, groupKey: string, roleIds: string[]) => call<RoleToolkit>(ctx, "PUT", `role-toolkit/allow/${encodeURIComponent(groupKey)}`, { roleIds }),
+  planRoleBulk: (ctx: ApiContext, job: { mode: string; sourceRoleId: string; targetRoleId: string }) => call<RoleBulkJob>(ctx, "POST", "role-toolkit/bulk", job),
+  roleBulkJob: (ctx: ApiContext, id: string) => call<RoleBulkJob>(ctx, "GET", `role-toolkit/bulk/${encodeURIComponent(id)}`),
+  roleBulkAct: (ctx: ApiContext, id: string, action: "start" | "pause" | "cancel") => call<RoleBulkJob>(ctx, "POST", `role-toolkit/bulk/${encodeURIComponent(id)}/${action}`, {}),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),

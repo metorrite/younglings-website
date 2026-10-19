@@ -34,6 +34,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { RoleToolkitManager } from "@/components/dashboard/RoleToolkitManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -344,6 +345,29 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "roletoolkit" && (
+            <>
+              <PageHeader title="Role toolkit" description="Let junior staff give and take only the roles you choose, and change a role for many members with a preview first." />
+              <RoleToolkitManager
+                roles={structure.roles}
+                initial={{
+                  maxMembers: 5000,
+                  groups: [
+                    { key: "admin", name: "Admin", roleIds: [] },
+                    { key: "support", name: "Support", roleIds: [structure.roles[0]?.id ?? "r1"] },
+                    { key: "developer", name: "Developer", roleIds: [] },
+                  ],
+                  jobs: [{ id: "3", mode: "ADD", status: "DONE", sourceRoleId: "r1", sourceName: "Raiders", targetRoleId: "r2", targetName: "Event ping", total: 12, done: 11, failed: 1, createdAt: "2026-10-19T10:00:00Z" }],
+                }}
+                actions={{
+                  saveAllow: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  plan: async () => ({ ok: true, data: { id: "4", mode: "ADD", status: "PLANNED", sourceRoleId: "r1", sourceName: "Raiders", targetRoleId: "r2", targetName: "Event ping", total: 30, done: 0, failed: 0, createdAt: "2026-10-20T10:00:00Z", preview: [{ id: "1", name: "Xtusy" }, { id: "2", name: "Hodant" }] } }),
+                  act: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  status: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />
