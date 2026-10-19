@@ -575,6 +575,28 @@ export interface Starboard {
   maxChannelRules: number;
 }
 
+/** One custom tag: a named reply members bring up with /tag use. */
+export interface CustomTagDef {
+  id: string | null;
+  name: string;
+  content: string;
+  embed: boolean;
+  embedTitle: string;
+  /** "#rrggbb", or empty for the default colour. */
+  embedColor: string;
+  delivery: "CHANNEL" | "PRIVATE" | "DM";
+  allowedRoles: string[];
+  cooldownSeconds: number;
+  enabled: boolean;
+  uses: number;
+}
+
+export interface CustomTagList {
+  enabled: boolean;
+  tags: CustomTagDef[];
+  limits: { max: number; maxName: number; maxContent: number; maxTitle: number; maxRoles: number; maxCooldown: number };
+}
+
 /** One automatic reply: when a message matches the trigger, the bot answers. */
 export interface AutoReplyDef {
   id: string | null;
@@ -1447,6 +1469,11 @@ export const adminApi = {
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
+  customTags: (ctx: ApiContext) => call<CustomTagList>(ctx, "GET", "custom-tags"),
+  setCustomTagsEnabled: (ctx: ApiContext, enabled: boolean) => call<CustomTagList>(ctx, "PUT", "custom-tags/settings", { enabled }),
+  createCustomTag: (ctx: ApiContext, tag: Omit<CustomTagDef, "id" | "uses">) => call<CustomTagDef>(ctx, "POST", "custom-tags/tags", tag),
+  updateCustomTag: (ctx: ApiContext, id: string, tag: Omit<CustomTagDef, "id" | "uses">) => call<CustomTagDef>(ctx, "PUT", `custom-tags/tags/${id}`, tag),
+  deleteCustomTag: (ctx: ApiContext, id: string) => call<CustomTagList>(ctx, "DELETE", `custom-tags/tags/${id}`),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),

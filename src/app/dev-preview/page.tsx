@@ -46,6 +46,7 @@ import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
+import { CustomTagsEditor } from "@/components/dashboard/CustomTagsEditor";
 import { StarboardForm } from "@/components/dashboard/StarboardForm";
 import { PointsManager } from "@/components/dashboard/PointsManager";
 import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
@@ -377,6 +378,8 @@ function Preview() {
               />
             </>
           )}
+          {view === "custom-tags" && (<><PageHeader title="Custom tags" description="Saved replies members bring up with /tag use." /><CustomTagsEditor initial={{ enabled: true, tags: [{ id: "1", name: "rules", content: "Be kind, {user}. Full rules are in #rules.", embed: true, embedTitle: "Server rules", embedColor: "#5865f2", delivery: "CHANNEL", allowedRoles: [], cooldownSeconds: 30, enabled: true, uses: 12 }, { id: "2", name: "boss", content: "Guide for {args}: see the wiki.", embed: false, embedTitle: "", embedColor: "", delivery: "PRIVATE", allowedRoles: ["1"], cooldownSeconds: 0, enabled: false, uses: 0 }], limits: { max: 100, maxName: 32, maxContent: 1800, maxTitle: 100, maxRoles: 25, maxCooldown: 86400 } }} structure={structure} actions={{ setEnabled: nope as never, save: nope as never, remove: nope as never }} /></>)}
+          {view === "custom-tags-off" && (<><PageHeader title="Custom tags" description="A fresh server: off, no tags." /><CustomTagsEditor initial={{ enabled: false, tags: [], limits: { max: 100, maxName: 32, maxContent: 1800, maxTitle: 100, maxRoles: 25, maxCooldown: 86400 } }} structure={structure} actions={{ setEnabled: nope as never, save: nope as never, remove: nope as never }} /></>)}
           {view === "starboard" && (<><PageHeader title="Starboard" description="Copy the best messages to a showcase channel." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "⭐", threshold: 3, selfStar: false, maxThreshold: 15, channelThresholds: [], skipHiddenChannels: false, onlyChannels: [], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "starboard-custom" && (<><PageHeader title="Starboard" description="With an emoji of its own and self-starring on (they stay visible)." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "<:gz:1234>", threshold: 5, selfStar: true, maxThreshold: 15, channelThresholds: [{ channelId: "1", threshold: 8 }], skipHiddenChannels: true, onlyChannels: ["2"], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
