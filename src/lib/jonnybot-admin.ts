@@ -642,8 +642,16 @@ export interface SuggestionList {
   maxNote: number;
 }
 
+/** What an auto-clean rule is limited to. No filter set means every old message goes, as it always has. A filter only ever keeps more messages. */
+export interface AutoCleanFilters {
+  authors: "ALL" | "ONLY_BOTS" | "ONLY_HUMANS";
+  onlyWithAttachments: boolean;
+  /** Only messages containing this text (any case), or null for any text. */
+  containsText: string | null;
+}
+
 /** One channel's auto-clean rule. `problem` says why it is not working, when it is not. */
-export interface AutoCleanRule {
+export interface AutoCleanRule extends AutoCleanFilters {
   channelId: string;
   channelName: string | null;
   maxAgeMinutes: number;
@@ -656,6 +664,17 @@ export interface AutoCleanList {
   minAge: number;
   maxAge: number;
   maxRules: number;
+  maxTextLength: number;
+}
+
+/** The dry run of a rule: how many of the messages the next sweep would look at it would delete. Nothing is deleted. */
+export interface AutoCleanPreview {
+  matched: number;
+  scanned: number;
+  /** The scan stopped at its limit, so there may be more than `matched`. */
+  mayHaveMore: boolean;
+  scanLimit: number;
+  channelName: string;
 }
 
 /** One followed YouTube channel or subreddit. `problem` says why it cannot post, when it cannot. */
@@ -1354,8 +1373,10 @@ export const adminApi = {
     call<SuggestionList>(ctx, "POST", `suggestions/${encodeURIComponent(id)}/decide`, { status, note }),
   deleteSuggestion: (ctx: ApiContext, id: string) => call<SuggestionList>(ctx, "DELETE", `suggestions/${encodeURIComponent(id)}`),
   autoClean: (ctx: ApiContext) => call<AutoCleanList>(ctx, "GET", "autopurge"),
-  saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
-    call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
+  saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean, filters: AutoCleanFilters) =>
+    call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned, ...filters }),
+  previewAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean, filters: AutoCleanFilters) =>
+    call<AutoCleanPreview>(ctx, "POST", "autopurge/preview", { channelId, maxAgeMinutes, keepPinned, ...filters }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   feeds: (ctx: ApiContext) => call<FeedList>(ctx, "GET", "feeds"),
   saveFeed: (ctx: ApiContext, feed: FeedInput) => call<FeedList>(ctx, "PUT", "feeds", feed),

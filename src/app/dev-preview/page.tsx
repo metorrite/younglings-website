@@ -285,9 +285,9 @@ const suggestions = { channelId: "2", maxNote: 500, suggestions: [
   { id: "3", authorId: "5", authorName: "PvmRyan", content: "Add a weekly boss of the week event with a prize for the most kills.", status: "PENDING" as const, note: null, decidedBy: null, ups: 12, downs: 2, createdAt: "2026-10-10T12:00:00Z" },
   { id: "2", authorId: "6", authorName: null, content: "More voice channels", status: "APPROVED" as const, note: "Done, thanks!", decidedBy: "1", ups: 30, downs: 1, createdAt: "2026-10-08T12:00:00Z" },
 ] };
-const autoclean = { minAge: 60, maxAge: 18720, maxRules: 25, rules: [
-  { channelId: "2", channelName: "general", maxAgeMinutes: 1440, keepPinned: true, problem: null },
-  { channelId: "1", channelName: "link-requests", maxAgeMinutes: 180, keepPinned: false, problem: "JonnyBot needs the View Channel, Read Message History and Manage Messages permissions in #link-requests to clean it." },
+const autoclean = { minAge: 60, maxAge: 18720, maxRules: 25, maxTextLength: 100, rules: [
+  { channelId: "2", channelName: "general", maxAgeMinutes: 1440, keepPinned: true, problem: null, authors: "ONLY_BOTS" as const, onlyWithAttachments: false, containsText: null },
+  { channelId: "1", channelName: "link-requests", maxAgeMinutes: 180, keepPinned: false, authors: "ALL" as const, onlyWithAttachments: false, containsText: null, problem: "JonnyBot needs the View Channel, Read Message History and Manage Messages permissions in #link-requests to clean it." },
 ] };
 const warnings = { limit: 100, warnings: [
   { id: "9", userId: "5", userName: "PvmRyan", moderatorId: "1", moderatorName: "Drake", reason: "Spamming links in general chat", createdAt: "2026-10-10T12:00:00Z" },
@@ -383,7 +383,7 @@ function Preview() {
           {view === "points-new" && (<><PageHeader title="Points" description="A server that has not switched points on yet." /><PointsManager initial={{ ...pointsOverview, enabled: false, reviewChannelId: null, top: [], recent: [], totals: { members: 0, outstanding: 0, awarded: 0, spent: 0 } } as never} submissions={{ pending: [], decided: [] } as never} structure={structure} rewards={{ rewards: [] } as never} redemptions={{ pending: [], handled: [] } as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "giveaways" && (<><PageHeader title="Giveaways" description="Run a giveaway with an Enter button and a timed draw." /><GiveawaysManager initial={giveaways} structure={structure} roles={structure.roles} actions={{ start: nope, end: nope, reroll: nope, remove: nope }} /></>)}
           {view === "suggestions" && (<><PageHeader title="Suggestions" description="Members post ideas with /suggest." /><SuggestionsManager initial={suggestions} structure={structure} actions={{ saveChannel: nope, decide: nope, remove: nope }} /></>)}
-          {view === "autoclean" && (<><PageHeader title="Auto-clean" description="Channels that tidy themselves." /><AutoCleanManager initial={autoclean} structure={structure} actions={{ save: nope, remove: nope }} /></>)}
+          {view === "autoclean" && (<><PageHeader title="Auto-clean" description="Channels that tidy themselves." /><AutoCleanManager initial={autoclean} structure={structure} actions={{ save: nope, remove: nope, preview: async () => ({ ok: true, data: { matched: 14, scanned: 230, mayHaveMore: false, scanLimit: 500, channelName: "general" } }) }} /></>)}
           {view === "autodelete" && (<><PageHeader title="Auto-delete" description="Keep a channel free of invites." /><AutoDeleteManager initial={autodelete} structure={structure} actions={{ save: nope, remove: nope }} /></>)}
           {view === "clanprofile" && (<><PageHeader title="Clan profile" description="How your clan appears to others." /><ClanProfileForm initial={clanprofile} moderationHref="#" actions={{ save: nope, verify: nope }} /></>)}
           {view === "listings" && (<><PageHeader title="Directory moderation" description="Reports and listings." /><ListingsModerator initial={listings} actions={{ suspend: nope, restore: nope, resolve: nope }} /></>)}
