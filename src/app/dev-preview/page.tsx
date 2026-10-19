@@ -34,6 +34,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { RoleKeeperManager } from "@/components/dashboard/RoleKeeperManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -344,6 +345,27 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "rolekeeper" && (
+            <>
+              <PageHeader title="Kept roles" description="Roles that outlast a visit: sticky roles, roles kept on a member, and timed roles." />
+              <RoleKeeperManager
+                roles={structure.roles}
+                initial={{
+                  maxSticky: 25,
+                  sticky: [structure.roles[0]?.id ?? "r1"],
+                  kept: [{ id: "1", userId: "7", userName: "Xtusy", roleId: structure.roles[0]?.id ?? "r1", addedBy: "1", createdAt: "2026-10-19T10:00:00Z" }],
+                  temp: [{ id: "2", userId: "8", userName: "Hodant", roleId: structure.roles[0]?.id ?? "r1", expiresAt: "2026-10-25T10:00:00Z" }],
+                }}
+                actions={{
+                  saveSticky: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  addKept: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  removeKept: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  addTemp: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  endTemp: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />

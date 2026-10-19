@@ -439,6 +439,14 @@ export interface BetaGuild {
   name: string | null;
 }
 
+/** Roles that outlast a visit: the sticky list, roles kept on single members, and timed roles. */
+export interface RoleKeeper {
+  sticky: string[];
+  kept: { id: string; userId: string; userName: string | null; roleId: string; addedBy: string; createdAt: string }[];
+  temp: { id: string; userId: string; userName: string | null; roleId: string; expiresAt: string }[];
+  maxSticky: number;
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1463,6 +1471,12 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  roleKeeper: (ctx: ApiContext) => call<RoleKeeper>(ctx, "GET", "role-keeper"),
+  saveStickyRoles: (ctx: ApiContext, roleIds: string[]) => call<RoleKeeper>(ctx, "PUT", "role-keeper/sticky", { roleIds }),
+  addKeptRole: (ctx: ApiContext, userId: string, roleId: string) => call<RoleKeeper>(ctx, "POST", "role-keeper/kept", { userId, roleId }),
+  removeKeptRole: (ctx: ApiContext, id: string) => call<RoleKeeper>(ctx, "DELETE", `role-keeper/kept/${encodeURIComponent(id)}`),
+  addTempRole: (ctx: ApiContext, userId: string, roleId: string, duration: string) => call<RoleKeeper>(ctx, "POST", "role-keeper/temp", { userId, roleId, duration }),
+  endTempRole: (ctx: ApiContext, id: string) => call<RoleKeeper>(ctx, "DELETE", `role-keeper/temp/${encodeURIComponent(id)}`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
