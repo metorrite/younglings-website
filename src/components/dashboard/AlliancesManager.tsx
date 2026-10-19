@@ -166,7 +166,7 @@ function AllianceCard({
               {alliance.founder && !m.you && (
                 <button
                   type="button"
-                  className="text-xs text-red-400 underline"
+                  className="inline-flex min-h-6 items-center text-xs text-red-400 underline"
                   disabled={pending}
                   onClick={async () => (await confirmDialog({ title: `Remove ${m.name} from the alliance?`, confirmLabel: "Remove", tone: "danger" })) && run(() => actions.remove(alliance.id, m.guildId), `${m.name} was removed.`)}
                 >

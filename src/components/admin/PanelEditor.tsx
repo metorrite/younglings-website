@@ -532,6 +532,7 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
                                   value={option.pingRoleId}
                                   onChange={(id) => setOption(field.uid, option.uid, { pingRoleId: id })}
                                   none="Ping: panel default"
+                                  label="Role to ping for this option"
                                 />
                               </div>
                               <div className="w-full max-w-56 min-w-40 flex-1">
@@ -540,6 +541,7 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
                                   value={option.escalateRoleId}
                                   onChange={(id) => setOption(field.uid, option.uid, { escalateRoleId: id })}
                                   none="Escalate to: panel default"
+                                  label="Role to escalate to for this option"
                                 />
                               </div>
                             </>

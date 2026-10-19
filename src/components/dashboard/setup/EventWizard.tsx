@@ -187,7 +187,7 @@ export function EventWizard({ guildId, initial, schema, structure, call }: { gui
                   <section key={s.key} className="space-y-2">
                     <div className="flex items-baseline justify-between gap-3">
                       <h3 className="font-medium">{s.label}</h3>
-                      <button type="button" className="text-xs text-gold underline" onClick={() => go(i)}>
+                      <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={() => go(i)}>
                         Change
                       </button>
                     </div>
