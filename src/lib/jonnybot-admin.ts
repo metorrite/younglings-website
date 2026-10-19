@@ -651,6 +651,38 @@ export interface AutoCleanList {
   maxRules: number;
 }
 
+/** One followed YouTube channel or subreddit. `problem` says why it cannot post, when it cannot. */
+export interface FeedItem {
+  id: string;
+  kind: "YOUTUBE" | "REDDIT";
+  source: string;
+  flair: string;
+  channelId: string;
+  channelName: string | null;
+  template: string;
+  enabled: boolean;
+  problem: string | null;
+}
+
+export interface FeedList {
+  feeds: FeedItem[];
+  maxPerKind: number;
+  maxTemplate: number;
+  maxFlair: number;
+  defaultTemplates: Record<"YOUTUBE" | "REDDIT", string>;
+}
+
+/** What the feeds form sends: no id adds a feed, an id changes that one. */
+export interface FeedInput {
+  id?: string;
+  kind: "YOUTUBE" | "REDDIT";
+  source: string;
+  flair: string;
+  channelId: string;
+  template: string;
+  enabled: boolean;
+}
+
 /** A warning given with /warn. Names are null when the person has left the server. */
 export interface WarningItem {
   id: string;
@@ -1311,6 +1343,9 @@ export const adminApi = {
   saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
     call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
+  feeds: (ctx: ApiContext) => call<FeedList>(ctx, "GET", "feeds"),
+  saveFeed: (ctx: ApiContext, feed: FeedInput) => call<FeedList>(ctx, "PUT", "feeds", feed),
+  deleteFeed: (ctx: ApiContext, id: string) => call<FeedList>(ctx, "DELETE", `feeds/${encodeURIComponent(id)}`),
   /** Who capped at the Clan Citadel in the week that ended on `end` (a Wednesday), or the week that just finished. */
   citadelCappers: (ctx: ApiContext, end: string | null) => call<import("./citadelTypes").CitadelCappers>(ctx, "GET", end ? `citadel/cappers/${encodeURIComponent(end)}` : "citadel/cappers"),
   /** The settings for announcing the Citadel wheel's winner (auto-post, channel, message). */
