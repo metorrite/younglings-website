@@ -82,7 +82,7 @@ export function MoreInAdvanced({ children }: { children: ReactNode }) {
  * The slider that sets the view for the whole dashboard: Basic on the left, Advanced on the right, a gold thumb that slides to the one in use. It sits in the
  * sidebar, under the server icon, so it is the same on every page.
  */
-export function ViewModeSlider() {
+export function ViewModeSlider({ onChange }: { onChange?: (next: ViewMode) => void } = {}) {
   const [mode, setMode] = useViewMode();
   const advanced = mode === "advanced";
   return (
@@ -93,7 +93,11 @@ export function ViewModeSlider() {
         aria-checked={advanced}
         aria-label="Advanced view for the whole dashboard"
         title={advanced ? "Advanced: every option. Click for Basic." : "Basic: what most servers need. Click for Advanced."}
-        onClick={() => setMode(advanced ? "basic" : "advanced")}
+        onClick={() => {
+          const next = advanced ? "basic" : "advanced";
+          setMode(next);
+          onChange?.(next);
+        }}
         className="relative grid w-full grid-cols-2 rounded-full border border-surface-border bg-background/60 p-0.5 text-xs font-medium"
       >
         <span aria-hidden className={`absolute inset-y-0.5 left-0.5 w-[calc(50%-0.125rem)] rounded-full bg-gold/20 ring-1 ring-gold/60 transition-transform duration-200 ${advanced ? "translate-x-full" : ""}`} />

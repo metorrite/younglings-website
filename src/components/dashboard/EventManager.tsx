@@ -349,7 +349,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
         {detail.potVisible || detail.buyInEnabled ? <span className="text-sm">Pot: {gp(detail.pot)}</span> : null}
         <button
           type="button"
-          className="text-xs text-muted underline disabled:opacity-50"
+          className="inline-flex min-h-6 items-center text-xs text-muted underline disabled:opacity-50"
           disabled={refreshing || pending}
           title="Ask the bot for the latest. This page also refreshes itself every few seconds."
           onClick={async () => {
@@ -599,7 +599,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                   <li key={o.userId} className="flex items-center justify-between gap-2 py-1.5">
                     <span className="min-w-0 truncate">{o.userName ?? `Player ${o.userId}`}</span>
                     {e.status !== "DONE" && e.status !== "CANCELLED" && (
-                      <button type="button" className="text-xs text-red-400 underline" disabled={pending} onClick={() => run("POST", `${base}/organisers`, { remove: [o.userId] }, `${o.userName ?? "They"} is no longer an organiser.`)}>
+                      <button type="button" className="inline-flex min-h-6 items-center text-xs text-red-400 underline" disabled={pending} onClick={() => run("POST", `${base}/organisers`, { remove: [o.userId] }, `${o.userName ?? "They"} is no longer an organiser.`)}>
                         Remove
                       </button>
                     )}

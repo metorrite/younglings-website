@@ -745,7 +745,7 @@ export function CitadelWheel({
                     {placeLabel(i + 1)} {p.name}
                   </span>
                 ))}
-                <button type="button" className="text-xs text-gold underline" disabled={spinning || locking} onClick={undoLastPick}>
+                <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" disabled={spinning || locking} onClick={undoLastPick}>
                   Undo {picked[picked.length - 1].name}
                 </button>
               </div>
@@ -771,11 +771,11 @@ export function CitadelWheel({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold">{weekLabel(r.start, r.end)}</span>
                     <span className="flex flex-wrap items-center gap-3">
-                      <button type="button" className="text-xs text-gold underline" onClick={() => copyAnnouncement(r)}>
+                      <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={() => copyAnnouncement(r)}>
                         {copiedWeek === `${r.end}:message` ? "Copied" : "Copy message"}
                       </button>
                       {r.winners.map((w) => (
-                        <button key={w.place} type="button" className="text-xs text-gold underline disabled:opacity-50" disabled={!w.hasGif} onClick={() => copyGifLink(w)}>
+                        <button key={w.place} type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline disabled:opacity-50" disabled={!w.hasGif} onClick={() => copyGifLink(w)}>
                           {copiedWeek === `${w.end}:gif${w.place}` ? "Copied" : r.winners.length > 1 ? `Copy GIF link (${ordinal(w.place)})` : "Copy GIF link"}
                         </button>
                       ))}
@@ -851,7 +851,7 @@ export function CitadelWheel({
             <h2 className="text-sm font-semibold">
               On the wheel ({total} {total === 1 ? "entry" : "entries"})
             </h2>
-            <button type="button" className="text-xs text-gold underline" onClick={copyList}>
+            <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={copyList}>
               {copied ? "Copied" : "Copy names"}
             </button>
           </div>
@@ -867,14 +867,14 @@ export function CitadelWheel({
                       e.entries
                     ) : (
                       <>
-                        <button type="button" aria-label={`Fewer entries for ${e.name}`} disabled={spinning} className="px-1 text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: Math.max(1, x.entries - 1) } : x)))}>
+                        <button type="button" aria-label={`Fewer entries for ${e.name}`} disabled={spinning} className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: Math.max(1, x.entries - 1) } : x)))}>
                           −
                         </button>
                         {e.entries}
-                        <button type="button" aria-label={`More entries for ${e.name}`} disabled={spinning || total >= MAX_ENTRIES} className="px-1 text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: x.entries + 1 } : x)))}>
+                        <button type="button" aria-label={`More entries for ${e.name}`} disabled={spinning || total >= MAX_ENTRIES} className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: x.entries + 1 } : x)))}>
                           +
                         </button>
-                        <button type="button" aria-label={`Remove ${e.name}`} disabled={spinning} className="px-1 text-red-400" onClick={() => changeEntries(entries.filter((x) => x.name !== e.name))}>
+                        <button type="button" aria-label={`Remove ${e.name}`} disabled={spinning} className="inline-flex min-h-6 min-w-6 items-center justify-center text-red-400" onClick={() => changeEntries(entries.filter((x) => x.name !== e.name))}>
                           ×
                         </button>
                       </>

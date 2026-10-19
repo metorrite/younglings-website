@@ -59,7 +59,7 @@ function EventCard({ e }: { e: MyEvent }) {
           {e.objectives.length > 0 && <StatTile label="Done" value={`${completed} / ${e.objectives.length}`} sub="objectives" />}
         </div>
       )}
-      {showStanding && e.objectives.length > 0 && <ProgressBar value={completed} max={e.objectives.length} />}
+      {showStanding && e.objectives.length > 0 && <ProgressBar value={completed} max={e.objectives.length} label={`Objectives done in ${e.name}`} />}
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {e.buyIn.enabled && (
