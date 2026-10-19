@@ -468,6 +468,9 @@ export interface Autoroles {
   delaySeconds: number;
   memberRoleIds: string[];
   botRoleIds: string[];
+  /** Roles taken away from someone who joins (people / bots), on the same delay. Empty unless the server adds some. */
+  memberRemoveRoleIds: string[];
+  botRemoveRoleIds: string[];
   maxRoles: number;
   maxDelaySeconds: number;
   /** Chosen roles that can't be given out right now (deleted, above the bot, too powerful). */
@@ -1458,7 +1461,7 @@ export const adminApi = {
   deleteRolePanel: (ctx: ApiContext, id: string) => call<RolePanelList>(ctx, "DELETE", `rolepanels/${encodeURIComponent(id)}`),
   postRolePanel: (ctx: ApiContext, id: string, channelId: string) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, { channelId }),
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
-  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
+  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds" | "memberRemoveRoleIds" | "botRemoveRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
