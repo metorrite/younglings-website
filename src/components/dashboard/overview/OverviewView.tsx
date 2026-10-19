@@ -1,10 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon } from "@/components/dashboard/shell/icons";
+import { Advanced, MoreInAdvanced } from "@/components/dashboard/ui/ViewMode";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { StatTile } from "@/components/dashboard/overview/StatTile";
 import { DEFAULT_QUICK_PATHS, favoriteItems, itemsByPath } from "@/components/dashboard/shell/nav";
 import type { Overview, ServerSetup } from "@/lib/jonnybot-admin";
+
+/** A tile that is only worth a place in Basic when it shows something to act on; Advanced always has it. */
+function Rare({ show, children }: { show: boolean; children: ReactNode }) {
+  return show ? <>{children}</> : <Advanced>{children}</Advanced>;
+}
 
 const MANAGE = "shrink-0 rounded-md border border-surface-border px-3 py-1.5 text-sm text-muted transition hover:border-gold hover:text-foreground";
 
@@ -70,9 +76,15 @@ export function OverviewView({ base, overview, setup, rows, owner, checkup, favo
               <StatTile label="Clan members" value={m.rosterSize} hint={`Tracking ${setup.clanName}`} />
               <StatTile label="Linked to Discord" value={m.linked} hint={`of ${m.rosterSize} clan members`} tone={m.unverified === 0 ? "good" : "gold"} />
               <StatTile label="Not linked" value={m.unverified} tone={m.unverified === 0 ? "good" : "gold"} />
-              <StatTile label="Promotions due" value={m.promotionsDue} tone={m.promotionsDue === 0 ? "good" : "gold"} />
-              <StatTile label="Stale data" value={m.stale} hint="Not refreshed for a while" tone={m.stale === 0 ? "good" : "gold"} />
-              <StatTile label="Inactive 30+ days" value={m.inactive} tone={m.inactive === 0 ? "good" : "gold"} />
+              <Rare show={m.promotionsDue > 0}>
+                <StatTile label="Promotions due" value={m.promotionsDue} tone={m.promotionsDue === 0 ? "good" : "gold"} />
+              </Rare>
+              <Rare show={m.stale > 0}>
+                <StatTile label="Stale data" value={m.stale} hint="Not refreshed for a while" tone={m.stale === 0 ? "good" : "gold"} />
+              </Rare>
+              <Rare show={m.inactive > 0}>
+                <StatTile label="Inactive 30+ days" value={m.inactive} tone={m.inactive === 0 ? "good" : "gold"} />
+              </Rare>
             </>
           )}
           <StatTile label="Discord members" value={m.discordMembers} />
@@ -86,8 +98,11 @@ export function OverviewView({ base, overview, setup, rows, owner, checkup, favo
           )}
           <StatTile label="Open signups" value={overview.community.openSignups} />
           <StatTile label="Open polls" value={overview.community.openPolls} />
-          <StatTile label="Bot" value={overview.health.ok ? "Healthy" : "Check health"} tone={overview.health.ok ? "good" : "bad"} />
+          <Rare show={!overview.health.ok}>
+            <StatTile label="Bot" value={overview.health.ok ? "Healthy" : "Check health"} tone={overview.health.ok ? "good" : "bad"} />
+          </Rare>
         </div>
+        {setup.clanActive && m.promotionsDue === 0 && m.stale === 0 && m.inactive === 0 && overview.health.ok && <MoreInAdvanced>promotions due, stale data, inactive members and the bot tile (nothing needs attention).</MoreInAdvanced>}
         {!setup.clanActive && <p className="text-xs text-muted">Clan member numbers appear here once a clan is set up in Server setup.</p>}
       </section>
 

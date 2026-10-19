@@ -3,8 +3,11 @@
 import { useState, useTransition } from "react";
 import { FormField, ghostButton, inputClass, Notice, StatusBadge } from "@/components/admin/ui";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import type { ClanProfileData, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
@@ -36,7 +39,14 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
   const [verifyProblem, setVerifyProblem] = useState<{ title: string; items: string[] } | null>(null);
   const [pending, start] = useTransition();
   const [verifying, startVerify] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
   const dirty = shape(draft) !== shape(saved);
+  // Basic shows what most clans set; an Advanced-only option that is already saved stays in sight.
+  const showTimezone = advanced || !!saved.timezone;
+  const showColour = advanced || saved.colour !== null;
+  const showAddress = advanced || !!saved.slug;
+  const hidden = [!showTimezone && "time zone", !showColour && "accent colour", !showAddress && "the page address"].filter((n): n is string => typeof n === "string");
   const change = (patch: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...patch }));
     setOutcome(null);
@@ -77,6 +87,7 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
       <div className="min-w-0 space-y-4">
+        <PanelGrid min="24rem">
         <CollapsibleCard
           id="cp-visibility"
           title="Who can see it"
@@ -164,57 +175,31 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
           defaultOpen
           summary={<Chip>{draft.displayName || "No name yet"}</Chip>}
         >
-          <FormField label="Name shown" hint={`Up to ${meta.limits.name} characters.`}>
-            <input className={inputClass} value={draft.displayName} maxLength={meta.limits.name} placeholder={meta.suggestedName} onChange={(e) => change({ displayName: e.target.value })} />
-          </FormField>
-          <FormField label="Tagline" hint={`One line under the name, up to ${meta.limits.tagline} characters.`}>
+          <FieldGrid>
+            <FormField label="Name shown" size="md" hint={`Up to ${meta.limits.name} characters.`}>
+              <input className={inputClass} value={draft.displayName} maxLength={meta.limits.name} placeholder={meta.suggestedName} onChange={(e) => change({ displayName: e.target.value })} />
+            </FormField>
+            {showTimezone && (
+              <FormField label="Time zone" size="md" hint="Where your events are scheduled, e.g. America/New_York">
+                <input className={inputClass} list="cp-zones" value={draft.timezone ?? ""} placeholder="Europe/London" onChange={(e) => change({ timezone: e.target.value || null })} />
+                <datalist id="cp-zones">
+                  {["UTC", "Europe/London", "Europe/Paris", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Australia/Sydney", "Asia/Tokyo"].map((z) => (
+                    <option key={z} value={z} />
+                  ))}
+                </datalist>
+              </FormField>
+            )}
+          </FieldGrid>
+          <FormField label="Tagline" size="lg" hint={`One line under the name, up to ${meta.limits.tagline} characters.`}>
             <input className={inputClass} value={draft.tagline} maxLength={meta.limits.tagline} placeholder="A friendly PvM clan for everyone" onChange={(e) => change({ tagline: e.target.value })} />
           </FormField>
-          <FormField label="Description" hint={`Up to ${meta.limits.description} characters.`}>
-            <textarea
-              className={`${inputClass} min-h-32`}
-              value={draft.description}
-              maxLength={meta.limits.description}
-              onChange={(e) => change({ description: e.target.value })}
-            />
+          <FormField label="Description" size="lg" hint={`Up to ${meta.limits.description} characters.`}>
+            <textarea className={`${inputClass} min-h-32`} value={draft.description} maxLength={meta.limits.description} onChange={(e) => change({ description: e.target.value })} />
           </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Logo address" hint="A link to an image, starting with https://">
-              <input className={inputClass} value={draft.logoUrl ?? ""} placeholder="https://" onChange={(e) => change({ logoUrl: e.target.value || null })} />
-            </FormField>
-            <FormField label="Time zone" hint="Where your events are scheduled, e.g. America/New_York">
-              <input
-                className={inputClass}
-                list="cp-zones"
-                value={draft.timezone ?? ""}
-                placeholder="Europe/London"
-                onChange={(e) => change({ timezone: e.target.value || null })}
-              />
-              <datalist id="cp-zones">
-                {["UTC", "Europe/London", "Europe/Paris", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "Australia/Sydney", "Asia/Tokyo"].map((z) => (
-                  <option key={z} value={z} />
-                ))}
-              </datalist>
-            </FormField>
-          </div>
-          <FormField label="Accent colour" as="group">
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                aria-label="Accent colour"
-                value={hex(draft.colour)}
-                onChange={(e) => change({ colour: parseInt(e.target.value.slice(1), 16) })}
-                className="h-9 w-14 cursor-pointer rounded border border-surface-border bg-transparent"
-              />
-              <span className="font-mono text-xs text-muted">{draft.colour === null ? "Not chosen" : hex(draft.colour)}</span>
-              {draft.colour !== null && (
-                <button type="button" className="text-xs text-muted hover:text-foreground" onClick={() => change({ colour: null })}>
-                  Clear
-                </button>
-              )}
-            </div>
+          <FormField label="Logo address" size="lg" hint="A link to an image, starting with https://">
+            <input className={inputClass} value={draft.logoUrl ?? ""} placeholder="https://" onChange={(e) => change({ logoUrl: e.target.value || null })} />
           </FormField>
-          <FormField label="What the clan is about" as="group" hint="Pick any that fit.">
+          <FormField label="What the clan is about" as="group" size="lg" hint="Pick any that fit.">
             <div className="flex flex-wrap gap-2">
               {meta.options.focus.map((f) => {
                 const on = draft.focus.includes(f.key);
@@ -232,6 +217,25 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               })}
             </div>
           </FormField>
+          {showColour && (
+          <FormField label="Accent colour" as="group">
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                aria-label="Accent colour"
+                value={hex(draft.colour)}
+                onChange={(e) => change({ colour: parseInt(e.target.value.slice(1), 16) })}
+                className="h-9 w-14 cursor-pointer rounded border border-surface-border bg-transparent"
+              />
+              <span className="font-mono text-xs text-muted">{draft.colour === null ? "Not chosen" : hex(draft.colour)}</span>
+              {draft.colour !== null && (
+                <button type="button" className="text-xs text-muted hover:text-foreground" onClick={() => change({ colour: null })}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </FormField>
+          )}
         </CollapsibleCard>
 
         <CollapsibleCard
@@ -256,7 +260,7 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               ))}
             </div>
           </FormField>
-          <FormField label="Requirements" hint={`Up to ${meta.limits.requirements} characters.`}>
+          <FormField label="Requirements" size="lg" hint={`Up to ${meta.limits.requirements} characters.`}>
             <textarea
               className={`${inputClass} min-h-24`}
               value={draft.requirements}
@@ -265,11 +269,12 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               onChange={(e) => change({ requirements: e.target.value })}
             />
           </FormField>
-          <FormField label="Where to apply" hint="A Discord invite or any https:// link.">
+          <FormField label="Where to apply" size="lg" hint="A Discord invite or any https:// link.">
             <input className={inputClass} value={draft.applyUrl ?? ""} placeholder="https://discord.gg/..." onChange={(e) => change({ applyUrl: e.target.value || null })} />
           </FormField>
         </CollapsibleCard>
 
+        {showAddress && (
         <CollapsibleCard
           id="cp-address"
           title="Address"
@@ -277,7 +282,7 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
           summary={<Chip>{draft.slug ?? "Made when you save"}</Chip>}
           info="Lower-case letters, digits and single dashes, 3 to 32 characters. Leave it empty and one is made from your name. Changing it breaks old links."
         >
-          <FormField label="Address">
+          <FormField label="Address" size="md">
             <input
               className={inputClass}
               value={draft.slug ?? ""}
@@ -287,17 +292,11 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
             />
           </FormField>
         </CollapsibleCard>
+        )}
+        </PanelGrid>
+        {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
 
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
+
       </div>
 
       <div className="min-w-0">
@@ -330,6 +329,17 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               {meta.memberCount > 0 && <p className="mt-3 text-xs text-muted">{meta.memberCount} members</p>}
             </div>
           </section>
+          <SaveBar
+          inline
+          pending={pending}
+          onSave={submit}
+          outcome={outcome}
+          dirty={dirty}
+          onDiscard={() => {
+            setDraft(saved);
+            setOutcome(null);
+          }}
+        />
           {moderationHref && (
             <a href={moderationHref} className="block text-sm text-gold hover:underline">
               Moderate the directory →

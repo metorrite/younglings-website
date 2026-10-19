@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   dangerButton,
+  FormField,
   formatUtc,
   ghostButton,
   inputClass,
@@ -12,6 +13,8 @@ import {
   primaryButton,
   StatusBadge,
 } from "@/components/admin/ui";
+import { CollapsibleCard, Chip } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import type { Alliance, AllianceEvents, AllianceList, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Result = Promise<WelcomeActionResult<AllianceList>>;
@@ -91,21 +94,28 @@ export function AlliancesManager({
       {active.length === 0 ? (
         <p className="rounded-xl border border-dashed border-surface-border p-6 text-center text-sm text-muted">Your clan isn&apos;t in an alliance yet. Start one below.</p>
       ) : (
-        active.map((a) => <AllianceCard key={a.id} alliance={a} events={calendars[a.id] ?? []} slug={slugs[a.id] ?? ""} setSlug={(v) => setSlugs({ ...slugs, [a.id]: v })} pending={pending} run={run} actions={actions} eventsHref={eventsHref} />)
+        <PanelGrid min="26rem">
+          {active.map((a) => <AllianceCard key={a.id} alliance={a} events={calendars[a.id] ?? []} slug={slugs[a.id] ?? ""} setSlug={(v) => setSlugs({ ...slugs, [a.id]: v })} pending={pending} run={run} actions={actions} eventsHref={eventsHref} />)}
+        </PanelGrid>
       )}
 
-      <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-5">
-        <h2 className="font-semibold text-gold">Start an alliance</h2>
-        <p className="text-xs text-muted">
-          A server can be in {data.maxPerServer} alliances and an alliance holds up to {data.maxMembers} clans. You invite clans afterwards, by the address they have in the clan directory.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <input className={`${inputClass} max-w-xs`} value={name} maxLength={40} placeholder="Alliance name" aria-label="Alliance name" onChange={(e) => setName(e.target.value)} />
+      <CollapsibleCard
+        id="alliance-start"
+        title="Start an alliance"
+        hint={`A server can be in ${data.maxPerServer} alliances and an alliance holds up to ${data.maxMembers} clans.`}
+        defaultOpen={active.length === 0}
+        summary={<Chip>{active.length} joined</Chip>}
+      >
+        <p className="text-xs text-muted">You invite clans afterwards, by the address they have in the clan directory.</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <FormField label="Alliance name" size="md">
+            <input className={inputClass} value={name} maxLength={40} placeholder="Alliance name" onChange={(e) => setName(e.target.value)} />
+          </FormField>
           <button type="button" className={primaryButton} disabled={pending || name.trim().length < 3} onClick={() => run(() => actions.create(name), "Alliance started.", () => setName(""))}>
             Start alliance
           </button>
         </div>
-      </section>
+      </CollapsibleCard>
     </div>
   );
 }
@@ -169,7 +179,9 @@ function AllianceCard({
       </ul>
 
       <div className="flex flex-wrap gap-2">
-        <input className={`${inputClass} max-w-xs`} value={slug} placeholder="Clan's directory address" aria-label="Clan directory address" onChange={(e) => setSlug(e.target.value)} />
+        <div className="w-80 max-w-full">
+          <input className={inputClass} value={slug} placeholder="Clan's directory address" aria-label="Clan directory address" onChange={(e) => setSlug(e.target.value)} />
+        </div>
         <button type="button" className={ghostButton} disabled={pending || !slug.trim()} onClick={() => run(() => actions.invite(alliance.id, slug), "Invitation sent.", () => setSlug(""))}>
           Invite clan
         </button>

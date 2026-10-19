@@ -1,3 +1,4 @@
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
@@ -29,6 +30,7 @@ export default async function PluginCoveragePage({ params }: { params: Promise<{
         title="Clan plugin"
         description="How many of your members use the JonnyBot clan plugin. You only ever see counts: nobody is named, and no member is expected to install anything."
       />
+      <PanelGrid min="26rem">
       <section className="rounded-xl border border-surface-border bg-surface p-5">
         <h2 className="font-semibold text-gold">Coverage</h2>
         <div className="mt-4 space-y-4">
@@ -58,6 +60,7 @@ export default async function PluginCoveragePage({ params }: { params: Promise<{
           ))}
         </div>
       </section>
+      </PanelGrid>
       <p className="text-sm text-muted">
         Members connect the plugin from the Plugin tab of their JonnyBot profile. Until the plugin is released these numbers will be zero; they only change as people try it.
       </p>
