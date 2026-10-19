@@ -1,12 +1,12 @@
 import { PremiumPlanForm } from "@/components/admin/PremiumPlanForm";
-import { requireAdmin, unwrap } from "@/lib/admin";
+import { requireOwner, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
 
 export const metadata = { title: "Polling plan — Admin — Younglings" };
 export const dynamic = "force-dynamic";
 
 export default async function PollingPlanPage() {
-  const admin = await requireAdmin("/admin/polling-plan");
+  const admin = await requireOwner("/admin/polling-plan");
   const plan = unwrap(await adminApi.premiumGuilds(admin));
 
   return (
