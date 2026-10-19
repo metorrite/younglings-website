@@ -34,6 +34,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { RoleRulesManager } from "@/components/dashboard/RoleRulesManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -344,6 +345,19 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "rolerules" && (
+            <>
+              <PageHeader title="Role rules" description="Roles that follow other roles." />
+              <RoleRulesManager
+                roles={structure.roles}
+                initial={{
+                  max: 50, maxWhen: 5, maxThen: 10,
+                  rules: [{ id: "1", name: "Raid chat", event: "GAINS", enabled: true, when: [structure.roles[0]?.id ?? "r1"], add: [structure.roles[1]?.id ?? "r2"], remove: [] }],
+                }}
+                actions={{ save: async () => ({ ok: false, error: "These rules would loop: @Raider then @Raid chat then @Raider.", problems: [] }), remove: async () => ({ ok: false, error: "Preview only", problems: [] }) }}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />

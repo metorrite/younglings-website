@@ -439,6 +439,24 @@ export interface BetaGuild {
   name: string | null;
 }
 
+/** One connected / trigger role rule. */
+export interface RoleRule {
+  id: string;
+  name: string;
+  event: "GAINS" | "LOSES";
+  enabled: boolean;
+  when: string[];
+  add: string[];
+  remove: string[];
+}
+
+export interface RoleRuleList {
+  rules: RoleRule[];
+  max: number;
+  maxWhen: number;
+  maxThen: number;
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1463,6 +1481,10 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  roleRules: (ctx: ApiContext) => call<RoleRuleList>(ctx, "GET", "role-rules"),
+  createRoleRule: (ctx: ApiContext, rule: Omit<RoleRule, "id">) => call<RoleRuleList>(ctx, "POST", "role-rules", rule),
+  saveRoleRule: (ctx: ApiContext, id: string, rule: Omit<RoleRule, "id">) => call<RoleRuleList>(ctx, "PUT", `role-rules/${encodeURIComponent(id)}`, rule),
+  deleteRoleRule: (ctx: ApiContext, id: string) => call<RoleRuleList>(ctx, "DELETE", `role-rules/${encodeURIComponent(id)}`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
