@@ -24,6 +24,8 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/worldevents", who: "Everyone (changeable)", what: "The Voice of Seren right now and the events that come round by themselves with how often, from the RuneScape Wiki. Hourly Voice of Seren reminders can be switched on from the RuneScape timers page." },
   { name: "/reset", who: "Everyone (changeable)", what: "Countdowns to the daily, weekly and monthly RuneScape resets. Reminders at each reset can be switched on from the RuneScape timers page." },
   { name: "/dnd", who: "Everyone (changeable)", what: "The Distractions and Diversions grouped by how often they can be played (daily, weekly, monthly, when available), read from the RuneScape Wiki." },
+  { name: "/boss", who: "Everyone (changeable)", what: "A short RuneScape Wiki summary of a boss with its combat level, life points and weakness, and a link to its strategy page." },
+  { name: "/quest", who: "Everyone (changeable)", what: "A short RuneScape Wiki summary of a quest with its difficulty and area, and a link to its quick guide." },
 ];
 
 const DASHBOARD: [string, string][] = [
