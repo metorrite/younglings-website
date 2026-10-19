@@ -7,6 +7,7 @@ import { LinkModalGate } from "@/components/link/LinkModalGate";
 import { DialogProvider } from "@/components/ui/Dialogs";
 import { JonnyBotNavbar } from "@/components/jonnybot/JonnyBotNavbar";
 import { ClansNavbar } from "@/components/clanshub/ClansNavbar";
+import { DevSnapshotMount } from "@/components/devtools/DevSnapshotMount";
 import { publicSiteOpen } from "@/lib/jonnybotAccess";
 import { currentSite } from "@/lib/siteHostsServer";
 
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           {site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
           <main className="flex-1">{children}</main>
           {!site.jonnybot && !site.hub && <LinkModalGate />}
+          <DevSnapshotMount site={site} />
           </DialogProvider>
         </SessionProviderWrapper>
       </body>
