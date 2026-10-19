@@ -50,7 +50,7 @@ export const COLOR_PALETTE: Record<string, string> = {
   Pink: "#e91e8c",
 };
 
-async function fetchInternal<T>(path: string): Promise<T | null> {
+async function fetchInternal<T>(path: string, tags: string[] = []): Promise<T | null> {
   const baseUrl = process.env.JONNYBOT_INTERNAL_API_URL;
   const secret = process.env.JONNYBOT_INTERNAL_API_SECRET;
 
@@ -59,7 +59,7 @@ async function fetchInternal<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${baseUrl}${path}`, {
       headers: { "X-Internal-Secret": secret },
-      next: { revalidate: 30 },
+      next: { revalidate: 30, tags },
       signal: AbortSignal.timeout(5000),
     });
 
@@ -96,12 +96,12 @@ async function postInternal<T>(path: string, body: unknown): Promise<T | null> {
 }
 
 export async function getOnlineMembers(): Promise<OnlineMember[] | null> {
-  const data = await fetchInternal<{ members: OnlineMember[] }>("/internal/online-members");
+  const data = await fetchInternal<{ members: OnlineMember[] }>("/internal/online-members", ["site:online"]);
   return data?.members ?? null;
 }
 
 export async function getUpcomingEvents(): Promise<ScheduledEvent[] | null> {
-  const data = await fetchInternal<{ events: ScheduledEvent[] }>("/internal/events");
+  const data = await fetchInternal<{ events: ScheduledEvent[] }>("/internal/events", ["site:events"]);
   return data?.events ?? null;
 }
 
