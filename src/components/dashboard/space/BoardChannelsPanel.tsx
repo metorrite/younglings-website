@@ -79,7 +79,7 @@ export function BoardChannelsPanel({ detail, call, structure, onOpenChannels }: 
       }
     >
       <div className="flex justify-end">
-        <button type="button" className="text-xs text-gold underline" onClick={onOpenChannels}>
+        <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={onOpenChannels}>
           Roles, category and every channel: open the Channels tab
         </button>
       </div>

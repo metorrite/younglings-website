@@ -24,7 +24,7 @@ export function Stars({ player, onRate, disabled }: { player: EventPlayer; onRat
           aria-label={n === player.rating ? `Clear the rating of ${n}` : `Rate ${n} out of ${MAX_RATING}`}
           aria-pressed={n <= shown}
           onClick={() => onRate(n === player.rating ? null : n)}
-          className={`px-0.5 text-base leading-none transition disabled:cursor-default ${
+          className={`inline-flex min-h-6 min-w-6 items-center justify-center text-base leading-none transition disabled:cursor-default ${
             n <= shown ? (source === "set" ? "text-gold" : source === "suggested" ? "text-gold/55" : "text-muted") : "text-surface-border hover:text-gold/60"
           }`}
         >
@@ -114,10 +114,10 @@ export function PlayerCard({
           <p className="text-xs text-amber-300">{block.replace(/ Verify or waive them first\.$/, "")}</p>
           {onVerify && !locked && (
             <span className="flex flex-wrap gap-2">
-              <button type="button" className="text-xs text-gold underline disabled:opacity-40" disabled={busy} onClick={() => onVerify("verified")}>
+              <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline disabled:opacity-40" disabled={busy} onClick={() => onVerify("verified")}>
                 Verify
               </button>
-              <button type="button" className="text-xs text-gold underline disabled:opacity-40" disabled={busy} title="Let them through without proof" onClick={() => onVerify("waived")}>
+              <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline disabled:opacity-40" disabled={busy} title="Let them through without proof" onClick={() => onVerify("waived")}>
                 Let them through
               </button>
             </span>

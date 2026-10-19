@@ -63,15 +63,17 @@ export function CollapsibleCard({
   return (
     <section className="rounded-xl border border-surface-border bg-surface">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-4 sm:px-6">
-        <button type="button" aria-expanded={open} onClick={toggle} className="flex min-w-0 flex-1 basis-60 items-center gap-3 text-left">
-          <span aria-hidden="true" className={`text-xs text-muted transition-transform ${open ? "rotate-90" : ""}`}>
-            ▶
-          </span>
-          <span className="min-w-0">
-            <span className="block font-semibold text-gold">{title}</span>
-            {hint && <span className="mt-0.5 block text-sm text-muted">{hint}</span>}
-          </span>
-        </button>
+        <h2 className="min-w-0 flex-1 basis-60">
+          <button type="button" aria-expanded={open} onClick={toggle} className="flex w-full min-w-0 items-center gap-3 text-left">
+            <span aria-hidden="true" className={`text-xs text-muted transition-transform ${open ? "rotate-90" : ""}`}>
+              ▶
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold text-gold">{title}</span>
+              {hint && <span className="mt-0.5 block text-sm text-muted">{hint}</span>}
+            </span>
+          </button>
+        </h2>
         {summary && !open && <div className="flex flex-wrap items-center gap-1.5 text-xs">{summary}</div>}
         {info && <InfoBubble title={title}>{info}</InfoBubble>}
       </div>

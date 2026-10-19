@@ -1,5 +1,6 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { InfoBubble } from "@/components/dashboard/ui/InfoBubble";
+import { FieldLabelText, GroupFieldShell } from "./fieldLabel";
 
 /** Shared look for the admin dashboard, matching the site's existing surface/gold theme. */
 
@@ -62,7 +63,7 @@ export function FormField({ label, hint, info, required = false, as = "label", s
   const body = (
     <>
       <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
-        {label}
+        <FieldLabelText>{label}</FieldLabelText>
         {info && <InfoBubble title={label}>{info}</InfoBubble>}
         {required && <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-300">Required</span>}
       </span>
@@ -71,9 +72,7 @@ export function FormField({ label, hint, info, required = false, as = "label", s
     </>
   );
   return as === "group" ? (
-    <div role="group" aria-label={label} className="block">
-      {body}
-    </div>
+    <GroupFieldShell label={label}>{body}</GroupFieldShell>
   ) : (
     <label className="block">{body}</label>
   );
