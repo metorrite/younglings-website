@@ -99,6 +99,7 @@ const BOT_PERMISSION_BITS = [
   16, // Read Message History
   17, // Mention @everyone, @here and All Roles (ticket role pings)
   18, // Use External Emojis
+  26, // Change Nickname (the server can give JonnyBot its own nickname)
   28, // Manage Roles (verification, helper and self-assigned roles)
   34, // Manage Threads
   35, // Create Public Threads

@@ -523,6 +523,24 @@ export interface Goodbye {
   memberCount: number;
 }
 
+/** How JonnyBot appears in one server: the name its messages use, and its own nickname there. */
+export interface BotBranding {
+  /** The display name the server chose, or null when it uses the clan or server name. */
+  displayName: string | null;
+  clanName: string | null;
+  serverName: string;
+  /** What messages call the server right now. */
+  effectiveName: string;
+  /** The bot's nickname in this server, or null for its normal name. */
+  nickname: string | null;
+  botName: string;
+  canChangeNickname: boolean;
+  /** Whether the server is on the premium list (avatar, banner and bio are for those servers). */
+  premium: boolean;
+  maxDisplayName: number;
+  maxNickname: number;
+}
+
 /** A server's starboard: messages with enough of one reaction are copied to a showcase channel. */
 export interface Starboard {
   enabled: boolean;
@@ -1361,6 +1379,8 @@ export const adminApi = {
   createAutoReply: (ctx: ApiContext, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "POST", "autoresponders", reply),
   updateAutoReply: (ctx: ApiContext, id: string, reply: Omit<AutoReplyDef, "id">) => call<AutoReplyDef>(ctx, "PUT", `autoresponders/${encodeURIComponent(id)}`, reply),
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
+  branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
+  saveBranding: (ctx: ApiContext, body: { displayName: string | null; nickname: string | null }) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
