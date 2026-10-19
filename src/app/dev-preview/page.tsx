@@ -18,6 +18,7 @@ import type { OptionSchema } from "@/lib/eventOptions";
 import { AutorolesForm } from "@/components/dashboard/AutorolesForm";
 import { RolePanelEditor } from "@/components/dashboard/RolePanelEditor";
 import { GiveawaysManager } from "@/components/dashboard/GiveawaysManager";
+import { LockdownManager } from "@/components/dashboard/LockdownManager";
 import { SuggestionsManager } from "@/components/dashboard/SuggestionsManager";
 import { AutoCleanManager } from "@/components/dashboard/AutoCleanManager";
 import { AutopunishEditor } from "@/components/dashboard/AutopunishEditor";
@@ -281,6 +282,13 @@ const giveaways = { maxWinners: 20, maxPrize: 200, giveaways: [
   { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winners: [] },
   { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winners: ["5"] },
 ] };
+const lockdown = {
+  channelIds: ["1", "2"], keepTalkingRoleIds: ["r1"], maxChannels: 50, maxRoles: 10,
+  locks: [
+    { channelId: "2", channelName: "general", lockedBy: "Metorrite", lockedAt: "2026-10-19T09:00:00Z", reason: "Raid in progress", lockdown: true, canUnlock: true },
+    { channelId: "9", channelName: null, lockedBy: "PvmRyan", lockedAt: "2026-10-18T20:00:00Z", reason: "", lockdown: false, canUnlock: false },
+  ],
+};
 const suggestions = { channelId: "2", maxNote: 500, suggestions: [
   { id: "3", authorId: "5", authorName: "PvmRyan", content: "Add a weekly boss of the week event with a prize for the most kills.", status: "PENDING" as const, note: null, decidedBy: null, ups: 12, downs: 2, createdAt: "2026-10-10T12:00:00Z" },
   { id: "2", authorId: "6", authorName: null, content: "More voice channels", status: "APPROVED" as const, note: "Done, thanks!", decidedBy: "1", ups: 30, downs: 1, createdAt: "2026-10-08T12:00:00Z" },
@@ -382,6 +390,7 @@ function Preview() {
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "points-new" && (<><PageHeader title="Points" description="A server that has not switched points on yet." /><PointsManager initial={{ ...pointsOverview, enabled: false, reviewChannelId: null, top: [], recent: [], totals: { members: 0, outstanding: 0, awarded: 0, spent: 0 } } as never} submissions={{ pending: [], decided: [] } as never} structure={structure} rewards={{ rewards: [] } as never} redemptions={{ pending: [], handled: [] } as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "giveaways" && (<><PageHeader title="Giveaways" description="Run a giveaway with an Enter button and a timed draw." /><GiveawaysManager initial={giveaways} structure={structure} roles={structure.roles} actions={{ start: nope, end: nope, reroll: nope, remove: nope }} /></>)}
+          {view === "lockdown" && (<><PageHeader title="Lockdown" description="Stop everyone but chosen roles from talking in a channel or a saved set." /><LockdownManager initial={lockdown} structure={structure} canEdit actions={{ save: nope, lock: nope, unlock: nope, start: nope, end: nope }} /></>)}
           {view === "suggestions" && (<><PageHeader title="Suggestions" description="Members post ideas with /suggest." /><SuggestionsManager initial={suggestions} structure={structure} actions={{ saveChannel: nope, decide: nope, remove: nope }} /></>)}
           {view === "autoclean" && (<><PageHeader title="Auto-clean" description="Channels that tidy themselves." /><AutoCleanManager initial={autoclean} structure={structure} actions={{ save: nope, remove: nope }} /></>)}
           {view === "autodelete" && (<><PageHeader title="Auto-delete" description="Keep a channel free of invites." /><AutoDeleteManager initial={autodelete} structure={structure} actions={{ save: nope, remove: nope }} /></>)}
