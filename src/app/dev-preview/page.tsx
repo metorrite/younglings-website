@@ -34,6 +34,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { RoleFixPanel } from "@/components/dashboard/RoleFixPanel";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -344,6 +345,23 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "rolefix" && (
+            <>
+              <PageHeader title="Fix clan roles" description="Fix Member and Guest roles from before the sync started." />
+              <RoleFixPanel
+                initial={{ max: 150, progress: null }}
+                actions={{
+                  plan: async () => ({ ok: true, data: { max: 150, progress: null, linkedAccounts: 41, notInServer: 2, problem: null, entries: [
+                    { userId: "1", name: "Xtusy", rsn: "Xtusy", action: "PROMOTE", add: ["Member"], remove: ["Guest"] },
+                    { userId: "2", name: "Hodant", rsn: "Hodant", action: "PROMOTE", add: ["Member"], remove: ["Guest", "Unverified"] },
+                    { userId: "3", name: "Oldtimer", rsn: "Oldtimer", action: "DEMOTE", add: ["Guest"], remove: ["Member"] },
+                  ] } }),
+                  apply: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  status: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />

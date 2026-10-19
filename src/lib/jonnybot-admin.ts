@@ -439,6 +439,28 @@ export interface BetaGuild {
   name: string | null;
 }
 
+/** One person the clan role fix would change. */
+export interface RoleFixEntry {
+  userId: string;
+  name: string;
+  rsn: string;
+  action: "PROMOTE" | "DEMOTE";
+  add: string[];
+  remove: string[];
+}
+
+export interface RoleFixStatus {
+  max: number;
+  progress: { total: number; done: number; failed: number; running: boolean } | null;
+}
+
+export interface RoleFixPlan extends RoleFixStatus {
+  entries: RoleFixEntry[];
+  linkedAccounts: number;
+  notInServer: number;
+  problem: string | null;
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1463,6 +1485,9 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  roleFixStatus: (ctx: ApiContext) => call<RoleFixStatus>(ctx, "GET", "role-sync"),
+  roleFixPlan: (ctx: ApiContext) => call<RoleFixPlan>(ctx, "POST", "role-sync/plan", {}),
+  roleFixApply: (ctx: ApiContext, userIds: string[]) => call<RoleFixStatus>(ctx, "POST", "role-sync/apply", { userIds }),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),

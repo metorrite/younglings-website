@@ -94,6 +94,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
+      { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
     ],
   },
   {
