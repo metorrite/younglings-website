@@ -44,6 +44,7 @@ import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
 import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
+import { DevSnapshotButton } from "@/components/devtools/DevSnapshotButton";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
@@ -427,6 +428,16 @@ function Preview() {
                 ]}
                 take={async (focus) => ({ ok: true as const, data: { snapshot: { id: "snap-20261018-150000-c0de", guildId: "1", createdAt: new Date().toISOString(), sizeBytes: 51_200, requestedBy: "2", focus } } })}
                 remove={async (id) => ({ ok: true as const, data: { deleted: id } })}
+              />
+            </>
+          )}
+          {view === "devbutton" && (
+            <>
+              <PageHeader title="Dev snapshot button" description="The owner-only tab at the bottom-left of every page. Here it takes a made-up snapshot instead of calling the bot." />
+              <DevSnapshotButton
+                face="clan"
+                role="bot owner (admin)"
+                send={async () => ({ id: "snap-20261019-030000-c0de", filename: "jb-snapshot-snap-20261019-030000-c0de.zip", blob: new Blob(["preview"], { type: "application/zip" }) })}
               />
             </>
           )}
