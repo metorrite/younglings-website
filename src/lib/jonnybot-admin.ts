@@ -566,6 +566,13 @@ export interface Starboard {
   threshold: number;
   selfStar: boolean;
   maxThreshold: number;
+  /** Source channels that need a different number of reactions than {@link threshold}. */
+  channelThresholds: { channelId: string; threshold: number }[];
+  /** Never copy out of a channel @everyone can't see. */
+  skipHiddenChannels: boolean;
+  /** When not empty, only these channels are copied from. */
+  onlyChannels: string[];
+  maxChannelRules: number;
 }
 
 /** One automatic reply: when a message matches the trigger, the bot answers. */
@@ -1439,7 +1446,7 @@ export const adminApi = {
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
-  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
