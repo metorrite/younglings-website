@@ -646,6 +646,15 @@ export interface GiveawayList {
   maxPrize: number;
 }
 
+/** The lockdown page: the saved set, the roles that keep talking while locked, and every channel that is locked right now. */
+export interface Lockdown {
+  channelIds: string[];
+  keepTalkingRoleIds: string[];
+  locks: { channelId: string; channelName: string | null; lockedBy: string; lockedAt: string; reason: string; lockdown: boolean; canUnlock: boolean }[];
+  maxChannels: number;
+  maxRoles: number;
+}
+
 export interface GiveawayStart {
   prize: string;
   channelId: string;
@@ -1660,6 +1669,13 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  lockdown: (ctx: ApiContext) => call<Lockdown>(ctx, "GET", "lockdown"),
+  saveLockdown: (ctx: ApiContext, body: { channelIds: string[]; keepTalkingRoleIds: string[] }) => call<Lockdown>(ctx, "PUT", "lockdown", body),
+  lockChannel: (ctx: ApiContext, body: { channelId: string; reason: string }) => call<Lockdown>(ctx, "POST", "lockdown/lock", body),
+  unlockChannel: (ctx: ApiContext, body: { channelId: string }) => call<Lockdown>(ctx, "POST", "lockdown/unlock", body),
+  startLockdown: (ctx: ApiContext, body: { reason: string }) => call<Lockdown>(ctx, "POST", "lockdown/start", body),
+  endLockdown: (ctx: ApiContext) => call<Lockdown>(ctx, "POST", "lockdown/end", {}),
+
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
