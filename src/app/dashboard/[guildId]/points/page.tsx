@@ -1,3 +1,4 @@
+import { PointsExtrasManager } from "@/components/dashboard/PointsExtrasManager";
 import { PointsManager } from "@/components/dashboard/PointsManager";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
@@ -6,8 +7,12 @@ import {
   awardPointsAction,
   decideSubmissionAction,
   handleRedemptionAction,
+  removeRoleRewardAction,
+  removeTriggerAction,
   saveRewardAction,
+  saveRoleRewardAction,
   savePointsSettingsAction,
+  saveTriggerAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -19,12 +24,14 @@ export default async function PointsPage({
 }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [overview, submissions, structure, rewards, redemptions] = await Promise.all([
+  const [overview, submissions, structure, rewards, redemptions, roleRewards, triggers] = await Promise.all([
     adminApi.points(guild).then(dashboardData),
     adminApi.pointsSubmissions(guild).then(dashboardData),
     adminApi.structure(guild).then(dashboardData),
     adminApi.pointsRewards(guild).then(dashboardData),
     adminApi.pointsRedemptions(guild).then(dashboardData),
+    adminApi.pointsRoleRewards(guild).then(dashboardData),
+    adminApi.pointsTriggers(guild).then(dashboardData),
   ]);
 
   return (
@@ -45,6 +52,18 @@ export default async function PointsPage({
           decide: decideSubmissionAction.bind(null, guildId),
           saveReward: saveRewardAction.bind(null, guildId),
           handleRedemption: handleRedemptionAction.bind(null, guildId),
+        }}
+      />
+      <PointsExtrasManager
+        roles={roleRewards}
+        triggers={triggers}
+        structure={structure}
+        unit={overview.unit}
+        actions={{
+          saveRole: saveRoleRewardAction.bind(null, guildId),
+          removeRole: removeRoleRewardAction.bind(null, guildId),
+          saveTrigger: saveTriggerAction.bind(null, guildId),
+          removeTrigger: removeTriggerAction.bind(null, guildId),
         }}
       />
     </div>

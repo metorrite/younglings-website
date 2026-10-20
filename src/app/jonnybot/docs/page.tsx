@@ -19,7 +19,14 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/split", who: "Everyone (changeable)", what: "Split a drop between a group (1.5b, 250m, 12,500k), with an optional fee off the top and any left-over coins shown." },
   { name: "/suggest", who: "Everyone (changeable)", what: "Post an idea in the suggestions channel for everyone to vote on with the up and down buttons." },
   { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
+  { name: "/announce", who: "Admins (changeable)", what: "Post an announcement in a channel, optionally pinging one role, @everyone or @here. @everyone and @here only work for people who may mention everyone there. The dashboard's Announcements page does the same." },
   { name: "/events", who: "Everyone (changeable)", what: "Your events (place, points, buy-in, prizes), the ones open for signup, and join or leave. Events themselves are made and run from the dashboard." },
+  { name: "/price", who: "Everyone (changeable)", what: "A RuneScape 3 item's Grand Exchange price with its 7 and 30 day change and a link to the wiki. Pick the item from the suggestions." },
+  { name: "/worldevents", who: "Everyone (changeable)", what: "The Voice of Seren right now and the events that come round by themselves with how often, from the RuneScape Wiki. Hourly Voice of Seren reminders can be switched on from the RuneScape timers page." },
+  { name: "/reset", who: "Everyone (changeable)", what: "Countdowns to the daily, weekly and monthly RuneScape resets. Reminders at each reset can be switched on from the RuneScape timers page." },
+  { name: "/dnd", who: "Everyone (changeable)", what: "The Distractions and Diversions grouped by how often they can be played (daily, weekly, monthly, when available), read from the RuneScape Wiki." },
+  { name: "/boss", who: "Everyone (changeable)", what: "A short RuneScape Wiki summary of a boss with its combat level, life points and weakness, and a link to its strategy page." },
+  { name: "/quest", who: "Everyone (changeable)", what: "A short RuneScape Wiki summary of a quest with its difficulty and area, and a link to its quick guide." },
 ];
 
 const DASHBOARD: [string, string][] = [

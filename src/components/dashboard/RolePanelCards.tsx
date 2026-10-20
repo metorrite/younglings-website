@@ -3,6 +3,8 @@ import { StatusBadge } from "@/components/admin/ui";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import type { RolePanelSummary } from "@/lib/jonnybot-admin";
 
+const ITEM = { BUTTONS: "button", DROPDOWN: "option", REACTIONS: "reaction" } as const;
+
 /** The role panels as cards, as many across as fit; each opens that panel's editor at `${base}/${id}`. */
 export function RolePanelCards({ panels, base }: { panels: RolePanelSummary[]; base: string }) {
   return (
@@ -15,9 +17,12 @@ export function RolePanelCards({ panels, base }: { panels: RolePanelSummary[]; b
           </div>
           <div className="mt-auto flex flex-wrap items-center gap-2">
             <StatusBadge tone="muted">
-              {panel.buttonCount} button{panel.buttonCount === 1 ? "" : "s"}
+              {panel.buttonCount} {ITEM[panel.style ?? "BUTTONS"]}
+              {panel.buttonCount === 1 ? "" : "s"}
             </StatusBadge>
             <StatusBadge tone="muted">{panel.mode === "UNIQUE" ? "Only one" : "Any number"}</StatusBadge>
+            {panel.rule === "ADD_ONLY" && <StatusBadge tone="muted">Only gives</StatusBadge>}
+            {panel.rule === "REMOVE_ONLY" && <StatusBadge tone="muted">Only takes away</StatusBadge>}
             {panel.posted ? <StatusBadge tone="good">Posted in #{panel.channelName ?? "deleted channel"}</StatusBadge> : <StatusBadge tone="warn">Not posted</StatusBadge>}
           </div>
         </Link>

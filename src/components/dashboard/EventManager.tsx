@@ -7,6 +7,8 @@ import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton, StatusBadge } from "@/components/admin/ui";
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
+import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
 import { ObjectivesTab } from "@/components/dashboard/events/ObjectivesTab";
@@ -97,6 +99,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [draftPoints, setDraftPoints] = useState("25");
   const [newSize, setNewSize] = useState("");
   const [newShape, setNewShape] = useState("");
+  const [newShapeSize, setNewShapeSize] = useState<number | null>(null);
   const [pickedLook, setPickedLook] = useState<string | null>(null);
   const [organiser, setOrganiser] = useState("");
   const [tplName, setTplName] = useState(initial.event.name.slice(0, 60));
@@ -217,6 +220,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const currentLook = e.config.board?.look ?? null;
   /** One tile of the board with its lock, edit and points, the same on a square grid and on a shaped board. */
   const renderTile = (key: string, index: number) => {
+              const isFree = key === "free-space";
               const o = detail.objectives.find((x) => x.key === key);
               const info = detail.tiles.find((x) => x.key === key);
               const done = standings.standings.filter((s) => (s.completions[key] ?? 0) > 0).length;
@@ -231,7 +235,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 >
                   <div className="flex items-center justify-between gap-2 text-xs text-muted">
                     <span className="tabular-nums">#{index + 1}</span>
-                    {editable && !isEditing && (
+                    {editable && !isEditing && !isFree && (
                       <span className="flex gap-2">
                         <button type="button" aria-pressed={isLocked} className={`rounded border px-2 py-1 transition ${isLocked ? "border-gold bg-gold/10 text-gold" : "border-control-border hover:border-gold hover:text-foreground"}`} title="Locked tiles stay put when you re-roll" onClick={() => setLocked(isLocked ? locked.filter((k) => k !== key) : [...locked, key])}>
                           {isLocked ? "Locked" : "Lock"}
@@ -298,7 +302,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                         </span>
                       )}
                       {info?.boss && <span className="text-xs text-muted">{info.boss}</span>}
-                      <span className="line-clamp-3 break-words font-medium">{info?.boss ? info.item : (o?.label ?? key)}</span>
+                      <span className="line-clamp-3 break-words font-medium">{isFree ? "Free space" : info?.boss ? info.item : (o?.label ?? key)}</span>
+                      {isFree && <span className="text-xs text-muted">Done for everyone</span>}
                     </div>
                   )}
                   {!isEditing && (
@@ -764,6 +769,27 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           ) : (
             <p className="text-sm text-muted">The board is locked now that the event has started.</p>
           )}
+          {editable && layout && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <div>
+                <p className="text-sm font-medium">Size of the shape</p>
+                <p className="text-xs text-muted">A different size makes a fresh board and drops locks. The painted picture keeps its own size; any other size is drawn for you.</p>
+              </div>
+              <ShapeSizeControl shape={layout.id} value={newShapeSize ?? layout.size ?? 0} onChange={setNewShapeSize} disabled={pending} />
+              <button
+                type="button"
+                className={ghostButton}
+                disabled={pending || newShapeSize === null || newShapeSize === (layout.size ?? 0)}
+                onClick={async () =>
+                  newShapeSize !== null &&
+                  (await confirmDialog({ title: "Change the size?", body: "That makes a fresh board and drops locks.", confirmLabel: "Change size", tone: "danger" })) &&
+                  run("POST", `${base}/bingo`, { layout: layout.id, shapeSize: newShapeSize }, "New board made.", () => { setNewShapeSize(null); setLocked([]); })
+                }
+              >
+                Change size
+              </button>
+            </div>
+          )}
           {e.status !== "DONE" && e.status !== "CANCELLED" && (
             <div className="space-y-3 rounded-xl border border-surface-border p-4">
               <div>
@@ -783,6 +809,15 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
                 Use this look
               </button>
             </div>
+          )}
+          {e.status !== "DONE" && e.status !== "CANCELLED" && (
+            <BingoOptionsCard
+              board={e.config.board ?? {}}
+              shaped={Boolean(layout)}
+              canReroll={editable}
+              disabled={pending}
+              save={(patch) => run("PUT", base, { config: { ...e.config, board: { ...e.config.board, ...patch } } }, "Saved. Press Post or refresh the boards to update Discord now.")}
+            />
           )}
           <div className="space-y-2 rounded-xl border border-surface-border p-4">
             <p className="text-sm font-medium">Boards</p>

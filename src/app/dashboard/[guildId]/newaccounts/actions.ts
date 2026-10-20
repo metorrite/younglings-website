@@ -36,6 +36,10 @@ export async function saveGuildAccountGateAction(
       typeof p.alertChannelId === "string" && /^\d+$/.test(p.alertChannelId)
         ? p.alertChannelId
         : null,
+    nameRulesEnabled: p.nameRulesEnabled === true,
+    nameAction: p.nameAction === "KICK" ? "KICK" : p.nameAction === "BAN" ? "BAN" : "ALERT",
+    nameRules: Array.isArray(p.nameRules) ? p.nameRules.filter((r): r is string => typeof r === "string").map((r) => r.slice(0, 100)).slice(0, 60) : [],
+    exemptUserIds: Array.isArray(p.exemptUserIds) ? p.exemptUserIds.filter((x): x is string => typeof x === "string").map((x) => x.trim().slice(0, 25)).filter((x) => x !== "").slice(0, 60) : [],
   });
   revalidatePath(`/dashboard/${guildId}/newaccounts`);
   return result.ok
