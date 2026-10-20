@@ -114,6 +114,23 @@ export type MyChatLevel =
   | { enabled: false }
   | { enabled: true; level: number; xp: number; intoLevel: number; toNext: number; maxed: boolean; rank: number | null; messages: number; members: number };
 
+/** A member's own Highlights words (direct messages when someone says them) and the channels they skip. */
+export interface MyHighlights {
+  enabled: boolean;
+  /** Whether this member may use Highlights here; when not, `refusal` says why. */
+  usable: boolean;
+  refusal: string | null;
+  words: { id: string; word: string; wholeWord: boolean }[];
+  max: number;
+  maxWord: number;
+  minWord: number;
+  cooldownSeconds: number;
+  ignored: { id: string; name: string }[];
+  maxIgnored: number;
+  /** Channels the member can see and has not skipped yet. */
+  channels: { id: string; name: string }[];
+}
+
 export interface NewMemberPoll {
   title: string;
   options: string[];
@@ -170,6 +187,10 @@ export const memberApi = {
   settings: (userId: string) => request<MemberSettings>("GET", "settings", userId),
   saveSettings: (userId: string, settings: Omit<MemberSettings, "rsns">) => request<MemberSettings>("PUT", "settings", userId, settings),
   chatLevel: (userId: string) => request<MyChatLevel>("GET", "level", userId),
+  highlights: (userId: string) => request<MyHighlights>("GET", "highlights", userId),
+  addHighlight: (userId: string, word: string, wholeWord: boolean) => request<MyHighlights>("POST", "highlights", userId, { word, wholeWord }),
+  removeHighlight: (userId: string, id: string) => request<MyHighlights>("DELETE", `highlights?id=${encodeURIComponent(id)}`, userId),
+  ignoreHighlightChannel: (userId: string, channelId: string, ignored: boolean) => request<MyHighlights>("POST", "highlights/ignore", userId, { channelId, ignored }),
   goals: (userId: string) => request<{ goals: Goal[] }>("GET", "goals", userId),
   addGoal: (userId: string, skillId: number, targetLevel: number) => request<{ goals: Goal[] }>("POST", "goals", userId, { skillId, targetLevel }),
   deleteGoal: (userId: string, goalId: string) => request<{ goals: Goal[] }>("DELETE", `goals?id=${encodeURIComponent(goalId)}`, userId),
