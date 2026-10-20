@@ -47,7 +47,7 @@ const unitFor = (seconds: number) =>
     ?.seconds ?? 60;
 
 const shape = (a: Autoroles) =>
-  JSON.stringify([a.enabled, a.delaySeconds, a.memberRoleIds, a.botRoleIds]);
+  JSON.stringify([a.enabled, a.delaySeconds, a.memberRoleIds, a.botRoleIds, a.memberRemoveRoleIds, a.botRemoveRoleIds]);
 
 /**
  * Roles handed to everyone who joins: one list for people, one for bots, switched on or off as a whole, with an optional delay. Basic shows the switch, the delay
@@ -63,7 +63,7 @@ export function AutorolesForm({
   save: (
     draft: Pick<
       Autoroles,
-      "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds"
+      "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds" | "memberRemoveRoleIds" | "botRemoveRoleIds"
     >,
   ) => Promise<WelcomeActionResult<Autoroles>>;
 }) {
@@ -90,6 +90,8 @@ export function AutorolesForm({
         delaySeconds: draft.delaySeconds,
         memberRoleIds: draft.memberRoleIds,
         botRoleIds: draft.botRoleIds,
+        memberRemoveRoleIds: draft.memberRemoveRoleIds,
+        botRemoveRoleIds: draft.botRemoveRoleIds,
       });
       if (!result.ok)
         return setOutcome({
@@ -114,7 +116,9 @@ export function AutorolesForm({
   // a saved delay of their own stays on screen in Basic, and does not vanish while it is being typed over
   const showCustomDelay = advanced || !PRESETS.some((p) => p.seconds === saved.delaySeconds);
   const showBots = advanced || saved.botRoleIds.length > 0;
-  const hidden = [!showCustomDelay && "a delay of your own", !showBots && "roles for bots"].filter((name): name is string => typeof name === "string");
+  // roles to take away are an Advanced choice, and stay visible in Basic once saved
+  const showRemovals = advanced || saved.memberRemoveRoleIds.length > 0 || saved.botRemoveRoleIds.length > 0;
+  const hidden = [!showCustomDelay && "a delay of your own", !showBots && "roles for bots", !showRemovals && "roles to take away from people who join"].filter((name): name is string => typeof name === "string");
   const given = draft.enabled ? undefined : " Autoroles are switched off, so nothing is given yet.";
 
   return (
@@ -266,6 +270,50 @@ export function AutorolesForm({
               disabled={false}
               onChange={(ids) => change({ botRoleIds: ids })}
             />
+          </CollapsibleCard>
+        )}
+
+        {showRemovals && (
+          <CollapsibleCard
+            id="autoroles-remove"
+            title="Roles to take away"
+            hint={<>Taken from everyone who joins, on the same delay.{given}</>}
+            defaultOpen
+            summary={
+              <Chip tone={draft.memberRemoveRoleIds.length + draft.botRemoveRoleIds.length === 0 ? "plain" : "warn"}>
+                {draft.memberRemoveRoleIds.length + draft.botRemoveRoleIds.length === 0
+                  ? "None"
+                  : `${draft.memberRemoveRoleIds.length + draft.botRemoveRoleIds.length} role${draft.memberRemoveRoleIds.length + draft.botRemoveRoleIds.length === 1 ? "" : "s"}`}
+              </Chip>
+            }
+            info="For example a role a returning member kept from before. Nothing is taken away unless you add a role here. A role can't be both given and taken away, and JonnyBot can only take away roles below its own role."
+          >
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">From people</p>
+                <div className="mt-2">
+                  <RolePicker
+                    roles={giveable}
+                    value={draft.memberRemoveRoleIds}
+                    max={draft.maxRoles}
+                    disabled={false}
+                    onChange={(ids) => change({ memberRemoveRoleIds: ids })}
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium">From bots</p>
+                <div className="mt-2">
+                  <RolePicker
+                    roles={giveable}
+                    value={draft.botRemoveRoleIds}
+                    max={draft.maxRoles}
+                    disabled={false}
+                    onChange={(ids) => change({ botRemoveRoleIds: ids })}
+                  />
+                </div>
+              </div>
+            </div>
           </CollapsibleCard>
         )}
       </PanelGrid>
