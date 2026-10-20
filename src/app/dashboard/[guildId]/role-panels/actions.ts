@@ -9,7 +9,7 @@ const text = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, ma
 const STYLES = ["primary", "secondary", "success", "danger"] as const;
 
 /** Rebuilds a panel from untrusted input; the bot validates the content (roles that exist, lengths) and explains any refusal. */
-function clean(input: unknown): Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId"> | null {
+function clean(input: unknown): Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached"> | null {
   if (typeof input !== "object" || input === null) return null;
   const p = input as Record<string, unknown>;
   const buttons: RolePanelButton[] = (Array.isArray(p.buttons) ? p.buttons : []).slice(0, 25).map((raw) => {
@@ -27,6 +27,8 @@ function clean(input: unknown): Omit<RolePanelDef, "id" | "posted" | "channelId"
     description: text(p.description, 4100),
     color: typeof p.color === "number" && Number.isFinite(p.color) ? Math.trunc(p.color) : null,
     mode: p.mode === "UNIQUE" ? "UNIQUE" : "TOGGLE",
+    style: p.style === "DROPDOWN" || p.style === "REACTIONS" ? p.style : "BUTTONS",
+    rule: p.rule === "ADD_ONLY" || p.rule === "REMOVE_ONLY" ? p.rule : "NORMAL",
     buttons,
   };
 }
@@ -56,13 +58,17 @@ export async function deleteGuildRolePanelAction(guildId: string, panelId: strin
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
 }
 
-export async function postGuildRolePanelAction(guildId: string, panelId: string, channelId: string): Promise<WelcomeActionResult<RolePanelDef>> {
+/** Posts the panel in a channel, or puts a reactions panel on an existing message by its link. */
+export async function postGuildRolePanelAction(guildId: string, panelId: string, target: { channelId?: string; messageLink?: string }): Promise<WelcomeActionResult<RolePanelDef>> {
   const guild = await requireGuild(guildId);
   const slow = throttle(guild.actorId, "admin");
   if (slow) return { ok: false, error: slow, problems: [] };
-  if (!/^\d+$/.test(panelId) || !/^\d+$/.test(channelId)) return { ok: false, error: "Choose a channel to post in.", problems: [] };
+  if (!/^\d+$/.test(panelId)) return { ok: false, error: "That isn't a valid panel.", problems: [] };
+  const messageLink = typeof target?.messageLink === "string" ? target.messageLink.trim().slice(0, 200) : "";
+  const channelId = typeof target?.channelId === "string" ? target.channelId : "";
+  if (messageLink === "" && !/^\d+$/.test(channelId)) return { ok: false, error: "Choose a channel to post in.", problems: [] };
 
-  const result = await adminApi.postRolePanel(guild, panelId, channelId);
+  const result = await adminApi.postRolePanel(guild, panelId, messageLink !== "" ? { messageLink } : { channelId });
   revalidatePath(`/dashboard/${guildId}/role-panels`);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
 }
