@@ -173,11 +173,15 @@ export function EventView({ data }: { data: EventPage }) {
 
           {scored && !me.waiting && data.standings && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <StatTile
-                label="Your place"
-                value={data.standings.myRank > 0 ? `${data.standings.myRank}` : "Not yet"}
-                sub={data.standings.myRank > 0 ? `of ${data.standings.of} ${event.scoringMode === "TEAM" ? "teams" : "players"}` : "No points scored yet"}
-              />
+              {data.standings.hidden ? (
+                <StatTile label="Your place" value="Hidden" sub={data.standings.hiddenText ?? "The organisers keep the standings to themselves."} />
+              ) : (
+                <StatTile
+                  label="Your place"
+                  value={data.standings.myRank > 0 ? `${data.standings.myRank}` : "Not yet"}
+                  sub={data.standings.myRank > 0 ? `of ${data.standings.of} ${event.scoringMode === "TEAM" ? "teams" : "players"}` : "No points scored yet"}
+                />
+              )}
               <StatTile label="Points" value={data.standings.myPoints.toLocaleString("en-GB")} sub={event.scoringMode === "TEAM" ? "your team's total" : undefined} />
               {total > 0 && <StatTile label="Done" value={`${done} / ${total}`} sub="objectives" />}
             </div>
@@ -245,6 +249,11 @@ export function EventView({ data }: { data: EventPage }) {
             </Panel>
           )}
 
+          {scored && data.standings?.hidden && (
+            <Panel title="Standings">
+              <p className="text-sm text-muted">{data.standings.hiddenText ?? "The organisers keep the standings to themselves."}</p>
+            </Panel>
+          )}
           {data.standings && data.standings.rows.length > 0 && (
             <Panel title="Standings">
               <ol className="divide-y divide-surface-border/60 text-sm">

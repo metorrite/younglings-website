@@ -239,7 +239,8 @@ export interface EventPage {
   prizes: { place: number; placeTo: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number }[];
   // everything below is only present when `me` is
   teammates?: { name: string; me: boolean }[];
-  standings?: { rows: { rank: number; name: string; points: number; me: boolean }[]; of: number; myRank: number; myPoints: number };
+  /** `hidden`: the organisers chose not to show the table to players (T-211); the player still gets their own points. */
+  standings?: { rows: { rank: number; name: string; points: number; me: boolean }[]; of: number; myRank: number; myPoints: number; hidden?: boolean; hiddenText?: string | null };
   objectives?: { key: string; label: string; points: number; target: number; repeatLimit: number; done: number }[];
   /** A bingo's board for this player, in tile order; `columns` is 0 when the board isn't a square grid (draw it as a list). */
   board?: { tiles: { n: number; label: string; points: number; done: boolean; locked: boolean }[]; columns: number } | null;
