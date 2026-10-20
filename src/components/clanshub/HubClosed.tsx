@@ -9,7 +9,7 @@ export function HubClosed({ site }: { site: SiteInfo }) {
       <h1 className="mt-6 text-3xl font-semibold tracking-tight">The Clans Hub is in beta</h1>
       <p className="mt-3 text-lg text-muted">It isn&apos;t open to everyone yet. Check back later.</p>
       <a href={site.clanOrigin || "/"} className="mt-8 rounded-md border border-surface-border px-5 py-2.5 text-sm font-semibold transition hover:border-gold">
-        Go to the Younglings home page
+        Go to the home page
       </a>
     </div>
   );
