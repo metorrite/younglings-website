@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { FormField, inputClass } from "@/components/admin/ui";
+import { ChannelSelect } from "@/components/admin/pickers";
 import { ChannelListPicker, RolePicker } from "@/components/dashboard/pickers";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { andList } from "@/components/dashboard/ui/andList";
@@ -17,24 +18,32 @@ type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | 
 const HINTS: Record<AutomodRule["key"], string> = {
   INVITES: "Deletes messages with a Discord server invite link.",
   LINKS: "Deletes messages with a link to a website that isn't on your allowed list. Invites have their own rule.",
+  PHISHING: "Deletes messages that link to a website on a public list of known scam and phishing sites (fake Discord Nitro, fake Steam and so on). The list is refreshed daily.",
   BLOCKED_WORDS: "Deletes messages containing a word from your list. Whole words only, so blocking “ass” doesn't catch “class”.",
   CAPS: "Deletes messages written mostly in capitals.",
   MENTIONS: "Deletes messages that mention too many people, roles or @everyone.",
   SPAM: "Deletes messages from someone sending too many in a short time.",
   REPEAT: "Deletes a message that is sent again and again.",
   EMOJI: "Deletes messages with too many emoji.",
+  IMAGE_SPAM: "Deletes messages from someone posting too many images in a short time.",
+  NEWLINES: "Deletes messages with too many line breaks (the tall walls of empty lines).",
+  STICKERS: "Deletes messages from someone sending too many stickers in a short time.",
+  SPOILERS: "Deletes messages with too many ||spoiler|| tags.",
+  MASKED_LINKS: "Deletes messages that hide a link behind other words, like [click here](address). Links to your allowed websites are fine.",
+  ZALGO: "Deletes messages in glitchy text with stacks of accents piled on the letters. Ordinary accents (café) are fine.",
 };
 
 const shape = (d: Pick<Automod, "enabled" | "rules" | "exemptRoles" | "exemptChannels">) =>
-  JSON.stringify([d.enabled, d.rules.map((r) => [r.key, r.enabled, r.warn, r.limit, r.seconds, r.words]), d.exemptRoles, d.exemptChannels]);
+  JSON.stringify([d.enabled, d.rules.map((r) => [r.key, r.enabled, r.warn, r.limit, r.seconds, r.words, r.response ?? "", r.logChannelId ?? null]), d.exemptRoles, d.exemptChannels]);
 
-/** The rules that few servers use: capitals, repeated messages and emoji. */
-const ADVANCED_RULES: AutomodRule["key"][] = ["CAPS", "REPEAT", "EMOJI"];
+/** The rules that few servers use: capitals, repeated messages, emoji, and the newer, narrower ones. */
+const ADVANCED_RULES: AutomodRule["key"][] = ["CAPS", "REPEAT", "EMOJI", "IMAGE_SPAM", "NEWLINES", "STICKERS", "SPOILERS", "MASKED_LINKS", "ZALGO"];
 
 /**
- * Switches automod on, configures each rule, and chooses who is never checked. Basic is the switch and the usual rules (invites, links, blocked words, spam,
- * mentions) with their numbers; Advanced adds the capitals, repeated message and emoji rules, giving the writer a warning, and the roles and channels that are
- * never checked. A rule that is already on, a warning already switched on, and exemptions already saved stay visible in Basic.
+ * Switches automod on, configures each rule, and chooses who is never checked. Basic is the switch and the usual rules (invites, links, phishing, blocked words,
+ * spam, mentions) with their numbers; Advanced adds the narrower rules (capitals, repeats, emoji, images, line breaks, stickers, spoilers, masked links, zalgo),
+ * giving the writer a warning, a custom response and log channel for each rule, and the roles and channels that are never checked. A rule that is already on, a
+ * warning, response or log channel already saved, and exemptions already saved stay visible in Basic.
  */
 export function AutomodForm({
   initial,
@@ -55,11 +64,12 @@ export function AutomodForm({
   const savedRule = (key: AutomodRule["key"]) => saved.rules.find((r) => r.key === key);
   const showRule = (r: AutomodRule) => advanced || !ADVANCED_RULES.includes(r.key) || savedRule(r.key)?.enabled === true;
   const showWarn = (r: AutomodRule) => advanced || savedRule(r.key)?.warn === true;
+  const showExtras = (r: AutomodRule) => advanced || !!savedRule(r.key)?.response || !!savedRule(r.key)?.logChannelId;
   const showExempt = advanced || saved.exemptRoles.length > 0 || saved.exemptChannels.length > 0;
   const hiddenRules = draft.rules.filter((r) => !showRule(r)).map((r) => r.label.toLowerCase());
   const hidden = [
     hiddenRules.length > 0 && `the ${andList(hiddenRules)} rules`,
-    !advanced && "warning the writer",
+    !advanced && "warning the writer, a custom response and a log channel for each rule",
     !showExempt && "roles and channels that are never checked",
   ].filter((name): name is string => typeof name === "string");
 
@@ -139,6 +149,31 @@ export function AutomodForm({
                 </FormField>
               </FieldGrid>
             )}
+            {r.key === "PHISHING" && (
+              <p className="text-sm text-muted">
+                {draft.phishingListSize
+                  ? `The scam list holds ${draft.phishingListSize.toLocaleString("en-GB")} websites.`
+                  : "The scam list has not been downloaded yet (it is fetched about a minute after JonnyBot starts, then daily). Until then this rule flags nothing."}
+              </p>
+            )}
+            {(r.key === "IMAGE_SPAM" || r.key === "STICKERS") && (
+              <FieldGrid>
+                <FormField label={r.key === "IMAGE_SPAM" ? "Images" : "Stickers"} size="sm" hint="At or above this many…">
+                  <input className={inputClass} inputMode="numeric" value={r.limit} onChange={(e) => patchRule(r.key, { limit: num(e.target.value) })} />
+                </FormField>
+                <FormField label="Within (seconds)" size="sm">
+                  <input className={inputClass} inputMode="numeric" value={r.seconds} onChange={(e) => patchRule(r.key, { seconds: num(e.target.value) })} />
+                </FormField>
+              </FieldGrid>
+            )}
+            {(r.key === "NEWLINES" || r.key === "SPOILERS" || r.key === "ZALGO") && (
+              <FormField
+                label={r.key === "NEWLINES" ? "Most line breaks allowed in one message" : r.key === "SPOILERS" ? "Most spoiler tags allowed in one message" : "Most stacked accents allowed in a row"}
+                size="sm"
+              >
+                <input className={inputClass} inputMode="numeric" value={r.limit} onChange={(e) => patchRule(r.key, { limit: num(e.target.value) })} />
+              </FormField>
+            )}
             {r.key === "MENTIONS" && (
               <FormField label="Most mentions allowed in one message" size="sm" hint="People, roles and @everyone each count.">
                 <input className={inputClass} inputMode="numeric" value={r.limit} onChange={(e) => patchRule(r.key, { limit: num(e.target.value) })} />
@@ -159,7 +194,7 @@ export function AutomodForm({
                 </FormField>
               </FieldGrid>
             )}
-            {(r.key === "BLOCKED_WORDS" || r.key === "LINKS") && (
+            {(r.key === "BLOCKED_WORDS" || r.key === "LINKS" || r.key === "MASKED_LINKS") && (
               <FormField
                 label={r.key === "BLOCKED_WORDS" ? "Blocked words" : "Allowed websites"}
                 size="lg"
@@ -172,6 +207,34 @@ export function AutomodForm({
                   onChange={(e) => patchRule(r.key, { words: e.target.value.split(/[\n,]/).map((w) => w.trim()).filter((w) => w.length > 0) })}
                 />
               </FormField>
+            )}
+            {showExtras(r) && (
+              <>
+                <FormField
+                  label="What the writer is told"
+                  size="lg"
+                  hint={`Empty uses the standard note. You can use {user}, {rule} and {reason}. Up to ${draft.maxResponse ?? 300} characters.`}
+                >
+                  <textarea
+                    className={`${inputClass} min-h-16`}
+                    rows={2}
+                    maxLength={draft.maxResponse ?? 300}
+                    value={r.response ?? ""}
+                    placeholder="Please stop {reason}, {user}."
+                    onChange={(e) => patchRule(r.key, { response: e.target.value })}
+                  />
+                </FormField>
+                <FormField label="Also report removed messages in" size="md" as="group" hint="A staff channel, for example. Nobody is pinged.">
+                  <ChannelSelect
+                    {...choicesOf(structure)}
+                    onlyPostable
+                    allowForums={false}
+                    value={r.logChannelId ?? null}
+                    onChange={(id) => patchRule(r.key, { logChannelId: id })}
+                    none="Don't report"
+                  />
+                </FormField>
+              </>
             )}
           </CollapsibleCard>
         ))}
