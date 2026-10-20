@@ -56,6 +56,7 @@ import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
+import { HelpExtrasForm } from "@/components/dashboard/HelpExtrasForm";
 import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
 import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
 import { ChatLevelsBoard } from "@/components/dashboard/ChatLevelsBoard";
@@ -518,6 +519,7 @@ function Preview() {
               />
             </>
           )}
+          {view === "help-extras" && (<><PageHeader title="Help extras" description="Optional extras for PvM Help and CA Help tickets." /><HelpExtrasForm initial={{ eventButton: true, eventStartHours: 24, eventDays: 1, maxStartHours: 720, maxDays: 30 }} save={nope as never} /></>)}
           {view === "bingo-options" && (<><PageHeader title="Board options" description="The extra bingo board options on the event's Board tab." /><div className="max-w-3xl space-y-4"><BingoOptionsCard board={{ title: "Winter Bingo", names: true }} shaped={false} canReroll disabled={false} save={() => {}} /><BingoOptionsCard board={{ fog: true }} shaped canReroll={false} disabled={false} save={() => {}} /></div></>)}
           {view === "shape-size" && (<><PageHeader title="Shape size" description="The size pickers for the code-drawn bingo shapes, with their live sketch." /><div className="max-w-3xl space-y-6">{[["pyramid", 6], ["path", 20], ["convergence", 3], ["tree", 0]].map(([shape, size]) => (<ShapeSizeControl key={String(shape)} shape={String(shape)} value={Number(size)} onChange={() => {}} />))}</div></>)}
           {view === "chat-levels" && (<><PageHeader title="Chat levels" description="XP for chatting, level roles and a leaderboard." /><ChatLevelsForm initial={{ enabled: true, minXp: 15, maxXp: 25, cooldownSeconds: 60, announce: true, announceChannelId: "2", announceMessage: "{user} reached level {level}!", removeOldRoles: false, ignoredChannels: ["1"], ignoredRoles: [], channelMultipliers: [{ channelId: "2", multiplier: 2 }], roleMultipliers: [], levelRoles: [{ level: 5, roleId: "1" }, { level: 10, roleId: "2" }], members: 42, limits: { maxXp: 100, minCooldown: 10, maxCooldown: 3600, maxMultiplier: 5, maxList: 25, maxRoles: 25, maxMessage: 300, maxLevel: 200 } }} structure={structure} save={nope as never} /><div className="mt-4"><ChatLevelsBoard initial={{ members: 3, top: [{ rank: 1, userId: "1", name: "PvmRyan", level: 14, xp: 9120, messages: 480 }, { rank: 2, userId: "2", name: "KinkyAstroid", level: 9, xp: 3010, messages: 160 }, { rank: 3, userId: "3", name: "Xtusy", level: 2, xp: 310, messages: 21 }] }} reset={nope as never} /></div></>)}

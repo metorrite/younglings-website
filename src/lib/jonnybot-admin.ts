@@ -218,6 +218,16 @@ export interface HelpPanelSummary {
   postedChannelId: string | null;
 }
 
+/** The optional extras of the help tickets (PvM Help and CA Help), each off until switched on. */
+export interface HelpExtras {
+  /** A "Make it an event" button on help tickets. */
+  eventButton: boolean;
+  eventStartHours: number;
+  eventDays: number;
+  maxStartHours: number;
+  maxDays: number;
+}
+
 /** The PvM Help system's settings for the server. Hours of null mean "never escalate". */
 export interface HelpSettings {
   helperRoleId: string | null;
@@ -1722,6 +1732,8 @@ export const adminApi = {
   postPanel: (ctx: ApiContext, id: string, channelId: string) =>
     call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
+  helpExtras: (ctx: ApiContext) => call<HelpExtras>(ctx, "GET", "help-extras"),
+  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
   helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
   saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
