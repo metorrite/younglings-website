@@ -48,6 +48,7 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { EmbedderPanels } from "@/components/dashboard/EmbedderPanels";
 import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
@@ -64,6 +65,7 @@ import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/O
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import type { GuildStructure, Overview, ServerSetup } from "@/lib/jonnybot-admin";
+import { EMPTY_MESSAGE } from "@/lib/messageDraft";
 
 // A throwaway harness for looking at the dashboard's new design with made-up data. Not committed (see .git/info/exclude).
 const overview: Overview = {
@@ -75,6 +77,8 @@ const overview: Overview = {
   isOwner: false,
 };
 const setup: ServerSetup = { clanName: "Younglings", clanEnabled: true, clanActive: true, verificationReviewChannelId: "1", renameAlertChannelId: null, verifiedClanRoleId: "r1", verifiedNonClanRoleId: null, unverifiedRoleId: null, onboardingRoleId: null, inviteUrl: "https://discord.gg/younglings" };
+const EMBEDDER_SAMPLE = { ...EMPTY_MESSAGE, messageType: "EMBED" as const, enabled: false, channelId: null, alsoDm: false };
+
 const structure: GuildStructure = {
   roles: [
     { id: "r1", name: "Member", color: 0, managed: false, position: 3 },
@@ -455,7 +459,7 @@ function Preview() {
               <PageHeader title="Welcome message" description="Greets each new member in a channel, as text, an embed, or both." />
               <WelcomeEditor
                 initial={welcomeFull}
-                channels={structure.channels}
+                channels={structure.channels} forums={[]} threads={[]}
                 actions={{ save: async (d) => ({ ok: true, data: { ...welcomeFull, ...d } as WelcomeConfig }) as WelcomeActionResult<WelcomeConfig>, test: async () => ({ ok: true, data: { sent: true, channelName: "welcome", dmSent: false } }) }}
               />
             </>
@@ -485,6 +489,25 @@ function Preview() {
             <>
               <PageHeader title="Goodbye message" description="A line posted in a channel when someone leaves the server." />
               <GoodbyeForm initial={{ enabled: true, channelId: "2", content: "**{username}** has left **{server}**. We are {count} now.", maxContent: 1800, serverName: "Younglings", memberCount: 182 }} structure={structure} save={async () => ({ ok: false, error: "x", problems: [] })} />
+            </>
+          )}
+          {view === "embedder" && (
+            <>
+              <PageHeader title="Message embedder" description="Write a message once, keep it as a draft, post it in a channel, and change or delete it later." />
+              <EmbedderPanels
+                initial={[
+                  { id: "1", name: "Server rules", status: "POSTED", channelId: "2", channelName: "general", messageId: "9", messageUrl: "#", updatedAt: null, postedAt: null, message: { ...EMBEDDER_SAMPLE, title: "Server rules", description: "Be kind. No spam." } },
+                  { id: "2", name: "Event announcement (draft)", status: "DRAFT", channelId: null, channelName: null, messageId: null, messageUrl: null, updatedAt: null, postedAt: null, message: { ...EMBEDDER_SAMPLE, title: "Bingo night", description: "Friday 8pm." } },
+                ]}
+                limit={100}
+                channels={structure.channels} forums={[]} threads={[]}
+                actions={{
+                  save: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  post: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  clone: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  remove: async () => ({ ok: true, data: { deleted: true } }),
+                }}
+              />
             </>
           )}
           {view === "rolepanels" && (

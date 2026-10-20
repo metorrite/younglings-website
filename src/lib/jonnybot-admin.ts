@@ -1389,6 +1389,27 @@ export type WelcomeCardDraft = Omit<WelcomeCard, "serverName" | "memberCount">;
 /** What the browser may change; the preview-only fields come back from the bot but are never sent. */
 export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
 
+/** A message composed on the Message embedder page: a draft, or posted in a channel where it can still be edited, deleted and cloned. */
+export interface EmbedderMessage {
+  id: string;
+  name: string;
+  status: "DRAFT" | "POSTED";
+  channelId: string | null;
+  channelName: string | null;
+  messageId: string | null;
+  /** A link to the posted message in Discord. */
+  messageUrl: string | null;
+  updatedAt: string | null;
+  postedAt: string | null;
+  /** The shared message editor's fields; the channel and the on/off switch mean nothing here and are always empty/off. */
+  message: WelcomeDraft & { channelName?: string | null };
+}
+
+export interface EmbedderList {
+  messages: EmbedderMessage[];
+  limit: number;
+}
+
 /** A server's basic setup: the same settings as /configure in Discord. Ids are Discord ids as strings, null when unset. */
 export interface ServerSetup {
   clanName: string | null;
@@ -1815,6 +1836,13 @@ export const adminApi = {
   testBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "ban-announcement/test", draft),
   /** The dashboard twin of /announce. The bot judges @everyone, @here and role pings against the signed-in admin's own permissions. */
   sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
+  /** The Message embedder: messages kept as drafts, posted, edited in place, deleted and cloned. Every call is judged against the signed-in admin's own permissions in the channel. */
+  embedderMessages: (ctx: ApiContext) => call<EmbedderList>(ctx, "GET", "embedder/messages"),
+  createEmbedderDraft: (ctx: ApiContext, body: { name: string; message: WelcomeDraft }) => call<EmbedderMessage>(ctx, "POST", "embedder/messages", body),
+  saveEmbedderMessage: (ctx: ApiContext, id: string, body: { name: string; message: WelcomeDraft; apply: boolean }) => call<EmbedderMessage>(ctx, "PUT", `embedder/messages/${encodeURIComponent(id)}`, body),
+  postEmbedderMessage: (ctx: ApiContext, id: string, channelId: string) => call<EmbedderMessage>(ctx, "POST", `embedder/messages/${encodeURIComponent(id)}/post`, { channelId }),
+  cloneEmbedderMessage: (ctx: ApiContext, id: string, channelId: string) => call<EmbedderMessage>(ctx, "POST", `embedder/messages/${encodeURIComponent(id)}/clone`, { channelId }),
+  deleteEmbedderMessage: (ctx: ApiContext, id: string) => call<{ deleted: boolean }>(ctx, "POST", `embedder/messages/${encodeURIComponent(id)}/delete`, {}),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
   createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
