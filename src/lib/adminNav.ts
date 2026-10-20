@@ -115,7 +115,8 @@ export function activeAdmin(pathname: string, groups: AdminGroup[] = ADMIN_GROUP
   return best ?? { group: groups[0], page: groups[0].pages[0] };
 }
 
-/** The groups a person may see: the owner-only ones are left out for everyone but the bot's owner. */
-export function adminGroupsFor(isOwner: boolean): AdminGroup[] {
-  return ADMIN_GROUPS.filter((g) => isOwner || !g.ownerOnly);
+/** The groups a person may see: the owner-only ones are left out for everyone but the bot's owner, and empty ones for everybody. */
+export function adminGroupsFor(isOwner: boolean, groups: AdminGroup[] = ADMIN_GROUPS): AdminGroup[] {
+  // A group whose pages have all moved elsewhere is left out: the header links each group to its first page.
+  return groups.filter((g) => g.pages.length > 0 && (isOwner || !g.ownerOnly));
 }
