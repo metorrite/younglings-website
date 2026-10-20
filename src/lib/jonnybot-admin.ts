@@ -513,6 +513,15 @@ export interface RolePanelList {
   maxButtons: number;
 }
 
+/** What "Send an announcement" posts: a message in a channel with at most one ping (a role, @everyone or @here). */
+export interface AnnouncementSend {
+  channelId: string;
+  message: string;
+  roleId: string | null;
+  everyone: boolean;
+  here: boolean;
+}
+
 /** A server's goodbye message: a line posted when someone leaves. */
 export interface Goodbye {
   enabled: boolean;
@@ -1475,6 +1484,12 @@ export const adminApi = {
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
+  /** The ban announcement: the welcome's message shape (the shared message editor edits both); the DM copy and link button are always off. */
+  banAnnouncement: (ctx: ApiContext) => call<WelcomeConfig>(ctx, "GET", "ban-announcement"),
+  saveBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<WelcomeConfig>(ctx, "PUT", "ban-announcement", draft),
+  testBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "ban-announcement/test", draft),
+  /** The dashboard twin of /announce. The bot judges @everyone, @here and role pings against the signed-in admin's own permissions. */
+  sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
   createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
