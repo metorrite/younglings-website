@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { MessageEditor } from "@/components/admin/MessageEditor";
 import { ChannelSelect } from "@/components/admin/pickers";
-import { FormField, inputClass } from "@/components/admin/ui";
+import { FormField } from "@/components/admin/ui";
 import {
   Chip,
   CollapsibleCard,
@@ -16,6 +17,8 @@ import {
   type GuildStructure,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
+import { EMPTY_MESSAGE } from "@/lib/messageDraft";
+import type { PreviewSample } from "@/lib/welcomePreview";
 
 type Outcome = {
   tone: "error" | "success";
@@ -30,6 +33,17 @@ const VARIABLES = [
   { token: "{count}", meaning: "How many members the server has now" },
   { token: "{channel}", meaning: "This channel's name" },
 ];
+
+/** The goodbye message's variables are filled the way the bot does it (GoodbyeService): {user} is bold text, nothing is a mention. */
+function fillGoodbye(template: string, sample: PreviewSample) {
+  const text = template
+    .replaceAll("{username}", sample.username)
+    .replaceAll("{user}", `**${sample.username}**`)
+    .replaceAll("{server}", sample.server)
+    .replaceAll("{count}", String(sample.count))
+    .replaceAll("{channel}", sample.channel);
+  return { text, mentions: {} };
+}
 
 const shape = (g: Pick<Goodbye, "enabled" | "channelId" | "content">) =>
   JSON.stringify([g.enabled, g.channelId, g.content]);
@@ -53,7 +67,6 @@ export function GoodbyeForm({
   const [draft, setDraft] = useState(initial);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
-  const box = useRef<HTMLTextAreaElement>(null);
   const dirty = shape(draft) !== shape(saved);
   const channelName =
     structure.channels.find((c) => c.id === draft.channelId)?.name ??
@@ -63,27 +76,6 @@ export function GoodbyeForm({
     setDraft((d) => ({ ...d, ...patch }));
     setOutcome(null);
   };
-
-  /** Puts a variable at the cursor, so people don't have to remember or type the braces. */
-  function insert(token: string) {
-    const el = box.current;
-    const at = el?.selectionStart ?? draft.content.length;
-    const end = el?.selectionEnd ?? at;
-    change({
-      content: draft.content.slice(0, at) + token + draft.content.slice(end),
-    });
-    requestAnimationFrame(() => {
-      el?.focus();
-      el?.setSelectionRange(at + token.length, at + token.length);
-    });
-  }
-
-  const preview = draft.content
-    .replaceAll("{username}", "PvmRyan")
-    .replaceAll("{user}", "**PvmRyan**")
-    .replaceAll("{server}", draft.serverName)
-    .replaceAll("{count}", String(draft.memberCount))
-    .replaceAll("{channel}", channelName);
 
   function submit() {
     setOutcome(null);
@@ -154,62 +146,25 @@ export function GoodbyeForm({
           </SettingRow>
         </CollapsibleCard>
 
-        <CollapsibleCard
-          id="goodbye-text"
-          title="The message"
-          hint="Plain text. Click a variable to add it where your cursor is."
-          defaultOpen
-          summary={
-            <Chip>
-              {draft.content.trim()
-                ? `${draft.content.trim().length} characters`
-                : "Uses the default"}
-            </Chip>
-          }
-          info="Markdown works (**bold**, _italics_). Leave it empty to use the default message."
-        >
-          <FormField label="Text" size="lg">
-            <textarea
-              ref={box}
-              className={`${inputClass} min-h-28`}
-              rows={4}
-              value={draft.content}
-              maxLength={draft.maxContent}
-              onChange={(e) => change({ content: e.target.value })}
-              placeholder="**{username}** has left **{server}**."
-            />
-          </FormField>
-          <div
-            className="flex flex-wrap gap-1.5"
-            role="group"
-            aria-label="Variables"
-          >
-            {VARIABLES.map((v) => (
-              <button
-                key={v.token}
-                type="button"
-                title={v.meaning}
-                onClick={() => insert(v.token)}
-                className="rounded-full border border-surface-border px-2.5 py-1 font-mono text-xs text-gold transition hover:border-gold"
-              >
-                {v.token}
-              </button>
-            ))}
-          </div>
-          <section
-            aria-label="Preview"
-            className="max-w-xl rounded-lg border border-surface-border bg-background/40 p-4"
-          >
-            <h3 className="text-sm font-semibold">Preview</h3>
-            <p className="mt-0.5 text-xs text-muted">
-              Roughly how it will look, for an example member called PvmRyan.
-            </p>
-            <div className="mt-3 rounded bg-[#313338] p-3 text-sm whitespace-pre-wrap text-[#dbdee1]">
-              <p className="mb-1 text-xs text-[#949ba4]">#{channelName}</p>
-              <FormattedLine text={preview.trim() || "—"} />
-            </div>
-          </section>
-        </CollapsibleCard>
+        <MessageEditor
+          textOnly
+          idPrefix="goodbye"
+          draft={{ ...EMPTY_MESSAGE, content: draft.content }}
+          saved={{ ...EMPTY_MESSAGE, content: saved.content }}
+          onChange={(next) => change({ content: next.content })}
+          variables={VARIABLES}
+          sample={{ username: "PvmRyan", server: draft.serverName, channel: channelName, count: draft.memberCount, avatarUrl: "" }}
+          fill={fillGoodbye}
+          limits={{ content: draft.maxContent }}
+          textCard={{
+            title: "The message",
+            hint: "Plain text. Click a variable to add it where your cursor is.",
+            info: "Markdown works (**bold**, _italics_). Leave it empty to use the default message.",
+            emptySummary: "Uses the default",
+            placeholder: "**{username}** has left **{server}**.",
+            previewChannel: channelName,
+          }}
+        />
       </PanelGrid>
 
       <SaveBar
@@ -226,18 +181,3 @@ export function GoodbyeForm({
   );
 }
 
-/** Just enough of Discord's bold and italics for the preview. */
-function FormattedLine({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return (
-    <p>
-      {parts.map((part, i) =>
-        part.startsWith("**") && part.endsWith("**") ? (
-          <strong key={i}>{part.slice(2, -2)}</strong>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </p>
-  );
-}

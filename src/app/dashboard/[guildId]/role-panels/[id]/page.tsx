@@ -23,7 +23,7 @@ export default async function EditRolePanelPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <PageHeader title={panel.name} description="Change the message or its buttons, then save. Update the posted message to show the changes in Discord." back={{ href: base, label: "Role panels" }} />
       {/* Keyed by the panel and its posted message so the editor starts fresh after a post. */}
-      <RolePanelEditor key={`${panel.id}-${panel.messageId ?? ""}`} initial={panel} structure={structure} actions={actions} maxButtons={list.maxButtons} />
+      <RolePanelEditor key={`${panel.id}-${panel.messageId ?? ""}`} initial={panel} structure={structure} actions={actions} maxButtons={list.maxButtons} limits={list.limits} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { WelcomeDraft } from "@/lib/jonnybot-admin";
+import type { MessageDraft as WelcomeDraft } from "@/lib/messageDraft";
 
 /**
  * The blocks a Container welcome is made of, worked out the same way the bot does it (ContainerWelcome in the bot) so the preview shows
