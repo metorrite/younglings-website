@@ -468,6 +468,9 @@ export interface Autoroles {
   delaySeconds: number;
   memberRoleIds: string[];
   botRoleIds: string[];
+  /** Roles taken away from someone who joins (people / bots), on the same delay. Empty unless the server adds some. */
+  memberRemoveRoleIds: string[];
+  botRemoveRoleIds: string[];
   maxRoles: number;
   maxDelaySeconds: number;
   /** Chosen roles that can't be given out right now (deleted, above the bot, too powerful). */
@@ -1617,7 +1620,7 @@ export const adminApi = {
   /** Posts the panel in a channel, or (a reactions panel) puts it on an existing message by its link. */
   postRolePanel: (ctx: ApiContext, id: string, target: { channelId?: string; messageLink?: string }) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, target),
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
-  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
+  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds" | "memberRemoveRoleIds" | "botRemoveRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
   devSnapshots: (ctx: ApiContext) => call<DevSnapshotList>(ctx, "GET", "dev/snapshots"),
   devSnapshot: (ctx: ApiContext, id: string) => call<DevSnapshotFile>(ctx, "GET", `dev/snapshots/${encodeURIComponent(id)}`),

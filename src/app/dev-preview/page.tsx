@@ -361,7 +361,7 @@ function Preview() {
             <>
               <PageHeader title="Autoroles" description="Roles JonnyBot gives to everyone who joins." />
               <AutorolesForm
-                initial={{ enabled: true, delaySeconds: 60, memberRoleIds: ["r1"], botRoleIds: [], maxRoles: 10, maxDelaySeconds: 3600, issues: ["People: a chosen role was deleted, so it is skipped."] }}
+                initial={{ enabled: true, delaySeconds: 60, memberRoleIds: ["r1"], botRoleIds: [], memberRemoveRoleIds: ["r2"], botRemoveRoleIds: [], maxRoles: 10, maxDelaySeconds: 3600, issues: ["People: a chosen role was deleted, so it is skipped."] }}
                 roles={structure.roles}
                 save={async () => ({ ok: false, error: "x", problems: [] })}
               />
