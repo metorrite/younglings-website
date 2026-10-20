@@ -814,6 +814,57 @@ export interface PointsRedemptions {
   handled: PointsRedemption[];
 }
 
+/** A role given when a member reaches a number of points. `problem` says why it can't be given, when it can't. */
+export interface PointsRoleReward {
+  id: string;
+  threshold: number;
+  roleId: string;
+  roleName: string | null;
+  removeLower: boolean;
+  problem: string | null;
+}
+
+export interface PointsRoleRewards {
+  rewards: PointsRoleReward[];
+  max: number;
+  maxThreshold: number;
+}
+
+export interface PointsRoleRewardInput {
+  id?: string;
+  threshold: number;
+  roleId: string;
+  removeLower: boolean;
+}
+
+/** Saying `keyword` while mentioning someone gives them `points`. */
+export interface PointsTrigger {
+  id: string;
+  keyword: string;
+  points: number;
+  cooldownSeconds: number;
+  dailyCap: number;
+  enabled: boolean;
+}
+
+export interface PointsTriggers {
+  triggers: PointsTrigger[];
+  max: number;
+  maxPoints: number;
+  maxCooldownSeconds: number;
+  maxDailyCap: number;
+  maxReceivers: number;
+}
+
+export interface PointsTriggerInput {
+  id?: string;
+  keyword: string;
+  points: number;
+  cooldownSeconds: number;
+  dailyCap: number;
+  enabled: boolean;
+}
+
 /** One automod rule. `limit` and `seconds` mean different things per rule (the form labels them); `words` is the blocked words, or the allowed websites for links. */
 export interface AutomodRule {
   key:
@@ -1480,6 +1531,12 @@ export const adminApi = {
   /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
   eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  pointsRoleRewards: (ctx: ApiContext) => call<PointsRoleRewards>(ctx, "GET", "pointsroles"),
+  savePointsRoleReward: (ctx: ApiContext, input: PointsRoleRewardInput) => call<PointsRoleRewards>(ctx, "PUT", "pointsroles", input),
+  deletePointsRoleReward: (ctx: ApiContext, id: string) => call<PointsRoleRewards>(ctx, "DELETE", `pointsroles/${encodeURIComponent(id)}`),
+  pointsTriggers: (ctx: ApiContext) => call<PointsTriggers>(ctx, "GET", "pointskeywords"),
+  savePointsTrigger: (ctx: ApiContext, input: PointsTriggerInput) => call<PointsTriggers>(ctx, "PUT", "pointskeywords", input),
+  deletePointsTrigger: (ctx: ApiContext, id: string) => call<PointsTriggers>(ctx, "DELETE", `pointskeywords/${encodeURIComponent(id)}`),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
     ctx: ApiContext,
