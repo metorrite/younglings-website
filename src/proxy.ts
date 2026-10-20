@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apexHost, classifyHost, clanHostOf, FACE_HEADER, jonnybotHostOf, mappedHost, resolveHost, schemeFor, subdomainMode } from "@/lib/siteHosts";
+import { apexHost, classifyHost, clanHostOf, FACE_HEADER, jonnybotHostOf, mappedHost, resolveHost, schemeFor, subdomainMode, tenantSlugOf } from "@/lib/siteHosts";
 
 /**
  * Routes the two faces of the site by hostname (see lib/siteHosts) and tells pages which face a request is for, in a request
@@ -35,6 +35,20 @@ export function proxy(request: NextRequest) {
       return new NextResponse(null, { status: 308, headers: { Location: target } });
     }
   }
+
+  // A hosted clan site (<slug>.<SITE_TENANT_SUFFIX>, CLAN_SITES=true): its pages are served from /clan-site/<slug>, which no other host
+  // can reach. Whether the site exists and is published is the page's question (it asks the bot). Shared things pass straight through.
+  const clanSites = process.env.CLAN_SITES === "true";
+  if (resolved.kind === "site" && clanSites) {
+    const slug = tenantSlugOf(requestHost);
+    const headers = new Headers(request.headers);
+    headers.set(FACE_HEADER, "site");
+    if (!slug || segment === "api" || segment === "_next" || /\.[a-z0-9]{2,6}$/i.test(pathname)) return NextResponse.next({ request: { headers } });
+    const url = request.nextUrl.clone();
+    url.pathname = `/clan-site/${slug}${pathname === "/" ? "" : pathname}`;
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
+  if (segment === "clan-site") return new NextResponse("Not found", { status: 404 });
 
   // The events face (SITE_HOSTS events=...) shows the hub's public events, with short paths. RS Link's face (link=...) serves the
   // site's /link pages. Shared things pass straight through on both.

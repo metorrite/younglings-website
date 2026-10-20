@@ -24,6 +24,8 @@ const geistMono = Geist_Mono({
 // Which face of the site this is (the clan site or JonnyBot's) decides the title and the header, so the metadata is worked out per request.
 export async function generateMetadata(): Promise<Metadata> {
   const site = await currentSite();
+  // A hosted clan site (website builder) names itself in its own layout; the builder is in beta, so no search engines yet.
+  if (site.tenant) return { robots: { index: false, follow: false } };
   if (site.hub) {
     return {
       metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
@@ -60,10 +62,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <SessionProviderWrapper>
           <DialogProvider>
-          {site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
-          <main className="flex-1">{children}</main>
-          {!site.jonnybot && !site.hub && <LinkModalGate />}
-          <DevSnapshotMount site={site} />
+          {site.tenant ? (
+            // A clan's own website: its template draws the header and footer; none of the Younglings site's chrome.
+            children
+          ) : (
+            <>
+              {site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
+              <main className="flex-1">{children}</main>
+              {!site.jonnybot && !site.hub && <LinkModalGate />}
+              <DevSnapshotMount site={site} />
+            </>
+          )}
           </DialogProvider>
         </SessionProviderWrapper>
       </body>

@@ -205,6 +205,8 @@ export interface SiteInfo {
   hubOrigin: string;
   eventsOrigin: string;
   linkOrigin: string;
+  /** The slug of the hosted clan site this request is for (the proxy marks it with the `site` face), or null. */
+  tenant: string | null;
 }
 
 export function siteInfoFor(host: string, forwardedProto?: string | null, face?: string | null): SiteInfo {
@@ -231,6 +233,7 @@ export function siteInfoFor(host: string, forwardedProto?: string | null, face?:
     hubOrigin: origin("hub"),
     eventsOrigin: origin("events"),
     linkOrigin: origin("link"),
+    tenant: face === "site" ? tenantSlugOf(host, config) : null,
   };
 }
 

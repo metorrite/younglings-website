@@ -59,6 +59,7 @@ of these set the site runs on one host, as in local development. Design: `docs/D
 | `SITE_HOSTS` | Each face's canonical host: `clan=rsyounglings.com,jonnybot=jonnybot.example,hub=example,events=events.example,api=api.example,link=link.example`. A face left out keeps the prefix rule (`jonnybot.`, `api.`, `clans.` on the apex). Cross-face links follow it. |
 | `SITE_HOST_ALIASES` | Old hosts of a face: `clans.rsyounglings.com=hub,api.rsyounglings.com=api`. Pages there redirect (308) to the face's `SITE_HOSTS` host; the API there keeps answering and never redirects (plugins can't follow redirects), nor do the site's own `/api` calls. |
 | `SITE_TENANT_SUFFIX` | `<slug>.<suffix>` is a hosted clan site (website builder). Empty = off. Reserved slugs (`www`, `api`, `link`, `events`, `clans`, `jonnybot`, `admin`, `auth`, `mail`, `status`, `cdn`, `static`, `assets`, `dev`, `staging`, and the first label of any `SITE_HOSTS` host) are never clan sites. Until the builder is live, these addresses go to the clan site. |
+| `CLAN_SITES` | `true` serves those addresses as clan websites (website builder, beta). Off by default; also needs `SITE_TENANT_SUFFIX`. A site shows only when published and its server is the home server or on the beta list. |
 
 Buying a domain, DNS (Cloudflare), Railway custom domains and the Discord redirect URL are manual steps; see the design doc's runbook (A4, A5).
 
