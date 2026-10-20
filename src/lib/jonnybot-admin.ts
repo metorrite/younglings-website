@@ -372,6 +372,38 @@ export interface TicketDetail extends TicketRow {
   transcriptMessageCount: number | null;
 }
 
+/** One tile of a server's own bingo tile pool. */
+export interface BingoPoolTile {
+  id: string;
+  label: string;
+  points: number;
+  target: number;
+  difficulty: string;
+  tags: string[];
+  enabled: boolean;
+  /** "manual", or the id of the starter pack it came from. */
+  source: string;
+}
+
+export interface BingoPoolOverview {
+  tiles: BingoPoolTile[];
+  packs: { id: string; title: string; description: string }[];
+  difficulties: { key: string; label: string; defaultPoints: number }[];
+  maxTiles: number;
+  maxLabel: number;
+  maxPoints: number;
+  maxTarget: number;
+  maxTags: number;
+  maxTilesInEvent: number;
+  /** Only on the answer to adding a starter pack. */
+  added?: number;
+  skipped?: number;
+  /** Only on the answer to clearing. */
+  removed?: number;
+}
+
+export type BingoPoolTileInput = { label: string; points?: number; target?: number; difficulty?: string; tags?: string[]; enabled?: boolean };
+
 // ---------- plumbing ----------
 
 // ---------- roster view, attention, health, audit, notes, scheduled posts ----------
@@ -2018,6 +2050,13 @@ export const adminApi = {
     if (query.offset) params.set("offset", String(query.offset));
     return call<{ tickets: TicketRow[]; hasMore: boolean }>(ctx, "GET", `ticket/tickets?${params}`);
   },
+  /** A server's own bingo tile pool (empty until used): tiles, starter packs made from public wiki content. */
+  bingoPool: (ctx: ApiContext) => call<BingoPoolOverview>(ctx, "GET", "bingo-pool"),
+  addBingoTile: (ctx: ApiContext, tile: BingoPoolTileInput) => call<BingoPoolOverview>(ctx, "POST", "bingo-pool/tiles", tile),
+  saveBingoTile: (ctx: ApiContext, id: string, tile: BingoPoolTileInput) => call<BingoPoolOverview>(ctx, "PUT", `bingo-pool/tiles/${encodeURIComponent(id)}`, tile),
+  deleteBingoTile: (ctx: ApiContext, id: string) => call<BingoPoolOverview>(ctx, "POST", `bingo-pool/tiles/${encodeURIComponent(id)}/delete`, {}),
+  seedBingoPool: (ctx: ApiContext, pack: string, difficulties: string[]) => call<BingoPoolOverview>(ctx, "POST", "bingo-pool/seed", { pack, difficulties }),
+  clearBingoPool: (ctx: ApiContext, pack: string | null) => call<BingoPoolOverview>(ctx, "POST", "bingo-pool/clear", pack ? { pack } : {}),
   getTicket: (ctx: ApiContext, id: string) => call<TicketDetail>(ctx, "GET", `ticket/tickets/${encodeURIComponent(id)}`),
 };
 

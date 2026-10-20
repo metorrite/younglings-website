@@ -75,6 +75,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
       { label: "Points", icon: "trophy", path: "/points" },
       { label: "Event manager", icon: "clock", path: "/event-manager" },
+      { label: "Bingo tile pool", icon: "trophy", path: "/bingo-pool", advanced: true },
     ],
   },
   {
