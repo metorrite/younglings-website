@@ -132,7 +132,7 @@ export interface TicketSettings {
 export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";
 
 /** Which part of the PvM Help system a panel belongs to; NONE is an ordinary ticket panel. */
-export type HelpKind = "NONE" | "PVM" | "CA";
+export type HelpKind = "NONE" | "PVM" | "CA" | "INFO";
 
 /**
  * What a question means to the PvM Help rules: the boss, the tier, the one achievement they want help with, or whether they have already made
@@ -218,6 +218,16 @@ export interface HelpPanelSummary {
   helpKind: HelpKind;
   categoryId: string | null;
   postedChannelId: string | null;
+}
+
+/** The optional extras of the help tickets (PvM Help and CA Help), each off until switched on. */
+export interface HelpExtras {
+  /** A "Make it an event" button on help tickets. */
+  eventButton: boolean;
+  eventStartHours: number;
+  eventDays: number;
+  maxStartHours: number;
+  maxDays: number;
 }
 
 /** The PvM Help system's settings for the server. Hours of null mean "never escalate". */
@@ -439,6 +449,28 @@ export interface BetaGuild {
   /** Whether the bot is in that server; it has to be, to check who holds Manage Server there. */
   botPresent: boolean;
   name: string | null;
+}
+
+/** One person the clan role fix would change. */
+export interface RoleFixEntry {
+  userId: string;
+  name: string;
+  rsn: string;
+  action: "PROMOTE" | "DEMOTE";
+  add: string[];
+  remove: string[];
+}
+
+export interface RoleFixStatus {
+  max: number;
+  progress: { total: number; done: number; failed: number; running: boolean } | null;
+}
+
+export interface RoleFixPlan extends RoleFixStatus {
+  entries: RoleFixEntry[];
+  linkedAccounts: number;
+  notInServer: number;
+  problem: string | null;
 }
 
 export type FormQuestionKind = "SHORT" | "PARAGRAPH" | "CHOICE" | "CHECKBOX" | "RSN";
@@ -1702,6 +1734,8 @@ export const adminApi = {
   postPanel: (ctx: ApiContext, id: string, channelId: string) =>
     call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
+  helpExtras: (ctx: ApiContext) => call<HelpExtras>(ctx, "GET", "help-extras"),
+  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
   helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
   saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
@@ -1938,6 +1972,9 @@ export const adminApi = {
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
+  roleFixStatus: (ctx: ApiContext) => call<RoleFixStatus>(ctx, "GET", "role-sync"),
+  roleFixPlan: (ctx: ApiContext) => call<RoleFixPlan>(ctx, "POST", "role-sync/plan", {}),
+  roleFixApply: (ctx: ApiContext, userIds: string[]) => call<RoleFixStatus>(ctx, "POST", "role-sync/apply", { userIds }),
   webForms: (ctx: ApiContext) => call<WebFormList>(ctx, "GET", "forms"),
   createWebForm: (ctx: ApiContext, template: string | null) => call<WebFormList>(ctx, "POST", "forms", template ? { template } : {}),
   saveWebForm: (ctx: ApiContext, id: string, form: Record<string, unknown>) => call<WebFormList>(ctx, "PUT", `forms/${encodeURIComponent(id)}`, form),
