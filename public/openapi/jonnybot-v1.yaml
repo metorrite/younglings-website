@@ -176,7 +176,7 @@ components:
             entries:
               type: array
               items: { type: object, properties: { rank: { type: integer }, slug: { type: string }, name: { type: string }, logoUrl: { type: [string, "null"] }, colour: { type: [integer, "null"] }, xpGained: { type: integer }, members: { type: integer }, perMember: { type: integer } } }
-    Category: { enum: [DROPS, KILLS, ACHIEVEMENTS, PRESENCE] }
+    Category: { enum: [XP, DROPS, KILLS, ACHIEVEMENTS, PRESENCE] }
     WhoAmI:
       type: object
       properties:
@@ -198,7 +198,7 @@ components:
       required: [id, type, at, data]
       properties:
         id: { type: string, pattern: "^[A-Za-z0-9._:-]{8,64}$", description: Unique per event; the idempotency key }
-        type: { enum: [DROP, KILL, LEVEL_UP, QUEST_COMPLETE, ACHIEVEMENT, COLLECTION_LOG, PRESENCE] }
+        type: { enum: [XP, CLUE, DROP, KILL, LEVEL_UP, QUEST_COMPLETE, ACHIEVEMENT, COLLECTION_LOG, PRESENCE] }
         at: { type: string, format: date-time, description: Not more than 14 days old or 5 minutes ahead }
         source:
           type: object
@@ -210,7 +210,7 @@ components:
         data:
           type: object
           description: |
-            By type. DROP: itemName (required), itemId, quantity (default 1), value. KILL: bossName (required), killCount,
+            By type. XP: skill (required), xp (required, the client's raw number, a whole number), level (1 to 150). CLUE: tier (required), count (1 or more). DROP: itemName (required), itemId, quantity (default 1); a value sent by the client is ignored, the server prices the drop from Grand Exchange prices. KILL: bossName (required), killCount,
             durationSeconds. LEVEL_UP: skill, level (1 to 150). QUEST_COMPLETE: quest. ACHIEVEMENT: name, kind.
             COLLECTION_LOG: itemName. PRESENCE: state (ONLINE, OFFLINE or ACTIVITY), activity. Extra fields are kept.
           additionalProperties: true
