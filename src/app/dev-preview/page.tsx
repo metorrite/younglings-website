@@ -52,6 +52,8 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { PlanCard } from "@/components/dashboard/PlanCard";
+import { PremiumConsole } from "@/components/admin/PremiumConsole";
 import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { DevSnapshotButton } from "@/components/devtools/DevSnapshotButton";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
@@ -86,6 +88,17 @@ const overview: Overview = {
   isOwner: false,
 };
 const setup: ServerSetup = { clanName: "Younglings", clanEnabled: true, clanActive: true, verificationReviewChannelId: "1", renameAlertChannelId: null, verifiedClanRoleId: "r1", verifiedNonClanRoleId: null, unverifiedRoleId: null, onboardingRoleId: null, inviteUrl: "https://discord.gg/younglings" };
+const premiumSample = {
+  guilds: [
+    { guildId: "1388208054008545300", label: "RS Noobs", botPresent: true, name: "RS Noobs", tier: "premium", expiresAt: "2026-10-24T00:00:00Z", note: "Trial for a month", source: "trial", inForce: true },
+    { guildId: "1062157106347786240", label: "Koalafied", botPresent: false, name: null, tier: "premium", expiresAt: null, note: null, source: "manual", inForce: true },
+  ],
+  endingSoon: [{ guildId: "1388208054008545300", label: "RS Noobs", botPresent: true, name: "RS Noobs", tier: "premium", expiresAt: "2026-10-24T00:00:00Z", note: "Trial for a month", source: "trial", inForce: true }],
+  canEdit: true,
+  thisServer: true,
+  thisServerPlan: { tier: "premium", expiresAt: "2026-10-24T00:00:00Z", features: [{ key: "polling.fast", title: "Faster player updates", description: "Your clan's players are refreshed every hour." }, { key: "branding.profile", title: "Server profile", description: "Give JonnyBot its own avatar, banner and bio." }] },
+};
+
 const structure: GuildStructure = {
   roles: [
     { id: "r1", name: "Member", color: 0, managed: false, position: 3 },
@@ -595,6 +608,14 @@ function Preview() {
                 role="bot owner (admin)"
                 send={async () => ({ id: "snap-20261019-030000-c0de", filename: "jb-snapshot-snap-20261019-030000-c0de.zip", blob: new Blob(["preview"], { type: "application/zip" }) })}
               />
+            </>
+          )}
+          {view === "premium" && (
+            <>
+              <PageHeader title="Premium" description="The owner's console, and a server's own Plan card." />
+              <PremiumConsole initial={premiumSample} save={async () => ({ ok: true as const, data: premiumSample })} remove={async () => ({ ok: true as const, data: premiumSample })} history={async (id) => ({ ok: true as const, data: { guildId: id, history: [{ action: "GRANT" as const, tier: "premium", expiresAt: null, byUser: "1", note: null, at: "2026-10-01T00:00:00Z" }, { action: "EXPIRE" as const, tier: "premium", expiresAt: "2026-10-10T00:00:00Z", byUser: null, note: null, at: "2026-10-10T00:15:00Z" }] } })} />
+              <PlanCard plan={{ thisServer: true, thisServerPlan: premiumSample.thisServerPlan }} />
+              <PlanCard plan={{ thisServer: false, thisServerPlan: null }} />
             </>
           )}
           {view === "goodbye" && (

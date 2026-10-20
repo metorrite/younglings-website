@@ -47,7 +47,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: "/admin/community", label: "Community", blurb: "The channel member-created polls are posted in." },
       { href: "/admin/roles", label: "Self roles", blurb: "Roles members can add to or remove from themselves on their profile." },
       { href: "/admin/site-options", label: "Site options", blurb: "How the site behaves for visitors, such as the bubble on the Events menu." },
-      { href: "/admin/polling-plan", label: "Polling plan", blurb: "Which servers' clans are refreshed on the faster premium plan." },
+      { href: "/admin/premium", label: "Premium", blurb: "Which servers have a plan above the free one, until when, and what changed." },
       { href: "/admin/beta-access", label: "JonnyBot beta access", blurb: "Trusted servers whose admins can use JonnyBot's website while it is closed to everyone else." },
     ],
   },
