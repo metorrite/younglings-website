@@ -80,6 +80,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Warnings", icon: "alert", path: "/warnings" },
       { label: "Automod", icon: "shield", path: "/automod" },
       { label: "Moderation log", icon: "list", path: "/modlog" },
+      { label: "Message & voice logs", icon: "list", path: "/message-logs", advanced: true },
       { label: "Lockdown", icon: "shield", path: "/lockdown" },
       { label: "New accounts", icon: "users", path: "/newaccounts", advanced: true },
       { label: "Auto-clean", icon: "broom", path: "/autoclean", advanced: true },

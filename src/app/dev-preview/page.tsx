@@ -52,6 +52,7 @@ import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
 import { LookupRemindersForm } from "@/components/dashboard/LookupRemindersForm";
 import { StarboardForm } from "@/components/dashboard/StarboardForm";
+import { MessageLogsForm } from "@/components/dashboard/MessageLogsForm";
 import { HighlightsForm } from "@/components/dashboard/HighlightsForm";
 import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
 import { PointsManager } from "@/components/dashboard/PointsManager";
@@ -407,6 +408,8 @@ function Preview() {
               />
             </>
           )}
+          {view === "message-logs" && (<><PageHeader title="Message & voice logs" description="Edits, deletes and voice moves." /><MessageLogsForm initial={{ enabled: true, retentionDays: 7, excludedChannels: ["1"], editChannelId: "2", deleteChannelId: "2", voiceChannelId: null, remembered: 1280, messageContent: true, limits: { minDays: 1, maxDays: 30, maxExcluded: 50 } }} structure={structure} save={nope as never} clear={nope as never} /></>)}
+          {view === "message-logs-off" && (<><PageHeader title="Message & voice logs" description="Fresh server, and the bot without the Message Content intent." /><MessageLogsForm initial={{ enabled: false, retentionDays: 7, excludedChannels: [], editChannelId: null, deleteChannelId: null, voiceChannelId: null, remembered: 0, messageContent: false, limits: { minDays: 1, maxDays: 30, maxExcluded: 50 } }} structure={structure} save={nope as never} clear={nope as never} /></>)}
           {view === "rs-timers" && (<><PageHeader title="RuneScape timers" description="Optional reminders for RuneScape 3 timers." /><LookupRemindersForm initial={{ reminders: [{ kind: "vos", title: "Voice of Seren", description: "Posted at the top of every hour, when the two boosted districts change.", enabled: true, channelId: "2", roleId: null }] }} structure={structure} save={nope as never} /></>)}
           {view === "highlights" && (<><PageHeader title="Highlights" description="Direct messages for words members care about." /><HighlightsForm initial={{ enabled: true, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: ["1"], allowedRoles: [], memberCount: 4, wordCount: 11, messageContent: true, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
           {view === "highlights-nointent" && (<><PageHeader title="Highlights" description="The bot runs without the Message Content intent." /><HighlightsForm initial={{ enabled: false, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: [], allowedRoles: [], memberCount: 0, wordCount: 0, messageContent: false, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
