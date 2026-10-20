@@ -42,14 +42,18 @@ function HubCard({
   const [refs, setRefs] = useState(command.allowedRefs);
   const [channelIds, setChannelIds] = useState(command.channelIds);
   const [signup, setSignup] = useState(command.signup);
+  const [afk, setAfk] = useState(command.afk);
+  // members ticked to be taken off the away list when the card is saved
+  const [clearIds, setClearIds] = useState<string[]>([]);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [mode] = useViewMode();
   // what was last saved: a rule that is already in force stays on screen in Basic
-  const [kept, setKept] = useState({ customAccess: command.customAccess, channels: command.channelIds.length, signup: command.signup });
+  const [kept, setKept] = useState({ customAccess: command.customAccess, channels: command.channelIds.length, signup: command.signup, afk: command.afk });
   const customised =
-    kept.customAccess || kept.channels > 0 || (kept.signup !== null && kept.signup !== undefined && (kept.signup.adminChannelId !== null || kept.signup.lockAdminChannel || kept.signup.publicChannelIds.length > 0));
+    kept.customAccess || kept.channels > 0 || (kept.signup !== null && kept.signup !== undefined && (kept.signup.adminChannelId !== null || kept.signup.lockAdminChannel || kept.signup.publicChannelIds.length > 0)) ||
+    (kept.afk !== undefined && (kept.afk.nicknameTag || kept.afk.ignoreChannelIds.length > 0));
   const showMore = mode === "advanced" || customised;
 
   const dirty = () => setOutcome(null);
@@ -63,12 +67,24 @@ function HubCard({
   function submit() {
     setOutcome(null);
     start(async () => {
-      const result = await save(command.key, { enabled, customAccess, allowedRefs: refs, channelIds, signup });
+      const result = await save(command.key, {
+        enabled,
+        customAccess,
+        allowedRefs: refs,
+        channelIds,
+        signup,
+        afk: afk ? { nicknameTag: afk.nicknameTag, ignoreChannelIds: afk.ignoreChannelIds, clearUserIds: clearIds } : undefined,
+      });
       if (!result.ok) {
         setOutcome({ tone: "error", title: result.error, items: result.problems });
         return;
       }
-      setKept({ customAccess, channels: channelIds.length, signup });
+      setKept({ customAccess, channels: channelIds.length, signup, afk });
+      if (afk) {
+        // the saved card says who is still away
+        setAfk(result.data.afk ?? afk);
+        setClearIds([]);
+      }
       setOutcome({ tone: "success", title: "Saved." });
     });
   }
@@ -231,9 +247,63 @@ function HubCard({
           </div>
         </div>
       )}
+      {afk && (
+        <div className="space-y-4 border-t border-surface-border pt-4">
+          <p className="text-sm font-medium">Away status</p>
+          <Toggle
+            checked={afk.nicknameTag}
+            onChange={(on) => { setAfk({ ...afk, nicknameTag: on }); dirty(); }}
+            label="Put [AFK] in front of their nickname"
+            detail="Added while someone is away and taken off when they are back. JonnyBot needs Manage Nicknames and skips anyone it can't rename, such as the server owner."
+          />
+          <div>
+            <p className="text-sm font-medium">Channels where away status is ignored</p>
+            <p className="text-xs text-muted">Speaking there doesn&apos;t bring someone back, and mentions there aren&apos;t answered.</p>
+            <div className="mt-2">
+              <ChannelListPicker
+                channels={structure.channels}
+                allowForums={false}
+                value={afk.ignoreChannelIds}
+                max={maxList}
+                empty="No channel is ignored."
+                onChange={(ids) => { setAfk({ ...afk, ignoreChannelIds: ids }); dirty(); }}
+              />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Away right now</p>
+            {afk.away.length === 0 ? (
+              <p className="mt-1 text-xs text-muted">Nobody is away.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {afk.away.map((who) => {
+                  const marked = clearIds.includes(who.userId);
+                  return (
+                    <li key={who.userId} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-surface-border px-3 py-2 text-sm">
+                      <span className={marked ? "text-muted line-through" : ""}>
+                        <span className="font-medium">{who.name}</span>
+                        {who.reason && <span className="text-muted"> — {who.reason}</span>}
+                      </span>
+                      <button
+                        type="button"
+                        aria-pressed={marked}
+                        onClick={() => { setClearIds((all) => (marked ? all.filter((id) => id !== who.userId) : [...all, who.userId])); dirty(); }}
+                        className="rounded-full border border-surface-border px-3 py-1 text-xs text-muted transition hover:text-foreground"
+                      >
+                        {marked ? "Undo" : "Clear"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {clearIds.length > 0 && <p className="mt-1 text-xs text-muted">{clearIds.length} will be taken off the list when you save.</p>}
+          </div>
+        </div>
+      )}
       </>
       ) : (
-        <MoreInAdvanced>who may use /{command.slashName} and where it works{signup ? ", and its signup channels" : ""}.</MoreInAdvanced>
+        <MoreInAdvanced>who may use /{command.slashName} and where it works{signup ? ", and its signup channels" : ""}{afk ? ", and its nickname tag, ignored channels and away list" : ""}.</MoreInAdvanced>
       )}
 
       <div className="space-y-3 border-t border-surface-border pt-4">

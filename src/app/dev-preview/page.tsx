@@ -43,6 +43,7 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
@@ -64,7 +65,7 @@ const overview: Overview = {
   notices: [],
   isOwner: false,
 };
-const setup: ServerSetup = { clanName: "Younglings", clanEnabled: true, clanActive: true, verificationReviewChannelId: "1", renameAlertChannelId: null, verifiedClanRoleId: "r1", verifiedNonClanRoleId: null, unverifiedRoleId: null, onboardingRoleId: null };
+const setup: ServerSetup = { clanName: "Younglings", clanEnabled: true, clanActive: true, verificationReviewChannelId: "1", renameAlertChannelId: null, verifiedClanRoleId: "r1", verifiedNonClanRoleId: null, unverifiedRoleId: null, onboardingRoleId: null, inviteUrl: "https://discord.gg/younglings" };
 const structure: GuildStructure = {
   roles: [
     { id: "r1", name: "Member", color: 0, managed: false, position: 3 },
@@ -153,6 +154,7 @@ const hub = {
   commands: [
     { key: "rs", title: "RuneScape stats", slashName: "rs", description: "Look up a player and link a RuneScape name.", defaultAccess: "Everyone", enabled: true, customAccess: false, allowedRefs: [], channelIds: [] },
     { key: "signup", title: "Signups", slashName: "signup", description: "Create sign-up sheets for events.", defaultAccess: "Admins", enabled: true, customAccess: true, allowedRefs: ["group:support"], channelIds: ["2"], signup: { adminChannelId: null, lockAdminChannel: false, publicChannelIds: [] } },
+    { key: "afk", title: "Away status", slashName: "afk", description: "Mark yourself away: people who mention you are told, and it clears when you next speak.", defaultAccess: "Everyone", enabled: true, customAccess: false, allowedRefs: [], channelIds: [], afk: { nicknameTag: true, ignoreChannelIds: ["2"], away: [{ userId: "11", name: "Axley", reason: "Raids tonight", since: "2026-10-19T09:00:00Z" }, { userId: "12", name: "Berserker87", reason: "", since: "2026-10-18T20:00:00Z" }] } },
     { key: "poll", title: "Polls", slashName: "poll", description: "Start a poll in a channel.", defaultAccess: "Admins", enabled: false, customAccess: false, allowedRefs: [], channelIds: [] },
   ],
 };
@@ -346,7 +348,7 @@ function Preview() {
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />
-              <HubEditor hub={hub} structure={structure} canEditAccess save={async (_k, d) => ({ ok: true, data: { ...hub.commands[0], ...d } })} />
+              <HubEditor hub={hub} structure={structure} canEditAccess save={async (_k, d) => ({ ok: true, data: { ...hub.commands[0], ...d, afk: undefined } })} />
             </>
           )}
           {view === "permissions" && (
@@ -376,8 +378,8 @@ function Preview() {
               />
             </>
           )}
-          {view === "starboard" && (<><PageHeader title="Starboard" description="Copy the best messages to a showcase channel." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "⭐", threshold: 3, selfStar: false, maxThreshold: 15 }} structure={structure} save={nope as never} /></>)}
-          {view === "starboard-custom" && (<><PageHeader title="Starboard" description="With an emoji of its own and self-starring on (they stay visible)." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "<:gz:1234>", threshold: 5, selfStar: true, maxThreshold: 15 }} structure={structure} save={nope as never} /></>)}
+          {view === "starboard" && (<><PageHeader title="Starboard" description="Copy the best messages to a showcase channel." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "⭐", threshold: 3, selfStar: false, maxThreshold: 15, channelThresholds: [], skipHiddenChannels: false, onlyChannels: [], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
+          {view === "starboard-custom" && (<><PageHeader title="Starboard" description="With an emoji of its own and self-starring on (they stay visible)." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "<:gz:1234>", threshold: 5, selfStar: true, maxThreshold: 15, channelThresholds: [{ channelId: "1", threshold: 8 }], skipHiddenChannels: true, onlyChannels: ["2"], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "points-new" && (<><PageHeader title="Points" description="A server that has not switched points on yet." /><PointsManager initial={{ ...pointsOverview, enabled: false, reviewChannelId: null, top: [], recent: [], totals: { members: 0, outstanding: 0, awarded: 0, spent: 0 } } as never} submissions={{ pending: [], decided: [] } as never} structure={structure} rewards={{ rewards: [] } as never} redemptions={{ pending: [], handled: [] } as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "giveaways" && (<><PageHeader title="Giveaways" description="Run a giveaway with an Enter button and a timed draw." /><GiveawaysManager initial={giveaways} structure={structure} roles={structure.roles} actions={{ start: nope, end: nope, reroll: nope, remove: nope }} /></>)}
@@ -411,6 +413,21 @@ function Preview() {
             <>
               <PageHeader title="Welcome message" description="A server that has not set a welcome up yet." />
               <WelcomeEditor initial={welcomeEmpty} channels={structure.channels} actions={{ save: async () => ({ ok: false, error: "x", problems: [] }), test: async () => ({ ok: false, error: "x", problems: [] }) }} />
+            </>
+          )}
+          {view === "snapshots" && (
+            <>
+              <PageHeader title="Snapshots" description="Bundles the bot's state at this moment into a zip with an id. Put the id in a bug report. Secrets are removed." />
+              <SnapshotsManager
+                guildId="1"
+                keepDays={14}
+                initial={[
+                  { id: "snap-20261018-143005-a3f9", guildId: "1", createdAt: "2026-10-18T14:30:05Z", sizeBytes: 48_213, requestedBy: "2", focus: "event:12" },
+                  { id: "snap-20261017-091500-04be", guildId: "1", createdAt: "2026-10-17T09:15:00Z", sizeBytes: 2_345_678, requestedBy: "2", focus: "" },
+                ]}
+                take={async (focus) => ({ ok: true as const, data: { snapshot: { id: "snap-20261018-150000-c0de", guildId: "1", createdAt: new Date().toISOString(), sizeBytes: 51_200, requestedBy: "2", focus } } })}
+                remove={async (id) => ({ ok: true as const, data: { deleted: id } })}
+              />
             </>
           )}
           {view === "goodbye" && (

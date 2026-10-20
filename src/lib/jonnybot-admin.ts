@@ -528,6 +528,15 @@ export interface RolePanelList {
   limits?: Record<RolePanelStyle, number>;
 }
 
+/** What "Send an announcement" posts: a message in a channel with at most one ping (a role, @everyone or @here). */
+export interface AnnouncementSend {
+  channelId: string;
+  message: string;
+  roleId: string | null;
+  everyone: boolean;
+  here: boolean;
+}
+
 /** A server's goodbye message: a line posted when someone leaves. */
 export interface Goodbye {
   enabled: boolean;
@@ -581,6 +590,13 @@ export interface Starboard {
   threshold: number;
   selfStar: boolean;
   maxThreshold: number;
+  /** Source channels that need a different number of reactions than {@link threshold}. */
+  channelThresholds: { channelId: string; threshold: number }[];
+  /** Never copy out of a channel @everyone can't see. */
+  skipHiddenChannels: boolean;
+  /** When not empty, only these channels are copied from. */
+  onlyChannels: string[];
+  maxChannelRules: number;
 }
 
 /** One automatic reply: when a message matches the trigger, the bot answers. */
@@ -955,6 +971,30 @@ export interface PluginCoverage {
   consent: { key: string; label: string; players: number }[];
 }
 
+/** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
+export interface DevSnapshotMeta {
+  /** snap-yyyyMMdd-HHmmss-xxxx */
+  id: string;
+  guildId: string;
+  createdAt: string;
+  sizeBytes: number;
+  requestedBy: string;
+  /** event:12, ticket:34, member:<id> or empty. */
+  focus: string;
+}
+
+export interface DevSnapshotList {
+  snapshots: DevSnapshotMeta[];
+  keepDays: number;
+  maxBytes: number;
+}
+
+/** A snapshot with its zip, as the bot sends it. */
+export interface DevSnapshotFile extends DevSnapshotMeta {
+  filename: string;
+  zipBase64: string;
+}
+
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
 export interface PremiumGuilds {
   guilds: BetaGuild[];
@@ -1079,6 +1119,21 @@ export interface WelcomeConfig {
   serverIconUrl: string | null;
 }
 
+/** The optional welcome picture (a 700x300 card). The server name and member count only feed the preview. */
+export interface WelcomeCard {
+  enabled: boolean;
+  /** 0xRRGGBB */
+  backgroundColor: number;
+  backgroundImageUrl: string;
+  textColor: number;
+  title: string;
+  description: string;
+  serverName: string;
+  memberCount: number;
+}
+
+export type WelcomeCardDraft = Omit<WelcomeCard, "serverName" | "memberCount">;
+
 /** What the browser may change; the preview-only fields come back from the bot but are never sent. */
 export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
 
@@ -1093,6 +1148,8 @@ export interface ServerSetup {
   verifiedNonClanRoleId: string | null;
   unverifiedRoleId: string | null;
   onboardingRoleId: string | null;
+  /** The server's Discord invite (https://discord.gg/...), shown to players who must join the server first. */
+  inviteUrl: string | null;
 }
 
 
@@ -1133,6 +1190,8 @@ export interface HubCommandConfig {
   channelIds: string[];
   /** Only the Signups card has these. */
   signup?: { adminChannelId: string | null; lockAdminChannel: boolean; publicChannelIds: string[] };
+  /** Only the Away status card has these: the nickname tag, the channels where away status is ignored, and who is away now. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; away: { userId: string; name: string; reason: string; since: string }[] };
 }
 
 export interface HubConfig {
@@ -1143,7 +1202,10 @@ export interface HubConfig {
 }
 
 /** What a card sends on save (the fields it doesn't send keep their value). */
-export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup">;
+export type HubCommandDraft = Pick<HubCommandConfig, "enabled" | "customAccess" | "allowedRefs" | "channelIds" | "signup"> & {
+  /** Away status settings; clearUserIds takes those members off the away list as the card is saved. */
+  afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; clearUserIds: string[] };
+};
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -1449,9 +1511,17 @@ export const adminApi = {
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
-  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  welcomeCard: (ctx: ApiContext) => call<WelcomeCard>(ctx, "GET", "welcome-card"),
+  saveWelcomeCard: (ctx: ApiContext, draft: WelcomeCardDraft) => call<WelcomeCard>(ctx, "PUT", "welcome-card", draft),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
+  /** The ban announcement: the welcome's message shape (the shared message editor edits both); the DM copy and link button are always off. */
+  banAnnouncement: (ctx: ApiContext) => call<WelcomeConfig>(ctx, "GET", "ban-announcement"),
+  saveBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<WelcomeConfig>(ctx, "PUT", "ban-announcement", draft),
+  testBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "ban-announcement/test", draft),
+  /** The dashboard twin of /announce. The bot judges @everyone, @here and role pings against the signed-in admin's own permissions. */
+  sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
   createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
@@ -1462,6 +1532,11 @@ export const adminApi = {
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
   saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
+  devSnapshots: (ctx: ApiContext) => call<DevSnapshotList>(ctx, "GET", "dev/snapshots"),
+  devSnapshot: (ctx: ApiContext, id: string) => call<DevSnapshotFile>(ctx, "GET", `dev/snapshots/${encodeURIComponent(id)}`),
+  takeDevSnapshot: (ctx: ApiContext, focus: string, siteCommit: string) =>
+    call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
+  deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),

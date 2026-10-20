@@ -27,6 +27,7 @@ function setupFrom(input: unknown): ServerSetup | null {
     verifiedNonClanRoleId: id(s.verifiedNonClanRoleId),
     unverifiedRoleId: id(s.unverifiedRoleId),
     onboardingRoleId: id(s.onboardingRoleId),
+    inviteUrl: typeof s.inviteUrl === "string" && s.inviteUrl.trim() !== "" ? s.inviteUrl.trim().slice(0, 100) : null,
   };
 }
 
