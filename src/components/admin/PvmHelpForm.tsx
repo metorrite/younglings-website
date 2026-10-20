@@ -15,7 +15,8 @@ export interface PvmHelpBindings {
   save: (input: unknown) => Promise<HelpActionResult<HelpSettings>>;
   createPanels: () => Promise<HelpActionResult<HelpSettings>>;
   postGuidelines: (channelId: string) => Promise<HelpActionResult<HelpSettings>>;
-  panelHref: (panelId: number | string) => string;
+  /** Where a ticket panel is edited, minus its id (a string, since Server Components can't pass functions to this client form). */
+  panelBaseHref: string;
 }
 
 /** One audience's ping timing: whether helpers are pinged when the ticket opens, and the wait before the next role up is pinged. */
@@ -194,7 +195,7 @@ export function PvmHelpForm({ initial, structure, bindings }: { initial: HelpSet
                       {panel.helpKind === "CA" ? "CA Help" : "PvM Help"} · {panel.postedChannelId ? `posted in ${channel ? `#${channel.name}` : "a channel"}` : "not posted yet"}
                     </span>
                   </span>
-                  <Link href={bindings.panelHref(panel.id)} className="text-gold hover:underline">
+                  <Link href={`${bindings.panelBaseHref}/${panel.id}`} className="text-gold hover:underline">
                     Edit and post
                   </Link>
                 </li>

@@ -22,7 +22,7 @@ export default async function PvmHelpPage() {
       <PvmHelpForm
         initial={settings}
         structure={structure}
-        bindings={{ save: saveHelpSettingsAction, createPanels: createHelpPanelsAction, postGuidelines: postHelpGuidelinesAction, panelHref: (id) => `/admin/tickets/panels/${id}` }}
+        bindings={{ save: saveHelpSettingsAction, createPanels: createHelpPanelsAction, postGuidelines: postHelpGuidelinesAction, panelBaseHref: "/admin/tickets/panels" }}
       />
     </div>
   );

@@ -25,7 +25,7 @@ export default async function PvmHelpPage({ params }: { params: Promise<{ guildI
           save: saveGuildHelpSettingsAction.bind(null, guildId),
           createPanels: createGuildHelpPanelsAction.bind(null, guildId),
           postGuidelines: postGuildHelpGuidelinesAction.bind(null, guildId),
-          panelHref: (id) => `/dashboard/${guildId}/tickets/panels/${id}`,
+          panelBaseHref: `/dashboard/${guildId}/tickets/panels`,
         }}
       />
     </div>
