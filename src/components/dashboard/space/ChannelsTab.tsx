@@ -19,6 +19,7 @@ const ACTION_LABEL: Record<SpaceAction, { tone: "good" | "muted" | "warn"; text:
   keep: { tone: "muted", text: "Already made" },
   use_existing: { tone: "muted", text: "Existing" },
   remove: { tone: "warn", text: "Not needed" },
+  repair: { tone: "warn", text: "Will be put back" },
 };
 
 /**
@@ -281,6 +282,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
                   {view.summary.newChannels} new {view.summary.newChannels === 1 ? "channel" : "channels"}
                 </Chip>
                 {view.summary.toRemove > 0 && <Chip tone="warn">{view.summary.toRemove} no longer needed</Chip>}
+                {(view.summary.toRepair ?? 0) > 0 && <Chip tone="warn">{view.summary.toRepair} to put back</Chip>}
               </>
             }
           >
@@ -342,7 +344,8 @@ function StatusPanel({
   const job = view.job;
   const running = job?.state === "running";
   const stale = applied && !view.complete;
-  const madeSomething = applied || view.channels.some((c) => c.action === "keep") || view.roles.some((r) => r.action === "keep");
+  const madeSomething = applied || view.channels.some((c) => c.action === "keep" || c.action === "repair") || view.roles.some((r) => r.action === "keep" || r.action === "repair");
+  const toRepair = view.summary.toRepair ?? 0;
   const locked = busy || running || dirty;
   return (
     <div className="space-y-3 rounded-xl border border-surface-border p-4 text-sm">
@@ -402,6 +405,12 @@ function StatusPanel({
         {dirty && <span className="text-xs text-muted">Save your changes first.</span>}
       </div>
 
+      {stale && toRepair > 0 && (
+        <p className="text-xs text-muted">
+          {toRepair === 1 ? "1 thing" : `${toRepair} things`} JonnyBot made {toRepair === 1 ? "was" : "were"} renamed or had {toRepair === 1 ? "its" : "their"} access changed on Discord. &quot;Bring them up to date&quot; puts
+          {toRepair === 1 ? " it" : " them"} back the way the plan below says. Channels you chose yourself are never changed.
+        </p>
+      )}
       {stale && view.summary.toRemove > 0 && (
         <label className="flex items-start gap-2 text-xs text-muted">
           <input type="checkbox" className="mt-0.5" checked={removeUnneeded} disabled={locked} onChange={(ev) => onRemoveUnneeded(ev.target.checked)} />
@@ -445,6 +454,7 @@ function Plan({ view }: { view: SpaceView }) {
             <li key={r.key} className="flex flex-wrap items-center gap-2">
               <span className="break-words">@{r.name}</span>
               <StatusBadge tone={ACTION_LABEL[r.action].tone}>{ACTION_LABEL[r.action].text}</StatusBadge>
+              {r.action === "repair" && <span className="text-xs text-muted">{r.note}</span>}
               {r.action !== "remove" && (
                 <span className="text-xs text-muted">{r.members === 0 ? "nobody yet" : `${r.members} ${r.members === 1 ? "person" : "people"}`}</span>
               )}
@@ -476,6 +486,7 @@ function Plan({ view }: { view: SpaceView }) {
                     <StatusBadge tone={ACTION_LABEL[c.action].tone}>{ACTION_LABEL[c.action].text}</StatusBadge>
                   </div>
                   <p className="text-xs text-muted">{c.action === "remove" ? c.note : accessLine(c.access)}</p>
+                  {c.action === "repair" && <p className="text-xs text-gold">{c.note}</p>}
                 </li>
               ))}
               {g.channels.length === 0 && <li className="text-xs text-muted">Nothing goes in it yet.</li>}
