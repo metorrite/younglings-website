@@ -646,6 +646,16 @@ export interface GiveawayList {
   maxPrize: number;
 }
 
+/** Voice text: voice channels paired with a text channel that opens for the people in them. Off until switched on. */
+export interface VoiceText {
+  enabled: boolean;
+  announce: boolean;
+  purgeWhenEmpty: boolean;
+  links: { voiceChannelId: string; voiceName: string | null; textChannelId: string; textName: string | null; problem: string | null; everyoneCanSee: boolean }[];
+  voiceChannels: { id: string; name: string }[];
+  maxLinks: number;
+}
+
 /** A reminder JonnyBot posts in a channel, once (`everyMinutes` null) or repeating, optionally pinging a role. */
 export interface ServerReminderItem {
   id: string;
@@ -1708,6 +1718,9 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  voiceText: (ctx: ApiContext) => call<VoiceText>(ctx, "GET", "voice-text"),
+  saveVoiceText: (ctx: ApiContext, body: { enabled: boolean; announce: boolean; purgeWhenEmpty: boolean; links: { voiceChannelId: string; textChannelId: string }[] }) => call<VoiceText>(ctx, "PUT", "voice-text", body),
+
   serverReminders: (ctx: ApiContext) => call<ServerReminderList>(ctx, "GET", "server-reminders"),
   createServerReminder: (ctx: ApiContext, body: { channelId: string; text: string; roleId: string | null; startAt: string; everyMinutes: number | null }) => call<ServerReminderList>(ctx, "POST", "server-reminders", body),
   cancelServerReminder: (ctx: ApiContext, id: string) => call<ServerReminderList>(ctx, "DELETE", `server-reminders/${encodeURIComponent(id)}`),

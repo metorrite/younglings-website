@@ -18,6 +18,7 @@ import type { OptionSchema } from "@/lib/eventOptions";
 import { AutorolesForm } from "@/components/dashboard/AutorolesForm";
 import { RolePanelEditor } from "@/components/dashboard/RolePanelEditor";
 import { GiveawaysManager } from "@/components/dashboard/GiveawaysManager";
+import { VoiceTextForm } from "@/components/dashboard/VoiceTextForm";
 import { ServerRemindersManager } from "@/components/dashboard/ServerRemindersManager";
 import { LockdownManager } from "@/components/dashboard/LockdownManager";
 import { SuggestionsManager } from "@/components/dashboard/SuggestionsManager";
@@ -284,6 +285,14 @@ const giveaways = { maxWinners: 50, maxPrize: 200, giveaways: [
   { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winnerRoleId: "r2", dmWinners: true, reactionEntry: true, winners: [] },
   { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winnerRoleId: null, dmWinners: false, reactionEntry: false, winners: ["5"] },
 ] };
+const voiceText = {
+  enabled: true, announce: true, purgeWhenEmpty: false, maxLinks: 25,
+  voiceChannels: [{ id: "v1", name: "Raids" }, { id: "v2", name: "Chill" }],
+  links: [
+    { voiceChannelId: "v1", voiceName: "Raids", textChannelId: "1", textName: "raids-chat", problem: null, everyoneCanSee: false },
+    { voiceChannelId: "v2", voiceName: "Chill", textChannelId: "2", textName: "general", problem: "JonnyBot needs View Channel, Send Messages and Manage Permissions in #general.", everyoneCanSee: true },
+  ],
+};
 const serverReminders = {
   maxText: 1000, maxActive: 20, minEveryMinutes: 60, maxEveryMinutes: 86400,
   reminders: [
@@ -400,6 +409,7 @@ function Preview() {
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "points-new" && (<><PageHeader title="Points" description="A server that has not switched points on yet." /><PointsManager initial={{ ...pointsOverview, enabled: false, reviewChannelId: null, top: [], recent: [], totals: { members: 0, outstanding: 0, awarded: 0, spent: 0 } } as never} submissions={{ pending: [], decided: [] } as never} structure={structure} rewards={{ rewards: [] } as never} redemptions={{ pending: [], handled: [] } as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "giveaways" && (<><PageHeader title="Giveaways" description="Run a giveaway with an Enter button and a timed draw." /><GiveawaysManager initial={giveaways} structure={structure} roles={structure.roles} actions={{ start: nope, end: nope, reroll: nope, remove: nope }} /></>)}
+          {view === "voice-text" && (<><PageHeader title="Voice text" description="Give people a text channel while they are in a voice channel." /><VoiceTextForm initial={voiceText} structure={structure} save={nope as never} /></>)}
           {view === "server-reminders" && (<><PageHeader title="Server reminders" description="Reminders JonnyBot posts in a channel for everyone." /><ServerRemindersManager initial={serverReminders} structure={structure} roles={structure.roles} actions={{ create: nope, cancel: nope }} /></>)}
           {view === "lockdown" && (<><PageHeader title="Lockdown" description="Stop everyone but chosen roles from talking in a channel or a saved set." /><LockdownManager initial={lockdown} structure={structure} canEdit actions={{ save: nope, lock: nope, unlock: nope, start: nope, end: nope }} /></>)}
           {view === "suggestions" && (<><PageHeader title="Suggestions" description="Members post ideas with /suggest." /><SuggestionsManager initial={suggestions} structure={structure} actions={{ saveChannel: nope, decide: nope, remove: nope }} /></>)}
