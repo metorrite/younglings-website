@@ -1725,7 +1725,7 @@ export const adminApi = {
   citadelCappers: (ctx: ApiContext, end: string | null) => call<import("./citadelTypes").CitadelCappers>(ctx, "GET", end ? `citadel/cappers/${encodeURIComponent(end)}` : "citadel/cappers"),
   /** The settings for announcing the Citadel wheel's winner (auto-post, channel, message). */
   citadelWheel: (ctx: ApiContext) => call<import("./citadelTypes").WheelSettings>(ctx, "GET", "citadel/wheel"),
-  saveCitadelWheel: (ctx: ApiContext, body: { autoPost: boolean; channelId: string | null; message: string }) =>
+  saveCitadelWheel: (ctx: ApiContext, body: { autoPost: boolean; channelId: string | null; message: string; video: boolean }) =>
     call<import("./citadelTypes").WheelSettings>(ctx, "PUT", "citadel/wheel", body),
   /** Announces a winner the dashboard's wheel picked, in the channel the server chose. `entries` is every entry on the wheel (a name once per entry). */
   citadelPost: (ctx: ApiContext, body: { winner: string; entries: string[]; end: string }) =>
