@@ -35,6 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Server setup", icon: "sliders", path: "/settings" },
       { label: "Bot appearance", icon: "smile", path: "/branding" },
+      { label: "Language", icon: "chat", path: "/language", advanced: true },
       { label: "Roles & permissions", icon: "shield", path: "/permissions" },
       { label: "Guided setup", icon: "wand", path: "/guide", also: ["/wizard"] },
     ],
