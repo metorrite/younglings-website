@@ -32,20 +32,25 @@ function finish(
 export async function saveAutoDeleteAction(
   guildId: string,
   channelId: string,
-  filters: string[],
+  rule: unknown,
 ): Promise<Result> {
   const { guild, slow } = await guard(guildId);
   if (slow) return fail(slow);
   if (typeof channelId !== "string" || !/^\d+$/.test(channelId))
     return fail("Choose a channel.");
-  if (!Array.isArray(filters)) return fail("Choose what to delete.");
+  if (typeof rule !== "object" || rule === null) return fail("Choose what to delete.");
+  const r = rule as Record<string, unknown>;
+  if (!Array.isArray(r.filters)) return fail("Choose what to delete.");
+  const roleMode = r.roleMode === "ONLY_WITH" || r.roleMode === "EXCEPT_WITH" ? r.roleMode : "EVERYONE";
   return finish(
     guildId,
-    await adminApi.saveAutoDelete(
-      guild,
-      channelId,
-      filters.filter((f) => FILTERS.includes(f)),
-    ),
+    await adminApi.saveAutoDelete(guild, channelId, {
+      filters: r.filters.filter((f): f is string => typeof f === "string" && FILTERS.includes(f)),
+      words: Array.isArray(r.words) ? r.words.filter((w): w is string => typeof w === "string").map((w) => w.slice(0, 80)).slice(0, 40) : [],
+      roleMode,
+      roleIds: Array.isArray(r.roleIds) ? r.roleIds.filter((x): x is string => typeof x === "string" && /^\d{1,20}$/.test(x)).slice(0, 20) : [],
+      delaySeconds: typeof r.delaySeconds === "number" && Number.isFinite(r.delaySeconds) ? Math.trunc(r.delaySeconds) : 0,
+    }),
   );
 }
 

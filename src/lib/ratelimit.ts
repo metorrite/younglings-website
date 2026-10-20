@@ -24,6 +24,8 @@ const RULES = {
   signup: { capacity: 5, refillMs: 2000 },
   profile: { capacity: 8, refillMs: 1500 },
   admin: { capacity: 15, refillMs: 1000 },
+  // A web form is slow to fill in, so a few sends then one every 15 seconds is plenty.
+  form: { capacity: 4, refillMs: 15_000 },
   // The public API and the plugin routes are keyed by caller address, not by a signed-in user.
   publicRead: { capacity: 60, refillMs: 1000 },
   publicReport: { capacity: 3, refillMs: 600_000 },
