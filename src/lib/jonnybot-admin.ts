@@ -130,7 +130,7 @@ export interface TicketSettings {
 export type FieldKind = "SHORT" | "PARAGRAPH" | "SELECT" | "CHECKBOX";
 
 /** Which part of the PvM Help system a panel belongs to; NONE is an ordinary ticket panel. */
-export type HelpKind = "NONE" | "PVM" | "CA";
+export type HelpKind = "NONE" | "PVM" | "CA" | "INFO";
 
 /**
  * What a question means to the PvM Help rules: the boss, the tier, the one achievement they want help with, or whether they have already made

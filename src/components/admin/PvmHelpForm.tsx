@@ -172,7 +172,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
 
       <Card
         title="Help ticket panels"
-        hint="The PvM Help and CA Help panels members open tickets from. Creating them sets up the questions (boss, tier, an optional achievement, whether they have made attempts) and uses the helper roles saved above. Then open each panel to choose its category and staff roles and post it in a channel."
+        hint="The PvM Help, CA Help and Informational panels members open tickets from. Creating them sets up the questions (boss, tier, an optional achievement, whether they have made attempts; Informational has one question) and uses the helper roles saved above. Then open each panel to choose its category and staff roles and post it in a channel. Informational tickets follow no help rules: set a ping role on the panel if you want one pinged."
       >
         {settings.panels.length > 0 ? (
           <ul className="space-y-2 text-sm">
@@ -183,7 +183,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
                   <span>
                     <span className="font-medium">{panel.name}</span>{" "}
                     <span className="text-xs text-muted">
-                      {panel.helpKind === "CA" ? "CA Help" : "PvM Help"} · {panel.postedChannelId ? `posted in ${channel ? `#${channel.name}` : "a channel"}` : "not posted yet"}
+                      {panel.helpKind === "CA" ? "CA Help" : panel.helpKind === "INFO" ? "Informational (pings the role set on the panel)" : "PvM Help"} · {panel.postedChannelId ? `posted in ${channel ? `#${channel.name}` : "a channel"}` : "not posted yet"}
                     </span>
                   </span>
                   <Link href={`/admin/tickets/panels/${panel.id}`} className="text-gold hover:underline">
@@ -197,7 +197,7 @@ export function PvmHelpForm({ initial, structure }: { initial: HelpSettings; str
           <p className="text-sm text-muted">No help panels yet.</p>
         )}
         <button type="button" className={ghostButton} disabled={pending} onClick={createPanels}>
-          Create the PvM Help and CA Help panels
+          Create the PvM Help, CA Help and Informational panels
         </button>
       </Card>
 

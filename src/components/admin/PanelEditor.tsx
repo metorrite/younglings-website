@@ -34,6 +34,7 @@ const HELP_KIND_LABELS: Record<HelpKind, string> = {
   NONE: "Ordinary ticket",
   PVM: "PvM Help",
   CA: "CA Help",
+  INFO: "Informational",
 };
 
 const PURPOSE_LABELS: Record<FieldPurpose, string> = {
@@ -195,7 +196,7 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
   const showRouting = advanced || saved.fields.some((f) => f.options.some((o) => o.pingRoleId !== null || o.escalateRoleId !== null));
   const showFieldExtras = advanced || saved.fields.some((f) => f.placeholder !== null || f.maxLength !== null);
   const hidden = [
-    !showHelpKind && "the help type (PvM and CA Help)",
+    !showHelpKind && "the help type (PvM, CA and Informational)",
     !showTuning && "the channel name and tickets per person",
     !showHelping && "helpers joining and escalation",
     !showClosing && "who can close a ticket",
@@ -237,13 +238,14 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
                   <>
                     PvM Help and CA Help tickets follow the {where.pvmHelpPath ? <a className="text-gold hover:underline" href={where.pvmHelpPath}>PvM Help rules</a> : "PvM Help rules"}: members ping helpers and escalate, guests ping nobody, and a
                     guest asking for Master or Grandmaster must describe earlier attempts. A CA Help panel also needs a required dropdown marked as the tier below.
+                    An Informational panel is for general questions (no boss or tier): it follows none of those rules and pings only the ping role you set on this panel.
                   </>
                 }
               >
                 <select className={inputClass} value={panel.helpKind} onChange={(e) => {
                     const helpKind = e.target.value as HelpKind;
                     // Marks only mean something on a help panel, so an ordinary panel clears them.
-                    setPanel((p) => ({ ...p, helpKind, fields: helpKind === "NONE" ? p.fields.map((f) => ({ ...f, purpose: "NONE" })) : p.fields }));
+                    setPanel((p) => ({ ...p, helpKind, fields: helpKind === "NONE" || helpKind === "INFO" ? p.fields.map((f) => ({ ...f, purpose: "NONE" })) : p.fields }));
                   }}>
                   {(Object.keys(HELP_KIND_LABELS) as HelpKind[]).map((kind) => (
                     <option key={kind} value={kind}>
@@ -487,7 +489,7 @@ export function PanelEditor({ initial, structure, where = CONSOLE }: { initial: 
                     </FieldGrid>
                   )}
 
-                  {panel.helpKind !== "NONE" && (
+                  {(panel.helpKind === "PVM" || panel.helpKind === "CA") && (
                     <FormField
                       label="Part in the help rules"
                       size="md"
