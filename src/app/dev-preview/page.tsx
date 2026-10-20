@@ -18,6 +18,7 @@ import type { OptionSchema } from "@/lib/eventOptions";
 import { AutorolesForm } from "@/components/dashboard/AutorolesForm";
 import { RolePanelEditor } from "@/components/dashboard/RolePanelEditor";
 import { GiveawaysManager } from "@/components/dashboard/GiveawaysManager";
+import { ServerRemindersManager } from "@/components/dashboard/ServerRemindersManager";
 import { LockdownManager } from "@/components/dashboard/LockdownManager";
 import { SuggestionsManager } from "@/components/dashboard/SuggestionsManager";
 import { AutoCleanManager } from "@/components/dashboard/AutoCleanManager";
@@ -283,6 +284,14 @@ const giveaways = { maxWinners: 50, maxPrize: 200, giveaways: [
   { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winnerRoleId: "r2", dmWinners: true, reactionEntry: true, winners: [] },
   { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winnerRoleId: null, dmWinners: false, reactionEntry: false, winners: ["5"] },
 ] };
+const serverReminders = {
+  maxText: 1000, maxActive: 20, minEveryMinutes: 60, maxEveryMinutes: 86400,
+  reminders: [
+    { id: "1", channelId: "2", channelName: "general", text: "Weekly cap party starts in an hour at the Citadel!", roleId: "r1", roleName: "Members", everyMinutes: 10080, nextAt: "2026-10-21T17:00:00Z", status: "ACTIVE" as const, createdByName: "Metorrite", lastSentAt: "2026-10-14T17:00:00Z", sendCount: 3, error: null },
+    { id: "2", channelId: "2", channelName: "general", text: "Clan meeting tonight.", roleId: null, roleName: null, everyMinutes: null, nextAt: "2026-10-25T18:00:00Z", status: "ACTIVE" as const, createdByName: "PvmRyan", lastSentAt: null, sendCount: 0, error: null },
+    { id: "3", channelId: "9", channelName: null, text: "Old reminder", roleId: null, roleName: null, everyMinutes: 1440, nextAt: "2026-10-10T18:00:00Z", status: "FAILED" as const, createdByName: "Metorrite", lastSentAt: null, sendCount: 0, error: "The channel no longer exists." },
+  ],
+};
 const lockdown = {
   channelIds: ["1", "2"], keepTalkingRoleIds: ["r1"], maxChannels: 50, maxRoles: 10,
   locks: [
@@ -391,6 +400,7 @@ function Preview() {
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "points-new" && (<><PageHeader title="Points" description="A server that has not switched points on yet." /><PointsManager initial={{ ...pointsOverview, enabled: false, reviewChannelId: null, top: [], recent: [], totals: { members: 0, outstanding: 0, awarded: 0, spent: 0 } } as never} submissions={{ pending: [], decided: [] } as never} structure={structure} rewards={{ rewards: [] } as never} redemptions={{ pending: [], handled: [] } as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "giveaways" && (<><PageHeader title="Giveaways" description="Run a giveaway with an Enter button and a timed draw." /><GiveawaysManager initial={giveaways} structure={structure} roles={structure.roles} actions={{ start: nope, end: nope, reroll: nope, remove: nope }} /></>)}
+          {view === "server-reminders" && (<><PageHeader title="Server reminders" description="Reminders JonnyBot posts in a channel for everyone." /><ServerRemindersManager initial={serverReminders} structure={structure} roles={structure.roles} actions={{ create: nope, cancel: nope }} /></>)}
           {view === "lockdown" && (<><PageHeader title="Lockdown" description="Stop everyone but chosen roles from talking in a channel or a saved set." /><LockdownManager initial={lockdown} structure={structure} canEdit actions={{ save: nope, lock: nope, unlock: nope, start: nope, end: nope }} /></>)}
           {view === "suggestions" && (<><PageHeader title="Suggestions" description="Members post ideas with /suggest." /><SuggestionsManager initial={suggestions} structure={structure} actions={{ saveChannel: nope, decide: nope, remove: nope }} /></>)}
           {view === "autoclean" && (<><PageHeader title="Auto-clean" description="Channels that tidy themselves." /><AutoCleanManager initial={autoclean} structure={structure} actions={{ save: nope, remove: nope }} /></>)}

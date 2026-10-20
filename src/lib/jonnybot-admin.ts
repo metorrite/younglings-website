@@ -646,6 +646,31 @@ export interface GiveawayList {
   maxPrize: number;
 }
 
+/** A reminder JonnyBot posts in a channel, once (`everyMinutes` null) or repeating, optionally pinging a role. */
+export interface ServerReminderItem {
+  id: string;
+  channelId: string;
+  channelName: string | null;
+  text: string;
+  roleId: string | null;
+  roleName: string | null;
+  everyMinutes: number | null;
+  nextAt: string;
+  status: "ACTIVE" | "DONE" | "CANCELLED" | "FAILED";
+  createdByName: string;
+  lastSentAt: string | null;
+  sendCount: number;
+  error: string | null;
+}
+
+export interface ServerReminderList {
+  reminders: ServerReminderItem[];
+  maxText: number;
+  maxActive: number;
+  minEveryMinutes: number;
+  maxEveryMinutes: number;
+}
+
 /** The lockdown page: the saved set, the roles that keep talking while locked, and every channel that is locked right now. */
 export interface Lockdown {
   channelIds: string[];
@@ -1683,6 +1708,10 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  serverReminders: (ctx: ApiContext) => call<ServerReminderList>(ctx, "GET", "server-reminders"),
+  createServerReminder: (ctx: ApiContext, body: { channelId: string; text: string; roleId: string | null; startAt: string; everyMinutes: number | null }) => call<ServerReminderList>(ctx, "POST", "server-reminders", body),
+  cancelServerReminder: (ctx: ApiContext, id: string) => call<ServerReminderList>(ctx, "DELETE", `server-reminders/${encodeURIComponent(id)}`),
+
   lockdown: (ctx: ApiContext) => call<Lockdown>(ctx, "GET", "lockdown"),
   saveLockdown: (ctx: ApiContext, body: { channelIds: string[]; keepTalkingRoleIds: string[] }) => call<Lockdown>(ctx, "PUT", "lockdown", body),
   lockChannel: (ctx: ApiContext, body: { channelId: string; reason: string }) => call<Lockdown>(ctx, "POST", "lockdown/lock", body),
