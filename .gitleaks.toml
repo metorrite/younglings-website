@@ -1,0 +1,13 @@
+# Secret-scan config (gitleaks). Used by the pre-commit hook and the CI "Secret scan" job.
+# Keep this list SHORT and specific. Never allow-list a real secret: remove it and tell Drake.
+title = "younglings-website secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secrets"
+commits = [
+  # tests/devSnapshot.test.mjs once held an obviously fake Bearer value in a scrub test; reviewed, not real, and no longer in the tree.
+  "354e83f943ee972910149a312cd44aa7a68397a4",
+]
