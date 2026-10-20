@@ -67,6 +67,8 @@ export interface WhoAmI {
   avatarUrl?: string;
   /** Whether the person may use JonnyBot's website while it is closed: the clan's admins, or admins of a trusted beta server. Absent from an older bot. */
   beta?: boolean;
+  /** Whether this person owns the bot itself; only sent to someone allowed in. Gates the dev snapshot button. */
+  isOwner?: boolean;
   /** The server the answer is about; only present when the user is allowed in. */
   guildName?: string;
   guildIconUrl?: string | null;
