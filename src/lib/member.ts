@@ -109,6 +109,11 @@ export interface MyEvents {
   result?: { waiting: boolean; position: number };
 }
 
+/** A member's own chat level (XP for chatting). `enabled` is false when the server hasn't switched chat levels on. */
+export type MyChatLevel =
+  | { enabled: false }
+  | { enabled: true; level: number; xp: number; intoLevel: number; toNext: number; maxed: boolean; rank: number | null; messages: number; members: number };
+
 /** A member's own Highlights words (direct messages when someone says them) and the channels they skip. */
 export interface MyHighlights {
   enabled: boolean;
@@ -181,6 +186,7 @@ export const memberApi = {
   cancelLink: (userId: string) => request<LinkResult>("DELETE", "link", userId),
   settings: (userId: string) => request<MemberSettings>("GET", "settings", userId),
   saveSettings: (userId: string, settings: Omit<MemberSettings, "rsns">) => request<MemberSettings>("PUT", "settings", userId, settings),
+  chatLevel: (userId: string) => request<MyChatLevel>("GET", "level", userId),
   highlights: (userId: string) => request<MyHighlights>("GET", "highlights", userId),
   addHighlight: (userId: string, word: string, wholeWord: boolean) => request<MyHighlights>("POST", "highlights", userId, { word, wholeWord }),
   removeHighlight: (userId: string, id: string) => request<MyHighlights>("DELETE", `highlights?id=${encodeURIComponent(id)}`, userId),

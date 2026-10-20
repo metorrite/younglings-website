@@ -70,6 +70,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Highlights", icon: "bell", path: "/highlights", advanced: true },
       { label: "Temp voice", icon: "users", path: "/temp-voice", advanced: true },
       { label: "Giveaways", icon: "gift", path: "/giveaways" },
+      { label: "Chat levels", icon: "trophy", path: "/chat-levels", advanced: true },
       { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
       { label: "Points", icon: "trophy", path: "/points" },
