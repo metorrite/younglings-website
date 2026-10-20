@@ -43,6 +43,7 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
@@ -277,9 +278,9 @@ const evCatalog = { bosses: [
   { name: "Kalphite King", image: "/bosses/kalphite_king.png", items: [{ name: "Drygore mace", key: "drygore_mace", rarity: "1/500", icon: true }, { name: "Drygore rapier", key: "drygore_rapier", rarity: "1/500", icon: true }] },
 ] };
 const evCall = async (_m: string, path: string) => (path === "events/bingo-catalog" ? { ok: true as const, data: evCatalog } : { ok: false as const, error: "Preview only", problems: [] });
-const giveaways = { maxWinners: 20, maxPrize: 200, giveaways: [
-  { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winners: [] },
-  { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winners: ["5"] },
+const giveaways = { maxWinners: 50, maxPrize: 200, giveaways: [
+  { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winnerRoleId: "r2", dmWinners: true, reactionEntry: true, winners: [] },
+  { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winnerRoleId: null, dmWinners: false, reactionEntry: false, winners: ["5"] },
 ] };
 const suggestions = { channelId: "2", maxNote: 500, suggestions: [
   { id: "3", authorId: "5", authorName: "PvmRyan", content: "Add a weekly boss of the week event with a prize for the most kills.", status: "PENDING" as const, note: null, decidedBy: null, ups: 12, downs: 2, createdAt: "2026-10-10T12:00:00Z" },
@@ -412,6 +413,21 @@ function Preview() {
             <>
               <PageHeader title="Welcome message" description="A server that has not set a welcome up yet." />
               <WelcomeEditor initial={welcomeEmpty} channels={structure.channels} actions={{ save: async () => ({ ok: false, error: "x", problems: [] }), test: async () => ({ ok: false, error: "x", problems: [] }) }} />
+            </>
+          )}
+          {view === "snapshots" && (
+            <>
+              <PageHeader title="Snapshots" description="Bundles the bot's state at this moment into a zip with an id. Put the id in a bug report. Secrets are removed." />
+              <SnapshotsManager
+                guildId="1"
+                keepDays={14}
+                initial={[
+                  { id: "snap-20261018-143005-a3f9", guildId: "1", createdAt: "2026-10-18T14:30:05Z", sizeBytes: 48_213, requestedBy: "2", focus: "event:12" },
+                  { id: "snap-20261017-091500-04be", guildId: "1", createdAt: "2026-10-17T09:15:00Z", sizeBytes: 2_345_678, requestedBy: "2", focus: "" },
+                ]}
+                take={async (focus) => ({ ok: true as const, data: { snapshot: { id: "snap-20261018-150000-c0de", guildId: "1", createdAt: new Date().toISOString(), sizeBytes: 51_200, requestedBy: "2", focus } } })}
+                remove={async (id) => ({ ok: true as const, data: { deleted: id } })}
+              />
             </>
           )}
           {view === "goodbye" && (
