@@ -534,6 +534,8 @@ export interface Checkup {
   errors: number;
   warnings: number;
   ok: number;
+  /** Which of Discord's privileged intents the bot is running with; absent from an older bot. */
+  intents?: { members: boolean; presence: boolean; messageContent: boolean };
 }
 
 /** A server's autoroles: roles handed to everyone who joins (a separate list for bots), after an optional delay. */
