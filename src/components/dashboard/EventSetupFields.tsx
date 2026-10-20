@@ -14,6 +14,8 @@ export interface SetupDraft {
   requireSubmit: boolean;
   /** A receipt is posted in the player's (or team's) own channel and updated when staff decide. */
   receipts: boolean;
+  /** A player who posts a picture in their own channel without /submit is reminded (once an hour). Off by default. */
+  remind: boolean;
 }
 
 export const GATES: { id: VerificationGate; label: string; blurb: string }[] = [
@@ -30,6 +32,7 @@ export function setupFromConfig(config: EventSummary["config"] | undefined): Set
     instructions: config?.verification?.instructions ?? "",
     requireSubmit: config?.submissions?.require ?? false,
     receipts: config?.submissions?.receipts ?? true,
+    remind: config?.submissions?.remind ?? false,
   };
 }
 
@@ -39,7 +42,7 @@ export function setupToConfig(config: Record<string, unknown>, draft: SetupDraft
   const before = (config.setup as { mode?: string } | undefined)?.mode;
   next.setup = { mode: draft.follow ? (before && before !== "OFF" ? before : "STANDARD") : "OFF" };
   next.verification = { required: draft.verify, gate: draft.gate, instructions: draft.instructions.trim() };
-  next.submissions = { require: draft.requireSubmit, receipts: draft.receipts };
+  next.submissions = { require: draft.requireSubmit, receipts: draft.receipts, remind: draft.remind };
   return next;
 }
 
@@ -99,6 +102,13 @@ export function EventSetupFields({ value, onChange, disabled = false }: { value:
         disabled={disabled}
         label="Post a receipt in the player's channel"
         detail="Each submission also shows in the player's (or team's) own channel and is updated when staff decide."
+      />
+      <Toggle
+        checked={value.remind}
+        onChange={(remind) => onChange({ ...value, remind })}
+        disabled={disabled}
+        label="Remind players who post a picture without /submit"
+        detail="Once an hour per player, in their own channel, while the event runs. Staff and organisers are never reminded. Needs the Message Content intent."
       />
     </div>
   );

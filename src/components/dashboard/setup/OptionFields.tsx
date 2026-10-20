@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { FormField, inputClass } from "@/components/admin/ui";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
+import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
 import { FieldGrid, PanelGrid, Span } from "@/components/dashboard/ui/Layout";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
@@ -143,6 +144,14 @@ function OptionField({
       );
 
     case "INT": {
+      if (opt.widget === "shapesize") {
+        const shape = String(getPath(answers, "config.board.layout") ?? "grid");
+        return wrap(
+          <FormField label={opt.label} hint={hint} as="group">
+            <ShapeSizeControl shape={shape} value={typeof value === "number" ? value : 0} disabled={disabled} onChange={(n) => set(n === 0 ? undefined : n)} />
+          </FormField>,
+        );
+      }
       // an option that needs at least 1 (a buy-in amount) is shown empty rather than as 0 until it is filled in
       const emptyZero = value === 0 && opt.min !== null && opt.min > 0;
       const text = value === undefined || value === null || emptyZero ? "" : String(value);
@@ -227,7 +236,7 @@ function OptionField({
 }
 
 /** Whether an option takes the whole width of the form: a long text, the prize list, or a picture picker. */
-const isWide = (opt: OptionDef) => opt.type === "TEXTAREA" || opt.type === "PRIZES" || opt.widget === "shape" || opt.widget === "look";
+const isWide = (opt: OptionDef) => opt.type === "TEXTAREA" || opt.type === "PRIZES" || opt.widget === "shape" || opt.widget === "look" || opt.widget === "shapesize";
 
 /**
  * The questions for a list of options, drawn from what the bot says each one is. {@code onChange} is told the option's path and its new answer (undefined to

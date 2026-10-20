@@ -7,7 +7,7 @@ import type { FieldKind, FieldPurpose, HelpKind, PanelDefaults, PanelDefinition,
  */
 
 const KINDS: FieldKind[] = ["SHORT", "PARAGRAPH", "SELECT", "CHECKBOX"];
-const HELP_KINDS: HelpKind[] = ["NONE", "PVM", "CA"];
+const HELP_KINDS: HelpKind[] = ["NONE", "PVM", "CA", "INFO"];
 const PURPOSES: FieldPurpose[] = ["NONE", "BOSS", "TIER", "ACHIEVEMENT", "ATTEMPTS"];
 
 export const text = (v: unknown): string => (typeof v === "string" ? v : "");

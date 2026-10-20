@@ -20,6 +20,8 @@ export async function saveGuildAutorolesAction(guildId: string, input: unknown):
     delaySeconds: typeof p.delaySeconds === "number" && Number.isFinite(p.delaySeconds) ? Math.trunc(p.delaySeconds) : 0,
     memberRoleIds: roleIds(p.memberRoleIds),
     botRoleIds: roleIds(p.botRoleIds),
+    memberRemoveRoleIds: roleIds(p.memberRemoveRoleIds),
+    botRemoveRoleIds: roleIds(p.botRemoveRoleIds),
   });
   revalidatePath(`/dashboard/${guildId}/autoroles`);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
