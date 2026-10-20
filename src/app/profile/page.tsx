@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { LinkRsn } from "@/components/link/LinkRsn";
 import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { PluginPanel } from "@/components/profile/PluginPanel";
+import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { SkillIcon } from "@/components/site/SkillIcon";
@@ -30,6 +31,7 @@ const TABS = [
   { id: "activity", label: "My activity", icon: "📋" },
   { id: "events", label: "My events", icon: "🏆" },
   { id: "coffer", label: "Coffer", icon: "💰" },
+  { id: "highlights", label: "Highlights", icon: "✨" },
   { id: "notifications", label: "Notifications", icon: "🔔" },
   { id: "plugin", label: "Plugin", icon: "🔌" },
 ] as const;
@@ -69,6 +71,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const mySheets = sheets && mySignups?.ok ? sheets.filter((s) => mySignups.data.joined.includes(s.id)) : [];
   const myEvents = tab === "events" ? await memberApi.myEvents(user.id) : null;
   const coffer = tab === "coffer" ? await memberApi.myCoffer(user.id) : null;
+  const highlights = tab === "highlights" ? await memberApi.highlights(user.id) : null;
   const plugin = tab === "plugin" ? await pluginApi.view(user.id) : null;
 
   return (
@@ -277,6 +280,12 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               {goals?.ok ? <GoalsManager initial={goals.data.goals} hasLink={rsns.length > 0} /> : <Unavailable what="Your goals" />}
             </Panel>
           )
+        )}
+
+        {tab === "highlights" && (
+          <Panel title="Highlights" hint="Get a direct message when someone says a word you care about, such as a boss or an event. It works for channels you can see, and your own words are ignored.">
+            {highlights?.ok ? <HighlightsPanel initial={highlights.data} /> : <Unavailable what="Your highlights" />}
+          </Panel>
         )}
 
         {tab === "activity" && (
