@@ -41,6 +41,7 @@ const CATEGORY: Record<string, string> = {
   DONATION: "Donation",
   REDEMPTION: "Reward",
   ADJUSTMENT: "Adjustment",
+  KEYWORD: "Keyword",
 };
 
 function amount(n: number): string {
