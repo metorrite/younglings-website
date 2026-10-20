@@ -1,5 +1,6 @@
 "use client";
 
+import { scopeLabel } from "@/components/dashboard/events/EventVisibilityCard";
 import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
@@ -99,7 +100,7 @@ export function EventListView({
                     <StatusBadge tone={TONE[e.status]}>{STAGE_LABEL[e.status]}</StatusBadge>
                   </div>
                   <p className="text-xs text-muted">
-                    {e.scoringMode === "TEAM" ? "Teams" : "Solo players"} · {e.scope === "PRIVATE" ? "Clan only" : e.scope === "ALLIANCE" ? "Allies" : "Public"}
+                    {e.scoringMode === "TEAM" ? "Teams" : "Solo players"} · {scopeLabel(e.scope)}
                     {e.maxParticipants ? ` · up to ${e.maxParticipants} players` : ""} · created {formatUtc(e.createdAt)}
                   </p>
                   {e.description && <p className="line-clamp-2 break-words text-sm text-muted">{e.description}</p>}

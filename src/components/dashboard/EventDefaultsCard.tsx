@@ -7,7 +7,7 @@ import type { WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 /** What the bot sends for `events/defaults` (T-208): the server's own starting point for new events. */
 export interface EventDefaultsView {
-  defaults: { names: Record<string, string>; look?: string; gate?: string; setupMode?: string };
+  defaults: { names: Record<string, string>; look?: string; gate?: string; setupMode?: string; inviteUrl?: string };
   names: { key: string; label: string; builtIn: string; pattern: string }[];
   looks: { id: string; label: string }[];
   builtIn: { look: string; gate: string; setupMode: string };
@@ -50,16 +50,17 @@ export function EventDefaultsCard({ initial, call }: { initial: EventDefaultsVie
   const [look, setLook] = useState(initial.defaults.look ?? "");
   const [gate, setGate] = useState(initial.defaults.gate ?? "");
   const [mode, setMode] = useState(initial.defaults.setupMode ?? "");
+  const [invite, setInvite] = useState(initial.defaults.inviteUrl ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "error" | "success"; title: string; items?: string[] } | null>(null);
 
   const changedNames = view.names.filter((n) => n.pattern.trim() !== "").length;
-  const changed = changedNames + (view.defaults.look ? 1 : 0) + (view.defaults.gate ? 1 : 0) + (view.defaults.setupMode ? 1 : 0);
+  const changed = changedNames + (view.defaults.look ? 1 : 0) + (view.defaults.gate ? 1 : 0) + (view.defaults.setupMode ? 1 : 0) + (view.defaults.inviteUrl ? 1 : 0);
 
   async function save() {
     setBusy(true);
     setNotice(null);
-    const result = await call("PUT", "events/defaults", { names, look: look || null, gate: gate || null, setupMode: mode || null });
+    const result = await call("PUT", "events/defaults", { names, look: look || null, gate: gate || null, setupMode: mode || null, inviteUrl: invite.trim() || null });
     setBusy(false);
     if (!result.ok) {
       setNotice({ tone: "error", title: result.error, items: result.problems });
@@ -111,6 +112,10 @@ export function EventDefaultsCard({ initial, call }: { initial: EventDefaultsVie
             </select>
           </FormField>
         </div>
+
+        <FormField label="Invite link for players from outside" hint="A Discord invite to this server. The events hub shows it to people who want to join an open event but aren't in your Discord yet. Empty uses your clan profile's apply link." size="lg">
+          <input className={inputClass} value={invite} maxLength={100} placeholder="https://discord.gg/..." onChange={(e) => setInvite(e.target.value)} />
+        </FormField>
 
         <div>
           <h3 className="text-sm font-semibold">Channel and role names</h3>
