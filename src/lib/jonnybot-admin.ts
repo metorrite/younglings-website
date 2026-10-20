@@ -963,6 +963,16 @@ export interface AccountGate {
   alertChannelId: string | null;
   maxAgeDays: number;
   canKick: boolean;
+  canBan: boolean;
+  /** Name rules (off by default): a joiner whose username or display name matches a rule gets nameAction. `*` stands for any run of characters. */
+  nameRulesEnabled: boolean;
+  nameAction: "ALERT" | "KICK" | "BAN";
+  nameRules: string[];
+  /** Discord user ids that neither the age check nor the name rules ever touch. */
+  exemptUserIds: string[];
+  maxNameRules: number;
+  maxExempt: number;
+  minNameRuleChars: number;
 }
 
 /** One autopunish rule: at exactly `threshold` warnings, do `action` (a timeout lasts `timeoutMinutes`). */
@@ -1601,7 +1611,7 @@ export const adminApi = {
   modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
   saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),
   accountGate: (ctx: ApiContext) => call<AccountGate>(ctx, "GET", "accountgate"),
-  saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId">) =>
+  saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId" | "nameRulesEnabled" | "nameAction" | "nameRules" | "exemptUserIds">) =>
     call<AccountGate>(ctx, "PUT", "accountgate", body),
   autoDelete: (ctx: ApiContext) => call<AutoDeleteList>(ctx, "GET", "autodelete"),
   saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
