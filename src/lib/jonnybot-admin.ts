@@ -817,6 +817,28 @@ export interface PointsRedemptions {
   handled: PointsRedemption[];
 }
 
+/** The announcer of a server's Discord scheduled events. `problem` says why the channel can't be used, when it can't. */
+export interface EventAnnouncer {
+  enabled: boolean;
+  channelId: string | null;
+  useRole: boolean;
+  notifyStart: boolean;
+  problem: string | null;
+  canManageRoles: boolean;
+  roleCount: number;
+  roleLimit: number;
+  roleHeadroom: number;
+  roomForRoles: boolean;
+  events: { eventId: string; name: string | null; state: "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELED"; hasRole: boolean }[];
+}
+
+export interface EventAnnouncerInput {
+  enabled: boolean;
+  channelId: string | null;
+  useRole: boolean;
+  notifyStart: boolean;
+}
+
 /** A voice channel people join to get one of their own. `problem` says why it can't work, when it can't. */
 export interface TempVoiceHub {
   hubChannelId: string;
@@ -1578,6 +1600,8 @@ export const adminApi = {
   /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
   eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  eventAnnouncer: (ctx: ApiContext) => call<EventAnnouncer>(ctx, "GET", "eventannounce"),
+  saveEventAnnouncer: (ctx: ApiContext, input: EventAnnouncerInput) => call<EventAnnouncer>(ctx, "PUT", "eventannounce", input),
   tempVoice: (ctx: ApiContext) => call<TempVoiceList>(ctx, "GET", "tempvoice"),
   saveTempVoiceHub: (ctx: ApiContext, input: TempVoiceHubInput) => call<TempVoiceList>(ctx, "PUT", "tempvoice", input),
   deleteTempVoiceHub: (ctx: ApiContext, hubChannelId: string) => call<TempVoiceList>(ctx, "DELETE", `tempvoice/${encodeURIComponent(hubChannelId)}`),
