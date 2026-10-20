@@ -91,6 +91,7 @@ export function Sidebar({
   server,
   footer,
   hasClan = true,
+  isOwner = false,
   base: where,
   favorites = [],
   savedView,
@@ -99,6 +100,8 @@ export function Sidebar({
   server: SidebarServer;
   footer?: string;
   hasClan?: boolean;
+  /** Whether this person owns the bot itself, which adds the owner-only pages. */
+  isOwner?: boolean;
   base?: string;
   /** The pages this person starred, in order. */
   favorites?: string[];
@@ -129,7 +132,7 @@ export function Sidebar({
   const [failed, setFailed] = useState<string | null>(null);
   const starredItems = favoriteItems(starred, hasClan);
   // the Basic view leaves out the pages most servers never open, except the one being looked at and the ones this person starred
-  const { groups, hidden } = visibleGroups(groupsFor(hasClan), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
+  const { groups, hidden } = visibleGroups(groupsFor(hasClan, isOwner), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
 
   /** Stars or unstars a page: it moves at once, then is saved; if the save fails it moves back and says so. */
   function toggleStar(item: NavItem) {
@@ -184,7 +187,7 @@ export function Sidebar({
         </div>
 
         <div className="hidden px-3 pt-3 lg:block">
-          <QuickJump base={base} hasClan={hasClan} />
+          <QuickJump base={base} hasClan={hasClan} isOwner={isOwner} />
         </div>
 
         {/* wide screens: the full list */}

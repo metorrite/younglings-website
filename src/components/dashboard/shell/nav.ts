@@ -19,6 +19,8 @@ export interface NavItem {
    * reach it) and lists it in the Advanced view.
    */
   advanced?: boolean;
+  /** Only shown to the bot's owner (the bot refuses everyone else whatever the sidebar shows). */
+  ownerOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -33,6 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Server setup", icon: "sliders", path: "/settings" },
       { label: "Bot appearance", icon: "smile", path: "/branding" },
+      { label: "Language", icon: "chat", path: "/language", advanced: true },
       { label: "Roles & permissions", icon: "shield", path: "/permissions" },
       { label: "Guided setup", icon: "wand", path: "/guide", also: ["/wizard"] },
     ],
@@ -42,7 +45,9 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Welcome message", icon: "smile", path: "/welcome" },
       { label: "Goodbye message", icon: "door", path: "/goodbye" },
+      { label: "Announcements", icon: "bell", path: "/announcements" },
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
+      { label: "Voice text", icon: "chat", path: "/voice-text", advanced: true },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
     ],
   },
@@ -54,13 +59,18 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Automatic replies", icon: "chat", path: "/autoresponder", advanced: true },
       { label: "Polls & signups", icon: "poll", path: "/community" },
       { label: "Tickets", icon: "ticket", path: "/tickets" },
+      { label: "Web forms", icon: "list", path: "/forms" },
+      { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
     ],
   },
   {
     title: "Community",
     items: [
       { label: "Starboard", icon: "star", path: "/starboard" },
+      { label: "Highlights", icon: "bell", path: "/highlights", advanced: true },
+      { label: "Temp voice", icon: "users", path: "/temp-voice", advanced: true },
       { label: "Giveaways", icon: "gift", path: "/giveaways" },
+      { label: "Chat levels", icon: "trophy", path: "/chat-levels", advanced: true },
       { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
       { label: "Points", icon: "trophy", path: "/points" },
@@ -73,6 +83,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Warnings", icon: "alert", path: "/warnings" },
       { label: "Automod", icon: "shield", path: "/automod" },
       { label: "Moderation log", icon: "list", path: "/modlog" },
+      { label: "Message & voice logs", icon: "list", path: "/message-logs", advanced: true },
+      { label: "Lockdown", icon: "shield", path: "/lockdown" },
       { label: "New accounts", icon: "users", path: "/newaccounts", advanced: true },
       { label: "Auto-clean", icon: "broom", path: "/autoclean", advanced: true },
       { label: "Auto-delete", icon: "broom", path: "/autodelete", advanced: true },
@@ -83,7 +95,10 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Post a message", icon: "send", path: "/post" },
       { label: "Scheduled posts", icon: "clock", path: "/scheduled", advanced: true },
+      { label: "Server reminders", icon: "bell", path: "/server-reminders" },
+      { label: "Event announcer", icon: "bell", path: "/event-announcer", advanced: true },
       { label: "Feeds", icon: "swap", path: "/feeds" },
+      { label: "Twitch alerts", icon: "bell", path: "/twitch" },
     ],
   },
   {
@@ -94,6 +109,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
+      { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
     ],
   },
   {
@@ -101,13 +117,14 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Checkup", icon: "check", path: "/checkup" },
       { label: "Activity log", icon: "list", path: "/audit", advanced: true },
+      { label: "Snapshots", icon: "terminal", path: "/snapshots", ownerOnly: true, advanced: true },
     ],
   },
 ];
 
-/** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, and any group that leaves empty. */
-export function groupsFor(hasClan: boolean): NavGroup[] {
-  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasClan || !item.clanOnly) })).filter((group) => group.items.length > 0);
+/** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, what only the bot's owner sees when this person isn't, and any group that leaves empty. */
+export function groupsFor(hasClan: boolean, isOwner = false): NavGroup[] {
+  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => (hasClan || !item.clanOnly) && (isOwner || !item.ownerOnly)) })).filter((group) => group.items.length > 0);
 }
 
 /**

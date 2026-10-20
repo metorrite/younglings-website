@@ -1,3 +1,5 @@
+import { tagsForInternalPath } from "@/lib/cacheTags";
+
 /**
  * Server-only caller for JonnyBot's internal API when the status code and body both matter (the public API and the plugin routes pass
  * the bot's answer through). Never import this from a Client Component: it carries the shared secret.
@@ -23,7 +25,7 @@ export async function botCall<T = unknown>(
       method: init.method ?? "GET",
       headers: { "X-Internal-Secret": secret, ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers },
       body: init.body,
-      ...(init.revalidate !== undefined ? { next: { revalidate: init.revalidate } } : { cache: "no-store" as const }),
+      ...(init.revalidate !== undefined ? { next: { revalidate: init.revalidate, tags: tagsForInternalPath(path) } } : { cache: "no-store" as const }),
       signal: AbortSignal.timeout(8000),
     });
     let json: unknown = {};

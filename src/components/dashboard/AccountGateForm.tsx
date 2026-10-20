@@ -26,12 +26,12 @@ type Outcome = {
 } | null;
 type Draft = Pick<
   AccountGate,
-  "enabled" | "minAgeDays" | "action" | "alertChannelId"
+  "enabled" | "minAgeDays" | "action" | "alertChannelId" | "nameRulesEnabled" | "nameAction" | "nameRules" | "exemptUserIds"
 >;
 
 const PRESETS = [1, 3, 7, 14, 30];
 const shape = (s: Draft) =>
-  JSON.stringify([s.enabled, s.minAgeDays, s.action, s.alertChannelId]);
+  JSON.stringify([s.enabled, s.minAgeDays, s.action, s.alertChannelId, s.nameRulesEnabled, s.nameAction, s.nameRules.filter((r) => r.trim() !== ""), s.exemptUserIds.filter((x) => x.trim() !== "")]);
 
 /**
  * The minimum account age to join, and what happens to an account that is younger. The order follows what you do: switch it on and pick an age, then say where
@@ -55,7 +55,13 @@ export function AccountGateForm({
   const advanced = mode === "advanced";
   const showAction = advanced || saved.action === "KICK";
   const showOwnAge = advanced || !PRESETS.includes(saved.minAgeDays);
-  const hidden = [!showAction && "removing the account as well (alert and kick)", !showOwnAge && "an age of your own in days"].filter(
+  // name rules and exemptions are an Advanced choice, and stay visible in Basic once anything is saved
+  const showNameRules = advanced || saved.nameRulesEnabled || saved.nameRules.length > 0;
+  const showExempt = advanced || saved.exemptUserIds.length > 0;
+  const [rulesText, setRulesText] = useState(initial.nameRules.join("\n"));
+  const [exemptText, setExemptText] = useState(initial.exemptUserIds.join("\n"));
+  const lines = (text: string) => text.split("\n").map((l) => l.trim());
+  const hidden = [!showAction && "removing the account as well (alert and kick)", !showNameRules && "rules for names (alert, kick or ban)", !showExempt && "people who are never checked", !showOwnAge && "an age of your own in days"].filter(
     (name): name is string => typeof name === "string",
   );
   const channelName = structure.channels.find(
@@ -75,6 +81,10 @@ export function AccountGateForm({
         minAgeDays: draft.minAgeDays,
         action: draft.action,
         alertChannelId: draft.alertChannelId,
+        nameRulesEnabled: draft.nameRulesEnabled,
+        nameAction: draft.nameAction,
+        nameRules: draft.nameRules.filter((r) => r.trim() !== ""),
+        exemptUserIds: draft.exemptUserIds.filter((x) => x.trim() !== ""),
       });
       if (!result.ok)
         return setOutcome({
@@ -84,6 +94,8 @@ export function AccountGateForm({
         });
       setSaved(result.data);
       setDraft(result.data);
+      setRulesText(result.data.nameRules.join("\n"));
+      setExemptText(result.data.exemptUserIds.join("\n"));
       setOutcome({
         tone: "success",
         title: draft.enabled
@@ -267,6 +279,89 @@ export function AccountGateForm({
             </div>
           </section>
         </CollapsibleCard>
+
+        {showNameRules && (
+          <CollapsibleCard
+            id="gate-names"
+            title="Rules for names"
+            hint="Act on people whose username or display name matches a rule. Off until you switch it on."
+            defaultOpen
+            summary={
+              <>
+                <Chip tone={draft.nameRulesEnabled ? "good" : "plain"}>{draft.nameRulesEnabled ? "On" : "Off"}</Chip>
+                <Chip>{draft.nameRules.filter((r) => r.trim() !== "").length} rule{draft.nameRules.filter((r) => r.trim() !== "").length === 1 ? "" : "s"}</Chip>
+              </>
+            }
+            info={`One rule per line. A * stands for any run of characters, matching ignores capital letters and covers the whole name: "free*nitro" matches FreeDiscordNitro, "*spam*" matches anything containing spam, and a rule without a * only matches that exact name. A rule needs at least ${draft.minNameRuleChars} characters that are not *.`}
+          >
+            <SettingRow
+              title="Check names when people join"
+              hint={draft.nameRulesEnabled ? "A joiner whose name matches a rule gets the action below." : "Nothing is checked."}
+              checked={draft.nameRulesEnabled}
+              onChange={(on) => change({ nameRulesEnabled: on })}
+              offHint="Off: names are not checked. Your rules are kept."
+            >
+              <FormField label="Name rules" as="group" size="lg" hint={`Up to ${draft.maxNameRules}, one per line.`}>
+                <textarea
+                  className={inputClass}
+                  rows={5}
+                  value={rulesText}
+                  placeholder={"free*nitro\n*scam*"}
+                  onChange={(e) => { setRulesText(e.target.value); change({ nameRules: lines(e.target.value) }); }}
+                />
+              </FormField>
+              <FormField label="What happens" as="group" size="lg">
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ["ALERT", "Alert only"],
+                      ["KICK", "Alert and kick"],
+                      ["BAN", "Alert and ban"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={draft.nameAction === value}
+                      onClick={() => change({ nameAction: value })}
+                      className={`rounded-md border px-4 py-2 text-sm transition ${draft.nameAction === value ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </FormField>
+              {draft.nameAction !== "ALERT" && (
+                <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+                  {draft.nameAction === "BAN" ? "A ban is permanent until you lift it." : "A kick removes them; they can rejoin."} A rule that is too broad removes real people, so start with
+                  &quot;Alert only&quot; and read the alerts for a while first. People on the exempt list are never touched.
+                  {draft.nameAction === "KICK" && !draft.canKick && " JonnyBot doesn't have the Kick Members permission yet, so saving is blocked."}
+                  {draft.nameAction === "BAN" && !draft.canBan && " JonnyBot doesn't have the Ban Members permission yet, so saving is blocked."}
+                </p>
+              )}
+            </SettingRow>
+          </CollapsibleCard>
+        )}
+
+        {showExempt && (
+          <CollapsibleCard
+            id="gate-exempt"
+            title="Never check these people"
+            hint="Neither the account-age check nor the name rules touch them."
+            summary={<Chip>{draft.exemptUserIds.filter((x) => x.trim() !== "").length} exempt</Chip>}
+            info="Discord user ids, one per line (turn on Developer Mode in Discord, then right-click a person and choose Copy User ID)."
+          >
+            <FormField label="User ids" as="group" size="lg" hint={`Up to ${draft.maxExempt}.`}>
+              <textarea
+                className={inputClass}
+                rows={4}
+                value={exemptText}
+                placeholder="123456789012345678"
+                onChange={(e) => { setExemptText(e.target.value); change({ exemptUserIds: lines(e.target.value) }); }}
+              />
+            </FormField>
+          </CollapsibleCard>
+        )}
       </PanelGrid>
 
       {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
