@@ -602,6 +602,21 @@ export interface Starboard {
   maxChannelRules: number;
 }
 
+/** A server's Highlights: members pick words and get a direct message when one is said in a channel they can see. */
+export interface HighlightSettings {
+  enabled: boolean;
+  maxKeywords: number;
+  cooldownSeconds: number;
+  excludedChannels: string[];
+  allowedRoles: string[];
+  /** How many members have words, and how many words in all. */
+  memberCount: number;
+  wordCount: number;
+  /** False when the bot runs without the Message Content intent, so Highlights cannot read messages. */
+  messageContent: boolean;
+  limits: { maxKeywords: number; minCooldown: number; maxCooldown: number; maxList: number };
+}
+
 /** One automatic reply: when a message matches the trigger, the bot answers. */
 export interface AutoReplyDef {
   id: string | null;
@@ -1743,6 +1758,8 @@ export const adminApi = {
   deleteAutoReply: (ctx: ApiContext, id: string) => call<AutoReplyList>(ctx, "DELETE", `autoresponders/${encodeURIComponent(id)}`),
   branding: (ctx: ApiContext) => call<BotBranding>(ctx, "GET", "branding"),
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
+  highlights: (ctx: ApiContext) => call<HighlightSettings>(ctx, "GET", "highlights"),
+  saveHighlights: (ctx: ApiContext, body: Pick<HighlightSettings, "enabled" | "maxKeywords" | "cooldownSeconds" | "excludedChannels" | "allowedRoles">) => call<HighlightSettings>(ctx, "PUT", "highlights", body),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   welcomeCard: (ctx: ApiContext) => call<WelcomeCard>(ctx, "GET", "welcome-card"),

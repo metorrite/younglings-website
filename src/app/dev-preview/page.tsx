@@ -51,6 +51,8 @@ import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
 import { StarboardForm } from "@/components/dashboard/StarboardForm";
+import { HighlightsForm } from "@/components/dashboard/HighlightsForm";
+import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
 import { PointsManager } from "@/components/dashboard/PointsManager";
 import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
@@ -404,6 +406,9 @@ function Preview() {
               />
             </>
           )}
+          {view === "highlights" && (<><PageHeader title="Highlights" description="Direct messages for words members care about." /><HighlightsForm initial={{ enabled: true, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: ["1"], allowedRoles: [], memberCount: 4, wordCount: 11, messageContent: true, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
+          {view === "highlights-nointent" && (<><PageHeader title="Highlights" description="The bot runs without the Message Content intent." /><HighlightsForm initial={{ enabled: false, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: [], allowedRoles: [], memberCount: 0, wordCount: 0, messageContent: false, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
+          {view === "my-highlights" && (<><PageHeader title="My highlights" description="A member's own words on their profile." /><HighlightsPanel initial={{ enabled: true, usable: true, refusal: null, words: [{ id: "1", word: "zulrah", wholeWord: true }, { id: "2", word: "bingo", wholeWord: false }], max: 10, maxWord: 50, minWord: 2, cooldownSeconds: 300, ignored: [{ id: "9", name: "off-topic" }], maxIgnored: 25, channels: [{ id: "2", name: "general" }, { id: "3", name: "drops" }] }} actions={{ add: nope as never, remove: nope as never, ignore: nope as never }} /></>)}
           {view === "starboard" && (<><PageHeader title="Starboard" description="Copy the best messages to a showcase channel." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "⭐", threshold: 3, selfStar: false, maxThreshold: 15, channelThresholds: [], skipHiddenChannels: false, onlyChannels: [], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "starboard-custom" && (<><PageHeader title="Starboard" description="With an emoji of its own and self-starring on (they stay visible)." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "<:gz:1234>", threshold: 5, selfStar: true, maxThreshold: 15, channelThresholds: [{ channelId: "1", threshold: 8 }], skipHiddenChannels: true, onlyChannels: ["2"], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
