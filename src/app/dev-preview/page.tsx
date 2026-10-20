@@ -73,6 +73,7 @@ import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/OverviewView";
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
+import { RecruitingPostForm } from "@/components/dashboard/RecruitingPostForm";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import type { GuildStructure, Overview, ServerSetup } from "@/lib/jonnybot-admin";
 
@@ -388,6 +389,14 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "recruiting" && (
+            <RecruitingPostForm
+              initial={{ post: "We're looking for bossers and skillers. Any combat level.", applyFormId: "2", inviteUrl: "https://discord.gg/example", forms: [{ id: "1", name: "Feedback", enabled: true }, { id: "2", name: "Clan application", enabled: true }, { id: "3", name: "Old application", enabled: false }], maxPost: 1500 }}
+              formsHref="#"
+              recruitingOpen
+              save={async (d) => ({ ok: true, data: { ...d, forms: [{ id: "2", name: "Clan application", enabled: true }], maxPost: 1500 } })}
+            />
+          )}
           {view === "rolefix" && (
             <>
               <PageHeader title="Fix clan roles" description="Fix Member and Guest roles from before the sync started." />

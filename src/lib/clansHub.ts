@@ -26,6 +26,11 @@ export interface ClanDetail extends ClanSummary {
   applyUrl: string | null;
   timezone: string | null;
   updatedAt: string | null;
+  /**
+   * The clan's recruiting post (an older bot sends none). `applyFormPath` (its application web form, on the clan-site face) and `inviteUrl`
+   * (a Discord invite) only while it is recruiting.
+   */
+  recruitingPost?: { post: string; applyFormPath: string | null; inviteUrl: string | null };
 }
 
 export interface HubEvent {

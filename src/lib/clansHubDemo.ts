@@ -65,6 +65,14 @@ export function demoClan(slug: string): ClanDetail | undefined {
     applyUrl: "https://discord.gg/example",
     timezone: "Europe/London",
     updatedAt: "2026-10-18T10:00:00Z",
+    recruitingPost:
+      base.recruiting.key === "CLOSED"
+        ? { post: "", applyFormPath: null, inviteUrl: null }
+        : {
+            post: "We're looking for players who want to learn group bossing, and skillers who enjoy our weekly competitions. Any combat level is welcome.",
+            applyFormPath: "/forms/1/1",
+            inviteUrl: "https://discord.gg/example",
+          },
   };
 }
 
