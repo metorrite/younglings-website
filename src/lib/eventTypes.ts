@@ -340,6 +340,8 @@ export interface SpaceSettings {
   playerChannels: boolean;
   slots: SpaceSlot[];
   names: SpaceName[];
+  /** The first message posted in each kind of channel JonnyBot makes (T-209): only the kinds with a text; none by default. */
+  welcome?: Record<string, string>;
 }
 
 /** What the page sends to preview or save the choices: only what differs from the defaults is needed. */
@@ -349,6 +351,7 @@ export interface SpaceDraft {
   playerChannels: boolean;
   slots: Record<string, { use: SpaceUse; channelId?: string }>;
   names: Record<string, string>;
+  welcome?: Record<string, string>;
 }
 
 export interface SpaceGrant {
