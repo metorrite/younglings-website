@@ -29,6 +29,8 @@ import {
   type RolePanelButton,
   type RolePanelDef,
   type RolePanelList,
+  type RolePanelRule,
+  type RolePanelStyle,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
 
@@ -41,12 +43,13 @@ type Outcome = {
 export interface RolePanelActions {
   save: (
     panelId: string | null,
-    panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">,
+    panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">,
   ) => Promise<WelcomeActionResult<RolePanelDef>>;
   remove: (panelId: string) => Promise<WelcomeActionResult<RolePanelList>>;
+  /** Posts the panel in a channel, or (a reactions panel) puts it on an existing message by its link. */
   post: (
     panelId: string,
-    channelId: string,
+    target: { channelId?: string; messageLink?: string },
   ) => Promise<WelcomeActionResult<RolePanelDef>>;
   /** Where the list of panels is, and where one panel is, so the editor can move on after creating or deleting one. */
   listPath: string;
@@ -62,6 +65,37 @@ const STYLE: Record<RolePanelButton["style"], { label: string; css: string }> =
     danger: { label: "Red", css: "#da373c" },
   };
 
+/** Discord's limits on what one message can hold; the bot sends the same numbers, these are for when an older bot does not. */
+const DEFAULT_LIMITS: Record<RolePanelStyle, number> = {
+  BUTTONS: 20,
+  DROPDOWN: 25,
+  REACTIONS: 20,
+};
+
+const STYLES: {
+  key: RolePanelStyle;
+  label: string;
+  item: string;
+  hint: string;
+}[] = [
+  { key: "BUTTONS", label: "Buttons", item: "button", hint: "A row of buttons under the message." },
+  { key: "DROPDOWN", label: "Drop-down", item: "option", hint: "One menu to choose from. Good for many roles." },
+  { key: "REACTIONS", label: "Reactions", item: "reaction", hint: "Members react with an emoji, like classic reaction roles." },
+];
+
+const RULES: { key: RolePanelRule; label: string; hint: string }[] = [
+  { key: "NORMAL", label: "Take and drop", hint: "Members can take a role and drop it again." },
+  { key: "ADD_ONLY", label: "Only take", hint: "Members can take roles but not drop them, so they stay." },
+  { key: "REMOVE_ONLY", label: "Only drop", hint: "Members can only drop roles they already have." },
+];
+
+const withDefaults = (p: RolePanelDef): RolePanelDef => ({
+  ...p,
+  style: p.style ?? "BUTTONS",
+  rule: p.rule ?? "NORMAL",
+  attached: p.attached ?? false,
+});
+
 const blank = (): RolePanelButton => ({
   roleId: "",
   label: "",
@@ -71,31 +105,35 @@ const blank = (): RolePanelButton => ({
 const shape = (
   p: Pick<
     RolePanelDef,
-    "name" | "title" | "description" | "color" | "mode" | "buttons"
+    "name" | "title" | "description" | "color" | "mode" | "style" | "rule" | "buttons"
   >,
 ) =>
-  JSON.stringify([p.name, p.title, p.description, p.color, p.mode, p.buttons]);
+  JSON.stringify([p.name, p.title, p.description, p.color, p.mode, p.style ?? "BUTTONS", p.rule ?? "NORMAL", p.buttons]);
 
 /**
- * Makes a message of role buttons: what it says, which roles its buttons give, and where it is posted, with a live preview of how it will look. Whether members
- * may hold one role or any number is a switch at the top of the buttons. Basic shows the message, the buttons and where to post it; Advanced adds the card colour
- * and the button colours (kept visible in Basic once they are saved).
+ * Makes a message members use to take roles: what it says, how they choose (buttons, a drop-down or emoji reactions), which roles it gives, and where it is posted,
+ * with a live preview of how it will look. Whether members may hold one role or any number is a switch at the top of the roles. Basic shows the message, the style,
+ * the roles and where to post it; Advanced adds the card colour, the button colours and whether members may only take or only drop roles (all kept visible in Basic
+ * once they are saved). A reactions panel can also be put on a message that already exists, by its link.
  */
 export function RolePanelEditor({
   initial,
   structure,
   actions,
   maxButtons,
+  limits,
 }: {
   initial: RolePanelDef;
   structure: GuildStructure;
   actions: RolePanelActions;
   maxButtons: number;
+  limits?: Record<RolePanelStyle, number>;
 }) {
   const router = useRouter();
-  const [saved, setSaved] = useState(initial);
-  const [panel, setPanel] = useState(initial);
+  const [saved, setSaved] = useState(() => withDefaults(initial));
+  const [panel, setPanel] = useState(() => withDefaults(initial));
   const [channel, setChannel] = useState<string | null>(initial.channelId);
+  const [link, setLink] = useState("");
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
   const [mode] = useViewMode();
@@ -108,6 +146,10 @@ export function RolePanelEditor({
   );
   const dirty = shape(panel) !== shape(saved);
   const isNew = saved.id === null;
+  const style = panel.style ?? "BUTTONS";
+  const rule = panel.rule ?? "NORMAL";
+  const styleInfo = STYLES.find((s) => s.key === style)!;
+  const max = (limits ?? DEFAULT_LIMITS)[style] ?? maxButtons;
 
   const change = (patch: Partial<RolePanelDef>) => {
     setPanel((p) => ({ ...p, ...patch }));
@@ -130,6 +172,8 @@ export function RolePanelEditor({
     description: panel.description,
     color: panel.color,
     mode: panel.mode,
+    style,
+    rule,
     buttons: panel.buttons,
   });
 
@@ -144,33 +188,38 @@ export function RolePanelEditor({
           items: result.problems,
         });
       if (isNew) return router.push(`${actions.panelBase}/${result.data.id!}`);
-      setSaved(result.data);
-      setPanel(result.data);
+      setSaved(withDefaults(result.data));
+      setPanel(withDefaults(result.data));
       setOutcome({
         tone: "success",
-        title: result.data.posted
+        title: result.data.posted && !result.data.attached
           ? "Saved. Update the posted message below to show the changes."
-          : "Saved.",
+          : result.data.attached
+            ? "Saved. Put the panel on the message again below if you changed the reactions."
+            : "Saved.",
       });
     });
   }
 
-  function post() {
-    if (!saved.id || !channel) return;
+  function post(target: { channelId?: string; messageLink?: string }) {
+    if (!saved.id) return;
     setOutcome(null);
     start(async () => {
-      const result = await actions.post(saved.id!, channel);
+      const result = await actions.post(saved.id!, target);
       if (!result.ok)
         return setOutcome({
           tone: "error",
           title: result.error,
           items: result.problems,
         });
-      setSaved(result.data);
-      setPanel(result.data);
+      setSaved(withDefaults(result.data));
+      setPanel(withDefaults(result.data));
+      setLink("");
       setOutcome({
         tone: "success",
-        title: "Posted. Members can pick their roles from that message now.",
+        title: target.messageLink
+          ? "Done. The reactions are on that message and members can use them now."
+          : "Posted. Members can pick their roles from that message now.",
       });
     });
   }
@@ -200,10 +249,17 @@ export function RolePanelEditor({
 
   // Basic keeps what most panels need; whatever is already saved stays on screen, so nothing set is ever out of sight.
   const showColour = advanced || saved.color !== null;
-  const showButtonColours = advanced || saved.buttons.some((b) => b.style !== "primary");
+  const showButtonColours = style === "BUTTONS" && (advanced || saved.buttons.some((b) => b.style !== "primary"));
+  const showRule = advanced || (saved.rule ?? "NORMAL") !== "NORMAL";
   const hiddenInUse = [
     !showColour && panel.color !== null && "card colour",
-    !showButtonColours && panel.buttons.some((b) => b.style !== "primary") && "button colours",
+    style === "BUTTONS" && !showButtonColours && panel.buttons.some((b) => b.style !== "primary") && "button colours",
+    !showRule && rule !== "NORMAL" && "who can take and drop roles",
+  ].filter((name): name is string => typeof name === "string");
+  const hiddenNames = [
+    !showColour && "the card colour",
+    style === "BUTTONS" && !showButtonColours && "the button colours",
+    !showRule && "whether members can only take or only drop roles",
   ].filter((name): name is string => typeof name === "string");
 
   return (
@@ -281,21 +337,59 @@ export function RolePanelEditor({
 
         <CollapsibleCard
           id="rp-buttons"
-          title="Buttons"
-          hint="Each button gives one role."
+          title={styleInfo.label === "Buttons" ? "Buttons" : styleInfo.label === "Drop-down" ? "Menu options" : "Reactions"}
+          hint={`Each ${styleInfo.item} gives one role.`}
           defaultOpen
           summary={
             <>
               <Chip tone={panel.buttons.length === 0 ? "warn" : "good"}>
                 {panel.buttons.length === 0
-                  ? "No buttons yet"
-                  : `${panel.buttons.length} button${panel.buttons.length === 1 ? "" : "s"}`}
+                  ? `No ${styleInfo.item}s yet`
+                  : `${panel.buttons.length} ${styleInfo.item}${panel.buttons.length === 1 ? "" : "s"}`}
               </Chip>
+              <Chip>{styleInfo.label}</Chip>
               <Chip>{panel.mode === "UNIQUE" ? "Only one" : "Any number"}</Chip>
             </>
           }
-          info={`Up to ${maxButtons} buttons. JonnyBot only gives ordinary roles that sit below its own role and have no powerful permissions (like Administrator or Ban Members), so a panel can't be used to take over the server. Leave a label empty to use the role's name.`}
+          info={`Up to ${max} ${styleInfo.item}s: that is Discord's limit for ${styleInfo.label === "Buttons" ? "a message of buttons" : styleInfo.label === "Drop-down" ? "one menu" : "reactions on one message"}. JonnyBot only gives ordinary roles that sit below its own role and have no powerful permissions (like Administrator or Ban Members), so a panel can't be used to take over the server. Leave a label empty to use the role's name.`}
         >
+          <FormField label="How members choose" size="lg" as="group" hint={styleInfo.hint}>
+            <div className="flex flex-wrap gap-2">
+              {STYLES.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  aria-pressed={style === s.key}
+                  onClick={() => change({ style: s.key })}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${style === s.key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </FormField>
+          {panel.buttons.length > max && (
+            <p className="text-sm text-amber-300">
+              {styleInfo.label} can offer at most {max} {styleInfo.item}s: remove {panel.buttons.length - max} to save.
+            </p>
+          )}
+          {showRule && (
+            <FormField label="Members can" size="lg" as="group" hint={RULES.find((r) => r.key === rule)!.hint}>
+              <div className="flex flex-wrap gap-2">
+                {RULES.map((r) => (
+                  <button
+                    key={r.key}
+                    type="button"
+                    aria-pressed={rule === r.key}
+                    onClick={() => change({ rule: r.key })}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${rule === r.key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </FormField>
+          )}
           <SettingRow
             title="Only one role at a time"
             hint="Choosing a role swaps out any other role from this panel."
@@ -305,7 +399,7 @@ export function RolePanelEditor({
             offHint="Off: each button works on its own. Press it to take the role, press it again to drop the role."
           />
           {panel.buttons.length === 0 && (
-            <p className="text-sm text-muted">No buttons yet. Add one below.</p>
+            <p className="text-sm text-muted">No {styleInfo.item}s yet. Add one below.</p>
           )}
           <PanelGrid min="18rem" max="18rem" gap="gap-3">
             {panel.buttons.map((b, i) => (
@@ -348,7 +442,7 @@ export function RolePanelEditor({
                     </FormField>
                   </div>
                   <div className="w-20">
-                    <FormField label="Emoji" size="sm">
+                    <FormField label={style === "REACTIONS" ? "Emoji (needed)" : "Emoji"} size="sm">
                       <input
                         className={inputClass}
                         value={b.emoji ?? ""}
@@ -423,16 +517,16 @@ export function RolePanelEditor({
           <button
             type="button"
             className={ghostButton}
-            disabled={panel.buttons.length >= maxButtons}
+            disabled={panel.buttons.length >= max}
             onClick={() => change({ buttons: [...panel.buttons, blank()] })}
           >
-            + Add a button
+            + Add {styleInfo.item === "option" ? "an" : "a"} {styleInfo.item}
           </button>
         </CollapsibleCard>
 
-        {(!showColour || !showButtonColours) && (
+        {hiddenNames.length > 0 && (
           <MoreInAdvanced>
-            {andList([!showColour && "the card colour", !showButtonColours && "the button colours"].filter((name): name is string => typeof name === "string"))}.
+            {andList(hiddenNames)}.
             {hiddenInUse.length > 0 ? ` Also in use: ${andList(hiddenInUse)}.` : ""}
           </MoreInAdvanced>
         )}
@@ -446,11 +540,13 @@ export function RolePanelEditor({
             summary={
               <Chip tone={saved.posted ? "good" : "plain"}>
                 {saved.posted
-                  ? `Posted in #${postedChannel?.name ?? "a channel"}`
+                  ? saved.attached
+                    ? `On a message in #${postedChannel?.name ?? "a channel"}`
+                    : `Posted in #${postedChannel?.name ?? "a channel"}`
                   : "Not posted"}
               </Chip>
             }
-            info="Save your changes first: posting sends the saved version. If the panel is already posted in the channel you choose, its message is edited in place, so members keep the same message. If someone deleted it, a fresh one is posted."
+            info="Save your changes first: posting sends the saved version. If the panel is already posted in the channel you choose, its message is edited in place, so members keep the same message. If someone deleted it, a fresh one is posted. A reactions panel can also be put on a message that already exists: JonnyBot adds its reactions to it and never edits or deletes the message."
           >
             {dirty && (
               <p className="text-sm text-gold">
@@ -474,12 +570,36 @@ export function RolePanelEditor({
               disabled={
                 pending || dirty || !channel || saved.buttons.length === 0
               }
-              onClick={post}
+              onClick={() => post({ channelId: channel! })}
             >
-              {saved.posted && channel === saved.channelId
+              {saved.posted && !saved.attached && channel === saved.channelId
                 ? "Update the posted message"
                 : "Post to channel"}
             </button>
+            {style === "REACTIONS" && (
+              <>
+                <FormField
+                  label="Or put it on an existing message"
+                  size="lg"
+                  hint="Paste the message's link (right-click the message, Copy Message Link). JonnyBot adds the reactions to it; the message is never edited or deleted."
+                >
+                  <input
+                    className={inputClass}
+                    value={link}
+                    placeholder="https://discord.com/channels/…"
+                    onChange={(e) => setLink(e.target.value)}
+                  />
+                </FormField>
+                <button
+                  type="button"
+                  className={ghostButton}
+                  disabled={pending || dirty || !link.trim() || saved.buttons.length === 0}
+                  onClick={() => post({ messageLink: link })}
+                >
+                  Add the reactions to that message
+                </button>
+              </>
+            )}
           </CollapsibleCard>
         )}
 
@@ -533,14 +653,46 @@ export function RolePanelEditor({
               )}
               <p className="mt-1 text-sm whitespace-pre-wrap text-[#dbdee1]">
                 {panel.description ||
-                  (panel.title ? "" : "Press a button to take or drop a role.")}
+                  (panel.title
+                    ? ""
+                    : style === "DROPDOWN"
+                      ? "Choose from the menu to take or drop a role."
+                      : style === "REACTIONS"
+                        ? "React to take or drop a role."
+                        : "Press a button to take or drop a role.")}
               </p>
+              {style === "REACTIONS" &&
+                panel.buttons.map((b, i) => (
+                  <p key={i} className="mt-1 text-sm text-[#dbdee1]">
+                    {b.emoji || "❔"}  {b.label || roleById.get(b.roleId)?.name || "Role"}
+                  </p>
+                ))}
             </div>
+            {style === "DROPDOWN" && (
+              <div className="mt-2 rounded bg-[#1e1f22] px-3 py-2 text-sm text-[#949ba4]">
+                {rule === "REMOVE_ONLY" ? "Choose roles to drop" : panel.mode === "UNIQUE" ? "Choose one" : "Choose your roles"} ▾
+                {panel.buttons.slice(0, 3).map((b, i) => (
+                  <p key={i} className="mt-1 text-[#dbdee1]">
+                    {b.emoji} {b.label || roleById.get(b.roleId)?.name || "Role"}
+                  </p>
+                ))}
+                {panel.buttons.length > 3 && <p className="mt-1 text-xs">and {panel.buttons.length - 3} more…</p>}
+              </div>
+            )}
+            {style === "REACTIONS" && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {panel.buttons.map((b, i) => (
+                  <span key={i} className="rounded-full bg-[#2b2d31] px-2 py-0.5 text-sm">
+                    {b.emoji || "❔"} 1
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap gap-2">
-              {panel.buttons.length === 0 && (
+              {style === "BUTTONS" && panel.buttons.length === 0 && (
                 <span className="text-xs text-muted">Buttons appear here.</span>
               )}
-              {panel.buttons.map((b, i) => {
+              {style === "BUTTONS" && panel.buttons.map((b, i) => {
                 const role = roleById.get(b.roleId);
                 return (
                   <span
@@ -564,6 +716,8 @@ export function RolePanelEditor({
               {panel.mode === "UNIQUE"
                 ? "Members can hold only one of these roles."
                 : "Members can hold any of these roles."}
+              {rule === "ADD_ONLY" && " They can take roles but not drop them."}
+              {rule === "REMOVE_ONLY" && " They can only drop roles they have."}
             </p>
           </section>
         </div>
