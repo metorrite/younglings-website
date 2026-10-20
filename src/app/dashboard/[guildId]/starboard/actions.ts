@@ -19,6 +19,14 @@ export async function saveGuildStarboardAction(guildId: string, input: unknown):
     emoji: typeof p.emoji === "string" ? p.emoji.slice(0, 64) : "",
     threshold: typeof p.threshold === "number" && Number.isFinite(p.threshold) ? Math.trunc(p.threshold) : 3,
     selfStar: p.selfStar === true,
+    channelThresholds: Array.isArray(p.channelThresholds)
+      ? p.channelThresholds
+          .filter((r): r is { channelId: string; threshold: number } => typeof r === "object" && r !== null && typeof (r as Record<string, unknown>).channelId === "string" && /^\d+$/.test((r as Record<string, string>).channelId) && Number.isFinite((r as Record<string, unknown>).threshold))
+          .slice(0, 25)
+          .map((r) => ({ channelId: r.channelId, threshold: Math.trunc(r.threshold) }))
+      : [],
+    skipHiddenChannels: p.skipHiddenChannels === true,
+    onlyChannels: Array.isArray(p.onlyChannels) ? p.onlyChannels.filter((x): x is string => typeof x === "string" && /^\d+$/.test(x)).slice(0, 25) : [],
   });
   revalidatePath(`/dashboard/${guildId}/starboard`);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };

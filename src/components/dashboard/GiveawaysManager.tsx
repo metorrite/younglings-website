@@ -19,6 +19,7 @@ import {
 } from "@/components/dashboard/ui/CollapsibleCard";
 import { andList } from "@/components/dashboard/ui/andList";
 import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
@@ -48,7 +49,7 @@ const LENGTHS = [
 
 /**
  * Starts giveaways and manages the recent ones: how many entered, end one early, draw again, or take it down. The form follows what you do: the prize, the
- * channel, how long it runs, how many win, then start. Basic is exactly that; Advanced adds limiting a giveaway to a role and a length of your own in minutes.
+ * channel, how long it runs, how many win, whether winners get a direct message, then start. Advanced adds limiting a giveaway to a role, a winner role, entering by reaction and a length of your own in minutes.
  * The ones that ended are folded away under the running ones.
  */
 export function GiveawaysManager({
@@ -68,6 +69,9 @@ export function GiveawaysManager({
   const [minutes, setMinutes] = useState(1440);
   const [winners, setWinners] = useState(1);
   const [roleId, setRoleId] = useState("");
+  const [winnerRoleId, setWinnerRoleId] = useState("");
+  const [dmWinners, setDmWinners] = useState(true);
+  const [reactionEntry, setReactionEntry] = useState(false);
   const [problem, setProblem] = useState<Problem>(null);
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -75,7 +79,7 @@ export function GiveawaysManager({
   const advanced = mode === "advanced";
   // a length that is not one of the usual ones keeps its box in Basic
   const ownLength = !LENGTHS.some((l) => l.minutes === minutes);
-  const hidden = [!advanced && "limiting a giveaway to a role", !advanced && !ownLength && "a length of your own in minutes"].filter((name): name is string => typeof name === "string");
+  const hidden = [!advanced && "limiting a giveaway to a role", !advanced && "a winner role and entering by reaction", !advanced && !ownLength && "a length of your own in minutes"].filter((name): name is string => typeof name === "string");
   const giveable = roles
     .filter((r) => r.id)
     .sort((a, b) => b.position - a.position);
@@ -170,7 +174,43 @@ export function GiveawaysManager({
               </select>
             </FormField>
           )}
+          {advanced && (
+            <FormField
+              label="Role for the winners (optional)"
+              size="md"
+              info="Every winner is given this role when the giveaway ends (and the new winners of a reroll). JonnyBot refuses roles that are managed, above its own role or carry powerful permissions."
+            >
+              <select
+                className={inputClass}
+                value={winnerRoleId}
+                onChange={(e) => setWinnerRoleId(e.target.value)}
+              >
+                <option value="">No role</option>
+                {giveable.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
         </FieldGrid>
+        <div className="space-y-3">
+          <Toggle
+            checked={dmWinners}
+            onChange={setDmWinners}
+            label="Send each winner a direct message"
+            detail="If someone has direct messages closed they are simply not sent one; the announcement in the channel is always made."
+          />
+          {advanced && (
+            <Toggle
+              checked={reactionEntry}
+              onChange={setReactionEntry}
+              label="Also let people enter with a 🎉 reaction"
+              detail="JonnyBot adds the reaction to the message. Reacting enters, removing the reaction leaves; the Enter button keeps working."
+            />
+          )}
+        </div>
         <FormField label="How long it runs" as="group" size="lg">
           <div className="flex flex-wrap items-center gap-2">
             {LENGTHS.map((l) => (
@@ -220,6 +260,9 @@ export function GiveawaysManager({
                   durationMinutes: minutes,
                   winners,
                   requiredRoleId: roleId || null,
+                  winnerRoleId: winnerRoleId || null,
+                  dmWinners,
+                  reactionEntry,
                 }),
               "Started. It is posted in the channel.",
               () => setPrize(""),
@@ -348,6 +391,9 @@ function Section({
                 {g.requiredRoleId && (
                   <StatusBadge tone="warn">Role only</StatusBadge>
                 )}
+                {g.winnerRoleId && <StatusBadge tone="muted">Winner role</StatusBadge>}
+                {g.dmWinners && <StatusBadge tone="muted">DMs winners</StatusBadge>}
+                {g.reactionEntry && <StatusBadge tone="muted">🎉 reaction</StatusBadge>}
                 {g.status === "ENDED" && g.winners.length === 0 && (
                   <StatusBadge tone="muted">No winner</StatusBadge>
                 )}
