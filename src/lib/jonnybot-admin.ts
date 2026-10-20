@@ -468,6 +468,9 @@ export interface Autoroles {
   delaySeconds: number;
   memberRoleIds: string[];
   botRoleIds: string[];
+  /** Roles taken away from someone who joins (people / bots), on the same delay. Empty unless the server adds some. */
+  memberRemoveRoleIds: string[];
+  botRemoveRoleIds: string[];
   maxRoles: number;
   maxDelaySeconds: number;
   /** Chosen roles that can't be given out right now (deleted, above the bot, too powerful). */
@@ -482,7 +485,15 @@ export interface RolePanelButton {
   style: "primary" | "secondary" | "success" | "danger";
 }
 
-/** A message of buttons members press to take or drop a role. */
+/** How members choose on a role panel: buttons, a drop-down, or emoji reactions. */
+export type RolePanelStyle = "BUTTONS" | "DROPDOWN" | "REACTIONS";
+/** What members may do: take and drop roles, only take them, or only drop them. */
+export type RolePanelRule = "NORMAL" | "ADD_ONLY" | "REMOVE_ONLY";
+
+/**
+ * A message members use to take or drop a role. `style`, `rule` and `attached` are missing from an older bot, which means buttons, normal, and not attached.
+ * `attached`: a reactions panel put on a message somebody else wrote, which JonnyBot never edits.
+ */
 export interface RolePanelDef {
   id: string | null;
   name: string;
@@ -490,6 +501,9 @@ export interface RolePanelDef {
   description: string;
   color: number | null;
   mode: "TOGGLE" | "UNIQUE";
+  style?: RolePanelStyle;
+  rule?: RolePanelRule;
+  attached?: boolean;
   posted: boolean;
   channelId: string | null;
   messageId: string | null;
@@ -501,6 +515,8 @@ export interface RolePanelSummary {
   name: string;
   title: string;
   mode: "TOGGLE" | "UNIQUE";
+  style?: RolePanelStyle;
+  rule?: RolePanelRule;
   buttonCount: number;
   posted: boolean;
   channelId: string | null;
@@ -511,6 +527,17 @@ export interface RolePanelList {
   panels: RolePanelSummary[];
   maxPanels: number;
   maxButtons: number;
+  /** How many roles a panel can offer in each style (Discord's limits). Missing from an older bot. */
+  limits?: Record<RolePanelStyle, number>;
+}
+
+/** What "Send an announcement" posts: a message in a channel with at most one ping (a role, @everyone or @here). */
+export interface AnnouncementSend {
+  channelId: string;
+  message: string;
+  roleId: string | null;
+  everyone: boolean;
+  here: boolean;
 }
 
 /** A server's goodbye message: a line posted when someone leaves. */
@@ -589,6 +616,36 @@ export interface Starboard {
   maxChannelRules: number;
 }
 
+/** A server's Highlights: members pick words and get a direct message when one is said in a channel they can see. */
+export interface HighlightSettings {
+  enabled: boolean;
+  maxKeywords: number;
+  cooldownSeconds: number;
+  excludedChannels: string[];
+  allowedRoles: string[];
+  /** How many members have words, and how many words in all. */
+  memberCount: number;
+  wordCount: number;
+  /** False when the bot runs without the Message Content intent, so Highlights cannot read messages. */
+  messageContent: boolean;
+  limits: { maxKeywords: number; minCooldown: number; maxCooldown: number; maxList: number };
+}
+
+/** A server's message and voice logs: edits, deletes and voice moves written to channels, with message text kept only briefly. */
+export interface MessageLogSettings {
+  enabled: boolean;
+  retentionDays: number;
+  excludedChannels: string[];
+  editChannelId: string | null;
+  deleteChannelId: string | null;
+  voiceChannelId: string | null;
+  /** How many messages' text is being kept right now. */
+  remembered: number;
+  /** False when the bot runs without the Message Content intent, so there is no message text to log. */
+  messageContent: boolean;
+  limits: { minDays: number; maxDays: number; maxExcluded: number };
+}
+
 /** One automatic reply: when a message matches the trigger, the bot answers. */
 export interface AutoReplyDef {
   id: string | null;
@@ -619,6 +676,11 @@ export interface GiveawayItem {
   endsAt: string;
   entries: number;
   requiredRoleId: string | null;
+  /** Given to every winner, if the giveaway has one. */
+  winnerRoleId: string | null;
+  dmWinners: boolean;
+  /** People can also enter with a party-popper reaction. */
+  reactionEntry: boolean;
   winners: string[];
 }
 
@@ -628,12 +690,59 @@ export interface GiveawayList {
   maxPrize: number;
 }
 
+/** Voice text: voice channels paired with a text channel that opens for the people in them. Off until switched on. */
+export interface VoiceText {
+  enabled: boolean;
+  announce: boolean;
+  purgeWhenEmpty: boolean;
+  links: { voiceChannelId: string; voiceName: string | null; textChannelId: string; textName: string | null; problem: string | null; everyoneCanSee: boolean }[];
+  voiceChannels: { id: string; name: string }[];
+  maxLinks: number;
+}
+
+/** A reminder JonnyBot posts in a channel, once (`everyMinutes` null) or repeating, optionally pinging a role. */
+export interface ServerReminderItem {
+  id: string;
+  channelId: string;
+  channelName: string | null;
+  text: string;
+  roleId: string | null;
+  roleName: string | null;
+  everyMinutes: number | null;
+  nextAt: string;
+  status: "ACTIVE" | "DONE" | "CANCELLED" | "FAILED";
+  createdByName: string;
+  lastSentAt: string | null;
+  sendCount: number;
+  error: string | null;
+}
+
+export interface ServerReminderList {
+  reminders: ServerReminderItem[];
+  maxText: number;
+  maxActive: number;
+  minEveryMinutes: number;
+  maxEveryMinutes: number;
+}
+
+/** The lockdown page: the saved set, the roles that keep talking while locked, and every channel that is locked right now. */
+export interface Lockdown {
+  channelIds: string[];
+  keepTalkingRoleIds: string[];
+  locks: { channelId: string; channelName: string | null; lockedBy: string; lockedAt: string; reason: string; lockdown: boolean; canUnlock: boolean }[];
+  maxChannels: number;
+  maxRoles: number;
+}
+
 export interface GiveawayStart {
   prize: string;
   channelId: string;
   durationMinutes: number;
   winners: number;
   requiredRoleId: string | null;
+  winnerRoleId?: string | null;
+  dmWinners?: boolean;
+  reactionEntry?: boolean;
 }
 
 /** A suggestion as the dashboard lists it. */
@@ -796,15 +905,141 @@ export interface PointsRedemptions {
   handled: PointsRedemption[];
 }
 
+/** The announcer of a server's Discord scheduled events. `problem` says why the channel can't be used, when it can't. */
+export interface EventAnnouncer {
+  enabled: boolean;
+  channelId: string | null;
+  useRole: boolean;
+  notifyStart: boolean;
+  problem: string | null;
+  canManageRoles: boolean;
+  roleCount: number;
+  roleLimit: number;
+  roleHeadroom: number;
+  roomForRoles: boolean;
+  events: { eventId: string; name: string | null; state: "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELED"; hasRole: boolean }[];
+}
+
+export interface EventAnnouncerInput {
+  enabled: boolean;
+  channelId: string | null;
+  useRole: boolean;
+  notifyStart: boolean;
+}
+
+/** A voice channel people join to get one of their own. `problem` says why it can't work, when it can't. */
+export interface TempVoiceHub {
+  hubChannelId: string;
+  hubChannelName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  namePattern: string;
+  userLimit: number;
+  problem: string | null;
+}
+
+export interface TempVoiceList {
+  hubs: TempVoiceHub[];
+  voiceChannels: { id: string; name: string; category: string | null }[];
+  categories: { id: string; name: string }[];
+  active: { channelId: string; name: string | null; ownerName: string | null; members: number; locked: boolean }[];
+  /** Why the bot can't run temporary channels in this server (missing permissions), or null. */
+  problem: string | null;
+  maxHubs: number;
+  maxChannels: number;
+  maxName: number;
+  maxUserLimit: number;
+  defaultPattern: string;
+}
+
+export interface TempVoiceHubInput {
+  hubChannelId?: string;
+  createHub: boolean;
+  hubName?: string;
+  categoryId: string | null;
+  namePattern: string;
+  userLimit: number;
+}
+
+/** A role given when a member reaches a number of points. `problem` says why it can't be given, when it can't. */
+export interface PointsRoleReward {
+  id: string;
+  threshold: number;
+  roleId: string;
+  roleName: string | null;
+  removeLower: boolean;
+  problem: string | null;
+}
+
+export interface PointsRoleRewards {
+  rewards: PointsRoleReward[];
+  max: number;
+  maxThreshold: number;
+}
+
+export interface PointsRoleRewardInput {
+  id?: string;
+  threshold: number;
+  roleId: string;
+  removeLower: boolean;
+}
+
+/** Saying `keyword` while mentioning someone gives them `points`. */
+export interface PointsTrigger {
+  id: string;
+  keyword: string;
+  points: number;
+  cooldownSeconds: number;
+  dailyCap: number;
+  enabled: boolean;
+}
+
+export interface PointsTriggers {
+  triggers: PointsTrigger[];
+  max: number;
+  maxPoints: number;
+  maxCooldownSeconds: number;
+  maxDailyCap: number;
+  maxReceivers: number;
+}
+
+export interface PointsTriggerInput {
+  id?: string;
+  keyword: string;
+  points: number;
+  cooldownSeconds: number;
+  dailyCap: number;
+  enabled: boolean;
+}
+
 /** One automod rule. `limit` and `seconds` mean different things per rule (the form labels them); `words` is the blocked words, or the allowed websites for links. */
 export interface AutomodRule {
-  key: "INVITES" | "LINKS" | "BLOCKED_WORDS" | "CAPS" | "MENTIONS" | "SPAM" | "REPEAT" | "EMOJI";
+  key:
+    | "INVITES"
+    | "LINKS"
+    | "PHISHING"
+    | "BLOCKED_WORDS"
+    | "CAPS"
+    | "MENTIONS"
+    | "SPAM"
+    | "REPEAT"
+    | "EMOJI"
+    | "IMAGE_SPAM"
+    | "NEWLINES"
+    | "STICKERS"
+    | "SPOILERS"
+    | "MASKED_LINKS"
+    | "ZALGO";
   label: string;
   enabled: boolean;
   warn: boolean;
   limit: number;
   seconds: number;
   words: string[];
+  /** What the writer is told instead of the standard note ({user}, {rule}, {reason} are filled in). Missing from an older bot. */
+  response?: string;
+  /** A channel this rule also reports each removed message to, or null. Missing from an older bot. */
+  logChannelId?: string | null;
 }
 
 /** A server's automod: which rules are on, what they allow, and who is never checked. `canDelete` says whether JonnyBot may delete messages. */
@@ -816,6 +1051,9 @@ export interface Automod {
   canDelete: boolean;
   maxWords: number;
   maxDomains: number;
+  maxResponse?: number;
+  /** How many scam websites the Phishing rule knows right now (0 until the list has been downloaded). */
+  phishingListSize?: number;
 }
 
 /** The moderation log: bans, unbans and timeouts written to a channel. `canReadAuditLog` says whether entries can name who acted. */
@@ -835,6 +1073,16 @@ export interface AccountGate {
   alertChannelId: string | null;
   maxAgeDays: number;
   canKick: boolean;
+  canBan: boolean;
+  /** Name rules (off by default): a joiner whose username or display name matches a rule gets nameAction. `*` stands for any run of characters. */
+  nameRulesEnabled: boolean;
+  nameAction: "ALERT" | "KICK" | "BAN";
+  nameRules: string[];
+  /** Discord user ids that neither the age check nor the name rules ever touch. */
+  exemptUserIds: string[];
+  maxNameRules: number;
+  maxExempt: number;
+  minNameRuleChars: number;
 }
 
 /** One autopunish rule: at exactly `threshold` warnings, do `action` (a timeout lasts `timeoutMinutes`). */
@@ -859,6 +1107,13 @@ export interface AutoDeleteRule {
   channelId: string;
   channelName: string | null;
   filters: string[];
+  /** Messages containing any of these are deleted (the TEXT filter). */
+  words: string[];
+  /** EVERYONE, or the rule is only for (ONLY_WITH) or never for (EXCEPT_WITH) people holding one of `roleIds`. */
+  roleMode: "EVERYONE" | "ONLY_WITH" | "EXCEPT_WITH";
+  roleIds: string[];
+  /** Seconds to wait before deleting; 0 deletes at once. */
+  delaySeconds: number;
   problem: string | null;
 }
 
@@ -866,7 +1121,14 @@ export interface AutoDeleteList {
   rules: AutoDeleteRule[];
   available: { key: string; label: string }[];
   maxRules: number;
+  maxDelaySeconds: number;
+  maxWords: number;
+  minWordLength: number;
+  maxRoles: number;
 }
+
+/** What a rule is saved with (the channel is separate). */
+export type AutoDeleteDraft = Pick<AutoDeleteRule, "filters" | "words" | "roleMode" | "roleIds" | "delaySeconds">;
 
 /** A server's clan profile: what it shares publicly, and the read-only facts about verification and listing. */
 export interface ClanProfileData {
@@ -959,6 +1221,30 @@ export interface PluginCoverage {
   reportingRecently: number;
   recentDays: number;
   consent: { key: string; label: string; players: number }[];
+}
+
+/** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
+export interface DevSnapshotMeta {
+  /** snap-yyyyMMdd-HHmmss-xxxx */
+  id: string;
+  guildId: string;
+  createdAt: string;
+  sizeBytes: number;
+  requestedBy: string;
+  /** event:12, ticket:34, member:<id> or empty. */
+  focus: string;
+}
+
+export interface DevSnapshotList {
+  snapshots: DevSnapshotMeta[];
+  keepDays: number;
+  maxBytes: number;
+}
+
+/** A snapshot with its zip, as the bot sends it. */
+export interface DevSnapshotFile extends DevSnapshotMeta {
+  filename: string;
+  zipBase64: string;
 }
 
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
@@ -1084,6 +1370,21 @@ export interface WelcomeConfig {
   memberCount: number;
   serverIconUrl: string | null;
 }
+
+/** The optional welcome picture (a 700x300 card). The server name and member count only feed the preview. */
+export interface WelcomeCard {
+  enabled: boolean;
+  /** 0xRRGGBB */
+  backgroundColor: number;
+  backgroundImageUrl: string;
+  textColor: number;
+  title: string;
+  description: string;
+  serverName: string;
+  memberCount: number;
+}
+
+export type WelcomeCardDraft = Omit<WelcomeCard, "serverName" | "memberCount">;
 
 /** What the browser may change; the preview-only fields come back from the bot but are never sent. */
 export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
@@ -1401,6 +1702,17 @@ export const adminApi = {
   /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
   eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  eventAnnouncer: (ctx: ApiContext) => call<EventAnnouncer>(ctx, "GET", "eventannounce"),
+  saveEventAnnouncer: (ctx: ApiContext, input: EventAnnouncerInput) => call<EventAnnouncer>(ctx, "PUT", "eventannounce", input),
+  tempVoice: (ctx: ApiContext) => call<TempVoiceList>(ctx, "GET", "tempvoice"),
+  saveTempVoiceHub: (ctx: ApiContext, input: TempVoiceHubInput) => call<TempVoiceList>(ctx, "PUT", "tempvoice", input),
+  deleteTempVoiceHub: (ctx: ApiContext, hubChannelId: string) => call<TempVoiceList>(ctx, "DELETE", `tempvoice/${encodeURIComponent(hubChannelId)}`),
+  pointsRoleRewards: (ctx: ApiContext) => call<PointsRoleRewards>(ctx, "GET", "pointsroles"),
+  savePointsRoleReward: (ctx: ApiContext, input: PointsRoleRewardInput) => call<PointsRoleRewards>(ctx, "PUT", "pointsroles", input),
+  deletePointsRoleReward: (ctx: ApiContext, id: string) => call<PointsRoleRewards>(ctx, "DELETE", `pointsroles/${encodeURIComponent(id)}`),
+  pointsTriggers: (ctx: ApiContext) => call<PointsTriggers>(ctx, "GET", "pointskeywords"),
+  savePointsTrigger: (ctx: ApiContext, input: PointsTriggerInput) => call<PointsTriggers>(ctx, "PUT", "pointskeywords", input),
+  deletePointsTrigger: (ctx: ApiContext, id: string) => call<PointsTriggers>(ctx, "DELETE", `pointskeywords/${encodeURIComponent(id)}`),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
     ctx: ApiContext,
@@ -1425,10 +1737,10 @@ export const adminApi = {
   modLog: (ctx: ApiContext) => call<ModLog>(ctx, "GET", "modlog"),
   saveModLog: (ctx: ApiContext, body: Pick<ModLog, "enabled" | "channelId" | "logBans" | "logTimeouts">) => call<ModLog>(ctx, "PUT", "modlog", body),
   accountGate: (ctx: ApiContext) => call<AccountGate>(ctx, "GET", "accountgate"),
-  saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId">) =>
+  saveAccountGate: (ctx: ApiContext, body: Pick<AccountGate, "enabled" | "minAgeDays" | "action" | "alertChannelId" | "nameRulesEnabled" | "nameAction" | "nameRules" | "exemptUserIds">) =>
     call<AccountGate>(ctx, "PUT", "accountgate", body),
   autoDelete: (ctx: ApiContext) => call<AutoDeleteList>(ctx, "GET", "autodelete"),
-  saveAutoDelete: (ctx: ApiContext, channelId: string, filters: string[]) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, filters }),
+  saveAutoDelete: (ctx: ApiContext, channelId: string, rule: AutoDeleteDraft) => call<AutoDeleteList>(ctx, "PUT", "autodelete", { channelId, ...rule }),
   deleteAutoDelete: (ctx: ApiContext, channelId: string) => call<AutoDeleteList>(ctx, "DELETE", `autodelete/${encodeURIComponent(channelId)}`),
   clanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "GET", "clan-profile"),
   saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn">) =>
@@ -1450,6 +1762,20 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  voiceText: (ctx: ApiContext) => call<VoiceText>(ctx, "GET", "voice-text"),
+  saveVoiceText: (ctx: ApiContext, body: { enabled: boolean; announce: boolean; purgeWhenEmpty: boolean; links: { voiceChannelId: string; textChannelId: string }[] }) => call<VoiceText>(ctx, "PUT", "voice-text", body),
+
+  serverReminders: (ctx: ApiContext) => call<ServerReminderList>(ctx, "GET", "server-reminders"),
+  createServerReminder: (ctx: ApiContext, body: { channelId: string; text: string; roleId: string | null; startAt: string; everyMinutes: number | null }) => call<ServerReminderList>(ctx, "POST", "server-reminders", body),
+  cancelServerReminder: (ctx: ApiContext, id: string) => call<ServerReminderList>(ctx, "DELETE", `server-reminders/${encodeURIComponent(id)}`),
+
+  lockdown: (ctx: ApiContext) => call<Lockdown>(ctx, "GET", "lockdown"),
+  saveLockdown: (ctx: ApiContext, body: { channelIds: string[]; keepTalkingRoleIds: string[] }) => call<Lockdown>(ctx, "PUT", "lockdown", body),
+  lockChannel: (ctx: ApiContext, body: { channelId: string; reason: string }) => call<Lockdown>(ctx, "POST", "lockdown/lock", body),
+  unlockChannel: (ctx: ApiContext, body: { channelId: string }) => call<Lockdown>(ctx, "POST", "lockdown/unlock", body),
+  startLockdown: (ctx: ApiContext, body: { reason: string }) => call<Lockdown>(ctx, "POST", "lockdown/start", body),
+  endLockdown: (ctx: ApiContext) => call<Lockdown>(ctx, "POST", "lockdown/end", {}),
+
   giveaways: (ctx: ApiContext) => call<GiveawayList>(ctx, "GET", "giveaways"),
   startGiveaway: (ctx: ApiContext, body: GiveawayStart) => call<GiveawayList>(ctx, "POST", "giveaways", body),
   endGiveaway: (ctx: ApiContext, id: string) => call<GiveawayList>(ctx, "POST", `giveaways/${encodeURIComponent(id)}/end`),
@@ -1463,19 +1789,38 @@ export const adminApi = {
   saveBranding: (ctx: ApiContext, body: BrandingSave) => call<BotBranding>(ctx, "PUT", "branding", body),
   lookups: (ctx: ApiContext) => call<LookupSettings>(ctx, "GET", "lookups"),
   saveLookups: (ctx: ApiContext, body: { reminders: Pick<LookupReminder, "kind" | "enabled" | "channelId" | "roleId">[] }) => call<LookupSettings>(ctx, "PUT", "lookups", body),
+  highlights: (ctx: ApiContext) => call<HighlightSettings>(ctx, "GET", "highlights"),
+  saveHighlights: (ctx: ApiContext, body: Pick<HighlightSettings, "enabled" | "maxKeywords" | "cooldownSeconds" | "excludedChannels" | "allowedRoles">) => call<HighlightSettings>(ctx, "PUT", "highlights", body),
+  messageLogs: (ctx: ApiContext) => call<MessageLogSettings>(ctx, "GET", "message-logs"),
+  saveMessageLogs: (ctx: ApiContext, body: Pick<MessageLogSettings, "enabled" | "retentionDays" | "excludedChannels" | "editChannelId" | "deleteChannelId" | "voiceChannelId">) => call<MessageLogSettings>(ctx, "PUT", "message-logs", body),
+  clearMessageLogs: (ctx: ApiContext) => call<MessageLogSettings>(ctx, "POST", "message-logs/clear", {}),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
+  welcomeCard: (ctx: ApiContext) => call<WelcomeCard>(ctx, "GET", "welcome-card"),
+  saveWelcomeCard: (ctx: ApiContext, draft: WelcomeCardDraft) => call<WelcomeCard>(ctx, "PUT", "welcome-card", draft),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
+  /** The ban announcement: the welcome's message shape (the shared message editor edits both); the DM copy and link button are always off. */
+  banAnnouncement: (ctx: ApiContext) => call<WelcomeConfig>(ctx, "GET", "ban-announcement"),
+  saveBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<WelcomeConfig>(ctx, "PUT", "ban-announcement", draft),
+  testBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "ban-announcement/test", draft),
+  /** The dashboard twin of /announce. The bot judges @everyone, @here and role pings against the signed-in admin's own permissions. */
+  sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
-  createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
-  updateRolePanel: (ctx: ApiContext, id: string, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "PUT", `rolepanels/${encodeURIComponent(id)}`, panel),
+  createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
+  updateRolePanel: (ctx: ApiContext, id: string, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "PUT", `rolepanels/${encodeURIComponent(id)}`, panel),
   deleteRolePanel: (ctx: ApiContext, id: string) => call<RolePanelList>(ctx, "DELETE", `rolepanels/${encodeURIComponent(id)}`),
-  postRolePanel: (ctx: ApiContext, id: string, channelId: string) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, { channelId }),
+  /** Posts the panel in a channel, or (a reactions panel) puts it on an existing message by its link. */
+  postRolePanel: (ctx: ApiContext, id: string, target: { channelId?: string; messageLink?: string }) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, target),
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
-  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
+  saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds" | "memberRemoveRoleIds" | "botRemoveRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
+  devSnapshots: (ctx: ApiContext) => call<DevSnapshotList>(ctx, "GET", "dev/snapshots"),
+  devSnapshot: (ctx: ApiContext, id: string) => call<DevSnapshotFile>(ctx, "GET", `dev/snapshots/${encodeURIComponent(id)}`),
+  takeDevSnapshot: (ctx: ApiContext, focus: string, siteCommit: string) =>
+    call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
+  deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),

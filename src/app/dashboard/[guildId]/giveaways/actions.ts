@@ -48,6 +48,12 @@ export async function startGuildGiveawayAction(
       typeof p.requiredRoleId === "string" && /^\d+$/.test(p.requiredRoleId)
         ? p.requiredRoleId
         : null,
+    winnerRoleId:
+      typeof p.winnerRoleId === "string" && /^\d+$/.test(p.winnerRoleId)
+        ? p.winnerRoleId
+        : null,
+    dmWinners: p.dmWinners === true,
+    reactionEntry: p.reactionEntry === true,
   };
   const result = await adminApi.startGiveaway(guild, body);
   revalidatePath(`/dashboard/${guildId}/giveaways`);

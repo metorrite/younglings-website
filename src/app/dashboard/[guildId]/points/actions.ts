@@ -7,6 +7,8 @@ import {
   type PointsOverview,
   type PointsRedemptions,
   type PointsRewards,
+  type PointsRoleRewards,
+  type PointsTriggers,
   type PointsSubmissions,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
@@ -132,4 +134,62 @@ export async function handleRedemptionAction(
   return result.ok
     ? { ok: true, data: result.data }
     : { ok: false, error: result.error, problems: result.problems };
+}
+
+type ExtrasResult<T> = WelcomeActionResult<T>;
+const fail = (error: string): { ok: false; error: string; problems: string[] } => ({ ok: false, error, problems: [] });
+const whole = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.trunc(v) : 0);
+
+/** Adds a role reward (no id) or changes one: the role members are given at a number of points. */
+export async function saveRoleRewardAction(guildId: string, input: unknown): Promise<ExtrasResult<PointsRoleRewards>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return fail(slow);
+  if (typeof input !== "object" || input === null) return fail("That role reward couldn't be read.");
+  const p = input as Record<string, unknown>;
+  if (typeof p.roleId !== "string" || !/^\d{1,20}$/.test(p.roleId)) return fail("Choose a role.");
+  if (p.id !== undefined && (typeof p.id !== "string" || !/^\d{1,18}$/.test(p.id))) return fail("That isn't a valid role reward.");
+  const result = await adminApi.savePointsRoleReward(guild, { id: p.id as string | undefined, threshold: whole(p.threshold), roleId: p.roleId, removeLower: p.removeLower === true });
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
+}
+
+export async function removeRoleRewardAction(guildId: string, id: string): Promise<ExtrasResult<PointsRoleRewards>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return fail(slow);
+  if (!/^\d{1,18}$/.test(id)) return fail("That isn't a valid role reward.");
+  const result = await adminApi.deletePointsRoleReward(guild, id);
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
+}
+
+/** Adds a keyword trigger (no id) or changes one. */
+export async function saveTriggerAction(guildId: string, input: unknown): Promise<ExtrasResult<PointsTriggers>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return fail(slow);
+  if (typeof input !== "object" || input === null) return fail("That trigger couldn't be read.");
+  const p = input as Record<string, unknown>;
+  if (p.id !== undefined && (typeof p.id !== "string" || !/^\d{1,18}$/.test(p.id))) return fail("That isn't a valid trigger.");
+  const result = await adminApi.savePointsTrigger(guild, {
+    id: p.id as string | undefined,
+    keyword: typeof p.keyword === "string" ? p.keyword.slice(0, 80) : "",
+    points: whole(p.points),
+    cooldownSeconds: whole(p.cooldownSeconds),
+    dailyCap: whole(p.dailyCap),
+    enabled: p.enabled !== false,
+  });
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
+}
+
+export async function removeTriggerAction(guildId: string, id: string): Promise<ExtrasResult<PointsTriggers>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return fail(slow);
+  if (!/^\d{1,18}$/.test(id)) return fail("That isn't a valid trigger.");
+  const result = await adminApi.deletePointsTrigger(guild, id);
+  revalidatePath(`/dashboard/${guildId}/points`);
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
 }
