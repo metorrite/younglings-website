@@ -67,6 +67,8 @@ export interface WhoAmI {
   avatarUrl?: string;
   /** Whether the person may use JonnyBot's website while it is closed: the clan's admins, or admins of a trusted beta server. Absent from an older bot. */
   beta?: boolean;
+  /** Whether this person owns the bot itself; only sent to someone allowed in. Gates the dev snapshot button. */
+  isOwner?: boolean;
   /** The server the answer is about; only present when the user is allowed in. */
   guildName?: string;
   guildIconUrl?: string | null;
@@ -216,6 +218,16 @@ export interface HelpPanelSummary {
   helpKind: HelpKind;
   categoryId: string | null;
   postedChannelId: string | null;
+}
+
+/** The optional extras of the help tickets (PvM Help and CA Help), each off until switched on. */
+export interface HelpExtras {
+  /** A "Make it an event" button on help tickets. */
+  eventButton: boolean;
+  eventStartHours: number;
+  eventDays: number;
+  maxStartHours: number;
+  maxDays: number;
 }
 
 /** The PvM Help system's settings for the server. Hours of null mean "never escalate". */
@@ -1722,6 +1734,8 @@ export const adminApi = {
   postPanel: (ctx: ApiContext, id: string, channelId: string) =>
     call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
+  helpExtras: (ctx: ApiContext) => call<HelpExtras>(ctx, "GET", "help-extras"),
+  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
   helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
   saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
