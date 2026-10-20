@@ -18,6 +18,9 @@ import type { OptionSchema } from "@/lib/eventOptions";
 import { AutorolesForm } from "@/components/dashboard/AutorolesForm";
 import { RolePanelEditor } from "@/components/dashboard/RolePanelEditor";
 import { GiveawaysManager } from "@/components/dashboard/GiveawaysManager";
+import { VoiceTextForm } from "@/components/dashboard/VoiceTextForm";
+import { ServerRemindersManager } from "@/components/dashboard/ServerRemindersManager";
+import { LockdownManager } from "@/components/dashboard/LockdownManager";
 import { SuggestionsManager } from "@/components/dashboard/SuggestionsManager";
 import { AutoCleanManager } from "@/components/dashboard/AutoCleanManager";
 import { AutopunishEditor } from "@/components/dashboard/AutopunishEditor";
@@ -29,11 +32,17 @@ import { WarningsManager } from "@/components/dashboard/WarningsManager";
 import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
+import { LanguageForm } from "@/components/dashboard/LanguageForm";
+import { messagesFor, t } from "@/lib/i18n";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { RoleFixPanel } from "@/components/dashboard/RoleFixPanel";
+import { TwitchManager } from "@/components/dashboard/TwitchManager";
+import { FormsManager } from "@/components/dashboard/FormsManager";
+import { FormFiller } from "@/components/forms/FormFiller";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -43,12 +52,20 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
 import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
 import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
+import { ChatLevelsBoard } from "@/components/dashboard/ChatLevelsBoard";
+import { ChatLevelsForm } from "@/components/dashboard/ChatLevelsForm";
+import { ChatLevelPanel } from "@/components/profile/ChatLevelPanel";
+import { LookupRemindersForm } from "@/components/dashboard/LookupRemindersForm";
 import { StarboardForm } from "@/components/dashboard/StarboardForm";
+import { MessageLogsForm } from "@/components/dashboard/MessageLogsForm";
+import { HighlightsForm } from "@/components/dashboard/HighlightsForm";
+import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
 import { PointsManager } from "@/components/dashboard/PointsManager";
 import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
@@ -279,10 +296,33 @@ const evCatalog = { bosses: [
   { name: "Kalphite King", image: "/bosses/kalphite_king.png", items: [{ name: "Drygore mace", key: "drygore_mace", rarity: "1/500", icon: true }, { name: "Drygore rapier", key: "drygore_rapier", rarity: "1/500", icon: true }] },
 ] };
 const evCall = async (_m: string, path: string) => (path === "events/bingo-catalog" ? { ok: true as const, data: evCatalog } : { ok: false as const, error: "Preview only", problems: [] });
-const giveaways = { maxWinners: 20, maxPrize: 200, giveaways: [
-  { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winners: [] },
-  { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winners: ["5"] },
+const giveaways = { maxWinners: 50, maxPrize: 200, giveaways: [
+  { id: "1", prize: "Rune pouch", status: "OPEN" as const, channelId: "2", channelName: "general", winnerCount: 2, endsAt: "2026-10-12T18:00:00Z", entries: 14, requiredRoleId: "r1", winnerRoleId: "r2", dmWinners: true, reactionEntry: true, winners: [] },
+  { id: "2", prize: "50m coins", status: "ENDED" as const, channelId: "2", channelName: "general", winnerCount: 1, endsAt: "2026-10-09T18:00:00Z", entries: 31, requiredRoleId: null, winnerRoleId: null, dmWinners: false, reactionEntry: false, winners: ["5"] },
 ] };
+const voiceText = {
+  enabled: true, announce: true, purgeWhenEmpty: false, maxLinks: 25,
+  voiceChannels: [{ id: "v1", name: "Raids" }, { id: "v2", name: "Chill" }],
+  links: [
+    { voiceChannelId: "v1", voiceName: "Raids", textChannelId: "1", textName: "raids-chat", problem: null, everyoneCanSee: false },
+    { voiceChannelId: "v2", voiceName: "Chill", textChannelId: "2", textName: "general", problem: "JonnyBot needs View Channel, Send Messages and Manage Permissions in #general.", everyoneCanSee: true },
+  ],
+};
+const serverReminders = {
+  maxText: 1000, maxActive: 20, minEveryMinutes: 60, maxEveryMinutes: 86400,
+  reminders: [
+    { id: "1", channelId: "2", channelName: "general", text: "Weekly cap party starts in an hour at the Citadel!", roleId: "r1", roleName: "Members", everyMinutes: 10080, nextAt: "2026-10-21T17:00:00Z", status: "ACTIVE" as const, createdByName: "Metorrite", lastSentAt: "2026-10-14T17:00:00Z", sendCount: 3, error: null },
+    { id: "2", channelId: "2", channelName: "general", text: "Clan meeting tonight.", roleId: null, roleName: null, everyMinutes: null, nextAt: "2026-10-25T18:00:00Z", status: "ACTIVE" as const, createdByName: "PvmRyan", lastSentAt: null, sendCount: 0, error: null },
+    { id: "3", channelId: "9", channelName: null, text: "Old reminder", roleId: null, roleName: null, everyMinutes: 1440, nextAt: "2026-10-10T18:00:00Z", status: "FAILED" as const, createdByName: "Metorrite", lastSentAt: null, sendCount: 0, error: "The channel no longer exists." },
+  ],
+};
+const lockdown = {
+  channelIds: ["1", "2"], keepTalkingRoleIds: ["r1"], maxChannels: 50, maxRoles: 10,
+  locks: [
+    { channelId: "2", channelName: "general", lockedBy: "Metorrite", lockedAt: "2026-10-19T09:00:00Z", reason: "Raid in progress", lockdown: true, canUnlock: true },
+    { channelId: "9", channelName: null, lockedBy: "PvmRyan", lockedAt: "2026-10-18T20:00:00Z", reason: "", lockdown: false, canUnlock: false },
+  ],
+};
 const suggestions = { channelId: "2", maxNote: 500, suggestions: [
   { id: "3", authorId: "5", authorName: "PvmRyan", content: "Add a weekly boss of the week event with a prize for the most kills.", status: "PENDING" as const, note: null, decidedBy: null, ups: 12, downs: 2, createdAt: "2026-10-10T12:00:00Z" },
   { id: "2", authorId: "6", authorName: null, content: "More voice channels", status: "APPROVED" as const, note: "Done, thanks!", decidedBy: "1", ups: 30, downs: 1, createdAt: "2026-10-08T12:00:00Z" },
@@ -296,12 +336,12 @@ const warnings = { limit: 100, warnings: [
   { id: "8", userId: "6", userName: null, moderatorId: "1", moderatorName: "Drake", reason: "Rude to a new member", createdAt: "2026-10-09T12:00:00Z" },
 ] };
 const autopunish = { maxRules: 5, maxThreshold: 20, maxTimeoutMinutes: 40320, canTimeout: true, canKick: false, canBan: true, rules: [{ threshold: 3, action: "TIMEOUT" as const, timeoutMinutes: 1440 }, { threshold: 5, action: "KICK" as const, timeoutMinutes: 0 }] };
-const autodelete = { maxRules: 25, available: [{ key: "INVITES", label: "Discord invites" }, { key: "LINKS", label: "Links" }, { key: "ATTACHMENTS", label: "Files and images" }], rules: [{ channelId: "2", channelName: "general", filters: ["INVITES", "LINKS"], problem: null }, { channelId: "1", channelName: "link-requests", filters: ["ATTACHMENTS"], problem: "JonnyBot needs the View Channel and Manage Messages permissions in #link-requests." }] };
+const autodelete = { maxRules: 25, maxDelaySeconds: 300, maxWords: 20, minWordLength: 3, maxRoles: 10, available: [{ key: "INVITES", label: "Discord invites" }, { key: "LINKS", label: "Links" }, { key: "ATTACHMENTS", label: "Files and images" }, { key: "TEXT", label: "Certain words" }], rules: [{ channelId: "2", channelName: "general", filters: ["INVITES", "LINKS", "TEXT"], words: ["free nitro"], roleMode: "EXCEPT_WITH" as const, roleIds: ["r1"], delaySeconds: 30, problem: null }, { channelId: "1", channelName: "link-requests", filters: ["ATTACHMENTS"], words: [], roleMode: "EVERYONE" as const, roleIds: [], delaySeconds: 0, problem: "JonnyBot needs the View Channel and Manage Messages permissions in #link-requests." }] };
 const clanprofile = { visibility: "UNLISTED" as const, slug: "younglings", displayName: "Younglings", tagline: "A friendly PvM clan for everyone", description: "We run weekly raids and casual PvM hours.", logoUrl: null, colour: 0xd4af37, timezone: "America/New_York", focus: ["PVM", "SOCIAL"], recruiting: "OPEN" as const, requirements: "Combat 100+, active on Discord", applyUrl: "https://discord.gg/example", leaderboardOptIn: false, currentClanName: "Younglings", verified: false, verifiedClanName: null, listing: "UNLISTED" as const, suspended: false, suspendedReason: null, memberCount: 66, suggestedName: "Younglings", options: { visibility: [{ key: "PRIVATE", label: "Private" }, { key: "UNLISTED", label: "Unlisted" }, { key: "PUBLIC", label: "Public" }], recruiting: [{ key: "CLOSED", label: "Not recruiting" }, { key: "OPEN", label: "Recruiting" }, { key: "INVITE_ONLY", label: "Invite only" }], focus: [{ key: "PVM", label: "PvM" }, { key: "SKILLING", label: "Skilling" }, { key: "SOCIAL", label: "Social" }, { key: "EVENTS", label: "Events" }, { key: "COMPETITIVE", label: "Competitive" }, { key: "CASUAL", label: "Casual" }, { key: "IRONMAN", label: "Ironman" }, { key: "NEW_PLAYERS", label: "New player friendly" }] }, limits: { name: 40, tagline: 120, description: 1500, requirements: 600 } };
 const listings = { canEdit: true, listings: [{ guildId: "1", serverName: "Younglings", slug: "younglings", displayName: "Younglings", visibility: "PUBLIC", listing: "LISTED" as const, verified: true, suspended: false, suspendedReason: null, openReports: 1 }, { guildId: "2", serverName: "Spam Clan", slug: "spam", displayName: "Spam Clan", visibility: "PRIVATE", listing: "HIDDEN" as const, verified: false, suspended: true, suspendedReason: "Impersonating another clan", openReports: 0 }], reports: [{ id: "5", guildId: "1", slug: "younglings", displayName: "Younglings", reason: "This clan is using another clan's name and logo.", reporter: "someone", createdAt: "2026-10-11T09:00:00Z" }] };
 const clanevents = { listing: "UNLISTED" as const, slug: "younglings", events: [{ id: "1", name: "Weekly Raids", location: "Voice: Raids", status: "SCHEDULED", startTime: "2026-10-13T00:00:00Z", endTime: null, shared: true, scope: "PUBLIC" as const }, { id: "2", name: "Friday Movie Night", location: "Voice: Lounge", status: "SCHEDULED", startTime: "2026-10-16T01:00:00Z", endTime: null, shared: false, scope: "NONE" as const }] };
 const modlog = { enabled: true, channelId: "2", logBans: true, logTimeouts: false, canReadAuditLog: false };
-const gate = { enabled: true, minAgeDays: 7, action: "KICK" as const, alertChannelId: "2", maxAgeDays: 90, canKick: false };
+const gate = { enabled: true, minAgeDays: 7, action: "KICK" as const, alertChannelId: "2", maxAgeDays: 90, canKick: false, canBan: true, nameRulesEnabled: true, nameAction: "ALERT" as const, nameRules: ["free*nitro", "*scam*"], exemptUserIds: ["123456789012345678"], maxNameRules: 50, maxExempt: 50, minNameRuleChars: 3 };
 
 function TeamsPreview() {
   const [detail, setDetail] = useState(initialTeamsDetail);
@@ -346,6 +386,105 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "rolefix" && (
+            <>
+              <PageHeader title="Fix clan roles" description="Fix Member and Guest roles from before the sync started." />
+              <RoleFixPanel
+                initial={{ max: 150, progress: null }}
+                actions={{
+                  plan: async () => ({ ok: true, data: { max: 150, progress: null, linkedAccounts: 41, notInServer: 2, problem: null, entries: [
+                    { userId: "1", name: "Xtusy", rsn: "Xtusy", action: "PROMOTE", add: ["Member"], remove: ["Guest"] },
+                    { userId: "2", name: "Hodant", rsn: "Hodant", action: "PROMOTE", add: ["Member"], remove: ["Guest", "Unverified"] },
+                    { userId: "3", name: "Oldtimer", rsn: "Oldtimer", action: "DEMOTE", add: ["Guest"], remove: ["Member"] },
+                  ] } }),
+                  apply: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  status: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
+          {view === "twitch" && (
+            <>
+              <PageHeader title="Twitch alerts" description="Post in a channel when a streamer you follow goes live on Twitch." />
+              <TwitchManager
+                structure={structure}
+                initial={{
+                  configured: params.get("configured") !== "no",
+                  enabled: true,
+                  offlineAction: "EDIT",
+                  max: 25,
+                  maxMessage: 300,
+                  defaultMessage: "{streamer} is live on Twitch!",
+                  envNames: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
+                  streamers: [
+                    { id: "1", login: "some_streamer", displayName: "Some_Streamer", channelId: "2", pingRoleId: null, message: null, enabled: true, liveNow: true, problem: null },
+                    { id: "2", login: "quiet_one", displayName: "Quiet_One", channelId: "999", pingRoleId: null, message: "Quiet_One is on!", enabled: false, liveNow: false, problem: "This channel no longer exists." },
+                  ],
+                }}
+                actions={{
+                  settings: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  add: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  save: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  remove: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
+          {view === "forms" && (
+            <>
+              <PageHeader title="Web forms" description="Build a form, share its link, and every answer opens a ticket and/or lands in a channel." />
+              <FormsManager
+                guildId="1"
+                publicBase="https://example.com"
+                structure={structure}
+                initial={{
+                  max: 10,
+                  limits: { questions: 15, options: 25, answerLength: 1000, cooldownHours: 8760 },
+                  panels: [{ id: "5", name: "Applications", enabled: true }, { id: "6", name: "Support", enabled: false }],
+                  forms: [
+                    {
+                      id: "1", name: "Clan application", title: "Apply to join", description: "Tell us a little about yourself.", enabled: true, panelId: "5", channelId: null, roleId: null, onePerUser: false, cooldownHours: 168, submissionCount: 3,
+                      questions: [
+                        { id: "rsn", label: "RuneScape name", kind: "RSN", required: true, options: [], maxLength: 12 },
+                        { id: "why", label: "Why do you want to join?", kind: "PARAGRAPH", required: true, options: [], maxLength: 600 },
+                        { id: "pick", label: "How did you find us?", kind: "CHOICE", required: false, options: ["A friend", "The hub", "Other"], maxLength: 100 },
+                        { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
+                      ],
+                    },
+                    { id: "2", name: "Event signup", title: "", description: "", enabled: false, panelId: null, channelId: null, roleId: null, onePerUser: true, cooldownHours: 0, submissionCount: 0, questions: [] },
+                  ],
+                }}
+                actions={{
+                  create: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  save: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  remove: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  submissions: async () => ({ ok: true, data: { formId: "1", total: 1, submissions: [{ id: "1", userId: "7", userName: "Xtusy", at: "2026-10-19T10:00:00Z", ticketId: "4", answers: [{ label: "RuneScape name", value: "Xtusy" }, { label: "Why do you want to join?", value: "Friendly clan, great events." }] }] } }),
+                }}
+              />
+            </>
+          )}
+          {view === "formfill" && (
+            <FormFiller
+              disabledReason={null}
+              send={async () => ({ ok: false, error: "Preview only", problems: [] })}
+              questions={[
+                { id: "rsn", label: "RuneScape name", kind: "RSN", required: true, options: [], maxLength: 12 },
+                { id: "why", label: "Why do you want to join?", kind: "PARAGRAPH", required: true, options: [], maxLength: 600 },
+                { id: "pick", label: "How did you find us?", kind: "CHOICE", required: false, options: ["A friend", "The hub"], maxLength: 100 },
+                { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
+              ]}
+            />
+          )}
+          {view === "language" && (
+            <>
+              <PageHeader title={t("en", "dashboard.language.title")} description={t("en", "dashboard.language.description")} />
+              <LanguageForm
+                initial={{ language: "en", languages: [{ code: "en", name: "English" }] }}
+                texts={messagesFor("en", ["dashboard.language.panel", "dashboard.language.description", "dashboard.language.field", "dashboard.language.hint", "dashboard.language.only", "dashboard.language.saved", "dashboard.language.title"] as const)}
+                save={async (language) => ({ ok: true, data: { language, languages: [{ code: "en", name: "English" }] } })}
+              />
+            </>
+          )}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />
@@ -362,7 +501,7 @@ function Preview() {
             <>
               <PageHeader title="Autoroles" description="Roles JonnyBot gives to everyone who joins." />
               <AutorolesForm
-                initial={{ enabled: true, delaySeconds: 60, memberRoleIds: ["r1"], botRoleIds: [], maxRoles: 10, maxDelaySeconds: 3600, issues: ["People: a chosen role was deleted, so it is skipped."] }}
+                initial={{ enabled: true, delaySeconds: 60, memberRoleIds: ["r1"], botRoleIds: [], memberRemoveRoleIds: ["r2"], botRemoveRoleIds: [], maxRoles: 10, maxDelaySeconds: 3600, issues: ["People: a chosen role was deleted, so it is skipped."] }}
                 roles={structure.roles}
                 save={async () => ({ ok: false, error: "x", problems: [] })}
               />
@@ -381,14 +520,26 @@ function Preview() {
           )}
           {view === "bingo-options" && (<><PageHeader title="Board options" description="The extra bingo board options on the event's Board tab." /><div className="max-w-3xl space-y-4"><BingoOptionsCard board={{ title: "Winter Bingo", names: true }} shaped={false} canReroll disabled={false} save={() => {}} /><BingoOptionsCard board={{ fog: true }} shaped canReroll={false} disabled={false} save={() => {}} /></div></>)}
           {view === "shape-size" && (<><PageHeader title="Shape size" description="The size pickers for the code-drawn bingo shapes, with their live sketch." /><div className="max-w-3xl space-y-6">{[["pyramid", 6], ["path", 20], ["convergence", 3], ["tree", 0]].map(([shape, size]) => (<ShapeSizeControl key={String(shape)} shape={String(shape)} value={Number(size)} onChange={() => {}} />))}</div></>)}
+          {view === "chat-levels" && (<><PageHeader title="Chat levels" description="XP for chatting, level roles and a leaderboard." /><ChatLevelsForm initial={{ enabled: true, minXp: 15, maxXp: 25, cooldownSeconds: 60, announce: true, announceChannelId: "2", announceMessage: "{user} reached level {level}!", removeOldRoles: false, ignoredChannels: ["1"], ignoredRoles: [], channelMultipliers: [{ channelId: "2", multiplier: 2 }], roleMultipliers: [], levelRoles: [{ level: 5, roleId: "1" }, { level: 10, roleId: "2" }], members: 42, limits: { maxXp: 100, minCooldown: 10, maxCooldown: 3600, maxMultiplier: 5, maxList: 25, maxRoles: 25, maxMessage: 300, maxLevel: 200 } }} structure={structure} save={nope as never} /><div className="mt-4"><ChatLevelsBoard initial={{ members: 3, top: [{ rank: 1, userId: "1", name: "PvmRyan", level: 14, xp: 9120, messages: 480 }, { rank: 2, userId: "2", name: "KinkyAstroid", level: 9, xp: 3010, messages: 160 }, { rank: 3, userId: "3", name: "Xtusy", level: 2, xp: 310, messages: 21 }] }} reset={nope as never} /></div></>)}
+          {view === "chat-levels-off" && (<><PageHeader title="Chat levels" description="A fresh server: off, nothing earned." /><ChatLevelsForm initial={{ enabled: false, minXp: 15, maxXp: 25, cooldownSeconds: 60, announce: false, announceChannelId: null, announceMessage: "{user} reached level {level}!", removeOldRoles: false, ignoredChannels: [], ignoredRoles: [], channelMultipliers: [], roleMultipliers: [], levelRoles: [], members: 0, limits: { maxXp: 100, minCooldown: 10, maxCooldown: 3600, maxMultiplier: 5, maxList: 25, maxRoles: 25, maxMessage: 300, maxLevel: 200 } }} structure={structure} save={nope as never} /><div className="mt-4"><ChatLevelsBoard initial={{ members: 0, top: [] }} reset={nope as never} /></div></>)}
+          {view === "my-chat-level" && (<><PageHeader title="My chat level" description="A member's own level on their profile." /><ChatLevelPanel level={{ enabled: true, level: 7, xp: 1850, intoLevel: 420, toNext: 805, maxed: false, rank: 4, messages: 96, members: 42 }} /><div className="mt-4"><ChatLevelPanel level={{ enabled: false }} /></div></>)}
+          {view === "message-logs" && (<><PageHeader title="Message & voice logs" description="Edits, deletes and voice moves." /><MessageLogsForm initial={{ enabled: true, retentionDays: 7, excludedChannels: ["1"], editChannelId: "2", deleteChannelId: "2", voiceChannelId: null, remembered: 1280, messageContent: true, limits: { minDays: 1, maxDays: 30, maxExcluded: 50 } }} structure={structure} save={nope as never} clear={nope as never} /></>)}
+          {view === "message-logs-off" && (<><PageHeader title="Message & voice logs" description="Fresh server, and the bot without the Message Content intent." /><MessageLogsForm initial={{ enabled: false, retentionDays: 7, excludedChannels: [], editChannelId: null, deleteChannelId: null, voiceChannelId: null, remembered: 0, messageContent: false, limits: { minDays: 1, maxDays: 30, maxExcluded: 50 } }} structure={structure} save={nope as never} clear={nope as never} /></>)}
+          {view === "rs-timers" && (<><PageHeader title="RuneScape timers" description="Optional reminders for RuneScape 3 timers." /><LookupRemindersForm initial={{ reminders: [{ kind: "vos", title: "Voice of Seren", description: "Posted at the top of every hour, when the two boosted districts change.", enabled: true, channelId: "2", roleId: null }] }} structure={structure} save={nope as never} /></>)}
+          {view === "highlights" && (<><PageHeader title="Highlights" description="Direct messages for words members care about." /><HighlightsForm initial={{ enabled: true, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: ["1"], allowedRoles: [], memberCount: 4, wordCount: 11, messageContent: true, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
+          {view === "highlights-nointent" && (<><PageHeader title="Highlights" description="The bot runs without the Message Content intent." /><HighlightsForm initial={{ enabled: false, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: [], allowedRoles: [], memberCount: 0, wordCount: 0, messageContent: false, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
+          {view === "my-highlights" && (<><PageHeader title="My highlights" description="A member's own words on their profile." /><HighlightsPanel initial={{ enabled: true, usable: true, refusal: null, words: [{ id: "1", word: "zulrah", wholeWord: true }, { id: "2", word: "bingo", wholeWord: false }], max: 10, maxWord: 50, minWord: 2, cooldownSeconds: 300, ignored: [{ id: "9", name: "off-topic" }], maxIgnored: 25, channels: [{ id: "2", name: "general" }, { id: "3", name: "drops" }] }} actions={{ add: nope as never, remove: nope as never, ignore: nope as never }} /></>)}
           {view === "starboard" && (<><PageHeader title="Starboard" description="Copy the best messages to a showcase channel." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "⭐", threshold: 3, selfStar: false, maxThreshold: 15, channelThresholds: [], skipHiddenChannels: false, onlyChannels: [], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "starboard-custom" && (<><PageHeader title="Starboard" description="With an emoji of its own and self-starring on (they stay visible)." /><StarboardForm initial={{ enabled: true, channelId: "2", emoji: "<:gz:1234>", threshold: 5, selfStar: true, maxThreshold: 15, channelThresholds: [{ channelId: "1", threshold: 8 }], skipHiddenChannels: true, onlyChannels: ["2"], maxChannelRules: 25 }} structure={structure} save={nope as never} /></>)}
           {view === "points" && (<><PageHeader title="Points" description="A points ledger for your server." /><PointsManager initial={pointsOverview as never} submissions={pointsSubmissions as never} structure={structure} rewards={pointsRewards as never} redemptions={pointsRedemptions as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "points-new" && (<><PageHeader title="Points" description="A server that has not switched points on yet." /><PointsManager initial={{ ...pointsOverview, enabled: false, reviewChannelId: null, top: [], recent: [], totals: { members: 0, outstanding: 0, awarded: 0, spent: 0 } } as never} submissions={{ pending: [], decided: [] } as never} structure={structure} rewards={{ rewards: [] } as never} redemptions={{ pending: [], handled: [] } as never} actions={{ saveSettings: nope as never, award: nope as never, decide: nope as never, saveReward: nope as never, handleRedemption: nope as never }} /></>)}
           {view === "giveaways" && (<><PageHeader title="Giveaways" description="Run a giveaway with an Enter button and a timed draw." /><GiveawaysManager initial={giveaways} structure={structure} roles={structure.roles} actions={{ start: nope, end: nope, reroll: nope, remove: nope }} /></>)}
+          {view === "voice-text" && (<><PageHeader title="Voice text" description="Give people a text channel while they are in a voice channel." /><VoiceTextForm initial={voiceText} structure={structure} save={nope as never} /></>)}
+          {view === "server-reminders" && (<><PageHeader title="Server reminders" description="Reminders JonnyBot posts in a channel for everyone." /><ServerRemindersManager initial={serverReminders} structure={structure} roles={structure.roles} actions={{ create: nope, cancel: nope }} /></>)}
+          {view === "lockdown" && (<><PageHeader title="Lockdown" description="Stop everyone but chosen roles from talking in a channel or a saved set." /><LockdownManager initial={lockdown} structure={structure} canEdit actions={{ save: nope, lock: nope, unlock: nope, start: nope, end: nope }} /></>)}
           {view === "suggestions" && (<><PageHeader title="Suggestions" description="Members post ideas with /suggest." /><SuggestionsManager initial={suggestions} structure={structure} actions={{ saveChannel: nope, decide: nope, remove: nope }} /></>)}
           {view === "autoclean" && (<><PageHeader title="Auto-clean" description="Channels that tidy themselves." /><AutoCleanManager initial={autoclean} structure={structure} actions={{ save: nope, remove: nope }} /></>)}
-          {view === "autodelete" && (<><PageHeader title="Auto-delete" description="Keep a channel free of invites." /><AutoDeleteManager initial={autodelete} structure={structure} actions={{ save: nope, remove: nope }} /></>)}
+          {view === "autodelete" && (<><PageHeader title="Auto-delete" description="Keep a channel free of invites." /><AutoDeleteManager initial={autodelete} structure={structure} roles={structure.roles} actions={{ save: nope, remove: nope }} /></>)}
           {view === "clanprofile" && (<><PageHeader title="Clan profile" description="How your clan appears to others." /><ClanProfileForm initial={clanprofile} moderationHref="#" actions={{ save: nope, verify: nope }} /></>)}
           {view === "listings" && (<><PageHeader title="Directory moderation" description="Reports and listings." /><ListingsModerator initial={listings} actions={{ suspend: nope, restore: nope, resolve: nope }} /></>)}
           {view === "events" && (<><PageHeader title="Public events" description="Choose which events are public." /><PublicEventsManager initial={clanevents} profileHref="#" actions={{ setScope: nope }} /></>)}
@@ -416,6 +567,21 @@ function Preview() {
             <>
               <PageHeader title="Welcome message" description="A server that has not set a welcome up yet." />
               <WelcomeEditor initial={welcomeEmpty} channels={structure.channels} actions={{ save: async () => ({ ok: false, error: "x", problems: [] }), test: async () => ({ ok: false, error: "x", problems: [] }) }} />
+            </>
+          )}
+          {view === "snapshots" && (
+            <>
+              <PageHeader title="Snapshots" description="Bundles the bot's state at this moment into a zip with an id. Put the id in a bug report. Secrets are removed." />
+              <SnapshotsManager
+                guildId="1"
+                keepDays={14}
+                initial={[
+                  { id: "snap-20261018-143005-a3f9", guildId: "1", createdAt: "2026-10-18T14:30:05Z", sizeBytes: 48_213, requestedBy: "2", focus: "event:12" },
+                  { id: "snap-20261017-091500-04be", guildId: "1", createdAt: "2026-10-17T09:15:00Z", sizeBytes: 2_345_678, requestedBy: "2", focus: "" },
+                ]}
+                take={async (focus) => ({ ok: true as const, data: { snapshot: { id: "snap-20261018-150000-c0de", guildId: "1", createdAt: new Date().toISOString(), sizeBytes: 51_200, requestedBy: "2", focus } } })}
+                remove={async (id) => ({ ok: true as const, data: { deleted: id } })}
+              />
             </>
           )}
           {view === "goodbye" && (
