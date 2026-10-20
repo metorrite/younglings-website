@@ -99,6 +99,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: "/admin/polling-plan", label: "Premium servers", blurb: "Which servers' clans are refreshed on the faster premium plan." },
       { href: "/admin/beta-access", label: "Beta servers", blurb: "Trusted servers whose admins can use JonnyBot's website while it is closed to everyone else." },
       { href: "/admin/health", label: "Bot health", blurb: "Platform-wide: connection, database, refresh cycle and memory at a glance." },
+      { href: "/admin/rs-link", label: "RS Link abuse", blurb: "The RS Link service: failed attempts, lockouts, the DM limit, blocks, names claimed twice, and removing a bad link." },
     ],
   },
 ];
