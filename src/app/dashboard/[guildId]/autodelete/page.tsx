@@ -27,6 +27,7 @@ export default async function AutoDeletePage({
       <AutoDeleteManager
         initial={list}
         structure={structure}
+        roles={structure.roles}
         actions={{
           save: saveAutoDeleteAction.bind(null, guildId),
           remove: deleteAutoDeleteAction.bind(null, guildId),

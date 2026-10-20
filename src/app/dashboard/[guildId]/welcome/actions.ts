@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireGuild } from "@/lib/dashboard";
-import { dashboardApi, type ApiResult, type WelcomeActionResult, type WelcomeConfig } from "@/lib/jonnybot-admin";
+import { adminApi, dashboardApi, type ApiResult, type WelcomeActionResult, type WelcomeCard, type WelcomeConfig } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 import { welcomeDraftFrom } from "@/lib/welcomeDraft";
 
@@ -38,7 +38,7 @@ export async function testGuildWelcomeAction(guildId: string, input: unknown): P
   return outcome(await dashboardApi.testWelcome(guild, draft));
 }
 
-const SLOTS = ["author_icon", "thumbnail", "image", "footer_icon"];
+const SLOTS = ["author_icon", "thumbnail", "image", "footer_icon", "card_bg"];
 
 /** Deletes the stored picture for one place. The embed's address is cleared by the editor. */
 export async function removeGuildWelcomeImageAction(guildId: string, slot: string): Promise<WelcomeActionResult<{ removed: boolean }>> {
@@ -48,4 +48,26 @@ export async function removeGuildWelcomeImageAction(guildId: string, slot: strin
   if (!SLOTS.includes(slot)) return { ok: false, error: "That isn't a place a picture can go.", problems: [] };
 
   return outcome(await dashboardApi.removeWelcomeImage(guild, slot));
+}
+
+const colour = (v: unknown, fallback: number): number => (typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 0xffffff ? v : fallback);
+
+/** Saves the optional welcome picture. The bot checks the values again; this only rebuilds the exact shape it expects. */
+export async function saveGuildWelcomeCardAction(guildId: string, input: unknown): Promise<WelcomeActionResult<WelcomeCard>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  if (typeof input !== "object" || input === null) return { ok: false, error: "That welcome picture couldn't be read.", problems: [] };
+  const p = input as Record<string, unknown>;
+
+  const result = await adminApi.saveWelcomeCard(guild, {
+    enabled: p.enabled === true,
+    backgroundColor: colour(p.backgroundColor, 0x1e2230),
+    backgroundImageUrl: typeof p.backgroundImageUrl === "string" ? p.backgroundImageUrl.slice(0, 2100) : "",
+    textColor: colour(p.textColor, 0xffffff),
+    title: typeof p.title === "string" ? p.title.slice(0, 200) : "",
+    description: typeof p.description === "string" ? p.description.slice(0, 300) : "",
+  });
+  revalidatePath(`/dashboard/${guildId}/welcome`);
+  return outcome(result);
 }
