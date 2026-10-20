@@ -9,7 +9,7 @@ import type { ApiResult } from "@/lib/jonnybot-admin";
  * Each caller authenticates first (that is what makes {@link receiveImage} safe to call) and hands over who is asking.
  */
 
-export const IMAGE_SLOTS = ["author_icon", "thumbnail", "image", "footer_icon"];
+export const IMAGE_SLOTS = ["author_icon", "thumbnail", "image", "footer_icon", "card_bg"];
 
 function json(status: number, body: UploadResult): Response {
   return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });

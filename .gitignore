@@ -44,3 +44,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# secrets and local data: never commit
+*.key
+*.p12
+*.pfx
+.idea/workspace.xml
+.claude/
+*.zip
+*.dump
+*.sql.gz
+*.bak
+dev-snapshots/
