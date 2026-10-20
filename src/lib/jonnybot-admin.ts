@@ -513,6 +513,15 @@ export interface RolePanelList {
   maxButtons: number;
 }
 
+/** What "Send an announcement" posts: a message in a channel with at most one ping (a role, @everyone or @here). */
+export interface AnnouncementSend {
+  channelId: string;
+  message: string;
+  roleId: string | null;
+  everyone: boolean;
+  here: boolean;
+}
+
 /** A server's goodbye message: a line posted when someone leaves. */
 export interface Goodbye {
   enabled: boolean;
@@ -945,6 +954,30 @@ export interface PluginCoverage {
   reportingRecently: number;
   recentDays: number;
   consent: { key: string; label: string; players: number }[];
+}
+
+/** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
+export interface DevSnapshotMeta {
+  /** snap-yyyyMMdd-HHmmss-xxxx */
+  id: string;
+  guildId: string;
+  createdAt: string;
+  sizeBytes: number;
+  requestedBy: string;
+  /** event:12, ticket:34, member:<id> or empty. */
+  focus: string;
+}
+
+export interface DevSnapshotList {
+  snapshots: DevSnapshotMeta[];
+  keepDays: number;
+  maxBytes: number;
+}
+
+/** A snapshot with its zip, as the bot sends it. */
+export interface DevSnapshotFile extends DevSnapshotMeta {
+  filename: string;
+  zipBase64: string;
 }
 
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
@@ -1468,6 +1501,12 @@ export const adminApi = {
   saveWelcomeCard: (ctx: ApiContext, draft: WelcomeCardDraft) => call<WelcomeCard>(ctx, "PUT", "welcome-card", draft),
   goodbye: (ctx: ApiContext) => call<Goodbye>(ctx, "GET", "goodbye"),
   saveGoodbye: (ctx: ApiContext, body: Pick<Goodbye, "enabled" | "channelId" | "content">) => call<Goodbye>(ctx, "PUT", "goodbye", body),
+  /** The ban announcement: the welcome's message shape (the shared message editor edits both); the DM copy and link button are always off. */
+  banAnnouncement: (ctx: ApiContext) => call<WelcomeConfig>(ctx, "GET", "ban-announcement"),
+  saveBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<WelcomeConfig>(ctx, "PUT", "ban-announcement", draft),
+  testBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "ban-announcement/test", draft),
+  /** The dashboard twin of /announce. The bot judges @everyone, @here and role pings against the signed-in admin's own permissions. */
+  sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
   createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
@@ -1477,6 +1516,11 @@ export const adminApi = {
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
   saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
+  devSnapshots: (ctx: ApiContext) => call<DevSnapshotList>(ctx, "GET", "dev/snapshots"),
+  devSnapshot: (ctx: ApiContext, id: string) => call<DevSnapshotFile>(ctx, "GET", `dev/snapshots/${encodeURIComponent(id)}`),
+  takeDevSnapshot: (ctx: ApiContext, focus: string, siteCommit: string) =>
+    call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
+  deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
