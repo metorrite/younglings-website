@@ -20,6 +20,7 @@ function draftFrom(input: unknown): HubCommandDraft | null {
   if (typeof input !== "object" || input === null) return null;
   const d = input as Record<string, unknown>;
   const signup = typeof d.signup === "object" && d.signup !== null ? (d.signup as Record<string, unknown>) : null;
+  const afk = typeof d.afk === "object" && d.afk !== null ? (d.afk as Record<string, unknown>) : null;
   return {
     enabled: d.enabled === true,
     customAccess: d.customAccess === true,
@@ -28,6 +29,7 @@ function draftFrom(input: unknown): HubCommandDraft | null {
     signup: signup
       ? { adminChannelId: idOrNull(signup.adminChannelId), lockAdminChannel: signup.lockAdminChannel === true, publicChannelIds: ids(signup.publicChannelIds) }
       : undefined,
+    afk: afk ? { nicknameTag: afk.nicknameTag === true, ignoreChannelIds: ids(afk.ignoreChannelIds), clearUserIds: ids(afk.clearUserIds) } : undefined,
   };
 }
 

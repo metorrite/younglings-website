@@ -11,11 +11,11 @@ import type { ReactNode } from "react";
  * `max` (a length like "36rem") to keep every column from growing past that, for panels that hold only a few small controls. Each panel is as tall as its
  * own content, so a short one next to a tall one leaves no stretched blank box. A child that should take the whole row is wrapped in {@link Span}.
  */
-export function PanelGrid({ children, min = "26rem", max = "1fr", gap = "gap-4", className = "" }: { children: ReactNode; min?: string; max?: string; gap?: string; className?: string }) {
+export function PanelGrid({ children, min = "26rem", max = "1fr", gap = "gap-4", className = "", as: Tag = "div" }: { children: ReactNode; min?: string; max?: string; gap?: string; className?: string; as?: "div" | "ul" }) {
   return (
-    <div className={`grid items-start ${gap} ${className}`} style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${min}), ${max}))` }}>
+    <Tag className={`grid items-start ${gap} ${className}`} style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${min}), ${max}))` }}>
       {children}
-    </div>
+    </Tag>
   );
 }
 

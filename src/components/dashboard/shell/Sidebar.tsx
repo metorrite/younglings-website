@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { setFavoritesAction } from "@/app/dashboard/[guildId]/favorites-actions";
+import { setViewModeAction } from "@/app/dashboard/[guildId]/view-actions";
 import { Icon } from "./icons";
 import { LinkPending } from "./LinkPending";
 import { QuickJump } from "./QuickJump";
@@ -90,16 +91,22 @@ export function Sidebar({
   server,
   footer,
   hasClan = true,
+  isOwner = false,
   base: where,
   favorites = [],
+  savedView,
   canStar = true,
 }: {
   server: SidebarServer;
   footer?: string;
   hasClan?: boolean;
+  /** Whether this person owns the bot itself, which adds the owner-only pages. */
+  isOwner?: boolean;
   base?: string;
   /** The pages this person starred, in order. */
   favorites?: string[];
+  /** The Basic/Advanced view this person saved in this server: null if they never chose one, undefined if it could not be read. */
+  savedView?: "basic" | "advanced" | null;
   /** False where there is nothing to save the stars to (the preview). */
   canStar?: boolean;
 }) {
@@ -108,12 +115,24 @@ export function Sidebar({
   const base = where ?? `/dashboard/${server.id}`;
   const [view, setView] = useViewMode();
   const [folded, toggleFolded] = useFoldedGroups();
+  const synced = useRef(false);
   const [starred, setStarred] = useState<string[]>(favorites);
   const [, start] = useTransition();
+  // The saved view follows the admin from one computer to the next; this browser still decides at once. Once per visit: a saved view replaces what this browser
+  // had, and with none saved yet an Advanced view chosen here is saved, so it is there next time.
+  useEffect(() => {
+    if (synced.current || savedView === undefined) return;
+    synced.current = true;
+    if (savedView) {
+      if (savedView !== view) setView(savedView);
+    } else if (view === "advanced" && canStar) {
+      void setViewModeAction(server.id, view);
+    }
+  }, [savedView, view, setView, canStar, server.id]);
   const [failed, setFailed] = useState<string | null>(null);
   const starredItems = favoriteItems(starred, hasClan);
   // the Basic view leaves out the pages most servers never open, except the one being looked at and the ones this person starred
-  const { groups, hidden } = visibleGroups(groupsFor(hasClan), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
+  const { groups, hidden } = visibleGroups(groupsFor(hasClan, isOwner), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
 
   /** Stars or unstars a page: it moves at once, then is saved; if the save fails it moves back and says so. */
   function toggleStar(item: NavItem) {
@@ -164,11 +183,11 @@ export function Sidebar({
               <Icon name="swap" />
             </Link>
           </div>
-          <ViewModeSlider />
+          <ViewModeSlider onChange={canStar ? (next) => void setViewModeAction(server.id, next) : undefined} />
         </div>
 
         <div className="hidden px-3 pt-3 lg:block">
-          <QuickJump base={base} hasClan={hasClan} />
+          <QuickJump base={base} hasClan={hasClan} isOwner={isOwner} />
         </div>
 
         {/* wide screens: the full list */}
