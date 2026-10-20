@@ -817,6 +817,40 @@ export interface PointsRedemptions {
   handled: PointsRedemption[];
 }
 
+/** A voice channel people join to get one of their own. `problem` says why it can't work, when it can't. */
+export interface TempVoiceHub {
+  hubChannelId: string;
+  hubChannelName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  namePattern: string;
+  userLimit: number;
+  problem: string | null;
+}
+
+export interface TempVoiceList {
+  hubs: TempVoiceHub[];
+  voiceChannels: { id: string; name: string; category: string | null }[];
+  categories: { id: string; name: string }[];
+  active: { channelId: string; name: string | null; ownerName: string | null; members: number; locked: boolean }[];
+  /** Why the bot can't run temporary channels in this server (missing permissions), or null. */
+  problem: string | null;
+  maxHubs: number;
+  maxChannels: number;
+  maxName: number;
+  maxUserLimit: number;
+  defaultPattern: string;
+}
+
+export interface TempVoiceHubInput {
+  hubChannelId?: string;
+  createHub: boolean;
+  hubName?: string;
+  categoryId: string | null;
+  namePattern: string;
+  userLimit: number;
+}
+
 /** A role given when a member reaches a number of points. `problem` says why it can't be given, when it can't. */
 export interface PointsRoleReward {
   id: string;
@@ -1534,6 +1568,9 @@ export const adminApi = {
   /** The event engine's routes (events/...). The caller (a server action) has already checked the path is one of the known shapes. */
   eventsCall: (ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) => call<unknown>(ctx, method, path, body),
   points: (ctx: ApiContext) => call<PointsOverview>(ctx, "GET", "points"),
+  tempVoice: (ctx: ApiContext) => call<TempVoiceList>(ctx, "GET", "tempvoice"),
+  saveTempVoiceHub: (ctx: ApiContext, input: TempVoiceHubInput) => call<TempVoiceList>(ctx, "PUT", "tempvoice", input),
+  deleteTempVoiceHub: (ctx: ApiContext, hubChannelId: string) => call<TempVoiceList>(ctx, "DELETE", `tempvoice/${encodeURIComponent(hubChannelId)}`),
   pointsRoleRewards: (ctx: ApiContext) => call<PointsRoleRewards>(ctx, "GET", "pointsroles"),
   savePointsRoleReward: (ctx: ApiContext, input: PointsRoleRewardInput) => call<PointsRoleRewards>(ctx, "PUT", "pointsroles", input),
   deletePointsRoleReward: (ctx: ApiContext, id: string) => call<PointsRoleRewards>(ctx, "DELETE", `pointsroles/${encodeURIComponent(id)}`),

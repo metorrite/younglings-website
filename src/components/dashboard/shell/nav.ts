@@ -63,6 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Community",
     items: [
       { label: "Starboard", icon: "star", path: "/starboard" },
+      { label: "Temp voice", icon: "users", path: "/temp-voice", advanced: true },
       { label: "Giveaways", icon: "gift", path: "/giveaways" },
       { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
       { label: "Suggestions", icon: "bulb", path: "/suggestions" },
