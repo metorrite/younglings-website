@@ -43,6 +43,7 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
@@ -412,6 +413,21 @@ function Preview() {
             <>
               <PageHeader title="Welcome message" description="A server that has not set a welcome up yet." />
               <WelcomeEditor initial={welcomeEmpty} channels={structure.channels} actions={{ save: async () => ({ ok: false, error: "x", problems: [] }), test: async () => ({ ok: false, error: "x", problems: [] }) }} />
+            </>
+          )}
+          {view === "snapshots" && (
+            <>
+              <PageHeader title="Snapshots" description="Bundles the bot's state at this moment into a zip with an id. Put the id in a bug report. Secrets are removed." />
+              <SnapshotsManager
+                guildId="1"
+                keepDays={14}
+                initial={[
+                  { id: "snap-20261018-143005-a3f9", guildId: "1", createdAt: "2026-10-18T14:30:05Z", sizeBytes: 48_213, requestedBy: "2", focus: "event:12" },
+                  { id: "snap-20261017-091500-04be", guildId: "1", createdAt: "2026-10-17T09:15:00Z", sizeBytes: 2_345_678, requestedBy: "2", focus: "" },
+                ]}
+                take={async (focus) => ({ ok: true as const, data: { snapshot: { id: "snap-20261018-150000-c0de", guildId: "1", createdAt: new Date().toISOString(), sizeBytes: 51_200, requestedBy: "2", focus } } })}
+                remove={async (id) => ({ ok: true as const, data: { deleted: id } })}
+              />
             </>
           )}
           {view === "goodbye" && (

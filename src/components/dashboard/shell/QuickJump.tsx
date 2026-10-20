@@ -13,9 +13,11 @@ import { groupsFor } from "./nav";
 export function QuickJump({
   base,
   hasClan = true,
+  isOwner = false,
 }: {
   base: string;
   hasClan?: boolean;
+  isOwner?: boolean;
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -25,7 +27,7 @@ export function QuickJump({
 
   const pages = useMemo(
     () =>
-      groupsFor(hasClan).flatMap((group) =>
+      groupsFor(hasClan, isOwner).flatMap((group) =>
         group.items
           .filter((item) => !item.soon && item.path !== undefined)
           .map((item) => ({
@@ -35,7 +37,7 @@ export function QuickJump({
             href: `${base}${item.path}`,
           })),
       ),
-    [base, hasClan],
+    [base, hasClan, isOwner],
   );
   const shown = pages.filter((p) =>
     `${p.label} ${p.group}`.toLowerCase().includes(query.trim().toLowerCase()),
