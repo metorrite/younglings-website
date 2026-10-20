@@ -42,6 +42,8 @@ const ALLOWED = [
   /^events\/saved-templates$/,
   /^events\/saved-templates\/\d{1,18}$/,
   /^events\/saved-templates\/\d{1,18}\/create$/,
+  // the server's own defaults for new events (names, look, verification, setup steps)
+  /^events\/defaults$/,
 ];
 
 export async function eventApiAction(
