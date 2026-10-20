@@ -29,7 +29,7 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
     );
   }
 
-  const { findings, errors, warnings } = result.data;
+  const { findings, errors, warnings, intents } = result.data;
   const problems = findings.filter((f) => f.level !== "OK");
   const fine = findings.filter((f) => f.level === "OK");
   const headline =
@@ -83,6 +83,31 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
             ))}
           </ul>
         </section>
+      )}
+
+      {intents && (
+        <CollapsibleCard
+          id="checkup-intents"
+          title="Discord permissions the bot runs with"
+          hint="The three privileged switches in Discord's developer portal."
+          summary={<Chip tone={intents.members && intents.presence && intents.messageContent ? "good" : "warn"}>{[intents.members, intents.presence, intents.messageContent].filter(Boolean).length} of 3 on</Chip>}
+        >
+          <ul className="space-y-2 text-sm">
+            {[
+              { on: intents.members, name: "Server Members", off: "Joins, leaves, autoroles and member tracking don't work." },
+              { on: intents.messageContent, name: "Message Content", off: "Message logs, Highlights, automatic replies and word filters can't read messages." },
+              { on: intents.presence, name: "Presence", off: "The clan website hides its Who's Online list." },
+            ].map((i) => (
+              <li key={i.name} className="flex items-start gap-3">
+                <Chip tone={i.on ? "good" : "warn"}>{i.on ? "On" : "Off"}</Chip>
+                <span>
+                  {i.name}
+                  {!i.on && <span className="block text-xs text-muted">{i.off}</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </CollapsibleCard>
       )}
 
       {fine.length > 0 && (

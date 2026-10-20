@@ -32,6 +32,8 @@ export interface OnlineGroup {
 export interface OnlineData {
   total: number;
   groups: OnlineGroup[];
+  /** True when the bot can't see who is online (Discord's Presence intent is off): the list is hidden rather than shown empty. */
+  unavailable?: boolean;
 }
 
 export interface SiteEvent {
