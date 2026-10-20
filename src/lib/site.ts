@@ -7,6 +7,8 @@
  * friendly "can't reach JonnyBot" state instead of an error.
  */
 
+import { siteTag } from "@/lib/cacheTags";
+
 // ---------- shapes ----------
 
 export interface OnlineMember {
@@ -317,7 +319,7 @@ async function getSite<T>(path: string, revalidateSeconds: number): Promise<T | 
   try {
     const response = await fetch(`${baseUrl}/internal/site/${path}`, {
       headers: { "X-Internal-Secret": secret },
-      next: { revalidate: revalidateSeconds },
+      next: { revalidate: revalidateSeconds, tags: [siteTag(path)] },
       signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) return null;
