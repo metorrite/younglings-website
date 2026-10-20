@@ -44,6 +44,12 @@ const ALLOWED = [
   /^events\/saved-templates\/\d{1,18}\/create$/,
   // the server's own defaults for new events (names, look, verification, setup steps)
   /^events\/defaults$/,
+  // co-hosted events (T-219): the host's co-hosts, and this server's invitations and the events it co-hosts
+  /^events\/\d{1,18}\/cohosts$/,
+  /^events\/\d{1,18}\/cohosts\/\d{1,20}$/,
+  /^cohost-events$/,
+  /^cohost-events\/\d{1,18}\/(accept|decline)$/,
+  /^cohost-events\/\d{1,18}\/players\/\d{1,20}$/,
 ];
 
 export async function eventApiAction(
