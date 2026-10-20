@@ -360,6 +360,26 @@ export interface TicketDetail extends TicketRow {
   transcriptMessageCount: number | null;
 }
 
+/** A staff-only note that a help experience with a ticket's player went badly. */
+export interface TicketFlag {
+  id: string;
+  ticketId: string;
+  ticketNumber: number;
+  playerId: string;
+  playerName: string | null;
+  flaggedBy: string;
+  flaggedByName: string | null;
+  note: string;
+  createdAt: string | null;
+}
+
+export interface TicketFlagList {
+  /** Whether new flags may be added. Off by default. */
+  enabled: boolean;
+  flags: TicketFlag[];
+  maxNote: number;
+}
+
 // ---------- plumbing ----------
 
 // ---------- roster view, attention, health, audit, notes, scheduled posts ----------
@@ -1944,6 +1964,12 @@ export const adminApi = {
     return call<{ tickets: TicketRow[]; hasMore: boolean }>(ctx, "GET", `ticket/tickets?${params}`);
   },
   getTicket: (ctx: ApiContext, id: string) => call<TicketDetail>(ctx, "GET", `ticket/tickets/${encodeURIComponent(id)}`),
+  /** Staff flags on a ticket's player (off by default). */
+  ticketFlags: (ctx: ApiContext) => call<TicketFlagList>(ctx, "GET", "ticket-flags"),
+  setTicketFlagsEnabled: (ctx: ApiContext, enabled: boolean) => call<TicketFlagList>(ctx, "PUT", "ticket-flags/settings", { enabled }),
+  ticketFlagsFor: (ctx: ApiContext, ticketId: string) => call<TicketFlagList>(ctx, "GET", `ticket-flags/ticket/${encodeURIComponent(ticketId)}`),
+  addTicketFlag: (ctx: ApiContext, ticketId: string, note: string) => call<TicketFlagList>(ctx, "POST", `ticket-flags/ticket/${encodeURIComponent(ticketId)}`, { note }),
+  deleteTicketFlag: (ctx: ApiContext, flagId: string) => call<{ deleted: boolean }>(ctx, "POST", `ticket-flags/${encodeURIComponent(flagId)}/delete`, {}),
 };
 
 /** A role's color as CSS, or undefined for the "no color" sentinel. */

@@ -50,6 +50,7 @@ import { PanelEditor } from "@/components/admin/PanelEditor";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
+import { TicketFlagsCard, TicketFlagsPage } from "@/components/dashboard/TicketFlags";
 import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
@@ -80,6 +81,17 @@ const overview: Overview = {
   isOwner: false,
 };
 const setup: ServerSetup = { clanName: "Younglings", clanEnabled: true, clanActive: true, verificationReviewChannelId: "1", renameAlertChannelId: null, verifiedClanRoleId: "r1", verifiedNonClanRoleId: null, unverifiedRoleId: null, onboardingRoleId: null, inviteUrl: "https://discord.gg/younglings" };
+const ticketFlagsSample = {
+  enabled: true,
+  maxNote: 500,
+  flags: [{ id: "1", ticketId: "7", ticketNumber: 12, playerId: "5", playerName: "PvmRyan", flaggedBy: "9", flaggedByName: "Helper Hana", note: "Ignored the helpers and left halfway through.", createdAt: "2026-10-18T12:00:00Z" }],
+};
+const ticketFlagActions = {
+  setEnabled: async () => ({ ok: true as const, data: ticketFlagsSample }),
+  add: async () => ({ ok: true as const, data: ticketFlagsSample }),
+  remove: async () => ({ ok: true as const, data: { deleted: true } }),
+};
+
 const structure: GuildStructure = {
   roles: [
     { id: "r1", name: "Member", color: 0, managed: false, position: 3 },
@@ -532,6 +544,13 @@ function Preview() {
                 take={async (focus) => ({ ok: true as const, data: { snapshot: { id: "snap-20261018-150000-c0de", guildId: "1", createdAt: new Date().toISOString(), sizeBytes: 51_200, requestedBy: "2", focus } } })}
                 remove={async (id) => ({ ok: true as const, data: { deleted: id } })}
               />
+            </>
+          )}
+          {view === "ticket-flags" && (
+            <>
+              <PageHeader title="Tickets" description="The Flags tab." />
+              <TicketFlagsPage initial={ticketFlagsSample} guildId="1" actions={ticketFlagActions} />
+              <TicketFlagsCard initial={ticketFlagsSample} ticketId="7" guildId="1" actions={ticketFlagActions} />
             </>
           )}
           {view === "goodbye" && (
