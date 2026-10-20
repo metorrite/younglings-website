@@ -1384,6 +1384,31 @@ export interface PremiumGuilds {
   thisServer: boolean;
 }
 
+/** One tier of the shared RuneMetrics queue, for the owner's budget page. */
+export interface RuneMetricsTier {
+  tier: "INTERACTIVE" | "PREMIUM_CLAN" | "CLAN" | "LINKED";
+  /** How often the tier's players are refreshed; null for people waiting on a button. */
+  windowMinutes: number | null;
+  queued: number;
+  lagSeconds: number;
+  behind: boolean;
+  sent: number;
+  reused: number;
+  rateLimited: number;
+  failed: number;
+  gaveUp: number;
+}
+
+export interface RuneMetricsBudget {
+  tiers: RuneMetricsTier[];
+  servers: { guildId: string; name: string; clan: string; tier: "PREMIUM_CLAN" | "CLAN"; players: number; requestsPerDay: number; sharedWith: number }[];
+  history: { day: string; tier: string; sent: number; reused: number; rateLimited: number; failed: number; gaveUp: number }[];
+  pace: { intervalSeconds: number; requestsLastMinute: number; requestsLast10Minutes: number; slowedBy: number; queued: number };
+  capacityPerDay: number;
+  clanDemandPerDay: number;
+  day: string;
+}
+
 export interface PollJobStatus {
   name: string;
   priority: string;
@@ -1971,6 +1996,8 @@ export const adminApi = {
   takeDevSnapshot: (ctx: ApiContext, focus: string, siteCommit: string) =>
     call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
   deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
+  /** The shared RuneMetrics request queue: counters per tier, lag, per-server demand. Owner only. */
+  runemetricsBudget: (ctx: ApiContext) => call<RuneMetricsBudget>(ctx, "GET", "runemetrics-budget"),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
   savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
