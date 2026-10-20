@@ -39,6 +39,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { TwitchManager } from "@/components/dashboard/TwitchManager";
 import { FormsManager } from "@/components/dashboard/FormsManager";
 import { FormFiller } from "@/components/forms/FormFiller";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
@@ -382,6 +383,33 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "twitch" && (
+            <>
+              <PageHeader title="Twitch alerts" description="Post in a channel when a streamer you follow goes live on Twitch." />
+              <TwitchManager
+                structure={structure}
+                initial={{
+                  configured: params.get("configured") !== "no",
+                  enabled: true,
+                  offlineAction: "EDIT",
+                  max: 25,
+                  maxMessage: 300,
+                  defaultMessage: "{streamer} is live on Twitch!",
+                  envNames: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
+                  streamers: [
+                    { id: "1", login: "some_streamer", displayName: "Some_Streamer", channelId: "2", pingRoleId: null, message: null, enabled: true, liveNow: true, problem: null },
+                    { id: "2", login: "quiet_one", displayName: "Quiet_One", channelId: "999", pingRoleId: null, message: "Quiet_One is on!", enabled: false, liveNow: false, problem: "This channel no longer exists." },
+                  ],
+                }}
+                actions={{
+                  settings: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  add: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  save: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  remove: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
           {view === "forms" && (
             <>
               <PageHeader title="Web forms" description="Build a form, share its link, and every answer opens a ticket and/or lands in a channel." />
