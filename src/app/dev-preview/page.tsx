@@ -39,6 +39,7 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { RoleFixPanel } from "@/components/dashboard/RoleFixPanel";
 import { TwitchManager } from "@/components/dashboard/TwitchManager";
 import { FormsManager } from "@/components/dashboard/FormsManager";
 import { FormFiller } from "@/components/forms/FormFiller";
@@ -55,6 +56,7 @@ import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
 import { PostTool } from "@/components/admin/AdminExtras";
 import { ScheduledPosts } from "@/components/admin/ScheduledPosts";
+import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
 import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
 import { ChatLevelsBoard } from "@/components/dashboard/ChatLevelsBoard";
 import { ChatLevelsForm } from "@/components/dashboard/ChatLevelsForm";
@@ -384,6 +386,23 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "rolefix" && (
+            <>
+              <PageHeader title="Fix clan roles" description="Fix Member and Guest roles from before the sync started." />
+              <RoleFixPanel
+                initial={{ max: 150, progress: null }}
+                actions={{
+                  plan: async () => ({ ok: true, data: { max: 150, progress: null, linkedAccounts: 41, notInServer: 2, problem: null, entries: [
+                    { userId: "1", name: "Xtusy", rsn: "Xtusy", action: "PROMOTE", add: ["Member"], remove: ["Guest"] },
+                    { userId: "2", name: "Hodant", rsn: "Hodant", action: "PROMOTE", add: ["Member"], remove: ["Guest", "Unverified"] },
+                    { userId: "3", name: "Oldtimer", rsn: "Oldtimer", action: "DEMOTE", add: ["Guest"], remove: ["Member"] },
+                  ] } }),
+                  apply: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  status: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
           {view === "twitch" && (
             <>
               <PageHeader title="Twitch alerts" description="Post in a channel when a streamer you follow goes live on Twitch." />
@@ -500,6 +519,7 @@ function Preview() {
             </>
           )}
           {view === "bingo-options" && (<><PageHeader title="Board options" description="The extra bingo board options on the event's Board tab." /><div className="max-w-3xl space-y-4"><BingoOptionsCard board={{ title: "Winter Bingo", names: true }} shaped={false} canReroll disabled={false} save={() => {}} /><BingoOptionsCard board={{ fog: true }} shaped canReroll={false} disabled={false} save={() => {}} /></div></>)}
+          {view === "shape-size" && (<><PageHeader title="Shape size" description="The size pickers for the code-drawn bingo shapes, with their live sketch." /><div className="max-w-3xl space-y-6">{[["pyramid", 6], ["path", 20], ["convergence", 3], ["tree", 0]].map(([shape, size]) => (<ShapeSizeControl key={String(shape)} shape={String(shape)} value={Number(size)} onChange={() => {}} />))}</div></>)}
           {view === "chat-levels" && (<><PageHeader title="Chat levels" description="XP for chatting, level roles and a leaderboard." /><ChatLevelsForm initial={{ enabled: true, minXp: 15, maxXp: 25, cooldownSeconds: 60, announce: true, announceChannelId: "2", announceMessage: "{user} reached level {level}!", removeOldRoles: false, ignoredChannels: ["1"], ignoredRoles: [], channelMultipliers: [{ channelId: "2", multiplier: 2 }], roleMultipliers: [], levelRoles: [{ level: 5, roleId: "1" }, { level: 10, roleId: "2" }], members: 42, limits: { maxXp: 100, minCooldown: 10, maxCooldown: 3600, maxMultiplier: 5, maxList: 25, maxRoles: 25, maxMessage: 300, maxLevel: 200 } }} structure={structure} save={nope as never} /><div className="mt-4"><ChatLevelsBoard initial={{ members: 3, top: [{ rank: 1, userId: "1", name: "PvmRyan", level: 14, xp: 9120, messages: 480 }, { rank: 2, userId: "2", name: "KinkyAstroid", level: 9, xp: 3010, messages: 160 }, { rank: 3, userId: "3", name: "Xtusy", level: 2, xp: 310, messages: 21 }] }} reset={nope as never} /></div></>)}
           {view === "chat-levels-off" && (<><PageHeader title="Chat levels" description="A fresh server: off, nothing earned." /><ChatLevelsForm initial={{ enabled: false, minXp: 15, maxXp: 25, cooldownSeconds: 60, announce: false, announceChannelId: null, announceMessage: "{user} reached level {level}!", removeOldRoles: false, ignoredChannels: [], ignoredRoles: [], channelMultipliers: [], roleMultipliers: [], levelRoles: [], members: 0, limits: { maxXp: 100, minCooldown: 10, maxCooldown: 3600, maxMultiplier: 5, maxList: 25, maxRoles: 25, maxMessage: 300, maxLevel: 200 } }} structure={structure} save={nope as never} /><div className="mt-4"><ChatLevelsBoard initial={{ members: 0, top: [] }} reset={nope as never} /></div></>)}
           {view === "my-chat-level" && (<><PageHeader title="My chat level" description="A member's own level on their profile." /><ChatLevelPanel level={{ enabled: true, level: 7, xp: 1850, intoLevel: 420, toNext: 805, maxed: false, rank: 4, messages: 96, members: 42 }} /><div className="mt-4"><ChatLevelPanel level={{ enabled: false }} /></div></>)}

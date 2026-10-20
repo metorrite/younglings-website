@@ -8,6 +8,7 @@ import { dangerButton, formatUtc, ghostButton, inputClass, Notice, primaryButton
 import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListView";
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
+import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
 import { ObjectivesTab } from "@/components/dashboard/events/ObjectivesTab";
@@ -98,6 +99,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
   const [draftPoints, setDraftPoints] = useState("25");
   const [newSize, setNewSize] = useState("");
   const [newShape, setNewShape] = useState("");
+  const [newShapeSize, setNewShapeSize] = useState<number | null>(null);
   const [pickedLook, setPickedLook] = useState<string | null>(null);
   const [organiser, setOrganiser] = useState("");
   const [tplName, setTplName] = useState(initial.event.name.slice(0, 60));
@@ -766,6 +768,27 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             </div>
           ) : (
             <p className="text-sm text-muted">The board is locked now that the event has started.</p>
+          )}
+          {editable && layout && (
+            <div className="space-y-3 rounded-xl border border-surface-border p-4">
+              <div>
+                <p className="text-sm font-medium">Size of the shape</p>
+                <p className="text-xs text-muted">A different size makes a fresh board and drops locks. The painted picture keeps its own size; any other size is drawn for you.</p>
+              </div>
+              <ShapeSizeControl shape={layout.id} value={newShapeSize ?? layout.size ?? 0} onChange={setNewShapeSize} disabled={pending} />
+              <button
+                type="button"
+                className={ghostButton}
+                disabled={pending || newShapeSize === null || newShapeSize === (layout.size ?? 0)}
+                onClick={async () =>
+                  newShapeSize !== null &&
+                  (await confirmDialog({ title: "Change the size?", body: "That makes a fresh board and drops locks.", confirmLabel: "Change size", tone: "danger" })) &&
+                  run("POST", `${base}/bingo`, { layout: layout.id, shapeSize: newShapeSize }, "New board made.", () => { setNewShapeSize(null); setLocked([]); })
+                }
+              >
+                Change size
+              </button>
+            </div>
           )}
           {e.status !== "DONE" && e.status !== "CANCELLED" && (
             <div className="space-y-3 rounded-xl border border-surface-border p-4">
