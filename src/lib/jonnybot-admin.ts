@@ -875,6 +875,34 @@ export interface TwitchOverview {
   envNames: string[];
 }
 
+/** One Kick streamer a server follows. */
+export interface KickStreamer {
+  id: string;
+  login: string;
+  displayName: string;
+  channelId: string;
+  pingRoleId: string | null;
+  message: string | null;
+  enabled: boolean;
+  liveNow: boolean;
+  /** Why alerts for this streamer cannot post right now (the channel is gone, a permission is missing), or null. */
+  problem: string | null;
+}
+
+export type KickOfflineAction = "EDIT" | "DELETE" | "KEEP";
+
+export interface KickOverview {
+  /** Whether the bot has a Kick app (its owner added the id and secret). Without one nothing can be switched on. */
+  configured: boolean;
+  enabled: boolean;
+  offlineAction: KickOfflineAction;
+  streamers: KickStreamer[];
+  max: number;
+  maxMessage: number;
+  defaultMessage: string;
+  envNames: string[];
+}
+
 export interface FeedItem {
   id: string;
   kind: "YOUTUBE" | "REDDIT";
@@ -1777,6 +1805,12 @@ export const adminApi = {
   saveTwitchStreamer: (ctx: ApiContext, id: string, streamer: { channelId: string; pingRoleId: string | null; message: string; enabled: boolean }) =>
     call<TwitchOverview>(ctx, "PUT", `twitch/streamers/${encodeURIComponent(id)}`, streamer),
   deleteTwitchStreamer: (ctx: ApiContext, id: string) => call<TwitchOverview>(ctx, "DELETE", `twitch/streamers/${encodeURIComponent(id)}`),
+  kick: (ctx: ApiContext) => call<KickOverview>(ctx, "GET", "kick"),
+  saveKickSettings: (ctx: ApiContext, settings: { enabled: boolean; offlineAction: KickOfflineAction }) => call<KickOverview>(ctx, "PUT", "kick/settings", settings),
+  addKickStreamer: (ctx: ApiContext, streamer: { login: string; channelId: string; pingRoleId: string | null; message: string }) => call<KickOverview>(ctx, "POST", "kick/streamers", streamer),
+  saveKickStreamer: (ctx: ApiContext, id: string, streamer: { channelId: string; pingRoleId: string | null; message: string; enabled: boolean }) =>
+    call<KickOverview>(ctx, "PUT", `kick/streamers/${encodeURIComponent(id)}`, streamer),
+  deleteKickStreamer: (ctx: ApiContext, id: string) => call<KickOverview>(ctx, "DELETE", `kick/streamers/${encodeURIComponent(id)}`),
   feeds: (ctx: ApiContext) => call<FeedList>(ctx, "GET", "feeds"),
   saveFeed: (ctx: ApiContext, feed: FeedInput) => call<FeedList>(ctx, "PUT", "feeds", feed),
   deleteFeed: (ctx: ApiContext, id: string) => call<FeedList>(ctx, "DELETE", `feeds/${encodeURIComponent(id)}`),

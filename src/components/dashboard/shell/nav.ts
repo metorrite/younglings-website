@@ -99,6 +99,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Event announcer", icon: "bell", path: "/event-announcer", advanced: true },
       { label: "Feeds", icon: "swap", path: "/feeds" },
       { label: "Twitch alerts", icon: "bell", path: "/twitch" },
+      { label: "Kick alerts", icon: "bell", path: "/kick", advanced: true },
     ],
   },
   {
