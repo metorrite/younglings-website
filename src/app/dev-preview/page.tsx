@@ -39,6 +39,8 @@ import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { TrackingEditor, CommunitySettingsForm } from "@/components/admin/AdminExtras";
 import { AutoRepliesEditor } from "@/components/dashboard/AutoRepliesEditor";
+import { FormsManager } from "@/components/dashboard/FormsManager";
+import { FormFiller } from "@/components/forms/FormFiller";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -377,6 +379,51 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "forms" && (
+            <>
+              <PageHeader title="Web forms" description="Build a form, share its link, and every answer opens a ticket and/or lands in a channel." />
+              <FormsManager
+                guildId="1"
+                publicBase="https://example.com"
+                structure={structure}
+                initial={{
+                  max: 10,
+                  limits: { questions: 15, options: 25, answerLength: 1000, cooldownHours: 8760 },
+                  panels: [{ id: "5", name: "Applications", enabled: true }, { id: "6", name: "Support", enabled: false }],
+                  forms: [
+                    {
+                      id: "1", name: "Clan application", title: "Apply to join", description: "Tell us a little about yourself.", enabled: true, panelId: "5", channelId: null, roleId: null, onePerUser: false, cooldownHours: 168, submissionCount: 3,
+                      questions: [
+                        { id: "rsn", label: "RuneScape name", kind: "RSN", required: true, options: [], maxLength: 12 },
+                        { id: "why", label: "Why do you want to join?", kind: "PARAGRAPH", required: true, options: [], maxLength: 600 },
+                        { id: "pick", label: "How did you find us?", kind: "CHOICE", required: false, options: ["A friend", "The hub", "Other"], maxLength: 100 },
+                        { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
+                      ],
+                    },
+                    { id: "2", name: "Event signup", title: "", description: "", enabled: false, panelId: null, channelId: null, roleId: null, onePerUser: true, cooldownHours: 0, submissionCount: 0, questions: [] },
+                  ],
+                }}
+                actions={{
+                  create: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  save: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  remove: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  submissions: async () => ({ ok: true, data: { formId: "1", total: 1, submissions: [{ id: "1", userId: "7", userName: "Xtusy", at: "2026-10-19T10:00:00Z", ticketId: "4", answers: [{ label: "RuneScape name", value: "Xtusy" }, { label: "Why do you want to join?", value: "Friendly clan, great events." }] }] } }),
+                }}
+              />
+            </>
+          )}
+          {view === "formfill" && (
+            <FormFiller
+              disabledReason={null}
+              send={async () => ({ ok: false, error: "Preview only", problems: [] })}
+              questions={[
+                { id: "rsn", label: "RuneScape name", kind: "RSN", required: true, options: [], maxLength: 12 },
+                { id: "why", label: "Why do you want to join?", kind: "PARAGRAPH", required: true, options: [], maxLength: 600 },
+                { id: "pick", label: "How did you find us?", kind: "CHOICE", required: false, options: ["A friend", "The hub"], maxLength: 100 },
+                { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
+              ]}
+            />
+          )}
           {view === "language" && (
             <>
               <PageHeader title={t("en", "dashboard.language.title")} description={t("en", "dashboard.language.description")} />
