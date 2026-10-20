@@ -23,10 +23,10 @@ export default async function NewRolePanelPage({ params }: { params: Promise<{ g
     <div className="space-y-6">
       <PageHeader title="New role panel" description="Write the message, add a button for each role, then create it. You can post it in a channel right after." back={{ href: base, label: "Role panels" }} />
       <RolePanelEditor
-        initial={{ id: null, name: "", title: "", description: "", color: null, mode: "TOGGLE", posted: false, channelId: null, messageId: null, buttons: [{ roleId: "", label: "", emoji: null, style: "primary" }] }}
+        initial={{ id: null, name: "", title: "", description: "", color: null, mode: "TOGGLE", style: "BUTTONS", rule: "NORMAL", attached: false, posted: false, channelId: null, messageId: null, buttons: [{ roleId: "", label: "", emoji: null, style: "primary" }] }}
         structure={structure}
         actions={actions}
-        maxButtons={list.maxButtons}
+        maxButtons={list.maxButtons} limits={list.limits}
       />
     </div>
   );

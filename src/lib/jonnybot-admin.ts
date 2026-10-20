@@ -482,7 +482,15 @@ export interface RolePanelButton {
   style: "primary" | "secondary" | "success" | "danger";
 }
 
-/** A message of buttons members press to take or drop a role. */
+/** How members choose on a role panel: buttons, a drop-down, or emoji reactions. */
+export type RolePanelStyle = "BUTTONS" | "DROPDOWN" | "REACTIONS";
+/** What members may do: take and drop roles, only take them, or only drop them. */
+export type RolePanelRule = "NORMAL" | "ADD_ONLY" | "REMOVE_ONLY";
+
+/**
+ * A message members use to take or drop a role. `style`, `rule` and `attached` are missing from an older bot, which means buttons, normal, and not attached.
+ * `attached`: a reactions panel put on a message somebody else wrote, which JonnyBot never edits.
+ */
 export interface RolePanelDef {
   id: string | null;
   name: string;
@@ -490,6 +498,9 @@ export interface RolePanelDef {
   description: string;
   color: number | null;
   mode: "TOGGLE" | "UNIQUE";
+  style?: RolePanelStyle;
+  rule?: RolePanelRule;
+  attached?: boolean;
   posted: boolean;
   channelId: string | null;
   messageId: string | null;
@@ -501,6 +512,8 @@ export interface RolePanelSummary {
   name: string;
   title: string;
   mode: "TOGGLE" | "UNIQUE";
+  style?: RolePanelStyle;
+  rule?: RolePanelRule;
   buttonCount: number;
   posted: boolean;
   channelId: string | null;
@@ -511,6 +524,8 @@ export interface RolePanelList {
   panels: RolePanelSummary[];
   maxPanels: number;
   maxButtons: number;
+  /** How many roles a panel can offer in each style (Discord's limits). Missing from an older bot. */
+  limits?: Record<RolePanelStyle, number>;
 }
 
 /** What "Send an announcement" posts: a message in a channel with at most one ping (a role, @everyone or @here). */
@@ -1509,10 +1524,11 @@ export const adminApi = {
   sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
-  createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
-  updateRolePanel: (ctx: ApiContext, id: string, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId">) => call<RolePanelDef>(ctx, "PUT", `rolepanels/${encodeURIComponent(id)}`, panel),
+  createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
+  updateRolePanel: (ctx: ApiContext, id: string, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "PUT", `rolepanels/${encodeURIComponent(id)}`, panel),
   deleteRolePanel: (ctx: ApiContext, id: string) => call<RolePanelList>(ctx, "DELETE", `rolepanels/${encodeURIComponent(id)}`),
-  postRolePanel: (ctx: ApiContext, id: string, channelId: string) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, { channelId }),
+  /** Posts the panel in a channel, or (a reactions panel) puts it on an existing message by its link. */
+  postRolePanel: (ctx: ApiContext, id: string, target: { channelId?: string; messageLink?: string }) => call<RolePanelDef>(ctx, "POST", `rolepanels/${encodeURIComponent(id)}/post`, target),
   autoroles: (ctx: ApiContext) => call<Autoroles>(ctx, "GET", "autoroles"),
   saveAutoroles: (ctx: ApiContext, body: Pick<Autoroles, "enabled" | "delaySeconds" | "memberRoleIds" | "botRoleIds">) => call<Autoroles>(ctx, "PUT", "autoroles", body),
   checkup: (ctx: ApiContext) => call<Checkup>(ctx, "GET", "checkup"),
