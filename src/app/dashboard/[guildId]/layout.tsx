@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
+import { clanSitesOn } from "@/lib/clanSites";
 import { NoticeBanners } from "@/components/dashboard/overview/NoticeBanners";
 import { requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
@@ -32,6 +33,7 @@ export default async function GuildLayout({ children, params }: { children: Reac
         isOwner={snapshots.ok}
         favorites={favorites.ok ? favorites.data.paths : []}
         savedView={view.ok ? view.data.mode : undefined}
+        features={clanSitesOn() ? ["clanSites"] : []}
         footer={`JonnyBot dashboard · ${open ? "Beta" : "Beta, clan admins only"}. Signed in as ${guild.displayName}.`}
       />
       <div className="min-w-0 flex-1 space-y-6 px-4 py-6 sm:px-8 lg:px-10">

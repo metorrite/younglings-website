@@ -1286,6 +1286,47 @@ export interface ClanProfileData {
   limits: { name: number; tagline: number; description: number; requirements: number };
 }
 
+/** A content block of a clan website (website builder), as the dashboard edits it. */
+export interface ClanSiteBlockData {
+  page: string;
+  position: number;
+  kind: "TEXT" | "IMAGE" | "LINKS";
+  body: Record<string, unknown>;
+}
+
+/** A server's clan website for the dashboard's Clan website page (docs/DOMAINS-AND-SITE-BUILDER.md B5). */
+export interface ClanSiteAdmin {
+  /** Whether the server may use the builder while it is in beta (the home server or the beta list). */
+  inBeta: boolean;
+  /** The bot's owner, who may take a site down. */
+  isOwner: boolean;
+  /** The clan profile's address: the site lives at `<slug>.<platform domain>`. */
+  slug: string | null;
+  /** Why the clan profile can't carry a site yet (no address, private or suspended), or null. */
+  profileProblem: string | null;
+  site: {
+    enabled: boolean;
+    published: boolean;
+    template: "CLASSIC" | "HALL" | "MINIMAL";
+    /** Palette and font keys and https images, as saved. */
+    theme: Record<string, unknown>;
+    pages: unknown[];
+    publishedAt: string | null;
+    updatedAt: string | null;
+    /** Set when JonnyBot's owner took the site down: shown to the clan; publishing is refused until restored. */
+    takedownReason: string | null;
+  };
+  blocks: ClanSiteBlockData[];
+  limits: { title: number; blocksPerPage: number; markdown: number; links: number; url: number };
+}
+
+export interface ClanSiteSave {
+  enabled: boolean;
+  template: ClanSiteAdmin["site"]["template"];
+  theme: Record<string, unknown>;
+  pages: unknown[];
+}
+
 /** The bot owner's view of the clan directory. Everyone else gets `canEdit: false` and empty lists. */
 export interface ClanListings {
   canEdit: boolean;
@@ -1889,6 +1930,14 @@ export const adminApi = {
   saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn">) =>
     call<ClanProfileData>(ctx, "PUT", "clan-profile", body),
   verifyClanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "POST", "clan-profile/verify"),
+  clanSite: (ctx: ApiContext) => call<ClanSiteAdmin>(ctx, "GET", "clan-site"),
+  saveClanSite: (ctx: ApiContext, body: ClanSiteSave) => call<ClanSiteAdmin>(ctx, "PUT", "clan-site", body),
+  saveClanSiteBlocks: (ctx: ApiContext, page: string, blocks: Pick<ClanSiteBlockData, "kind" | "body">[]) =>
+    call<ClanSiteAdmin>(ctx, "PUT", `clan-site/blocks/${encodeURIComponent(page)}`, { blocks }),
+  publishClanSite: (ctx: ApiContext, publish: boolean) => call<ClanSiteAdmin>(ctx, "POST", publish ? "clan-site/publish" : "clan-site/unpublish"),
+  exportClanSite: (ctx: ApiContext) => call<Record<string, unknown>>(ctx, "GET", "clan-site/export"),
+  takedownClanSite: (ctx: ApiContext, reason: string | null) =>
+    call<ClanSiteAdmin>(ctx, "POST", reason === null ? "clan-site/restore" : "clan-site/takedown", reason === null ? undefined : { reason }),
   clanListings: (ctx: ApiContext) => call<ClanListings>(ctx, "GET", "clan-listings"),
   suspendClanListing: (ctx: ApiContext, guildId: string, reason: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/suspend`, { reason }),
   restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),

@@ -9,25 +9,44 @@ import { SiteNav } from "./SiteNav";
  * A clan website's frame in its template: Classic (dark, logo and name left, menu right), Hall (dark stone, the name centred over the banner),
  * Minimal (light, a plain top bar). Colours and font come from the clan's theme as CSS variables; the pages only use those.
  * Every site's footer says it is made with JonnyBot and has the Report link (design B2: reports go to the bot owner's queue).
+ * <p>
+ * `preview` is the dashboard editor's live preview: the menu picks which page the preview shows instead of navigating, and there is no
+ * Report button.
  */
-export function SiteShell({ ctx, children }: { ctx: SiteContext; children: ReactNode }) {
+export interface ShellPreview {
+  current: string;
+  pick: (path: string) => void;
+}
+
+export function SiteShell({ ctx, children, preview }: { ctx: SiteContext; children: ReactNode; preview?: ShellPreview }) {
   const { site, template, theme, pages } = ctx;
   const clan = site.clan;
   const nav = pages.filter((p) => p.enabled).map((p) => ({ title: p.title, path: p.path }));
   const logo = theme.logoUrl ?? clan.logoUrl;
   const style = { ...cssVariables(template, theme), background: "var(--cs-bg)", color: "var(--cs-text)", fontFamily: "var(--cs-font)" } as CSSProperties;
-  const name = (
-    <Link href="/" className="flex items-center gap-3">
+  const home = (cls: string, inner: ReactNode) =>
+    preview ? (
+      <button type="button" onClick={() => preview.pick("")} className={cls}>
+        {inner}
+      </button>
+    ) : (
+      <Link href="/" className={cls}>
+        {inner}
+      </Link>
+    );
+  const name = home(
+    "flex items-center gap-3",
+    <>
       {logo && (
         // eslint-disable-next-line @next/next/no-img-element -- a clan's own logo from the host it chose
         <img src={logo} alt="" className="h-10 w-10 rounded-lg object-cover" />
       )}
       <span className="text-lg font-semibold tracking-tight">{clan.name}</span>
-    </Link>
+    </>,
   );
 
   return (
-    <div className="flex min-h-screen flex-col" style={style}>
+    <div className={`flex flex-col ${preview ? "min-h-[32rem]" : "min-h-screen"}`} style={style}>
       {template === "HALL" ? (
         <header className="relative border-b border-[var(--cs-border)]">
           {theme.bannerUrl && (
@@ -39,16 +58,16 @@ export function SiteShell({ ctx, children }: { ctx: SiteContext; children: React
               // eslint-disable-next-line @next/next/no-img-element -- a clan's own logo from the host it chose
               <img src={logo} alt="" className="h-16 w-16 rounded-xl object-cover" />
             )}
-            <Link href="/" className="text-3xl font-semibold tracking-wide">{clan.name}</Link>
+            {home("text-3xl font-semibold tracking-wide", clan.name)}
             {clan.tagline && <p className="text-sm text-[var(--cs-muted)]">{clan.tagline}</p>}
-            <SiteNav items={nav} centered />
+            <SiteNav items={nav} centered preview={preview} />
           </div>
         </header>
       ) : (
         <header className={`border-b border-[var(--cs-border)] ${template === "MINIMAL" ? "bg-[var(--cs-surface)]" : ""}`}>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-4">
             {name}
-            <SiteNav items={nav} />
+            <SiteNav items={nav} preview={preview} />
           </div>
           {template === "CLASSIC" && <div className="h-0.5 bg-[var(--cs-primary)]" />}
         </header>
@@ -59,7 +78,7 @@ export function SiteShell({ ctx, children }: { ctx: SiteContext; children: React
           <span>
             {clan.name} · Made with JonnyBot
           </span>
-          <ReportClan slug={site.slug} />
+          {!preview && <ReportClan slug={site.slug} />}
         </div>
       </footer>
     </div>
