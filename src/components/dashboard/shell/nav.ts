@@ -19,6 +19,8 @@ export interface NavItem {
    * reach it) and lists it in the Advanced view.
    */
   advanced?: boolean;
+  /** Only shown to the bot's owner (the bot refuses everyone else whatever the sidebar shows). */
+  ownerOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -42,6 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Welcome message", icon: "smile", path: "/welcome" },
       { label: "Goodbye message", icon: "door", path: "/goodbye" },
+      { label: "Announcements", icon: "bell", path: "/announcements" },
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
     ],
@@ -102,13 +105,14 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Checkup", icon: "check", path: "/checkup" },
       { label: "Activity log", icon: "list", path: "/audit", advanced: true },
+      { label: "Snapshots", icon: "terminal", path: "/snapshots", ownerOnly: true, advanced: true },
     ],
   },
 ];
 
-/** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, and any group that leaves empty. */
-export function groupsFor(hasClan: boolean): NavGroup[] {
-  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasClan || !item.clanOnly) })).filter((group) => group.items.length > 0);
+/** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, what only the bot's owner sees when this person isn't, and any group that leaves empty. */
+export function groupsFor(hasClan: boolean, isOwner = false): NavGroup[] {
+  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => (hasClan || !item.clanOnly) && (isOwner || !item.ownerOnly)) })).filter((group) => group.items.length > 0);
 }
 
 /**
