@@ -21,14 +21,18 @@ export default async function GuildOverview({ params }: { params: Promise<{ guil
 
   const base = `/dashboard/${guildId}`;
   const checklist = setupChecklist({ setup, permissions, tracking: tracking.groups, welcome });
-  const commandsOn = hub.commands.filter((c) => c.enabled).length;
+  // Fun commands are off by default on purpose, so they do not count against "every command is turned on".
+  const everyday = hub.commands.filter((c) => !c.tags.includes("fun"));
+  const funOn = hub.commands.filter((c) => c.tags.includes("fun") && c.enabled).length;
+  const commandsOn = everyday.filter((c) => c.enabled).length;
+  const funNote = funOn > 0 ? ` ${funOn} fun command${funOn === 1 ? " is" : "s are"} on.` : "";
 
   const rows: FeatureRow[] = [
     ...checklist.map((item) => ({ id: item.id, label: item.label, detail: item.detail, done: item.done, href: `${base}/${item.page}`, action: item.done ? "Manage" : "Set up" })),
     {
       id: "commands",
       label: "Commands",
-      detail: commandsOn === hub.commands.length ? "Every command is turned on." : `${commandsOn} of ${hub.commands.length} commands are turned on.`,
+      detail: (commandsOn === everyday.length ? "Every command is turned on." : `${commandsOn} of ${everyday.length} commands are turned on.`) + funNote,
       done: commandsOn > 0,
       href: `${base}/commands`,
       action: "Manage",

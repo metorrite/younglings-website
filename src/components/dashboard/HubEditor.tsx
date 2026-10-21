@@ -52,6 +52,7 @@ function HubCard({
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [mode] = useViewMode();
+  const isFun = command.tags.includes("fun");
   // what was last saved: a rule that is already in force stays on screen in Basic
   const [kept, setKept] = useState({ customAccess: command.customAccess, channels: command.channelIds.length, signup: command.signup, afk: command.afk });
   const customised =
@@ -130,6 +131,11 @@ function HubCard({
             label="Turned on"
             detail={enabled ? "Members can use this command." : "Switched off for everyone in this server."}
           />
+      {isFun && (
+        <p className="text-xs text-muted">
+          A fun command is only added to this server&apos;s Discord command list while it is on, so it stays out of the way when it is off. After you save, it can take a few seconds to appear or disappear there.
+        </p>
+      )}
       {!enabled && <p className="text-xs text-amber-300">While this is off, nobody in the server can use /{command.slashName}, admins included.</p>}
 
       {showMore ? (
