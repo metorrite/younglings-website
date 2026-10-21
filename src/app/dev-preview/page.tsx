@@ -73,6 +73,7 @@ import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
 import { EmbedderPanels } from "@/components/dashboard/EmbedderPanels";
 import { TicketFlagsCard, TicketFlagsPage } from "@/components/dashboard/TicketFlags";
+import { BingoPoolManager } from "@/components/dashboard/BingoPoolManager";
 import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { DevSnapshotButton } from "@/components/devtools/DevSnapshotButton";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
@@ -121,6 +122,37 @@ const ticketFlagActions = {
   setEnabled: async () => ({ ok: true as const, data: ticketFlagsSample }),
   add: async () => ({ ok: true as const, data: ticketFlagsSample }),
   remove: async () => ({ ok: true as const, data: { deleted: true } }),
+};
+
+const bingoPoolSample = {
+  tiles: [
+    { id: "1", label: "Nex: Torva full helm", points: 100, target: 1, difficulty: "elite", tags: ["drop", "nex"], enabled: true, source: "boss-drops" },
+    { id: "2", label: "Kill Telos 10 times", points: 50, target: 10, difficulty: "hard", tags: ["pvm"], enabled: true, source: "manual" },
+    { id: "3", label: "Complete a Slayer task", points: 10, target: 1, difficulty: "easy", tags: [], enabled: false, source: "manual" },
+  ],
+  packs: [
+    { id: "boss-drops", title: "Boss drops", description: "Boss: item tiles for the rare drops on the wiki's boss pages." },
+    { id: "combat-achievements", title: "Combat Mastery achievements", description: "One tile per combat achievement, tier as difficulty." },
+  ],
+  difficulties: [
+    { key: "easy", label: "Easy", defaultPoints: 10 },
+    { key: "medium", label: "Medium", defaultPoints: 25 },
+    { key: "hard", label: "Hard", defaultPoints: 50 },
+    { key: "elite", label: "Elite", defaultPoints: 100 },
+  ],
+  maxTiles: 600,
+  maxLabel: 100,
+  maxPoints: 10000,
+  maxTarget: 1000,
+  maxTags: 5,
+  maxTilesInEvent: 300,
+};
+const bingoPoolActions = {
+  add: async () => ({ ok: true as const, data: bingoPoolSample }),
+  save: async () => ({ ok: true as const, data: bingoPoolSample }),
+  remove: async () => ({ ok: true as const, data: bingoPoolSample }),
+  seed: async () => ({ ok: true as const, data: { ...bingoPoolSample, added: 12, skipped: 0 } }),
+  clear: async () => ({ ok: true as const, data: { ...bingoPoolSample, removed: 3 } }),
 };
 
 const structure: GuildStructure = {
@@ -822,6 +854,12 @@ function Preview() {
               <PageHeader title="Tickets" description="The Flags tab." />
               <TicketFlagsPage initial={ticketFlagsSample} guildId="1" actions={ticketFlagActions} />
               <TicketFlagsCard initial={ticketFlagsSample} ticketId="7" guildId="1" actions={ticketFlagActions} />
+            </>
+          )}
+          {view === "bingo-pool" && (
+            <>
+              <PageHeader title="Bingo tile pool" description="Your own list of bingo tiles." />
+              <BingoPoolManager initial={bingoPoolSample} actions={bingoPoolActions} />
             </>
           )}
           {view === "goodbye" && (
