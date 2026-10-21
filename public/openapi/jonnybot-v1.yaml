@@ -129,10 +129,10 @@ paths:
         "401": { $ref: "#/components/responses/PluginError" }
         "429": { $ref: "#/components/responses/PluginError" }
   /ingest/v1/runesync/consent:
-    put:
+    post:
       tags: [Plugin]
       summary: Set the player's categories from the game
-      description: The same record as the profile's Plugin tab; the server stays the source of truth. Answers the new settings.
+      description: The same record as the profile's Plugin tab; the server stays the source of truth. Answers the new settings. PUT works too; the game client can only send GET and POST.
       security: [{ rsLink: [] }, { pluginToken: [] }]
       requestBody:
         required: true

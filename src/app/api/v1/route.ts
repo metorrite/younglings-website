@@ -15,7 +15,7 @@ export async function GET() {
         pluginWhoami: "GET /ingest/v1/whoami",
         pluginEvents: "POST /ingest/v1/events",
         runeSyncConfig: "GET /ingest/v1/runesync/config",
-        runeSyncConsent: "PUT /ingest/v1/runesync/consent",
+        runeSyncConsent: "POST /ingest/v1/runesync/consent",
         runeSyncDiagnostics: "POST /ingest/v1/runesync/diagnostics",
       },
       openapi: "/openapi.yaml",
