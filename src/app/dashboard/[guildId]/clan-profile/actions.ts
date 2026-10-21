@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireGuild } from "@/lib/dashboard";
-import { adminApi, type ClanProfileData, type WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { adminApi, type ClanProfileData, type ClanRecruitingData, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 
 type Result = WelcomeActionResult<ClanProfileData>;
@@ -43,6 +43,22 @@ export async function verifyClanProfileAction(guildId: string): Promise<Result> 
   const slow = throttle(guild.actorId, "admin");
   if (slow) return fail(slow);
   const result = await adminApi.verifyClanProfile(guild);
+  revalidatePath(`/dashboard/${guildId}/clan-profile`);
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
+}
+
+/** Saves the clan's recruiting post for the Clans Hub (what it looks for, the application form, the invite). */
+export async function saveClanRecruitingAction(guildId: string, input: unknown): Promise<WelcomeActionResult<ClanRecruitingData>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return { ok: false, error: slow, problems: [] };
+  if (typeof input !== "object" || input === null) return { ok: false, error: "That post couldn't be read.", problems: [] };
+  const p = input as Record<string, unknown>;
+  const result = await adminApi.saveClanRecruiting(guild, {
+    post: str(p.post, 2000),
+    applyFormId: typeof p.applyFormId === "string" && /^\d{1,20}$/.test(p.applyFormId) ? p.applyFormId : null,
+    inviteUrl: optStr(p.inviteUrl, 200),
+  });
   revalidatePath(`/dashboard/${guildId}/clan-profile`);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
 }

@@ -3,15 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ADMIN_GROUPS, activeAdmin } from "@/lib/adminNav";
+import { activeAdmin, adminGroupsFor } from "@/lib/adminNav";
 
 /**
  * The admin header. The top row lists the groups; the row beneath shows the pages of whichever group you're in and
  * changes as you move between them, so you always see the siblings of the page you're on.
  */
-export function AdminNav({ name, avatarUrl, tier }: { name: string; avatarUrl: string | null; tier: string }) {
+export function AdminNav({ name, avatarUrl, tier, isOwner }: { name: string; avatarUrl: string | null; tier: string; isOwner: boolean }) {
   const pathname = usePathname();
-  const { group, page } = activeAdmin(pathname);
+  const groups = adminGroupsFor(isOwner);
+  const { group, page } = activeAdmin(pathname, groups);
 
   return (
     <div className="mb-8 border-b border-surface-border">
@@ -20,7 +21,7 @@ export function AdminNav({ name, avatarUrl, tier }: { name: string; avatarUrl: s
           <Link href="/admin" className="mr-2 text-lg font-semibold text-gold">
             Admin
           </Link>
-          {ADMIN_GROUPS.map((g) => {
+          {groups.map((g) => {
             const active = g.id === group.id;
             return (
               <Link
@@ -38,7 +39,7 @@ export function AdminNav({ name, avatarUrl, tier }: { name: string; avatarUrl: s
         <div className="flex items-center gap-2 text-sm text-muted">
           {avatarUrl && <Image src={avatarUrl} alt="" width={24} height={24} className="rounded-full" />}
           {name}
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">{tier === "ADMIN" ? "Admin" : "Developer"}</span>
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">{isOwner ? "Owner" : tier === "ADMIN" ? "Admin" : "Developer"}</span>
         </div>
       </div>
 

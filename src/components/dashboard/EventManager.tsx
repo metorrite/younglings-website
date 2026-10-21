@@ -9,6 +9,8 @@ import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListVie
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
 import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
+import { CohostsCard } from "@/components/dashboard/events/CohostCards";
+import { EventVisibilityCard, scopeLabel } from "@/components/dashboard/events/EventVisibilityCard";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
 import { ObjectivesTab } from "@/components/dashboard/events/ObjectivesTab";
@@ -48,7 +50,7 @@ const gp = (n: number) => n.toLocaleString("en-GB") + " gp";
 const emptyObjective = (): EventObjective => ({ key: "", label: "", description: "", points: 10, evidence: "EITHER", target: 1, repeatLimit: 1, prerequisites: [] });
 
 /** Runs one event: its stages, objectives, teams and players, progress and proof, standings, and prizes. */
-export function EventManager({ initial, initialClaims, initialStandings, initialAwards, structure, call }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; structure?: GuildStructure; call: EventCall }) {
+export function EventManager({ initial, initialClaims, initialStandings, initialAwards, structure, call, hubEnabled = false }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; structure?: GuildStructure; call: EventCall; hubEnabled?: boolean }) {
   const [detail, setDetail] = useState(initial);
   const [claims, setClaims] = useState<EventClaims>(initialClaims);
   const [standings, setStandings] = useState<EventStandings>(initialStandings);
@@ -347,7 +349,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-surface-border bg-surface p-4">
         <StatusBadge tone={e.status === "RUNNING" ? "good" : e.status === "DONE" || e.status === "CANCELLED" ? "muted" : "warn"}>{STAGE_LABEL[e.status]}</StatusBadge>
         <span className="text-sm text-muted">
-          {e.scoringMode === "TEAM" ? "Teams" : "Solo players"} · {e.scope === "PRIVATE" ? "Clan only" : e.scope === "ALLIANCE" ? "Clan and allies" : "Everyone"} · {active.length}
+          {e.scoringMode === "TEAM" ? "Teams" : "Solo players"} · {scopeLabel(e.scope)} · {active.length}
           {e.maxParticipants ? ` of ${e.maxParticipants}` : ""} players
           {detail.participants.length > active.length ? ` · ${detail.participants.length - active.length} waiting` : ""}
         </span>
@@ -505,7 +507,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             id="event-details"
             title="Details"
             hint="What the event is about and who can join."
-            summary={<Chip>{e.scope === "PRIVATE" ? "Clan only" : e.scope === "ALLIANCE" ? "Clan and allies" : "Everyone"}</Chip>}
+            summary={<Chip>{scopeLabel(e.scope)}</Chip>}
           >
           {e.description && <p className="break-words whitespace-pre-wrap">{e.description}</p>}
           <dl className="grid gap-3 sm:grid-cols-2">
@@ -516,6 +518,15 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
           </dl>
           </CollapsibleCard>
+          <EventVisibilityCard
+            key={`${e.scope}-${e.config.hub?.publicStandings === true}`}
+            event={e}
+            editable={editable}
+            pending={pending}
+            hubEnabled={hubEnabled}
+            onSave={(scope, config) => run("PUT", base, { scope, config }, "Saved who can see and join.")}
+          />
+          {e.scope !== "PRIVATE" && <CohostsCard eventId={e.id} call={call} over={e.status === "DONE" || e.status === "CANCELLED"} />}
           <CollapsibleCard
             id="event-setup"
             title="Setup and verification"

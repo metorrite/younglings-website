@@ -1,5 +1,6 @@
 import { requireAdmin, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { createHelpPanelsAction, postHelpGuidelinesAction, saveHelpSettingsAction } from "./actions";
 import { PvmHelpForm } from "@/components/admin/PvmHelpForm";
 
 export const metadata = { title: "PvM Help — Admin — Younglings" };
@@ -18,7 +19,11 @@ export default async function PvmHelpPage() {
           apply to is set on each panel under Ticket panels.
         </p>
       </div>
-      <PvmHelpForm initial={settings} structure={structure} />
+      <PvmHelpForm
+        initial={settings}
+        structure={structure}
+        bindings={{ save: saveHelpSettingsAction, createPanels: createHelpPanelsAction, postGuidelines: postHelpGuidelinesAction, panelBaseHref: "/admin/tickets/panels" }}
+      />
     </div>
   );
 }

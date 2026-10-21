@@ -44,7 +44,11 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
     );
 
   const [events, week] = await Promise.all([clanEvents(slug), leaderboard("week")]);
-  const apply = safeUrl(clan.applyUrl);
+  // Apply: the clan's own application (join its Discord, then its web form) when it set one up; else its apply link, if any.
+  const recruiting = clan.recruitingPost;
+  const applyHere = recruiting && (recruiting.applyFormPath || recruiting.inviteUrl) ? hubHref(site, `/c/${clan.slug}/apply`) : null;
+  const apply = applyHere ?? safeUrl(clan.applyUrl);
+  const applyExternal = !applyHere;
   const colour = clanAccent(clan);
   const ranked = week?.find((e) => e.slug === clan.slug) ?? null;
 
@@ -76,8 +80,8 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
             </div>
           </div>
           {apply && (
-            <a href={apply} target="_blank" rel="noreferrer noopener" className="shrink-0 rounded-xl px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110" style={{ backgroundColor: colour }}>
-              How to apply
+            <a href={apply} {...(applyExternal ? { target: "_blank", rel: "noreferrer noopener" } : {})} className="shrink-0 rounded-xl px-6 py-3 text-sm font-semibold text-black transition hover:brightness-110" style={{ backgroundColor: colour }}>
+              {applyHere ? "Apply to join" : "How to apply"}
             </a>
           )}
         </div>
@@ -92,6 +96,17 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-8">
+          {recruiting?.post && clan.recruiting.key !== "CLOSED" && (
+            <section className="rounded-2xl border p-6" style={{ borderColor: withAlpha(colour, 0.5), background: withAlpha(colour, 0.06) }}>
+              <h2 className="text-lg font-semibold">What they&apos;re looking for</h2>
+              <p className="mt-3 break-words whitespace-pre-wrap text-muted">{recruiting.post}</p>
+              {applyHere && (
+                <Link href={applyHere} className="mt-4 inline-block rounded-xl px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-110" style={{ backgroundColor: colour }}>
+                  Apply to join
+                </Link>
+              )}
+            </section>
+          )}
           {(clan.description || clan.requirements) && (
             <div className="grid gap-4 md:grid-cols-2 md:items-start">
               {clan.description && (
@@ -107,6 +122,40 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
                 </section>
               )}
             </div>
+          )}
+          {clan.alliances && (
+            <section aria-label="Allies" className="space-y-4">
+              <SectionHeader title="Allies" hint={clan.alliances.mode === "LIST" ? `Clans ${clan.name} is allied with.` : undefined} />
+              {clan.alliances.mode === "NONE" ? (
+                <p className="rounded-2xl border border-dashed border-surface-border p-6 text-sm text-muted">No allies.</p>
+              ) : (
+                <div className="space-y-4">
+                  {clan.alliances.alliances.map((a) => (
+                    <div key={a.id} className="rounded-2xl border border-surface-border bg-surface p-5">
+                      <h3 className="font-semibold">
+                        {a.hasPage ? (
+                          <Link href={hubHref(site, `/alliances/${a.id}`)} className="hover:underline">
+                            {a.name}
+                          </Link>
+                        ) : (
+                          a.name
+                        )}
+                      </h3>
+                      <ul className="mt-3 flex flex-wrap gap-3">
+                        {a.clans.map((c) => (
+                          <li key={c.slug}>
+                            <Link href={hubHref(site, `/c/${c.slug}`)} className="flex items-center gap-2.5 rounded-xl border border-surface-border px-3 py-2 text-sm transition hover:border-white/20">
+                              <ClanMark clan={c} size={28} />
+                              <span className="break-words">{c.name}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           )}
           <section aria-label="Upcoming events" className="space-y-4">
             <SectionHeader title="Coming up" hint={`Public events from ${clan.name}.`} />
@@ -150,8 +199,8 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
               </div>
             </dl>
             {apply && (
-              <a href={apply} target="_blank" rel="noreferrer noopener" className="block rounded-xl py-2.5 text-center font-semibold text-black transition hover:brightness-110" style={{ backgroundColor: colour }}>
-                How to apply
+              <a href={apply} {...(applyExternal ? { target: "_blank", rel: "noreferrer noopener" } : {})} className="block rounded-xl py-2.5 text-center font-semibold text-black transition hover:brightness-110" style={{ backgroundColor: colour }}>
+                {applyHere ? "Apply to join" : "How to apply"}
               </a>
             )}
           </div>

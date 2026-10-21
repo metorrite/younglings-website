@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { AdminUnavailableError } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { currentSite } from "@/lib/siteHostsServer";
+import { switchOpen } from "@/lib/siteSwitches";
+import { areaAllowed } from "@/lib/restrictedRule";
 import { createGuildContext, whoAmI, type ApiResult, type GuildContext } from "@/lib/jonnybot-admin";
 
 /**
@@ -25,11 +27,11 @@ export interface DashboardUser {
 
 /** The beta check. Fails closed: if the bot can't be asked, access is refused rather than guessed. */
 async function betaAllows(userId: string): Promise<boolean> {
-  if (process.env.DASHBOARD_PUBLIC === "true") return true;
+  if (await switchOpen("dashboard")) return true;
   const result = await whoAmI(userId);
   if (!result.ok) throw new AdminUnavailableError();
   // `beta` also lets in the admins of the trusted beta servers; an older bot without it falls back to the clan's own admins.
-  return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
+  return areaAllowed(result.data, "dashboard");
 }
 
 /** A signed-in user who may see the dashboard at all. Not signed in goes to sign-in; no beta access is a 404. */
@@ -58,6 +60,20 @@ const whoAmIOncePerRequest = cache((actorId: string, guildId: string) => whoAmI(
  * dashboard never confirms a server exists to a person with no business in it.
  */
 export async function requireGuild(guildId: string, returnTo?: string): Promise<GuildContext & { guildName: string; guildIconUrl: string | null }> {
+  const guild = await resolveGuild(guildId, returnTo, false);
+  return guild;
+}
+
+/**
+ * {@link requireGuild} that also lets an Event coordinator in. Only the event manager's pages, its actions and the dashboard shell call this; every
+ * other page keeps using requireGuild, which refuses a coordinator with a 404, and the bot refuses a coordinator on every route but the event ones, so
+ * a coordinator can never reach more than the events however they get there. The context's `tier` says COORDINATOR for them.
+ */
+export async function requireEventAccess(guildId: string, returnTo?: string): Promise<GuildContext & { guildName: string; guildIconUrl: string | null }> {
+  return resolveGuild(guildId, returnTo, true);
+}
+
+async function resolveGuild(guildId: string, returnTo: string | undefined, allowCoordinator: boolean): Promise<GuildContext & { guildName: string; guildIconUrl: string | null }> {
   if (!/^\d{1,20}$/.test(guildId)) notFound();
   const user = await requireDashboardUser(returnTo ?? `/dashboard/${guildId}`);
 
@@ -66,14 +82,15 @@ export async function requireGuild(guildId: string, returnTo?: string): Promise<
     if (result.status === 404) notFound();
     throw new AdminUnavailableError();
   }
-  if (!result.data.allowed || result.data.tier === "NONE") notFound();
+  const coordinator = allowCoordinator && result.data.coordinator === true && !result.data.allowed;
+  if (!coordinator && (!result.data.allowed || result.data.tier === "NONE")) notFound();
 
   const context = createGuildContext({
     actorId: user.id,
     guildId,
     displayName: result.data.displayName ?? user.displayName,
     avatarUrl: result.data.avatarUrl ?? user.avatarUrl,
-    tier: result.data.tier,
+    tier: coordinator ? "COORDINATOR" : result.data.tier === "NONE" ? "ADMIN" : result.data.tier,
   });
   return Object.assign(context, { guildName: result.data.guildName ?? "this server", guildIconUrl: result.data.guildIconUrl ?? null });
 }

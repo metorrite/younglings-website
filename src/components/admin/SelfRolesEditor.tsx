@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveSelfRolesAction } from "@/app/admin/(console)/actions";
+import type { ActionResult } from "@/app/admin/(console)/actions";
 import type { GuildRole, SelfRoleConfig } from "@/lib/jonnybot-admin";
 import { Card, dangerButton, ghostButton, inputClass, Notice, primaryButton } from "./ui";
 
@@ -13,7 +13,7 @@ interface Row {
   safe: boolean;
 }
 
-export function SelfRolesEditor({ initial, roles }: { initial: SelfRoleConfig[]; roles: GuildRole[] }) {
+export function SelfRolesEditor({ initial, roles, save: saveAction }: { initial: SelfRoleConfig[]; roles: GuildRole[]; save: (input: unknown) => Promise<ActionResult<SelfRoleConfig[]>> }) {
   const toRows = (configs: SelfRoleConfig[]): Row[] =>
     configs.map((c) => ({ roleId: c.roleId, label: c.label ?? "", description: c.description ?? "", name: c.name, safe: c.safe }));
 
@@ -30,7 +30,7 @@ export function SelfRolesEditor({ initial, roles }: { initial: SelfRoleConfig[];
     setError(null);
     setSaved(false);
     start(async () => {
-      const result = await saveSelfRolesAction(rows.map(({ roleId, label, description }) => ({ roleId, label, description })));
+      const result = await saveAction(rows.map(({ roleId, label, description }) => ({ roleId, label, description })));
       if (!result.ok) setError(result.error);
       else {
         setRows(toRows(result.data));

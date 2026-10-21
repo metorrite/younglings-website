@@ -27,10 +27,13 @@ function HubCard({
   groups,
   structure,
   maxList,
+  tagLabels,
   canEditAccess,
   save,
 }: {
   command: HubCommandConfig;
+  /** The labels of the command's tags. */
+  tagLabels: string[];
   groups: HubConfig["groups"];
   structure: GuildStructure;
   maxList: number;
@@ -49,6 +52,7 @@ function HubCard({
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [mode] = useViewMode();
+  const isFun = command.tags.includes("fun");
   // what was last saved: a rule that is already in force stays on screen in Basic
   const [kept, setKept] = useState({ customAccess: command.customAccess, channels: command.channelIds.length, signup: command.signup, afk: command.afk });
   const customised =
@@ -104,6 +108,13 @@ function HubCard({
           <span className="font-semibold">{command.title}</span>
           <code className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-xs text-foreground">/{command.slashName}</code>
           <span className="mt-0.5 block text-sm text-muted">{command.description}</span>
+          {tagLabels.length > 0 && (
+            <span className="mt-1.5 flex flex-wrap gap-1.5">
+              {tagLabels.map((label) => (
+                <span key={label} className="rounded-full border border-surface-border px-2 py-0.5 text-[11px] text-muted">{label}</span>
+              ))}
+            </span>
+          )}
         </span>
         <span className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
           <span className={`rounded-full px-2.5 py-1 font-medium ${enabled ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{enabled ? "On" : "Off"}</span>
@@ -120,6 +131,11 @@ function HubCard({
             label="Turned on"
             detail={enabled ? "Members can use this command." : "Switched off for everyone in this server."}
           />
+      {isFun && (
+        <p className="text-xs text-muted">
+          A fun command is only added to this server&apos;s Discord command list while it is on, so it stays out of the way when it is off. After you save, it can take a few seconds to appear or disappear there.
+        </p>
+      )}
       {!enabled && <p className="text-xs text-amber-300">While this is off, nobody in the server can use /{command.slashName}, admins included.</p>}
 
       {showMore ? (
@@ -318,7 +334,7 @@ function HubCard({
   );
 }
 
-/** The Commands page: a row for every command that stands on its own, opening to its settings. */
+/** The Commands page: a row for every command that stands on its own, opening to its settings. Filter by search, by enabled / disabled and by what the command is for (tags). */
 export function HubEditor({
   hub,
   structure,
@@ -332,11 +348,15 @@ export function HubEditor({
 }) {
   const [query, setQuery] = useState("");
   const [show, setShow] = useState<"all" | "on" | "off">("all");
+  // tags ticked as filters: a command is shown when it has any of them (none ticked shows every command)
+  const [picked, setPicked] = useState<string[]>([]);
   const needle = query.trim().toLowerCase();
+  const labelOf = (key: string) => hub.tags.find((t) => t.key === key)?.label ?? key;
   const shown = hub.commands.filter(
     (c) =>
       (show === "all" || (show === "on" ? c.enabled : !c.enabled)) &&
-      (needle === "" || `${c.title} ${c.slashName} ${c.description}`.toLowerCase().includes(needle)),
+      (picked.length === 0 || c.tags.some((t) => picked.includes(t))) &&
+      (needle === "" || `${c.title} ${c.slashName} ${c.description} ${c.tags.map(labelOf).join(" ")}`.toLowerCase().includes(needle)),
   );
   const onCount = hub.commands.filter((c) => c.enabled).length;
 
@@ -360,7 +380,7 @@ export function HubEditor({
               onClick={() => setShow(key)}
               className={`rounded-full border px-3 py-1 text-xs transition ${show === key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
             >
-              {key === "all" ? "All" : key === "on" ? "On" : "Off"}
+              {key === "all" ? "All" : key === "on" ? "Enabled" : "Disabled"}
             </button>
           ))}
         </div>
@@ -368,11 +388,39 @@ export function HubEditor({
           {onCount} of {hub.commands.length} turned on
         </p>
       </div>
+      {hub.tags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by what a command is for">
+          <span className="mr-1 text-xs font-medium text-muted">What it is for</span>
+          {hub.tags.map((tag) => {
+            const on = picked.includes(tag.key);
+            return (
+              <button
+                key={tag.key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setPicked((all) => (on ? all.filter((k) => k !== tag.key) : [...all, tag.key]))}
+                className={`rounded-full border px-3 py-1 text-xs transition ${on ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+              >
+                {tag.label}
+              </button>
+            );
+          })}
+          {picked.length > 0 && (
+            <button type="button" onClick={() => setPicked([])} className="ml-1 rounded-full px-2 py-1 text-xs text-muted underline hover:text-foreground">
+              Clear
+            </button>
+          )}
+        </div>
+      )}
       <div className="space-y-3">
         {shown.map((command) => (
-          <HubCard key={command.key} command={command} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
+          <HubCard key={command.key} command={command} tagLabels={command.tags.map(labelOf)} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
         ))}
-        {shown.length === 0 && <p className="rounded-xl border border-dashed border-surface-border p-8 text-center text-sm text-muted">No commands match.</p>}
+        {shown.length === 0 && (
+          <p className="rounded-xl border border-dashed border-surface-border p-8 text-center text-sm text-muted">
+            No commands match{picked.length > 0 || show !== "all" || needle !== "" ? " these filters." : "."}
+          </p>
+        )}
       </div>
     </div>
   );

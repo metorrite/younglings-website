@@ -1,5 +1,5 @@
 import { botCall } from "@/lib/botCall";
-import { demoClan, demoClanEvents, demoClans, demoEvents, demoLeaderboard } from "@/lib/clansHubDemo";
+import { demoAlliance, demoClan, demoClanEvents, demoClans, demoEvents, demoLeaderboard } from "@/lib/clansHubDemo";
 
 /**
  * What the clans hub shows, read straight from JonnyBot's public directory (the same data the public API serves). Server-only: it carries
@@ -20,12 +20,35 @@ export interface ClanSummary {
   onLeaderboards: boolean;
 }
 
+/**
+ * What a clan's page says about its alliances. Missing (or null) means the clan chose to say nothing, so show nothing at all. `NONE` is "No allies",
+ * whatever is true: it is also what a clan that shows its alliances gets when every ally has chosen to stay hidden. `LIST` carries the allies, grouped by
+ * alliance; the bot only ever names clans that chose to be shown, so a page never has to hide anyone itself.
+ */
+export interface ClanAlliances {
+  mode: "NONE" | "LIST";
+  alliances: { id: string; name: string; hasPage: boolean; clans: { slug: string; name: string; logoUrl: string | null; colour: number | null }[] }[];
+}
+
 export interface ClanDetail extends ClanSummary {
   description: string;
   requirements: string;
   applyUrl: string | null;
   timezone: string | null;
   updatedAt: string | null;
+  alliances?: ClanAlliances | null;
+  /**
+   * The clan's recruiting post (an older bot sends none). `applyFormPath` (its application web form, on the clan-site face) and `inviteUrl`
+   * (a Discord invite) only while it is recruiting.
+   */
+  recruitingPost?: { post: string; applyFormPath: string | null; inviteUrl: string | null };
+}
+
+/** An alliance's public page: only clans that chose to show their alliances are in it. */
+export interface AlliancePage {
+  id: string;
+  name: string;
+  clans: { slug: string; name: string; tagline: string; logoUrl: string | null; colour: number | null }[];
 }
 
 export interface HubEvent {
@@ -94,6 +117,16 @@ export async function getClan(slug: string): Promise<ClanDetail | null | undefin
   if (!SLUG.test(slug) || slug.length > 40) return undefined;
   if (demoOn()) return demoClan(slug);
   const answer = await botCall<ClanDetail>(`/internal/directory/clans/${slug}`, { revalidate: 30 });
+  if (!answer) return null;
+  if (answer.status === 404) return undefined;
+  return answer.status === 200 ? answer.json : null;
+}
+
+/** An alliance's public page, or `undefined` when there is none (it does not exist, or fewer than two of its clans show their alliances), `null` when the bot is unreachable. */
+export async function getAlliance(id: string): Promise<AlliancePage | null | undefined> {
+  if (!/^\d{1,18}$/.test(id)) return undefined;
+  if (demoOn()) return demoAlliance(id);
+  const answer = await botCall<AlliancePage>(`/internal/directory/alliances/${id}`, { revalidate: 30 });
   if (!answer) return null;
   if (answer.status === 404) return undefined;
   return answer.status === 200 ? answer.json : null;

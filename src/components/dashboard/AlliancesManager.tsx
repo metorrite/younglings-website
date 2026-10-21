@@ -15,7 +15,7 @@ import {
 } from "@/components/admin/ui";
 import { CollapsibleCard, Chip } from "@/components/dashboard/ui/CollapsibleCard";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
-import type { Alliance, AllianceEvents, AllianceList, WelcomeActionResult } from "@/lib/jonnybot-admin";
+import type { Alliance, AllianceEvents, AllianceList, AllianceVisibility, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Result = Promise<WelcomeActionResult<AllianceList>>;
 
@@ -25,7 +25,15 @@ export interface AllianceActions {
   accept: (id: string) => Result;
   leave: (id: string) => Result;
   remove: (id: string, clanGuildId: string) => Result;
+  /** What this clan's public hub page says about its alliances. Left out where there is nothing to save it to. */
+  setVisibility?: (visibility: AllianceVisibility) => Result;
 }
+
+const VISIBILITY: { key: AllianceVisibility; label: string; hint: string }[] = [
+  { key: "HIDDEN", label: "Say nothing", hint: "Your clan page has no alliances section. This is the default." },
+  { key: "NO_ALLIES", label: "Say “No allies”", hint: "Your clan page says you have no allies, even if you have. Alliances still work for sharing events." },
+  { key: "SHOWN", label: "Show my allies", hint: "Your clan page lists the clans you are allied with, and links to each alliance's page." },
+];
 
 /** This server's alliances: start one, answer invitations, invite clans by their directory address, and see the shared calendar. */
 export function AlliancesManager({
@@ -58,6 +66,7 @@ export function AlliancesManager({
     });
   }
 
+  const visibility: AllianceVisibility = data.visibility ?? "HIDDEN";
   const invitations = data.alliances.filter((a) => a.status === "INVITED");
   const active = data.alliances.filter((a) => a.status === "ACTIVE");
 
@@ -65,6 +74,37 @@ export function AlliancesManager({
     <div className="space-y-6">
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
+
+      {actions.setVisibility && (
+        <CollapsibleCard
+          id="alliance-visibility"
+          title="On the clans hub"
+          hint="Whether your public clan page shows your alliances."
+          defaultOpen={active.length > 0}
+          summary={<Chip tone={visibility === "SHOWN" ? "good" : "plain"}>{VISIBILITY.find((v) => v.key === visibility)?.label}</Chip>}
+          info="Having alliances and showing them are separate things: alliances work the same whichever you choose. Hiding is mutual. A clan that says nothing or says it has no allies is never named on another clan's page or on an alliance page either, and only clans that are publicly listed in the directory are ever named. Whoever is hidden is never revealed by someone else."
+        >
+          <div role="radiogroup" aria-label="What your clan page shows" className="flex flex-wrap gap-2">
+            {VISIBILITY.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                role="radio"
+                aria-checked={visibility === v.key}
+                disabled={pending}
+                onClick={() => run(() => actions.setVisibility!(v.key), "Saved.")}
+                className={`rounded-full border px-3 py-1 text-xs transition ${visibility === v.key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-muted">{VISIBILITY.find((v) => v.key === visibility)?.hint}</p>
+          {visibility === "SHOWN" && (
+            <p className="text-xs text-muted">Only active allies that are publicly listed and have chosen to show their own alliances are named. If none have, your page says “No allies”.</p>
+          )}
+        </CollapsibleCard>
+      )}
 
       {invitations.length > 0 && (
         <section className="space-y-3 rounded-xl border border-gold/40 bg-gold/5 p-5">

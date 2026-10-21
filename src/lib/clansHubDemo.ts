@@ -1,4 +1,4 @@
-import type { ClanDetail, ClanSummary, HubEvent, LeaderboardEntry } from "@/lib/clansHub";
+import type { AlliancePage, ClanAlliances, ClanDetail, ClanSummary, HubEvent, LeaderboardEntry } from "@/lib/clansHub";
 
 /** Made-up clans for judging the hub's layout with a full directory (`HUB_DEMO=true`, local only). Deterministic, so a screenshot is repeatable. */
 
@@ -55,16 +55,40 @@ const summaries: ClanSummary[] = SEEDS.map(([name, tagline, colour, focus, rec, 
 
 export const demoClans = (): ClanSummary[] => summaries;
 
+/** Demo alliances: the first three clans are in "The Coalition" and show it, the fourth says it has no allies, the fifth keeps quiet (shows nothing at all). */
+function demoAlliances(slug: string): ClanAlliances | null {
+  const group = summaries.slice(0, 3);
+  const mark = (c: ClanSummary) => ({ slug: c.slug, name: c.name, logoUrl: c.logoUrl, colour: c.colour });
+  if (group.some((c) => c.slug === slug)) {
+    return { mode: "LIST", alliances: [{ id: "1", name: "The Coalition", hasPage: true, clans: group.filter((c) => c.slug !== slug).map(mark) }] };
+  }
+  return summaries[3]?.slug === slug ? { mode: "NONE", alliances: [] } : null;
+}
+
+export function demoAlliance(id: string): AlliancePage | undefined {
+  if (id !== "1") return undefined;
+  return { id, name: "The Coalition", clans: summaries.slice(0, 3).map((c) => ({ slug: c.slug, name: c.name, tagline: c.tagline, logoUrl: c.logoUrl, colour: c.colour })) };
+}
+
 export function demoClan(slug: string): ClanDetail | undefined {
   const base = summaries.find((c) => c.slug === slug);
   if (!base) return undefined;
   return {
     ...base,
+    alliances: demoAlliances(slug),
     description: `${base.name} is a RuneScape 3 clan built around ${base.focus.map((f) => f.label.toLowerCase()).join(", ")}.\n\nWe meet on Discord every evening, run weekly events, and keep a friendly, no-pressure atmosphere. New members are given a buddy for their first two weeks.`,
     requirements: "Be active at least a few times a week. Be kind. Have Discord and be willing to join voice for events.",
     applyUrl: "https://discord.gg/example",
     timezone: "Europe/London",
     updatedAt: "2026-10-18T10:00:00Z",
+    recruitingPost:
+      base.recruiting.key === "CLOSED"
+        ? { post: "", applyFormPath: null, inviteUrl: null }
+        : {
+            post: "We're looking for players who want to learn group bossing, and skillers who enjoy our weekly competitions. Any combat level is welcome.",
+            applyFormPath: "/forms/1/1",
+            inviteUrl: "https://discord.gg/example",
+          },
   };
 }
 

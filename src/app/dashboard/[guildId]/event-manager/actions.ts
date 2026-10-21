@@ -1,6 +1,6 @@
 "use server";
 
-import { requireGuild } from "@/lib/dashboard";
+import { requireEventAccess } from "@/lib/dashboard";
 import { adminApi, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 
@@ -42,6 +42,14 @@ const ALLOWED = [
   /^events\/saved-templates$/,
   /^events\/saved-templates\/\d{1,18}$/,
   /^events\/saved-templates\/\d{1,18}\/create$/,
+  // the server's own defaults for new events (names, look, verification, setup steps)
+  /^events\/defaults$/,
+  // co-hosted events (T-219): the host's co-hosts, and this server's invitations and the events it co-hosts
+  /^events\/\d{1,18}\/cohosts$/,
+  /^events\/\d{1,18}\/cohosts\/\d{1,20}$/,
+  /^cohost-events$/,
+  /^cohost-events\/\d{1,18}\/(accept|decline)$/,
+  /^cohost-events\/\d{1,18}\/players\/\d{1,20}$/,
 ];
 
 export async function eventApiAction(
@@ -50,7 +58,7 @@ export async function eventApiAction(
   path: string,
   body?: unknown,
 ): Promise<WelcomeActionResult<unknown>> {
-  const guild = await requireGuild(guildId);
+  const guild = await requireEventAccess(guildId);
   if (!["GET", "POST", "PUT", "DELETE"].includes(method) || typeof path !== "string" || !ALLOWED.some((re) => re.test(path)))
     return { ok: false, error: "That isn't something the event manager can do.", problems: [] };
   if (method !== "GET") {

@@ -7,9 +7,12 @@ type Json = Record<string, any>; // eslint-disable-line @typescript-eslint/no-ex
 /** A mock of the bot's roles-and-channels routes over one scenario: preview and save answer with the scenario's view, and apply and remove run a pretend background job. */
 export function makeSpaceCall(scenario: string) {
   let enabled = scenario !== "off";
-  let applied = false;
+  // "drift": set up earlier, then a role and a channel were changed on Discord, so they are listed to be put back
+  const drift = scenario === "drift";
+  let applied = drift;
   let job: Json | null = null;
-  const clone = (): Json => JSON.parse(JSON.stringify(spaceViews[enabled && scenario === "off" ? "solo" : enabled ? scenario : "off"]));
+  const base = drift ? "solo" : scenario;
+  const clone = (): Json => JSON.parse(JSON.stringify(spaceViews[enabled && base === "off" ? "solo" : enabled ? base : "off"]));
   const view = (): Json => {
     const v = clone();
     v.settings.enabled = enabled;
@@ -24,6 +27,17 @@ export function makeSpaceCall(scenario: string) {
       for (const c of v.channels) if (c.action === "create") c.action = "keep";
       v.summary.newRoles = 0;
       v.summary.newChannels = 0;
+    }
+    if (applied && drift && !job) {
+      v.roles[0].action = "repair";
+      v.roles[0].note = `Called @Bingo peeps on Discord now; it gets its name back.`;
+      const general = v.channels.find((c: Json) => c.kind === "general") ?? v.channels[1];
+      general.action = "repair";
+      general.note = "Put back: it was renamed (it is #chit-chat now), who can see or write in it was changed.";
+      v.summary.toRepair = 2;
+      v.complete = false;
+      v.state.complete = false;
+      v.state.note = "putting the role " + v.roles[0].name + " back, putting #" + general.name + " back";
     }
     return v;
   };

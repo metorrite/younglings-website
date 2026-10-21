@@ -10,11 +10,12 @@ const TABS = [
   { path: "/history", label: "Tickets" },
   { path: "/settings", label: "Settings" },
   { path: "/help-extras", label: "Help extras" },
+  { path: "/flags", label: "Flags" },
   { path: "/defaults", label: "Panel defaults" },
 ];
 
 /**
- * The Tickets header and its tabs, on the four pages that are tabs (the panels, the tickets, the settings, the panel defaults). A page inside one of them (a panel
+ * The Tickets header and its tabs, on the pages that are tabs (the panels, the tickets, the settings, the flags, the panel defaults). A page inside one of them (a panel
  * being edited, one ticket) has its own header with a back button instead, so the section's header is not stacked above it.
  */
 export function TicketsChrome({ guildId }: { guildId: string }) {
@@ -38,7 +39,7 @@ export function TicketTabs({ guildId }: { guildId: string }) {
   const pathname = usePathname();
   const base = `/dashboard/${guildId}/tickets`;
   const [mode] = useViewMode();
-  const tabs = TABS.filter((tab) => tab.path !== "/defaults" || mode === "advanced" || pathname.startsWith(`${base}/defaults`));
+  const tabs = TABS.filter((tab) => (tab.path !== "/defaults" && tab.path !== "/flags") || mode === "advanced" || pathname.startsWith(`${base}${tab.path}`));
 
   return (
     <nav aria-label="Tickets" className="flex flex-wrap gap-1 border-b border-surface-border">

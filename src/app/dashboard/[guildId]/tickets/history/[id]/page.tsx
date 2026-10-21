@@ -1,14 +1,16 @@
 import { Card, formatUtc, StatusBadge } from "@/components/admin/ui";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
+import { TicketFlagsCard } from "@/components/dashboard/TicketFlags";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { addTicketFlagAction, deleteTicketFlagAction, setTicketFlagsEnabledAction } from "../../flags/actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function TicketDetailPage({ params }: { params: Promise<{ guildId: string; id: string }> }) {
   const { guildId, id } = await params;
   const guild = await requireGuild(guildId);
-  const ticket = await adminApi.getTicket(guild, id).then(dashboardData);
+  const [ticket, flags] = await Promise.all([adminApi.getTicket(guild, id).then(dashboardData), adminApi.ticketFlagsFor(guild, id).then(dashboardData)]);
 
   return (
     <div className="space-y-6">
@@ -32,6 +34,13 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ g
               {ticket.closeReason && <Item label="Close reason" value={ticket.closeReason} />}
             </dl>
           </Card>
+
+          <TicketFlagsCard
+            initial={flags}
+            ticketId={id}
+            guildId={guildId}
+            actions={{ setEnabled: setTicketFlagsEnabledAction.bind(null, guildId), add: addTicketFlagAction.bind(null, guildId), remove: deleteTicketFlagAction.bind(null, guildId) }}
+          />
 
           {ticket.answers.length > 0 && (
             <Card title="Answers">

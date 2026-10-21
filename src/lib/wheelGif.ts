@@ -6,7 +6,7 @@ import { drawWheel, endAngle } from "@/lib/wheel";
 /**
  * The picture of the wheel spinning and stopping on a winner, drawn on the server with the very same code that draws the wheel on the dashboard
  * (`drawWheel`), so the GIF looks like the wheel the organiser watched. It spins for a few seconds, slows down and lands, then holds on the winner
- * for a long time (a GIF loops, so the hold is what stops it feeling like a flicker). Frames are packed closely while the wheel is fast and spread
+ * for a moment (a GIF loops, so the hold is what stops it feeling like a flicker). Frames are packed closely while the wheel is fast and spread
  * out as it slows, so the motion stays smooth without wasting bytes.
  *
  * The bot has its own, simpler version of this for servers without the website; the website's is stored with the locked winner when there is one.
@@ -19,12 +19,14 @@ const BACKGROUND = "#0b0d12";
 /** Room under the wheel for the winner's name, so it isn't squeezed against the edge of the picture. */
 const FOOTER = 44;
 const TURNS = 3;
-const SPIN_MS = 4200;
+// The timing is the same as the bot's own wheel GIF (WheelSpin.java) so the two look alike: a short pause on the still wheel, a 3.5 second spin, a short hold. About five seconds in all.
+const INITIAL_PAUSE_MS = 300;
+const SPIN_MS = 3500;
 const EASE_POWER = 2.6;
-const MAX_STEP_RADIANS = 0.12;
+const MAX_STEP_RADIANS = 0.1;
 const MIN_FRAME_MS = 20;
-const MAX_FRAME_MS = 90;
-const HOLD_MS = 3500;
+const MAX_FRAME_MS = 60;
+const HOLD_MS = 1200;
 /** The colour table slot that means "the same as the frame before". */
 const TRANSPARENT = 255;
 /** Largest first: a picture that is too big for Discord is redrawn smaller. */
@@ -122,7 +124,7 @@ function draw(labels: string[], winnerIndex: number, size: number, family: strin
     const index = applyPalette(frame(angle, false), mapPalette, "rgb565");
     const next = i + 1 < times.length ? times[i + 1] : times[i] + MIN_FRAME_MS;
     // the very first frame waits a moment so the picture doesn't start already moving
-    const ms = i === 0 ? 400 : next - times[i];
+    const ms = i === 0 ? INITIAL_PAUSE_MS : next - times[i];
     const delay = Math.max(2, Math.round(ms / 10));
     if (previous === null) {
       gif.writeFrame(index, size, height, { palette: spinPalette, delay, first: true });

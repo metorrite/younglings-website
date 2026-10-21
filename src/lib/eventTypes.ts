@@ -38,6 +38,8 @@ export interface EventSummary {
     bonuses?: EventBonus[];
     lineBonus?: number;
     blackoutBonus?: number;
+    /** The events hub (T-216): the host's switch for standings there, and JonnyBot staff's takedown (read-only for the host). */
+    hub?: { publicStandings?: boolean; takedown?: { reason?: string; at?: string } | null };
   };
   createdAt: string;
 }
@@ -305,7 +307,8 @@ export interface EventAward {
 // ---------- roles and channels ----------
 
 export type SpaceUse = "create" | "existing" | "none";
-export type SpaceAction = "create" | "keep" | "use_existing" | "remove";
+/** `repair`: JonnyBot made it and it is still there, but it was renamed or its access was changed; setting up puts it back. */
+export type SpaceAction = "create" | "keep" | "use_existing" | "remove" | "repair";
 
 /** One of the single channels an event can have (staff, announcements, general, board, review) and how it is provided. */
 export interface SpaceSlot {
@@ -339,6 +342,8 @@ export interface SpaceSettings {
   playerChannels: boolean;
   slots: SpaceSlot[];
   names: SpaceName[];
+  /** The first message posted in each kind of channel JonnyBot makes (T-209): only the kinds with a text; none by default. */
+  welcome?: Record<string, string>;
 }
 
 /** What the page sends to preview or save the choices: only what differs from the defaults is needed. */
@@ -348,6 +353,7 @@ export interface SpaceDraft {
   playerChannels: boolean;
   slots: Record<string, { use: SpaceUse; channelId?: string }>;
   names: Record<string, string>;
+  welcome?: Record<string, string>;
 }
 
 export interface SpaceGrant {
@@ -404,12 +410,14 @@ export interface SpaceView {
   roles: SpaceRole[];
   channels: SpaceChannel[];
   staffRoles: { id: string; name: string }[];
-  summary: { newRoles: number; newChannels: number; toRemove: number; players: number; excluded: number };
+  summary: { newRoles: number; newChannels: number; toRemove: number; toRepair?: number; players: number; excluded: number };
 }
 
 /** What happens to an event's roles and channels once it is over (`events/{id}/wrapup`). Days: 0 is straight away, -1 is never (an organiser decides). */
 export interface WrapupSettings {
   lockOnFinish: boolean;
+  /** Reopening a finished event unlocks the channels JonnyBot locked (on unless switched off; older bots don't send it). */
+  unlockOnReopen?: boolean;
   rolesDays: number;
   channelsDays: number;
   channelsAction: "NONE" | "ARCHIVE" | "DELETE";

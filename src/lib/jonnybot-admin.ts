@@ -41,7 +41,8 @@ export interface GuildContext {
   readonly guildId: string;
   readonly displayName: string;
   readonly avatarUrl: string | null;
-  readonly tier: "ADMIN" | "DEVELOPER";
+  /** COORDINATOR: an Event coordinator, who may use the event manager of this server and nothing else (see requireEventAccess). */
+  readonly tier: "ADMIN" | "DEVELOPER" | "COORDINATOR";
 }
 
 export function createGuildContext(guild: Omit<GuildContext, typeof guildContextBrand>): GuildContext {
@@ -54,7 +55,7 @@ export interface ManagedGuild {
   name: string;
   iconUrl: string | null;
   memberCount: number;
-  tier: "ADMIN" | "DEVELOPER";
+  tier: "ADMIN" | "DEVELOPER" | "COORDINATOR";
 }
 
 // ---------- shapes the bot returns ----------
@@ -67,9 +68,14 @@ export interface WhoAmI {
   avatarUrl?: string;
   /** Whether the person may use JonnyBot's website while it is closed: the clan's admins, or admins of a trusted beta server. Absent from an older bot. */
   beta?: boolean;
-  /** Whether this person owns the bot itself; only sent to someone allowed in. Gates the dev snapshot button. */
+  /** Per restricted area, whether this person may enter it: the beta rule or a grant on the owner's access list. Absent from an older bot. */
+  areas?: Partial<Record<string, boolean>>;
+  /** Whether the person owns the bot itself (not just a server); only present when they are allowed in. Absent from an older bot, which counts as no. */
   isOwner?: boolean;
   /** The server the answer is about; only present when the user is allowed in. */
+  guildId?: string;
+  /** An Event coordinator: not a dashboard admin (`allowed` is false), but allowed into the event manager. Present only when true. */
+  coordinator?: boolean;
   guildName?: string;
   guildIconUrl?: string | null;
 }
@@ -226,6 +232,18 @@ export interface HelpExtras {
   eventButton: boolean;
   eventStartHours: number;
   eventDays: number;
+  /** Show other open tickets for the same group boss, with Link and Merge buttons. */
+  relatedTickets: boolean;
+  /** The bosses that count as group content, comma separated. */
+  groupBosses: string;
+  /** Rank tickets by who asks: clan members, then longtime guests, then new guests. */
+  priorityTiers: boolean;
+  longtimeGuestDays: number;
+  longtimeGuestPings: boolean;
+  /** Hours before a longtime guest's ticket pings the next role up; 0 for never. */
+  longtimeGuestEscalationHours: number;
+  /** Kill counts new guests need for a CA tier, like "Master=50, Grandmaster=100". */
+  kcRequirements: string;
   maxStartHours: number;
   maxDays: number;
 }
@@ -372,6 +390,58 @@ export interface TicketDetail extends TicketRow {
   transcriptMessageCount: number | null;
 }
 
+/** A staff-only note that a help experience with a ticket's player went badly. */
+export interface TicketFlag {
+  id: string;
+  ticketId: string;
+  ticketNumber: number;
+  playerId: string;
+  playerName: string | null;
+  flaggedBy: string;
+  flaggedByName: string | null;
+  note: string;
+  createdAt: string | null;
+}
+
+export interface TicketFlagList {
+  /** Whether new flags may be added. Off by default. */
+  enabled: boolean;
+  flags: TicketFlag[];
+  maxNote: number;
+}
+
+/** One tile of a server's own bingo tile pool. */
+export interface BingoPoolTile {
+  id: string;
+  label: string;
+  points: number;
+  target: number;
+  difficulty: string;
+  tags: string[];
+  enabled: boolean;
+  /** "manual", or the id of the starter pack it came from. */
+  source: string;
+}
+
+export interface BingoPoolOverview {
+  tiles: BingoPoolTile[];
+  packs: { id: string; title: string; description: string }[];
+  difficulties: { key: string; label: string; defaultPoints: number }[];
+  maxTiles: number;
+  maxLabel: number;
+  maxPoints: number;
+  maxTarget: number;
+  maxTags: number;
+  maxTilesInEvent: number;
+  /** Only on the answer to adding a starter pack. */
+  added?: number;
+  skipped?: number;
+  /** Only on the answer to clearing. */
+  removed?: number;
+}
+
+export type BingoPoolTileInput = { label: string; points?: number; target?: number; difficulty?: string; tags?: string[]; enabled?: boolean };
+
 // ---------- plumbing ----------
 
 // ---------- roster view, attention, health, audit, notes, scheduled posts ----------
@@ -511,6 +581,97 @@ export interface WebFormSubmissions {
   formId: string;
   total: number;
   submissions: { id: string; userId: string; userName: string | null; at: string; ticketId: string | null; answers: { label: string; value: string }[] }[];
+}
+
+/** One live site-access switch as the owner sees it. */
+export interface SiteSwitchInfo {
+  key: "jonnybot" | "hub" | "dashboard";
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+/** One entry on the restricted-content access list. */
+export interface AccessGrant {
+  id: string;
+  area: string;
+  subject: "user" | "server";
+  userId?: string;
+  guildId?: string;
+  level?: string;
+  levelLabel?: string;
+  botPresent?: boolean;
+  serverName?: string | null;
+  note: string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt: string | null;
+  expired: boolean;
+}
+
+export interface AccessGrantList {
+  grants: AccessGrant[];
+  areas: { key: string; label: string }[];
+  levels: { key: string; label: string }[];
+}
+
+export interface NewAccessGrant {
+  area: string;
+  subject: "user" | "server";
+  userId?: string;
+  guildId?: string;
+  level?: string;
+  note: string;
+  expiresOn?: string;
+}
+
+/** One bulk role job, the dry run or a running one. */
+export interface RoleBulkJob {
+  id: string;
+  mode: "ADD" | "REMOVE";
+  status: "PLANNED" | "RUNNING" | "PAUSED" | "DONE" | "CANCELLED";
+  sourceRoleId: string;
+  sourceName: string | null;
+  targetRoleId: string;
+  targetName: string | null;
+  total: number;
+  done: number;
+  failed: number;
+  createdAt: string;
+  /** The first names the job would change; only on a single job. */
+  preview?: { id: string; name: string | null }[];
+}
+
+export interface RoleToolkit {
+  groups: { key: string; name: string; roleIds: string[] }[];
+  jobs: RoleBulkJob[];
+  maxMembers: number;
+}
+
+/** Roles that outlast a visit: the sticky list, roles kept on single members, and timed roles. */
+export interface RoleKeeper {
+  sticky: string[];
+  kept: { id: string; userId: string; userName: string | null; roleId: string; addedBy: string; createdAt: string }[];
+  temp: { id: string; userId: string; userName: string | null; roleId: string; expiresAt: string }[];
+  maxSticky: number;
+}
+
+/** One connected / trigger role rule. */
+export interface RoleRule {
+  id: string;
+  name: string;
+  event: "GAINS" | "LOSES";
+  enabled: boolean;
+  when: string[];
+  add: string[];
+  remove: string[];
+}
+
+export interface RoleRuleList {
+  rules: RoleRule[];
+  max: number;
+  maxWhen: number;
+  maxThen: number;
 }
 
 export interface BetaGuilds {
@@ -747,6 +908,28 @@ export interface MessageLogSettings {
   limits: { minDays: number; maxDays: number; maxExcluded: number };
 }
 
+/** One custom tag: a named reply members bring up with /tag use. */
+export interface CustomTagDef {
+  id: string | null;
+  name: string;
+  content: string;
+  embed: boolean;
+  embedTitle: string;
+  /** "#rrggbb", or empty for the default colour. */
+  embedColor: string;
+  delivery: "CHANNEL" | "PRIVATE" | "DM";
+  allowedRoles: string[];
+  cooldownSeconds: number;
+  enabled: boolean;
+  uses: number;
+}
+
+export interface CustomTagList {
+  enabled: boolean;
+  tags: CustomTagDef[];
+  limits: { max: number; maxName: number; maxContent: number; maxTitle: number; maxRoles: number; maxCooldown: number };
+}
+
 /** One automatic reply: when a message matches the trigger, the bot answers. */
 export interface AutoReplyDef {
   id: string | null;
@@ -866,8 +1049,16 @@ export interface SuggestionList {
   maxNote: number;
 }
 
+/** What an auto-clean rule is limited to. No filter set means every old message goes, as it always has. A filter only ever keeps more messages. */
+export interface AutoCleanFilters {
+  authors: "ALL" | "ONLY_BOTS" | "ONLY_HUMANS";
+  onlyWithAttachments: boolean;
+  /** Only messages containing this text (any case), or null for any text. */
+  containsText: string | null;
+}
+
 /** One channel's auto-clean rule. `problem` says why it is not working, when it is not. */
-export interface AutoCleanRule {
+export interface AutoCleanRule extends AutoCleanFilters {
   channelId: string;
   channelName: string | null;
   maxAgeMinutes: number;
@@ -880,6 +1071,17 @@ export interface AutoCleanList {
   minAge: number;
   maxAge: number;
   maxRules: number;
+  maxTextLength: number;
+}
+
+/** The dry run of a rule: how many of the messages the next sweep would look at it would delete. Nothing is deleted. */
+export interface AutoCleanPreview {
+  matched: number;
+  scanned: number;
+  /** The scan stopped at its limit, so there may be more than `matched`. */
+  mayHaveMore: boolean;
+  scanLimit: number;
+  channelName: string;
 }
 
 /** One followed YouTube channel or subreddit. `problem` says why it cannot post, when it cannot. */
@@ -905,6 +1107,34 @@ export interface TwitchOverview {
   enabled: boolean;
   offlineAction: TwitchOfflineAction;
   streamers: TwitchStreamer[];
+  max: number;
+  maxMessage: number;
+  defaultMessage: string;
+  envNames: string[];
+}
+
+/** One Kick streamer a server follows. */
+export interface KickStreamer {
+  id: string;
+  login: string;
+  displayName: string;
+  channelId: string;
+  pingRoleId: string | null;
+  message: string | null;
+  enabled: boolean;
+  liveNow: boolean;
+  /** Why alerts for this streamer cannot post right now (the channel is gone, a permission is missing), or null. */
+  problem: string | null;
+}
+
+export type KickOfflineAction = "EDIT" | "DELETE" | "KEEP";
+
+export interface KickOverview {
+  /** Whether the bot has a Kick app (its owner added the id and secret). Without one nothing can be switched on. */
+  configured: boolean;
+  enabled: boolean;
+  offlineAction: KickOfflineAction;
+  streamers: KickStreamer[];
   max: number;
   maxMessage: number;
   defaultMessage: string;
@@ -951,6 +1181,171 @@ export interface WarningItem {
   moderatorName: string | null;
   reason: string;
   createdAt: string;
+}
+
+/** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */
+export interface ModerationCase {
+  caseNo: string;
+  userId: string;
+  userName: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: "BAN" | "UNBAN" | "KICK" | "TIMEOUT" | "UNTIMEOUT" | "SOFTBAN" | "WARN";
+  actionLabel: string;
+  reason: string;
+  durationMinutes: number | null;
+  /** COMMAND, WARN, AUTOPUNISH, AUTOMOD, HONEYPOT or SERVER_TAG. */
+  source: string;
+  createdAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  /** The reason as first written, only when it was edited. */
+  originalReason: string | null;
+}
+
+export interface ModerationSettings {
+  /** Tell the member by DM what happened and why. */
+  dmReason: boolean;
+  /** Name the moderator in that DM. */
+  showModerator: boolean;
+  appealUrl: string | null;
+  /** Role ids whose holders can never be moderated. */
+  protectedRoleIds: string[];
+}
+
+export interface ModerationOverview {
+  settings: ModerationSettings;
+  maxProtectedRoles: number;
+  limit: number;
+  cases: ModerationCase[];
+}
+
+/** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */
+export interface ModerationCase {
+  caseNo: string;
+  userId: string;
+  userName: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: "BAN" | "UNBAN" | "KICK" | "TIMEOUT" | "UNTIMEOUT" | "SOFTBAN" | "WARN";
+  actionLabel: string;
+  reason: string;
+  durationMinutes: number | null;
+  /** COMMAND, WARN, AUTOPUNISH, AUTOMOD, HONEYPOT or SERVER_TAG. */
+  source: string;
+  createdAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  /** The reason as first written, only when it was edited. */
+  originalReason: string | null;
+}
+
+export interface ModerationSettings {
+  /** Tell the member by DM what happened and why. */
+  dmReason: boolean;
+  /** Name the moderator in that DM. */
+  showModerator: boolean;
+  appealUrl: string | null;
+  /** Role ids whose holders can never be moderated. */
+  protectedRoleIds: string[];
+}
+
+/** A server's honeypot: a decoy channel and/or role, and what happens to whoever uses it. Off until switched on. */
+export interface Honeypot {
+  enabled: boolean;
+  channelId: string | null;
+  roleId: string | null;
+  action: "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+  exemptRoleIds: string[];
+  /** For a ban: days of their messages to delete, 0 to 7. */
+  deleteDays: number;
+  maxExemptRoles: number;
+  /** What JonnyBot is allowed to do here; each action needs its own Discord permission. */
+  canBan: boolean;
+  canKick: boolean;
+  canTimeout: boolean;
+}
+
+
+export interface ModerationOverview {
+  settings: ModerationSettings;
+  maxProtectedRoles: number;
+  limit: number;
+  cases: ModerationCase[];
+}
+
+/** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */
+export interface ModerationCase {
+  caseNo: string;
+  userId: string;
+  userName: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: "BAN" | "UNBAN" | "KICK" | "TIMEOUT" | "UNTIMEOUT" | "SOFTBAN" | "WARN";
+  actionLabel: string;
+  reason: string;
+  durationMinutes: number | null;
+  /** COMMAND, WARN, AUTOPUNISH, AUTOMOD, HONEYPOT or SERVER_TAG. */
+  source: string;
+  createdAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  /** The reason as first written, only when it was edited. */
+  originalReason: string | null;
+}
+
+export interface ModerationSettings {
+  /** Tell the member by DM what happened and why. */
+  dmReason: boolean;
+  /** Name the moderator in that DM. */
+  showModerator: boolean;
+  appealUrl: string | null;
+  /** Role ids whose holders can never be moderated. */
+  protectedRoleIds: string[];
+}
+
+/** A server's server-tag moderation: members showing the tag of a flagged server are reported or acted on. Off until switched on; alert-only by default. */
+export interface ServerTagRule {
+  enabled: boolean;
+  flaggedGuildIds: string[];
+  action: "ALERT" | "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+  alertChannelId: string | null;
+  exemptRoleIds: string[];
+  maxFlagged: number;
+  maxExemptRoles: number;
+  canBan: boolean;
+  canKick: boolean;
+  canTimeout: boolean;
+}
+
+export type ServerTagDraft = Pick<ServerTagRule, "enabled" | "flaggedGuildIds" | "action" | "timeoutMinutes" | "alertChannelId" | "exemptRoleIds">;
+
+/** A server's honeypot: a decoy channel and/or role, and what happens to whoever uses it. Off until switched on. */
+export interface Honeypot {
+  enabled: boolean;
+  channelId: string | null;
+  roleId: string | null;
+  action: "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+  exemptRoleIds: string[];
+  /** For a ban: days of their messages to delete, 0 to 7. */
+  deleteDays: number;
+  maxExemptRoles: number;
+  /** What JonnyBot is allowed to do here; each action needs its own Discord permission. */
+  canBan: boolean;
+  canKick: boolean;
+  canTimeout: boolean;
+}
+
+export type HoneypotDraft = Pick<Honeypot, "enabled" | "channelId" | "roleId" | "action" | "timeoutMinutes" | "exemptRoleIds" | "deleteDays">;
+
+export interface ModerationOverview {
+  settings: ModerationSettings;
+  maxProtectedRoles: number;
+  limit: number;
+  cases: ModerationCase[];
 }
 
 export interface WarningList {
@@ -1286,6 +1681,57 @@ export interface ClanProfileData {
   limits: { name: number; tagline: number; description: number; requirements: number };
 }
 
+/** A content block of a clan website (website builder), as the dashboard edits it. */
+export interface ClanSiteBlockData {
+  page: string;
+  position: number;
+  kind: "TEXT" | "IMAGE" | "LINKS";
+  body: Record<string, unknown>;
+}
+
+/** A server's clan website for the dashboard's Clan website page (docs/DOMAINS-AND-SITE-BUILDER.md B5). */
+export interface ClanSiteAdmin {
+  /** Whether the server may use the builder while it is in beta (the home server or the beta list). */
+  inBeta: boolean;
+  /** The bot's owner, who may take a site down. */
+  isOwner: boolean;
+  /** The clan profile's address: the site lives at `<slug>.<platform domain>`. */
+  slug: string | null;
+  /** Why the clan profile can't carry a site yet (no address, private or suspended), or null. */
+  profileProblem: string | null;
+  site: {
+    enabled: boolean;
+    published: boolean;
+    template: "CLASSIC" | "HALL" | "MINIMAL";
+    /** Palette and font keys and https images, as saved. */
+    theme: Record<string, unknown>;
+    pages: unknown[];
+    publishedAt: string | null;
+    updatedAt: string | null;
+    /** Set when JonnyBot's owner took the site down: shown to the clan; publishing is refused until restored. */
+    takedownReason: string | null;
+  };
+  blocks: ClanSiteBlockData[];
+  limits: { title: number; blocksPerPage: number; markdown: number; links: number; url: number };
+}
+
+export interface ClanSiteSave {
+  enabled: boolean;
+  template: ClanSiteAdmin["site"]["template"];
+  theme: Record<string, unknown>;
+  pages: unknown[];
+}
+
+/** A server's recruiting post on the Clans Hub (T-070): what it looks for, the web form Apply opens, and the Discord invite shown first. */
+export interface ClanRecruitingData {
+  post: string;
+  applyFormId: string | null;
+  inviteUrl: string | null;
+  /** This server's web forms to choose from (a switched-off one is not offered to applicants). */
+  forms: { id: string; name: string; enabled: boolean }[];
+  maxPost: number;
+}
+
 /** The bot owner's view of the clan directory. Everyone else gets `canEdit: false` and empty lists. */
 export interface ClanListings {
   canEdit: boolean;
@@ -1320,10 +1766,14 @@ export interface Alliance {
   members: { guildId: string; name: string; slug: string | null; status: "INVITED" | "ACTIVE"; founder: boolean; you: boolean }[];
 }
 
+/** What this clan's public hub page says about its alliances. Missing from an older bot, which means HIDDEN. */
+export type AllianceVisibility = "HIDDEN" | "NO_ALLIES" | "SHOWN";
+
 export interface AllianceList {
   alliances: Alliance[];
   maxPerServer: number;
   maxMembers: number;
+  visibility?: AllianceVisibility;
 }
 
 /** An alliance's shared calendar: events its active clans share with allies (or with everyone), soonest first. */
@@ -1378,10 +1828,64 @@ export interface DevSnapshotFile extends DevSnapshotMeta {
 
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
 export interface PremiumGuilds {
-  guilds: BetaGuild[];
+  guilds: PremiumGrant[];
+  /** The grants that end within a week (owner only). */
+  endingSoon: PremiumGrant[];
   canEdit: boolean;
-  /** Whether the server the question was asked about is on the plan. */
+  /** Whether the server the question was asked about has a plan in force. */
   thisServer: boolean;
+  /** That server's own plan: what it is, when it ends and what it includes. Null on the free plan. Older bots leave it out. */
+  thisServerPlan?: { tier: string; expiresAt: string | null; features: { key: string; title: string; description: string }[] } | null;
+}
+
+/** One server on a plan above the free one (owner only). */
+export interface PremiumGrant extends BetaGuild {
+  tier: string;
+  /** When the plan ends; null = no end. */
+  expiresAt: string | null;
+  note: string | null;
+  source: string;
+  /** False once the end has passed but the daily sweep has not removed it yet. */
+  inForce: boolean;
+}
+
+export interface PremiumGrantInput {
+  label: string;
+  tier?: string;
+  /** A date like 2026-12-31 (the plan runs through that day, UTC) or empty for no end. */
+  expiresAt?: string;
+  note?: string;
+  source?: string;
+}
+
+export interface PremiumHistory {
+  guildId: string;
+  history: { action: "GRANT" | "CHANGE" | "REVOKE" | "EXPIRE"; tier: string | null; expiresAt: string | null; byUser: string | null; note: string | null; at: string }[];
+}
+
+/** One tier of the shared RuneMetrics queue, for the owner's budget page. */
+export interface RuneMetricsTier {
+  tier: "INTERACTIVE" | "PREMIUM_CLAN" | "CLAN" | "LINKED";
+  /** How often the tier's players are refreshed; null for people waiting on a button. */
+  windowMinutes: number | null;
+  queued: number;
+  lagSeconds: number;
+  behind: boolean;
+  sent: number;
+  reused: number;
+  rateLimited: number;
+  failed: number;
+  gaveUp: number;
+}
+
+export interface RuneMetricsBudget {
+  tiers: RuneMetricsTier[];
+  servers: { guildId: string; name: string; clan: string; tier: "PREMIUM_CLAN" | "CLAN"; players: number; requestsPerDay: number; sharedWith: number }[];
+  history: { day: string; tier: string; sent: number; reused: number; rateLimited: number; failed: number; gaveUp: number }[];
+  pace: { intervalSeconds: number; requestsLastMinute: number; requestsLast10Minutes: number; slowedBy: number; queued: number };
+  capacityPerDay: number;
+  clanDemandPerDay: number;
+  day: string;
 }
 
 export interface PollJobStatus {
@@ -1518,6 +2022,27 @@ export type WelcomeCardDraft = Omit<WelcomeCard, "serverName" | "memberCount">;
 /** What the browser may change; the preview-only fields come back from the bot but are never sent. */
 export type WelcomeDraft = Omit<WelcomeConfig, "channelName" | "serverName" | "memberCount" | "serverIconUrl">;
 
+/** A message composed on the Message embedder page: a draft, or posted in a channel where it can still be edited, deleted and cloned. */
+export interface EmbedderMessage {
+  id: string;
+  name: string;
+  status: "DRAFT" | "POSTED";
+  channelId: string | null;
+  channelName: string | null;
+  messageId: string | null;
+  /** A link to the posted message in Discord. */
+  messageUrl: string | null;
+  updatedAt: string | null;
+  postedAt: string | null;
+  /** The shared message editor's fields; the channel and the on/off switch mean nothing here and are always empty/off. */
+  message: WelcomeDraft & { channelName?: string | null };
+}
+
+export interface EmbedderList {
+  messages: EmbedderMessage[];
+  limit: number;
+}
+
 /** A server's basic setup: the same settings as /configure in Discord. Ids are Discord ids as strings, null when unset. */
 export interface ServerSetup {
   clanName: string | null;
@@ -1568,6 +2093,8 @@ export interface HubCommandConfig {
   description: string;
   /** Plain English for who may use it when nothing has been changed. */
   defaultAccess: string;
+  /** What the command is for: keys of {@link HubConfig.tags}. Never empty. */
+  tags: string[];
   enabled: boolean;
   /** false: the command's own rule. true: only admins plus {@link allowedRefs}. */
   customAccess: boolean;
@@ -1585,6 +2112,8 @@ export interface HubConfig {
   commands: HubCommandConfig[];
   /** The permission groups a "who can use it" list can name. */
   groups: { ref: string; name: string; builtin: boolean }[];
+  /** Every tag a command can carry, in the order the filter chips show them. */
+  tags: { key: string; label: string }[];
   maxList: number;
 }
 
@@ -1737,7 +2266,7 @@ export const adminApi = {
     call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
   helpExtras: (ctx: ApiContext) => call<HelpExtras>(ctx, "GET", "help-extras"),
-  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
+  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays" | "relatedTickets" | "groupBosses" | "priorityTiers" | "longtimeGuestDays" | "longtimeGuestPings" | "longtimeGuestEscalationHours" | "kcRequirements">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
   helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
   saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
@@ -1806,8 +2335,10 @@ export const adminApi = {
     call<SuggestionList>(ctx, "POST", `suggestions/${encodeURIComponent(id)}/decide`, { status, note }),
   deleteSuggestion: (ctx: ApiContext, id: string) => call<SuggestionList>(ctx, "DELETE", `suggestions/${encodeURIComponent(id)}`),
   autoClean: (ctx: ApiContext) => call<AutoCleanList>(ctx, "GET", "autopurge"),
-  saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean) =>
-    call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned }),
+  saveAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean, filters: AutoCleanFilters) =>
+    call<AutoCleanList>(ctx, "PUT", "autopurge", { channelId, maxAgeMinutes, keepPinned, ...filters }),
+  previewAutoClean: (ctx: ApiContext, channelId: string, maxAgeMinutes: number, keepPinned: boolean, filters: AutoCleanFilters) =>
+    call<AutoCleanPreview>(ctx, "POST", "autopurge/preview", { channelId, maxAgeMinutes, keepPinned, ...filters }),
   deleteAutoClean: (ctx: ApiContext, channelId: string) => call<AutoCleanList>(ctx, "DELETE", `autopurge/${encodeURIComponent(channelId)}`),
   twitch: (ctx: ApiContext) => call<TwitchOverview>(ctx, "GET", "twitch"),
   saveTwitchSettings: (ctx: ApiContext, settings: { enabled: boolean; offlineAction: TwitchOfflineAction }) => call<TwitchOverview>(ctx, "PUT", "twitch/settings", settings),
@@ -1815,6 +2346,12 @@ export const adminApi = {
   saveTwitchStreamer: (ctx: ApiContext, id: string, streamer: { channelId: string; pingRoleId: string | null; message: string; enabled: boolean }) =>
     call<TwitchOverview>(ctx, "PUT", `twitch/streamers/${encodeURIComponent(id)}`, streamer),
   deleteTwitchStreamer: (ctx: ApiContext, id: string) => call<TwitchOverview>(ctx, "DELETE", `twitch/streamers/${encodeURIComponent(id)}`),
+  kick: (ctx: ApiContext) => call<KickOverview>(ctx, "GET", "kick"),
+  saveKickSettings: (ctx: ApiContext, settings: { enabled: boolean; offlineAction: KickOfflineAction }) => call<KickOverview>(ctx, "PUT", "kick/settings", settings),
+  addKickStreamer: (ctx: ApiContext, streamer: { login: string; channelId: string; pingRoleId: string | null; message: string }) => call<KickOverview>(ctx, "POST", "kick/streamers", streamer),
+  saveKickStreamer: (ctx: ApiContext, id: string, streamer: { channelId: string; pingRoleId: string | null; message: string; enabled: boolean }) =>
+    call<KickOverview>(ctx, "PUT", `kick/streamers/${encodeURIComponent(id)}`, streamer),
+  deleteKickStreamer: (ctx: ApiContext, id: string) => call<KickOverview>(ctx, "DELETE", `kick/streamers/${encodeURIComponent(id)}`),
   feeds: (ctx: ApiContext) => call<FeedList>(ctx, "GET", "feeds"),
   saveFeed: (ctx: ApiContext, feed: FeedInput) => call<FeedList>(ctx, "PUT", "feeds", feed),
   deleteFeed: (ctx: ApiContext, id: string) => call<FeedList>(ctx, "DELETE", `feeds/${encodeURIComponent(id)}`),
@@ -1822,7 +2359,7 @@ export const adminApi = {
   citadelCappers: (ctx: ApiContext, end: string | null) => call<import("./citadelTypes").CitadelCappers>(ctx, "GET", end ? `citadel/cappers/${encodeURIComponent(end)}` : "citadel/cappers"),
   /** The settings for announcing the Citadel wheel's winner (auto-post, channel, message). */
   citadelWheel: (ctx: ApiContext) => call<import("./citadelTypes").WheelSettings>(ctx, "GET", "citadel/wheel"),
-  saveCitadelWheel: (ctx: ApiContext, body: { autoPost: boolean; channelId: string | null; message: string }) =>
+  saveCitadelWheel: (ctx: ApiContext, body: { autoPost: boolean; channelId: string | null; message: string; video: boolean }) =>
     call<import("./citadelTypes").WheelSettings>(ctx, "PUT", "citadel/wheel", body),
   /** Announces a winner the dashboard's wheel picked, in the channel the server chose. `entries` is every entry on the wheel (a name once per entry). */
   citadelPost: (ctx: ApiContext, body: { winner: string; entries: string[]; end: string }) =>
@@ -1856,6 +2393,7 @@ export const adminApi = {
   pointsTriggers: (ctx: ApiContext) => call<PointsTriggers>(ctx, "GET", "pointskeywords"),
   savePointsTrigger: (ctx: ApiContext, input: PointsTriggerInput) => call<PointsTriggers>(ctx, "PUT", "pointskeywords", input),
   deletePointsTrigger: (ctx: ApiContext, id: string) => call<PointsTriggers>(ctx, "DELETE", `pointskeywords/${encodeURIComponent(id)}`),
+  saveAllianceVisibility: (ctx: ApiContext, visibility: AllianceVisibility) => call<AllianceList>(ctx, "PUT", "alliances/visibility", { visibility }),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
     ctx: ApiContext,
@@ -1871,6 +2409,15 @@ export const adminApi = {
   savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string; reviewChannelId: string | null }) => call<PointsOverview>(ctx, "PUT", "points", body),
   awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
     call<PointsOverview>(ctx, "POST", "points/award", body),
+  serverTag: (ctx: ApiContext) => call<ServerTagRule>(ctx, "GET", "servertag"),
+  saveServerTag: (ctx: ApiContext, body: ServerTagDraft) => call<ServerTagRule>(ctx, "PUT", "servertag", body),
+  honeypot: (ctx: ApiContext) => call<Honeypot>(ctx, "GET", "honeypot"),
+  saveHoneypot: (ctx: ApiContext, body: HoneypotDraft) => call<Honeypot>(ctx, "PUT", "honeypot", body),
+  moderation: (ctx: ApiContext) => call<ModerationOverview>(ctx, "GET", "moderation"),
+  moderationOfUser: (ctx: ApiContext, userId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/user/${encodeURIComponent(userId)}`),
+  moderationByModerator: (ctx: ApiContext, moderatorId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/moderator/${encodeURIComponent(moderatorId)}`),
+  saveModerationSettings: (ctx: ApiContext, settings: ModerationSettings) => call<ModerationOverview>(ctx, "PUT", "moderation/settings", settings),
+  editModerationCase: (ctx: ApiContext, caseNo: string, reason: string) => call<{ case: ModerationCase }>(ctx, "PUT", `moderation/case/${encodeURIComponent(caseNo)}`, { reason }),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
   autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
   saveAutopunish: (ctx: ApiContext, rules: AutopunishRule[]) => call<Autopunish>(ctx, "PUT", "warnings/autopunish", { rules }),
@@ -1889,6 +2436,16 @@ export const adminApi = {
   saveClanProfile: (ctx: ApiContext, body: Pick<ClanProfileData, "visibility" | "slug" | "displayName" | "tagline" | "description" | "logoUrl" | "colour" | "timezone" | "focus" | "recruiting" | "requirements" | "applyUrl" | "leaderboardOptIn">) =>
     call<ClanProfileData>(ctx, "PUT", "clan-profile", body),
   verifyClanProfile: (ctx: ApiContext) => call<ClanProfileData>(ctx, "POST", "clan-profile/verify"),
+  clanSite: (ctx: ApiContext) => call<ClanSiteAdmin>(ctx, "GET", "clan-site"),
+  saveClanSite: (ctx: ApiContext, body: ClanSiteSave) => call<ClanSiteAdmin>(ctx, "PUT", "clan-site", body),
+  saveClanSiteBlocks: (ctx: ApiContext, page: string, blocks: Pick<ClanSiteBlockData, "kind" | "body">[]) =>
+    call<ClanSiteAdmin>(ctx, "PUT", `clan-site/blocks/${encodeURIComponent(page)}`, { blocks }),
+  publishClanSite: (ctx: ApiContext, publish: boolean) => call<ClanSiteAdmin>(ctx, "POST", publish ? "clan-site/publish" : "clan-site/unpublish"),
+  exportClanSite: (ctx: ApiContext) => call<Record<string, unknown>>(ctx, "GET", "clan-site/export"),
+  takedownClanSite: (ctx: ApiContext, reason: string | null) =>
+    call<ClanSiteAdmin>(ctx, "POST", reason === null ? "clan-site/restore" : "clan-site/takedown", reason === null ? undefined : { reason }),
+  clanRecruiting: (ctx: ApiContext) => call<ClanRecruitingData>(ctx, "GET", "clan-recruiting"),
+  saveClanRecruiting: (ctx: ApiContext, body: Pick<ClanRecruitingData, "post" | "applyFormId" | "inviteUrl">) => call<ClanRecruitingData>(ctx, "PUT", "clan-recruiting", body),
   clanListings: (ctx: ApiContext) => call<ClanListings>(ctx, "GET", "clan-listings"),
   suspendClanListing: (ctx: ApiContext, guildId: string, reason: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/suspend`, { reason }),
   restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),
@@ -1944,6 +2501,11 @@ export const adminApi = {
   messageLogs: (ctx: ApiContext) => call<MessageLogSettings>(ctx, "GET", "message-logs"),
   saveMessageLogs: (ctx: ApiContext, body: Pick<MessageLogSettings, "enabled" | "retentionDays" | "excludedChannels" | "editChannelId" | "deleteChannelId" | "voiceChannelId">) => call<MessageLogSettings>(ctx, "PUT", "message-logs", body),
   clearMessageLogs: (ctx: ApiContext) => call<MessageLogSettings>(ctx, "POST", "message-logs/clear", {}),
+  customTags: (ctx: ApiContext) => call<CustomTagList>(ctx, "GET", "custom-tags"),
+  setCustomTagsEnabled: (ctx: ApiContext, enabled: boolean) => call<CustomTagList>(ctx, "PUT", "custom-tags/settings", { enabled }),
+  createCustomTag: (ctx: ApiContext, tag: Omit<CustomTagDef, "id" | "uses">) => call<CustomTagDef>(ctx, "POST", "custom-tags/tags", tag),
+  updateCustomTag: (ctx: ApiContext, id: string, tag: Omit<CustomTagDef, "id" | "uses">) => call<CustomTagDef>(ctx, "PUT", `custom-tags/tags/${id}`, tag),
+  deleteCustomTag: (ctx: ApiContext, id: string) => call<CustomTagList>(ctx, "DELETE", `custom-tags/tags/${id}`),
   starboard: (ctx: ApiContext) => call<Starboard>(ctx, "GET", "starboard"),
   saveStarboard: (ctx: ApiContext, body: Pick<Starboard, "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels">) => call<Starboard>(ctx, "PUT", "starboard", body),
   welcomeCard: (ctx: ApiContext) => call<WelcomeCard>(ctx, "GET", "welcome-card"),
@@ -1956,6 +2518,13 @@ export const adminApi = {
   testBanAnnouncement: (ctx: ApiContext, draft: WelcomeDraft) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "ban-announcement/test", draft),
   /** The dashboard twin of /announce. The bot judges @everyone, @here and role pings against the signed-in admin's own permissions. */
   sendAnnouncement: (ctx: ApiContext, body: AnnouncementSend) => call<{ sent: boolean; channelName: string }>(ctx, "POST", "announce/send", body),
+  /** The Message embedder: messages kept as drafts, posted, edited in place, deleted and cloned. Every call is judged against the signed-in admin's own permissions in the channel. */
+  embedderMessages: (ctx: ApiContext) => call<EmbedderList>(ctx, "GET", "embedder/messages"),
+  createEmbedderDraft: (ctx: ApiContext, body: { name: string; message: WelcomeDraft }) => call<EmbedderMessage>(ctx, "POST", "embedder/messages", body),
+  saveEmbedderMessage: (ctx: ApiContext, id: string, body: { name: string; message: WelcomeDraft; apply: boolean }) => call<EmbedderMessage>(ctx, "PUT", `embedder/messages/${encodeURIComponent(id)}`, body),
+  postEmbedderMessage: (ctx: ApiContext, id: string, channelId: string) => call<EmbedderMessage>(ctx, "POST", `embedder/messages/${encodeURIComponent(id)}/post`, { channelId }),
+  cloneEmbedderMessage: (ctx: ApiContext, id: string, channelId: string) => call<EmbedderMessage>(ctx, "POST", `embedder/messages/${encodeURIComponent(id)}/clone`, { channelId }),
+  deleteEmbedderMessage: (ctx: ApiContext, id: string) => call<{ deleted: boolean }>(ctx, "POST", `embedder/messages/${encodeURIComponent(id)}/delete`, {}),
   rolePanels: (ctx: ApiContext) => call<RolePanelList>(ctx, "GET", "rolepanels"),
   rolePanel: (ctx: ApiContext, id: string) => call<RolePanelDef>(ctx, "GET", `rolepanels/${encodeURIComponent(id)}`),
   createRolePanel: (ctx: ApiContext, panel: Omit<RolePanelDef, "id" | "posted" | "channelId" | "messageId" | "attached">) => call<RolePanelDef>(ctx, "POST", "rolepanels", panel),
@@ -1971,8 +2540,11 @@ export const adminApi = {
   takeDevSnapshot: (ctx: ApiContext, focus: string, siteCommit: string) =>
     call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
   deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
+  /** The shared RuneMetrics request queue: counters per tier, lag, per-server demand. Owner only. */
+  runemetricsBudget: (ctx: ApiContext) => call<RuneMetricsBudget>(ctx, "GET", "runemetrics-budget"),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
-  savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
+  savePremiumGuild: (ctx: ApiContext, guildId: string, grant: PremiumGrantInput) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, grant),
+  premiumHistory: (ctx: ApiContext, guildId: string) => call<PremiumHistory>(ctx, "GET", `premium-guilds/${encodeURIComponent(guildId)}/history`),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
   roleFixStatus: (ctx: ApiContext) => call<RoleFixStatus>(ctx, "GET", "role-sync"),
   roleFixPlan: (ctx: ApiContext) => call<RoleFixPlan>(ctx, "POST", "role-sync/plan", {}),
@@ -1982,6 +2554,26 @@ export const adminApi = {
   saveWebForm: (ctx: ApiContext, id: string, form: Record<string, unknown>) => call<WebFormList>(ctx, "PUT", `forms/${encodeURIComponent(id)}`, form),
   deleteWebForm: (ctx: ApiContext, id: string) => call<WebFormList>(ctx, "DELETE", `forms/${encodeURIComponent(id)}`),
   webFormSubmissions: (ctx: ApiContext, id: string) => call<WebFormSubmissions>(ctx, "GET", `forms/${encodeURIComponent(id)}/submissions`),
+  siteSwitches: (ctx: ApiContext) => call<{ switches: SiteSwitchInfo[] }>(ctx, "GET", "site-switches"),
+  saveSiteSwitch: (ctx: ApiContext, key: string, enabled: boolean) => call<{ switches: SiteSwitchInfo[] }>(ctx, "PUT", `site-switches/${encodeURIComponent(key)}`, { enabled }),
+  accessGrants: (ctx: ApiContext) => call<AccessGrantList>(ctx, "GET", "access-grants"),
+  addAccessGrant: (ctx: ApiContext, grant: NewAccessGrant) => call<AccessGrantList>(ctx, "POST", "access-grants", grant),
+  removeAccessGrant: (ctx: ApiContext, id: string) => call<AccessGrantList>(ctx, "DELETE", `access-grants/${encodeURIComponent(id)}`),
+  roleToolkit: (ctx: ApiContext) => call<RoleToolkit>(ctx, "GET", "role-toolkit"),
+  saveRoleAllow: (ctx: ApiContext, groupKey: string, roleIds: string[]) => call<RoleToolkit>(ctx, "PUT", `role-toolkit/allow/${encodeURIComponent(groupKey)}`, { roleIds }),
+  planRoleBulk: (ctx: ApiContext, job: { mode: string; sourceRoleId: string; targetRoleId: string }) => call<RoleBulkJob>(ctx, "POST", "role-toolkit/bulk", job),
+  roleBulkJob: (ctx: ApiContext, id: string) => call<RoleBulkJob>(ctx, "GET", `role-toolkit/bulk/${encodeURIComponent(id)}`),
+  roleBulkAct: (ctx: ApiContext, id: string, action: "start" | "pause" | "cancel") => call<RoleBulkJob>(ctx, "POST", `role-toolkit/bulk/${encodeURIComponent(id)}/${action}`, {}),
+  roleKeeper: (ctx: ApiContext) => call<RoleKeeper>(ctx, "GET", "role-keeper"),
+  saveStickyRoles: (ctx: ApiContext, roleIds: string[]) => call<RoleKeeper>(ctx, "PUT", "role-keeper/sticky", { roleIds }),
+  addKeptRole: (ctx: ApiContext, userId: string, roleId: string) => call<RoleKeeper>(ctx, "POST", "role-keeper/kept", { userId, roleId }),
+  removeKeptRole: (ctx: ApiContext, id: string) => call<RoleKeeper>(ctx, "DELETE", `role-keeper/kept/${encodeURIComponent(id)}`),
+  addTempRole: (ctx: ApiContext, userId: string, roleId: string, duration: string) => call<RoleKeeper>(ctx, "POST", "role-keeper/temp", { userId, roleId, duration }),
+  endTempRole: (ctx: ApiContext, id: string) => call<RoleKeeper>(ctx, "DELETE", `role-keeper/temp/${encodeURIComponent(id)}`),
+  roleRules: (ctx: ApiContext) => call<RoleRuleList>(ctx, "GET", "role-rules"),
+  createRoleRule: (ctx: ApiContext, rule: Omit<RoleRule, "id">) => call<RoleRuleList>(ctx, "POST", "role-rules", rule),
+  saveRoleRule: (ctx: ApiContext, id: string, rule: Omit<RoleRule, "id">) => call<RoleRuleList>(ctx, "PUT", `role-rules/${encodeURIComponent(id)}`, rule),
+  deleteRoleRule: (ctx: ApiContext, id: string) => call<RoleRuleList>(ctx, "DELETE", `role-rules/${encodeURIComponent(id)}`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
@@ -2018,10 +2610,28 @@ export const adminApi = {
     if (query.offset) params.set("offset", String(query.offset));
     return call<{ tickets: TicketRow[]; hasMore: boolean }>(ctx, "GET", `ticket/tickets?${params}`);
   },
+  /** A server's own bingo tile pool (empty until used): tiles, starter packs made from public wiki content. */
+  bingoPool: (ctx: ApiContext) => call<BingoPoolOverview>(ctx, "GET", "bingo-pool"),
+  addBingoTile: (ctx: ApiContext, tile: BingoPoolTileInput) => call<BingoPoolOverview>(ctx, "POST", "bingo-pool/tiles", tile),
+  saveBingoTile: (ctx: ApiContext, id: string, tile: BingoPoolTileInput) => call<BingoPoolOverview>(ctx, "PUT", `bingo-pool/tiles/${encodeURIComponent(id)}`, tile),
+  deleteBingoTile: (ctx: ApiContext, id: string) => call<BingoPoolOverview>(ctx, "POST", `bingo-pool/tiles/${encodeURIComponent(id)}/delete`, {}),
+  seedBingoPool: (ctx: ApiContext, pack: string, difficulties: string[]) => call<BingoPoolOverview>(ctx, "POST", "bingo-pool/seed", { pack, difficulties }),
+  clearBingoPool: (ctx: ApiContext, pack: string | null) => call<BingoPoolOverview>(ctx, "POST", "bingo-pool/clear", pack ? { pack } : {}),
   getTicket: (ctx: ApiContext, id: string) => call<TicketDetail>(ctx, "GET", `ticket/tickets/${encodeURIComponent(id)}`),
+  /** Staff flags on a ticket's player (off by default). */
+  ticketFlags: (ctx: ApiContext) => call<TicketFlagList>(ctx, "GET", "ticket-flags"),
+  setTicketFlagsEnabled: (ctx: ApiContext, enabled: boolean) => call<TicketFlagList>(ctx, "PUT", "ticket-flags/settings", { enabled }),
+  ticketFlagsFor: (ctx: ApiContext, ticketId: string) => call<TicketFlagList>(ctx, "GET", `ticket-flags/ticket/${encodeURIComponent(ticketId)}`),
+  addTicketFlag: (ctx: ApiContext, ticketId: string, note: string) => call<TicketFlagList>(ctx, "POST", `ticket-flags/ticket/${encodeURIComponent(ticketId)}`, { note }),
+  deleteTicketFlag: (ctx: ApiContext, flagId: string) => call<{ deleted: boolean }>(ctx, "POST", `ticket-flags/${encodeURIComponent(flagId)}/delete`, {}),
 };
 
 /** A role's color as CSS, or undefined for the "no color" sentinel. */
 export function discordColorCss(color: number): string | undefined {
   return color > 0 ? `#${color.toString(16).padStart(6, "0")}` : undefined;
+}
+
+/** One admin call, for feature modules that keep their own typed wrappers in their own file (so they never edit `adminApi`). */
+export function adminCall<T>(ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
+  return call<T>(ctx, method, path, body);
 }
