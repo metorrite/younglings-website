@@ -2370,3 +2370,8 @@ export const adminApi = {
 export function discordColorCss(color: number): string | undefined {
   return color > 0 ? `#${color.toString(16).padStart(6, "0")}` : undefined;
 }
+
+/** One admin call, for feature modules that keep their own typed wrappers in their own file (so they never edit `adminApi`). */
+export function adminCall<T>(ctx: ApiContext, method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown): Promise<ApiResult<T>> {
+  return call<T>(ctx, method, path, body);
+}
