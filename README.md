@@ -46,6 +46,22 @@ Vercel, if you'd rather). Whichever host you use:
    application's OAuth2 redirects (step 4 above) — login will fail with a redirect mismatch error
    until this is added.
 
+## Hosts and domains (optional)
+
+One deployment serves several faces, chosen by the host a request was sent to (`src/lib/siteHosts.ts`, `src/proxy.ts`). With none
+of these set the site runs on one host, as in local development. Design: `docs/DOMAINS-AND-SITE-BUILDER.md` part A.
+
+| Variable | What it does |
+|---|---|
+| `JONNYBOT_SUBDOMAIN` | `true` puts JonnyBot's pages and the dashboard on `jonnybot.<apex>` instead of `/jonnybot` (also on when `SITE_HOSTS` names a `jonnybot` host). |
+| `SITE_APEX_HOST` | The clan site's own host, e.g. `rsyounglings.com` (falls back to `AUTH_COOKIE_DOMAIN`). Other names under it go to the clan site. |
+| `PUBLIC_API_ORIGIN` | The API address told to plugins (whoami, docs). Wins over everything below. |
+| `SITE_HOSTS` | Each face's canonical host: `clan=rsyounglings.com,jonnybot=jonnybot.example,hub=example,events=events.example,api=api.example,link=link.example`. A face left out keeps the prefix rule (`jonnybot.`, `api.`, `clans.` on the apex). Cross-face links follow it. |
+| `SITE_HOST_ALIASES` | Old hosts of a face: `clans.rsyounglings.com=hub,api.rsyounglings.com=api`. Pages there redirect (308) to the face's `SITE_HOSTS` host; the API there keeps answering and never redirects (plugins can't follow redirects), nor do the site's own `/api` calls. |
+| `SITE_TENANT_SUFFIX` | `<slug>.<suffix>` is a hosted clan site (website builder). Empty = off. Reserved slugs (`www`, `api`, `link`, `events`, `clans`, `jonnybot`, `admin`, `auth`, `mail`, `status`, `cdn`, `static`, `assets`, `dev`, `staging`, and the first label of any `SITE_HOSTS` host) are never clan sites. Until the builder is live, these addresses go to the clan site. |
+
+Buying a domain, DNS (Cloudflare), Railway custom domains and the Discord redirect URL are manual steps; see the design doc's runbook (A4, A5).
+
 ## Project structure
 
 - `src/lib/auth.ts` — Auth.js configuration (the Discord provider, session shape).

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apexHost, classifyHost, clanHostOf, FACE_HEADER, jonnybotHostOf, schemeFor, subdomainMode } from "@/lib/siteHosts";
+import { apexHost, classifyHost, clanHostOf, FACE_HEADER, jonnybotHostOf, mappedHost, resolveHost, schemeFor, subdomainMode } from "@/lib/siteHosts";
 
 /**
  * Routes the two faces of the site by hostname (see lib/siteHosts) and tells pages which face a request is for, in a request
@@ -26,7 +26,32 @@ export function proxy(request: NextRequest) {
   // The API host is independent of the clan/JonnyBot split: api.<domain> serves only the API, with shorter paths. The long forms
   // (/api/v1/..., /api/ingest/v1/...) keep working on every host, so nothing already pointed at them breaks.
   const requestHost = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(",")[0].trim();
-  if (classifyHost(requestHost, apexHost()) === "api") {
+  const resolved = resolveHost(requestHost, apexHost());
+
+  // An old host of a page face (SITE_HOST_ALIASES) sends pages to the face's canonical host for good (308). The API never redirects
+  // on an alias (plugins can only call their manifest address and can't follow redirects), and neither do the site's own /api calls.
+  if (resolved.alias && resolved.kind !== "api" && segment !== "api" && segment !== "_next") {
+    const canonical = mappedHost(resolved.kind as Exclude<typeof resolved.kind, "site" | "unknown">);
+    if (canonical) {
+      const target = `${schemeFor(canonical, request.headers.get("x-forwarded-proto"))}://${canonical}${pathname}${search}`;
+      return new NextResponse(null, { status: 308, headers: { Location: target } });
+    }
+  }
+
+  // The events face (SITE_HOSTS events=...) shows the hub's public events, with short paths. RS Link's face (link=...) serves the
+  // site's /link pages. Shared things pass straight through on both.
+  if (resolved.kind === "events" || resolved.kind === "link") {
+    const headers = new Headers(request.headers);
+    headers.set(FACE_HEADER, "hub");
+    if (segment === "api" || segment === "_next" || segment === "auth" || /\.[a-z0-9]{2,6}$/i.test(pathname)) return NextResponse.next({ request: { headers } });
+    const base = resolved.kind === "events" ? "/hub/events" : "/link";
+    if (pathname === base || pathname.startsWith(`${base}/`)) return NextResponse.next({ request: { headers } });
+    const url = request.nextUrl.clone();
+    url.pathname = pathname === "/" ? base : `${base}${pathname}`;
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
+
+  if (resolved.kind === "api") {
     // The API host is for programs. A person who types it into a browser address bar (or follows a link to it) is sent to the clan site's
     // front page. Browsers say what they are doing: a page navigation carries Sec-Fetch-Dest: document (or Mode: navigate), and older ones
     // ask for text/html. A plugin, a script, curl and a website's own fetch() call do none of that, so they get the API as before.
@@ -113,7 +138,8 @@ export function proxy(request: NextRequest) {
   const apex = apexHost();
   const kind = classifyHost(host, apex);
 
-  if (kind === "unknown") return to(clanHostOf(host, apex), pathname);
+  // A hosted clan site's address (SITE_TENANT_SUFFIX) has no pages until the website builder serves it: treat it like a typo.
+  if (kind === "unknown" || kind === "site") return to(clanHostOf(host, apex), pathname);
 
   if (kind === "jonnybot") {
     if (pathname === "/") return rewrite("/jonnybot");
