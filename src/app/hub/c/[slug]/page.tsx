@@ -108,6 +108,40 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
               )}
             </div>
           )}
+          {clan.alliances && (
+            <section aria-label="Allies" className="space-y-4">
+              <SectionHeader title="Allies" hint={clan.alliances.mode === "LIST" ? `Clans ${clan.name} is allied with.` : undefined} />
+              {clan.alliances.mode === "NONE" ? (
+                <p className="rounded-2xl border border-dashed border-surface-border p-6 text-sm text-muted">No allies.</p>
+              ) : (
+                <div className="space-y-4">
+                  {clan.alliances.alliances.map((a) => (
+                    <div key={a.id} className="rounded-2xl border border-surface-border bg-surface p-5">
+                      <h3 className="font-semibold">
+                        {a.hasPage ? (
+                          <Link href={hubHref(site, `/alliances/${a.id}`)} className="hover:underline">
+                            {a.name}
+                          </Link>
+                        ) : (
+                          a.name
+                        )}
+                      </h3>
+                      <ul className="mt-3 flex flex-wrap gap-3">
+                        {a.clans.map((c) => (
+                          <li key={c.slug}>
+                            <Link href={hubHref(site, `/c/${c.slug}`)} className="flex items-center gap-2.5 rounded-xl border border-surface-border px-3 py-2 text-sm transition hover:border-white/20">
+                              <ClanMark clan={c} size={28} />
+                              <span className="break-words">{c.name}</span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
           <section aria-label="Upcoming events" className="space-y-4">
             <SectionHeader title="Coming up" hint={`Public events from ${clan.name}.`} />
             {events.length === 0 ? (

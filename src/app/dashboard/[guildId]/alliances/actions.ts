@@ -31,6 +31,12 @@ export async function inviteToAllianceAction(guildId: string, id: string, slug: 
   return run(guildId, (g) => adminApi.inviteToAlliance(g, id, slug.slice(0, 80)));
 }
 
+/** Chooses what this clan's public hub page says about its alliances: nothing, that it has none, or who they are. */
+export async function setAllianceVisibilityAction(guildId: string, visibility: string): Result {
+  if (visibility !== "HIDDEN" && visibility !== "NO_ALLIES" && visibility !== "SHOWN") return invalid("choice");
+  return run(guildId, (g) => adminApi.saveAllianceVisibility(g, visibility));
+}
+
 export async function acceptAllianceAction(guildId: string, id: string): Result {
   if (!validId(id)) return invalid("alliance");
   return run(guildId, (g) => adminApi.acceptAlliance(g, id));

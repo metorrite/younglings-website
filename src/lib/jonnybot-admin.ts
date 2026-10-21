@@ -1320,10 +1320,14 @@ export interface Alliance {
   members: { guildId: string; name: string; slug: string | null; status: "INVITED" | "ACTIVE"; founder: boolean; you: boolean }[];
 }
 
+/** What this clan's public hub page says about its alliances. Missing from an older bot, which means HIDDEN. */
+export type AllianceVisibility = "HIDDEN" | "NO_ALLIES" | "SHOWN";
+
 export interface AllianceList {
   alliances: Alliance[];
   maxPerServer: number;
   maxMembers: number;
+  visibility?: AllianceVisibility;
 }
 
 /** An alliance's shared calendar: events its active clans share with allies (or with everyone), soonest first. */
@@ -1856,6 +1860,7 @@ export const adminApi = {
   pointsTriggers: (ctx: ApiContext) => call<PointsTriggers>(ctx, "GET", "pointskeywords"),
   savePointsTrigger: (ctx: ApiContext, input: PointsTriggerInput) => call<PointsTriggers>(ctx, "PUT", "pointskeywords", input),
   deletePointsTrigger: (ctx: ApiContext, id: string) => call<PointsTriggers>(ctx, "DELETE", `pointskeywords/${encodeURIComponent(id)}`),
+  saveAllianceVisibility: (ctx: ApiContext, visibility: AllianceVisibility) => call<AllianceList>(ctx, "PUT", "alliances/visibility", { visibility }),
   pointsRewards: (ctx: ApiContext) => call<PointsRewards>(ctx, "GET", "points/rewards"),
   savePointsReward: (
     ctx: ApiContext,
