@@ -55,6 +55,7 @@ import { RoleToolkitManager } from "@/components/dashboard/RoleToolkitManager";
 import { RoleKeeperManager } from "@/components/dashboard/RoleKeeperManager";
 import { RoleRulesManager } from "@/components/dashboard/RoleRulesManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
+import { EventDefaultsCard, type EventDefaultsView } from "@/components/dashboard/EventDefaultsCard";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
 import { SettingsForm } from "@/components/admin/SettingsForm";
@@ -386,6 +387,19 @@ const clanevents = { listing: "UNLISTED" as const, slug: "younglings", events: [
 const modlog = { enabled: true, channelId: "2", logBans: true, logTimeouts: false, canReadAuditLog: false };
 const gate = { enabled: true, minAgeDays: 7, action: "KICK" as const, alertChannelId: "2", maxAgeDays: 90, canKick: false, canBan: true, nameRulesEnabled: true, nameAction: "ALERT" as const, nameRules: ["free*nitro", "*scam*"], exemptUserIds: ["123456789012345678"], maxNameRules: 50, maxExempt: 50, minNameRuleChars: 3 };
 
+const eventDefaults: EventDefaultsView = {
+  defaults: { names: { general: "{event} General Channel" }, look: "classic" },
+  names: [
+    { key: "category", label: "Category", builtIn: "{event}", pattern: "" },
+    { key: "staff", label: "Staff channel", builtIn: "{event} Staff", pattern: "" },
+    { key: "general", label: "General chat", builtIn: "{event} General", pattern: "{event} General Channel" },
+    { key: "teamChannel", label: "Team channel", builtIn: "{event} {team}", pattern: "" },
+    { key: "participantRole", label: "Participant role", builtIn: "{event} Participant", pattern: "" },
+  ],
+  looks: [{ id: "classic", label: "Classic" }, { id: "runescape", label: "RuneScape" }],
+  builtIn: { look: "runescape", gate: "TEAMS", setupMode: "STANDARD" },
+};
+
 function TeamsPreview() {
   const [detail, setDetail] = useState(initialTeamsDetail);
   const server = useRef(detail);
@@ -422,6 +436,7 @@ function Preview() {
         <div className="min-w-0 flex-1 space-y-6 px-4 py-6 sm:px-8 lg:px-10">
           {view === "events" && <EventListView structure={previewStructure} kinds={previewKinds} drafts={previewDrafts} templates={previewTemplates} initial={{ events: [{ ...evSummary, players: 7, waiting: 2, proofWaiting: 0, config: { ...evSummary.config, signupClosesAt: new Date(Date.now() + 20 * 3600 * 1000).toISOString() } }, { ...evSummary, id: "8", name: "Sunday Competition", status: "RUNNING" as const, scoringMode: "INDIVIDUAL" as const, scope: "ALLIANCE" as const, players: 11, waiting: 0, proofWaiting: 3 }, { ...evSummary, id: "7", name: "Spring Raids Draft", status: "DRAFT" as const, players: 0, waiting: 0, proofWaiting: 0 }], maxOpen: 20 }} guildId="1" call={setupCall} />}
           {view === "teams" && <TeamsPreview />}
+          {view === "event-defaults" && <EventDefaultsCard initial={eventDefaults} call={nope} />}
           {view === "channels" && <ChannelsPreview key={scenarioParam} scenario={scenarioParam} />}
           {view === "wizard" && <EventWizard key={wizardKind()} guildId="1" initial={draftOf(wizardKind(), withSlots(schemas[wizardKind()] as OptionSchema).standard) as never} schema={withSlots(schemas[wizardKind()] as OptionSchema)} structure={previewStructure} call={setupCall} />}
           {view === "myevents" && <MyEventsPanel data={myEvents} />}
