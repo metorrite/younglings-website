@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { AdminUnavailableError } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { currentSite } from "@/lib/siteHostsServer";
+import { switchOpen } from "@/lib/siteSwitches";
 import { createGuildContext, whoAmI, type ApiResult, type GuildContext } from "@/lib/jonnybot-admin";
 
 /**
@@ -25,7 +26,7 @@ export interface DashboardUser {
 
 /** The beta check. Fails closed: if the bot can't be asked, access is refused rather than guessed. */
 async function betaAllows(userId: string): Promise<boolean> {
-  if (process.env.DASHBOARD_PUBLIC === "true") return true;
+  if (await switchOpen("dashboard")) return true;
   const result = await whoAmI(userId);
   if (!result.ok) throw new AdminUnavailableError();
   // `beta` also lets in the admins of the trusted beta servers; an older bot without it falls back to the clan's own admins.

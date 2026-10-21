@@ -514,6 +514,11 @@ export interface WebFormSubmissions {
   submissions: { id: string; userId: string; userName: string | null; at: string; ticketId: string | null; answers: { label: string; value: string }[] }[];
 }
 
+/** One live site-access switch as the owner sees it. */
+export interface SiteSwitchInfo {
+  key: "jonnybot" | "hub" | "dashboard";
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -1988,6 +1993,8 @@ export const adminApi = {
   saveWebForm: (ctx: ApiContext, id: string, form: Record<string, unknown>) => call<WebFormList>(ctx, "PUT", `forms/${encodeURIComponent(id)}`, form),
   deleteWebForm: (ctx: ApiContext, id: string) => call<WebFormList>(ctx, "DELETE", `forms/${encodeURIComponent(id)}`),
   webFormSubmissions: (ctx: ApiContext, id: string) => call<WebFormSubmissions>(ctx, "GET", `forms/${encodeURIComponent(id)}/submissions`),
+  siteSwitches: (ctx: ApiContext) => call<{ switches: SiteSwitchInfo[] }>(ctx, "GET", "site-switches"),
+  saveSiteSwitch: (ctx: ApiContext, key: string, enabled: boolean) => call<{ switches: SiteSwitchInfo[] }>(ctx, "PUT", `site-switches/${encodeURIComponent(key)}`, { enabled }),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),

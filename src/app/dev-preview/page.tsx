@@ -46,6 +46,7 @@ import { FormFiller } from "@/components/forms/FormFiller";
 import { ClanPointsForm } from "@/components/admin/ClanPointsForm";
 import { PromotionsList } from "@/components/admin/AdminExtras";
 import { SelfRolesEditor } from "@/components/admin/SelfRolesEditor";
+import { SiteAccessForm } from "@/components/admin/SiteAccessForm";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -498,6 +499,18 @@ function Preview() {
               <PromotionsList initial={[{ rsn: "Xtusy", rank: "Recruit", nextRank: "Corporal", points: 520, since: "2026-10-12" }]} markDone={async () => ({ ok: false, error: "Preview only" })} />
               <PageHeader title="Self roles" description="The roles members can give themselves from their profile page." />
               <SelfRolesEditor initial={[{ roleId: "r1", name: "Raids", label: "Raider", description: "Pinged for raids", safe: true }]} roles={structure.roles} save={async () => ({ ok: false, error: "Preview only" })} />
+            </>
+          )}
+          {view === "siteaccess" && (
+            <>
+              <PageHeader title="Site access" description="Open the JonnyBot website, the clans hub and the bot dashboard to everyone, or close them again." />
+              <SiteAccessForm
+                initial={[
+                  { key: "jonnybot", label: "JonnyBot website", description: "Home, docs, install and FAQ.", enabled: false, envName: "JONNYBOT_PUBLIC", source: "live" },
+                  { key: "hub", label: "Clans hub", description: "The public directory of clans.", enabled: true, envName: "HUB_PUBLIC", source: "live" },
+                  { key: "dashboard", label: "Bot dashboard", description: "The per-server dashboard.", enabled: false, envName: "DASHBOARD_PUBLIC", source: "env-closed" },
+                ]}
+              />
             </>
           )}
           {view === "commands" && (
