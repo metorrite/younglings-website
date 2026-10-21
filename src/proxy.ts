@@ -91,9 +91,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ apiVersion: 1, error: "Not found. See https://" + requestHost + "/ for the list of endpoints." }, { status: 404 });
   }
 
-  // The RS Link sign-in face on its own host (LINK_HOST): neutral and unbranded, sharing nothing with the clan site but the theme. The visible
-  // paths are short (/, /confirm, /links, /privacy, and the plugin API at /v1/... and the page's calls at /web/...); they are served from the
-  // /link pages and /api/link routes. Nothing of the clan site is reachable here. Without LINK_HOST the same pages live under /link.
+  // The RS Link sign-in face on its own host (LINK_HOST, or the map's link host): neutral and unbranded, sharing nothing with the clan site but
+  // the theme. The visible paths are short (/, /confirm, /links, /privacy, and the plugin API at /v1/... and the page's calls at /web/...); they are
+  // served from the /link pages and /api/link routes. Nothing of the clan site is reachable here. Without a link host the same pages live under /link.
   if (classifyHost(requestHost, apexHost()) === "link") {
     const linkFace = () => {
       const headers = new Headers(request.headers);

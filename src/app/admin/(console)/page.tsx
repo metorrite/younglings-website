@@ -1,28 +1,11 @@
 import Link from "next/link";
 import { requireAdminWithOwner } from "@/lib/admin";
 import { adminGroupsFor } from "@/lib/adminNav";
-import { adminApi } from "@/lib/jonnybot-admin";
-import { requireAdmin } from "@/lib/admin";
-import { ADMIN_GROUPS } from "@/lib/adminNav";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {
   const { admin, isOwner } = await requireAdminWithOwner("/admin");
-  // The bot's health is platform-wide, so only the owner is shown (and asks for) it; the bot refuses anyone else.
-  const [attention, health] = await Promise.all([adminApi.attention(admin), isOwner ? adminApi.health(admin) : Promise.resolve(null)]);
-  const a = attention.ok ? attention.data : null;
-  const h = health?.ok ? health.data : null;
-
-  const cards = a
-    ? [
-        { label: "Unverified members", n: a.unverified.length, href: "/admin/attention#unverified" },
-        { label: "Stale data", n: a.stale.length, href: "/admin/attention#stale" },
-        { label: "Inactive 30+ days", n: a.inactive.length, href: "/admin/attention#inactive" },
-        { label: "Promotions due", n: a.promotions.length, href: "/admin/promotions" },
-      ]
-    : [];
-  const admin = await requireAdmin("/admin");
 
   return (
     <div className="space-y-8">
@@ -33,18 +16,6 @@ export default async function AdminHomePage() {
           <Link href="/dashboard" className="text-gold hover:underline">
             bot dashboard
           </Link>
-        ))}
-        {isOwner && (
-        <Link href="/admin/health" className="rounded-lg border border-surface-border bg-surface p-4 transition hover:border-gold/50">
-          <p className="text-xs tracking-wider text-muted uppercase">Bot</p>
-          {h ? (
-            <p className={`mt-1 text-2xl font-semibold ${h.discord.status === "CONNECTED" && h.database.ok ? "text-emerald-400" : "text-red-400"}`}>{h.discord.status === "CONNECTED" && h.database.ok ? "Healthy" : "Check health"}</p>
-          ) : (
-            <p className="mt-1 text-2xl font-semibold text-red-400">Unreachable</p>
-          )}
-        </Link>
-        )}
-      </section>
           . Everything here is checked against your roles in the Discord server each time.
         </p>
       </div>

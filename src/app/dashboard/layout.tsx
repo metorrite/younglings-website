@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { UnderDevelopment } from "@/components/jonnybot/UnderDevelopment";
 import { requireDashboardUser } from "@/lib/dashboard";
-import { canSeeJonnyBot } from "@/lib/jonnybotAccess";
-import { switchOpen } from "@/lib/siteSwitches";
 import { canEnter } from "@/lib/restrictedAccess";
+import { switchOpen } from "@/lib/siteSwitches";
 import { currentSite } from "@/lib/siteHostsServer";
 
 export const metadata = { title: "JonnyBot dashboard — beta" };

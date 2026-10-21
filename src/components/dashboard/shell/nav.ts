@@ -51,15 +51,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Welcome message", icon: "smile", path: "/welcome" },
       { label: "Goodbye message", icon: "door", path: "/goodbye" },
-      { label: "Announcements", icon: "bell", path: "/announcements" },
-      { label: "Message embedder", icon: "chat", path: "/embedder", advanced: true },
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
-      { label: "Role panels", icon: "toggle", path: "/role-panels" },
       { label: "Self roles", icon: "tag", path: "/self-roles" },
-      { label: "Role toolkit", icon: "shield", path: "/role-toolkit", advanced: true },
+      { label: "Role panels", icon: "toggle", path: "/role-panels" },
+      { label: "New accounts", icon: "users", path: "/newaccounts", advanced: true },
       { label: "Kept roles", icon: "clock", path: "/role-keeper", advanced: true },
       { label: "Role rules", icon: "swap", path: "/role-rules", advanced: true },
-      { label: "New accounts", icon: "users", path: "/newaccounts", advanced: true },
+      { label: "Role toolkit", icon: "shield", path: "/role-toolkit", advanced: true },
     ],
   },
   {
@@ -69,28 +67,26 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Warnings", icon: "alert", path: "/warnings" },
       { label: "Lockdown", icon: "shield", path: "/lockdown" },
       { label: "Moderation log", icon: "list", path: "/modlog" },
+      { label: "Cases", icon: "list", path: "/moderation" },
       { label: "Auto-clean", icon: "broom", path: "/autoclean", advanced: true },
       { label: "Auto-delete", icon: "broom", path: "/autodelete", advanced: true },
       { label: "Message & voice logs", icon: "list", path: "/message-logs", advanced: true },
+      { label: "Honeypot", icon: "bulb", path: "/honeypot", advanced: true },
+      { label: "Server tags", icon: "tag", path: "/servertags", advanced: true },
     ],
   },
   {
     title: "Posts & feeds",
     items: [
       { label: "Post a message", icon: "send", path: "/post" },
-      // Until its ban-announcement card moves onto Post a message (T-215).
-      { label: "Announcements", icon: "bell", path: "/announcements" },
       { label: "Server reminders", icon: "bell", path: "/server-reminders" },
       { label: "Feeds", icon: "swap", path: "/feeds" },
       { label: "Twitch alerts", icon: "bell", path: "/twitch" },
+      { label: "Kick alerts", icon: "bell", path: "/kick", advanced: true },
       { label: "Scheduled posts", icon: "clock", path: "/scheduled", advanced: true },
       { label: "Automatic replies", icon: "chat", path: "/autoresponder", advanced: true },
       { label: "Custom tags", icon: "chat", path: "/custom-tags", advanced: true },
-      { label: "Polls & signups", icon: "poll", path: "/community" },
-      { label: "Tickets", icon: "ticket", path: "/tickets" },
-      { label: "Web forms", icon: "list", path: "/forms" },
-      { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
-      { label: "PvM Help", icon: "bulb", path: "/pvm-help", advanced: true },
+      { label: "Message embedder", icon: "chat", path: "/embedder", advanced: true },
     ],
   },
   {
@@ -113,36 +109,9 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Events",
     items: [
       { label: "Event manager", icon: "clock", path: "/event-manager" },
-      { label: "Bingo tile pool", icon: "trophy", path: "/bingo-pool", advanced: true },
-    ],
-  },
-  {
-    title: "Moderation",
-    items: [
-      { label: "Cases", icon: "list", path: "/moderation" },
-      { label: "Warnings", icon: "alert", path: "/warnings" },
-      { label: "Honeypot", icon: "bulb", path: "/honeypot", advanced: true },
-      { label: "Server tags", icon: "tag", path: "/servertags", advanced: true },
-      { label: "Automod", icon: "shield", path: "/automod" },
-      { label: "Moderation log", icon: "list", path: "/modlog" },
-      { label: "Message & voice logs", icon: "list", path: "/message-logs", advanced: true },
-      { label: "Lockdown", icon: "shield", path: "/lockdown" },
-      { label: "New accounts", icon: "users", path: "/newaccounts", advanced: true },
-      { label: "Auto-clean", icon: "broom", path: "/autoclean", advanced: true },
-      { label: "Auto-delete", icon: "broom", path: "/autodelete", advanced: true },
-    ],
-  },
-  {
-    title: "Messages",
-    items: [
-      { label: "Post a message", icon: "send", path: "/post" },
-      { label: "Scheduled posts", icon: "clock", path: "/scheduled", advanced: true },
-      { label: "Server reminders", icon: "bell", path: "/server-reminders" },
       { label: "Event announcer", icon: "bell", path: "/event-announcer", advanced: true },
-      { label: "Feeds", icon: "swap", path: "/feeds" },
-      { label: "Twitch alerts", icon: "bell", path: "/twitch" },
-      { label: "Kick alerts", icon: "bell", path: "/kick", advanced: true },
       { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
+      { label: "Bingo tile pool", icon: "trophy", path: "/bingo-pool", advanced: true },
       { label: "Discord events", icon: "clock", path: "/events", clanOnly: true, advanced: true },
     ],
   },
@@ -151,14 +120,15 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Clan profile", icon: "smile", path: "/clan-profile", clanOnly: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
-      { label: "Clan activity feed", icon: "bell", path: "/tracking" },
-      { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
-      { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
-      { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
-      { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
       { label: "Needs attention", icon: "alert", path: "/attention", clanOnly: true },
       { label: "Promotions", icon: "trophy", path: "/promotions", clanOnly: true },
       { label: "Clan points & ranks", icon: "list", path: "/clan-points", clanOnly: true },
+      { label: "Clan activity feed", icon: "bell", path: "/tracking" },
+      { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
+      { label: "PvM Help", icon: "bulb", path: "/pvm-help", advanced: true },
+      { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
+      { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
+      { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
       { label: "Clan website", icon: "swap", path: "/clan-website", clanOnly: true, advanced: true },
     ],
   },
@@ -174,12 +144,6 @@ export const NAV_GROUPS: NavGroup[] = [
 /** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, what only the bot's owner sees when this person isn't, and any group that leaves empty. */
 export function groupsFor(hasClan: boolean, isOwner = false): NavGroup[] {
   return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => (hasClan || !item.clanOnly) && (isOwner || !item.ownerOnly)) })).filter((group) => group.items.length > 0);
-}
-
-/** The groups cut down to the pages in `only` (by path), leaving out any group that empties; all of them when `only` is not given. */
-export function restrictGroups(groups: NavGroup[], only?: readonly string[]): NavGroup[] {
-  if (!only) return groups;
-  return groups.map((group) => ({ ...group, items: group.items.filter((item) => item.path !== undefined && only.includes(item.path)) })).filter((group) => group.items.length > 0);
 }
 
 /**
@@ -225,4 +189,10 @@ export function isActive(item: NavItem, base: string, pathname: string): boolean
   if (item.path === undefined) return false;
   if (item.path === "") return pathname === base;
   return [item.path, ...(item.also ?? [])].some((p) => pathname.startsWith(`${base}${p}`));
+}
+
+/** The groups cut down to the pages in `only` (by path), leaving out any group that empties; all of them when `only` is not given. */
+export function restrictGroups(groups: NavGroup[], only?: readonly string[]): NavGroup[] {
+  if (!only) return groups;
+  return groups.map((group) => ({ ...group, items: group.items.filter((item) => item.path !== undefined && only.includes(item.path)) })).filter((group) => group.items.length > 0);
 }

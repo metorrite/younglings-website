@@ -67,18 +67,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <SessionProviderWrapper>
           <DialogProvider>
-          {site.link ? null : site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
-          <main className="flex-1">{children}</main>
-          {!site.jonnybot && !site.hub && !site.link && <LinkModalGate />}
-          {!site.link && <DevSnapshotMount site={site} />}
           {site.tenant ? (
             // A clan's own website: its template draws the header and footer; none of the Younglings site's chrome.
             children
           ) : (
             <>
-              {site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
-              {!site.jonnybot && !site.hub && <LinkModalGate />}
-              <DevSnapshotMount site={site} />
+              {site.link ? null : site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
+              <main className="flex-1">{children}</main>
+              {!site.jonnybot && !site.hub && !site.link && <LinkModalGate />}
+              {!site.link && <DevSnapshotMount site={site} />}
             </>
           )}
           </DialogProvider>

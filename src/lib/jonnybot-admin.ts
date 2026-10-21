@@ -68,11 +68,10 @@ export interface WhoAmI {
   avatarUrl?: string;
   /** Whether the person may use JonnyBot's website while it is closed: the clan's admins, or admins of a trusted beta server. Absent from an older bot. */
   beta?: boolean;
-  /** Whether this person owns the bot itself; only sent to someone allowed in. Gates the dev snapshot button. */
-  isOwner?: boolean;
-  /** Whether the person owns the bot itself (not just a server); only present when they are allowed in. Absent from an older bot, which counts as no. */
   /** Per restricted area, whether this person may enter it: the beta rule or a grant on the owner's access list. Absent from an older bot. */
   areas?: Partial<Record<string, boolean>>;
+  /** Whether the person owns the bot itself (not just a server); only present when they are allowed in. Absent from an older bot, which counts as no. */
+  isOwner?: boolean;
   /** The server the answer is about; only present when the user is allowed in. */
   guildId?: string;
   /** An Event coordinator: not a dashboard admin (`allowed` is false), but allowed into the event manager. Present only when true. */
@@ -419,6 +418,7 @@ export interface BingoPoolTile {
   target: number;
   difficulty: string;
   tags: string[];
+  enabled: boolean;
   /** "manual", or the id of the starter pack it came from. */
   source: string;
 }
@@ -586,6 +586,9 @@ export interface WebFormSubmissions {
 /** One live site-access switch as the owner sees it. */
 export interface SiteSwitchInfo {
   key: "jonnybot" | "hub" | "dashboard";
+  label: string;
+  description: string;
+  enabled: boolean;
 }
 
 /** One entry on the restricted-content access list. */
@@ -631,6 +634,7 @@ export interface RoleBulkJob {
   sourceName: string | null;
   targetRoleId: string;
   targetName: string | null;
+  total: number;
   done: number;
   failed: number;
   createdAt: string;
@@ -655,8 +659,12 @@ export interface RoleKeeper {
 /** One connected / trigger role rule. */
 export interface RoleRule {
   id: string;
+  name: string;
   event: "GAINS" | "LOSES";
+  enabled: boolean;
   when: string[];
+  add: string[];
+  remove: string[];
 }
 
 export interface RoleRuleList {
@@ -910,10 +918,14 @@ export interface CustomTagDef {
   /** "#rrggbb", or empty for the default colour. */
   embedColor: string;
   delivery: "CHANNEL" | "PRIVATE" | "DM";
+  allowedRoles: string[];
+  cooldownSeconds: number;
+  enabled: boolean;
   uses: number;
 }
 
 export interface CustomTagList {
+  enabled: boolean;
   tags: CustomTagDef[];
   limits: { max: number; maxName: number; maxContent: number; maxTitle: number; maxRoles: number; maxCooldown: number };
 }
@@ -1169,6 +1181,98 @@ export interface WarningItem {
   moderatorName: string | null;
   reason: string;
   createdAt: string;
+}
+
+/** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */
+export interface ModerationCase {
+  caseNo: string;
+  userId: string;
+  userName: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: "BAN" | "UNBAN" | "KICK" | "TIMEOUT" | "UNTIMEOUT" | "SOFTBAN" | "WARN";
+  actionLabel: string;
+  reason: string;
+  durationMinutes: number | null;
+  /** COMMAND, WARN, AUTOPUNISH, AUTOMOD, HONEYPOT or SERVER_TAG. */
+  source: string;
+  createdAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  /** The reason as first written, only when it was edited. */
+  originalReason: string | null;
+}
+
+export interface ModerationSettings {
+  /** Tell the member by DM what happened and why. */
+  dmReason: boolean;
+  /** Name the moderator in that DM. */
+  showModerator: boolean;
+  appealUrl: string | null;
+  /** Role ids whose holders can never be moderated. */
+  protectedRoleIds: string[];
+}
+
+export interface ModerationOverview {
+  settings: ModerationSettings;
+  maxProtectedRoles: number;
+  limit: number;
+  cases: ModerationCase[];
+}
+
+/** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */
+export interface ModerationCase {
+  caseNo: string;
+  userId: string;
+  userName: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: "BAN" | "UNBAN" | "KICK" | "TIMEOUT" | "UNTIMEOUT" | "SOFTBAN" | "WARN";
+  actionLabel: string;
+  reason: string;
+  durationMinutes: number | null;
+  /** COMMAND, WARN, AUTOPUNISH, AUTOMOD, HONEYPOT or SERVER_TAG. */
+  source: string;
+  createdAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  /** The reason as first written, only when it was edited. */
+  originalReason: string | null;
+}
+
+export interface ModerationSettings {
+  /** Tell the member by DM what happened and why. */
+  dmReason: boolean;
+  /** Name the moderator in that DM. */
+  showModerator: boolean;
+  appealUrl: string | null;
+  /** Role ids whose holders can never be moderated. */
+  protectedRoleIds: string[];
+}
+
+/** A server's honeypot: a decoy channel and/or role, and what happens to whoever uses it. Off until switched on. */
+export interface Honeypot {
+  enabled: boolean;
+  channelId: string | null;
+  roleId: string | null;
+  action: "TIMEOUT" | "KICK" | "BAN";
+  timeoutMinutes: number;
+  exemptRoleIds: string[];
+  /** For a ban: days of their messages to delete, 0 to 7. */
+  deleteDays: number;
+  maxExemptRoles: number;
+  /** What JonnyBot is allowed to do here; each action needs its own Discord permission. */
+  canBan: boolean;
+  canKick: boolean;
+  canTimeout: boolean;
+}
+
+
+export interface ModerationOverview {
+  settings: ModerationSettings;
+  maxProtectedRoles: number;
+  limit: number;
+  cases: ModerationCase[];
 }
 
 /** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */

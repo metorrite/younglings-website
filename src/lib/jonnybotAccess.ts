@@ -1,9 +1,6 @@
 import { cache } from "react";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { whoAmI } from "@/lib/jonnybot-admin";
-import { switchOpen } from "@/lib/siteSwitches";
 import { canEnter } from "@/lib/restrictedAccess";
+import { switchOpen } from "@/lib/siteSwitches";
 
 /**
  * Whether JonnyBot's public pages (home, docs, install, FAQ, privacy, terms) are open to everyone yet. They start closed:
@@ -19,11 +16,5 @@ export const publicSiteOpen = (): Promise<boolean> => switchOpen("jonnybot");
  */
 export const canSeeJonnyBot = cache(async (): Promise<boolean> => {
   if (await publicSiteOpen()) return true;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return false;
-  const result = await whoAmI(session.user.id);
-  if (!result.ok) return false; // can't ask the bot: closed, not guessed
-  return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
-  if (publicSiteOpen()) return true;
   return canEnter("jonnybot"); // can't ask the bot: closed, not guessed
 });

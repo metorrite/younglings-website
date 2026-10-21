@@ -14,8 +14,6 @@ export const dynamic = "force-dynamic";
 export default async function EventManagerPage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireEventAccess(guildId);
-  const [list, structure, kinds, drafts, templates] = await Promise.all([
-  const guild = await requireGuild(guildId);
   const [list, structure, kinds, drafts, templates, defaults, cohosting] = await Promise.all([
     adminApi.eventsCall(guild, "GET", "events").then(dashboardData) as Promise<EventList>,
     adminApi.structure(guild).then(dashboardData),

@@ -24,16 +24,6 @@ const HUB_PREFIX = "clans.";
 /** The request header the proxy sets so pages know which face a request is for, whatever its path or host. */
 export const FACE_HEADER = "x-site-face";
 
-export type HostKind = "jonnybot" | "clan" | "api" | "hub" | "link" | "unknown";
-
-/**
- * The RS Link sign-in face's own hostname (`LINK_HOST`, e.g. `link.example.org`), or null. Unset, the face is reachable only under `/link` on
- * any host (local development). It is a whole name, not a prefix, because its final domain is chosen separately (LINK-SYSTEM.md section 14).
- */
-export function linkHost(): string | null {
-  const raw = (process.env.LINK_HOST ?? "").trim().toLowerCase().replace(/:\d+$/, "");
-  return raw || null;
-}
 /** The faces a host can be mapped to. */
 export type Face = "clan" | "jonnybot" | "hub" | "events" | "api" | "link";
 const FACES: readonly Face[] = ["clan", "jonnybot", "hub", "events", "api", "link"];
@@ -124,8 +114,6 @@ export function isReservedSlug(slug: string, config: HostConfig = hostConfig()):
 export function tenantSlugOf(host: string | null | undefined, config: HostConfig = hostConfig()): string | null {
   if (!host || !config.tenantSuffix) return null;
   const name = bare(host);
-  const link = linkHost();
-  if (link && name === link) return "link";
   const suffix = `.${config.tenantSuffix}`;
   if (!name.endsWith(suffix)) return null;
   const slug = name.slice(0, -suffix.length);
@@ -137,12 +125,24 @@ export function tenantSlugOf(host: string | null | undefined, config: HostConfig
 export function resolveHost(host: string | null | undefined, apex: string | null = apexHost(), config: HostConfig = hostConfig()): { kind: HostKind; alias: boolean } {
   if (!host) return { kind: "clan", alias: false };
   const name = bare(host);
+  const link = linkHost();
+  if (link && name === link) return { kind: "link", alias: false };
   const mapped = config.faceOfHost.get(name);
   if (mapped) return { kind: mapped, alias: false };
   const alias = config.aliases.get(name);
   if (alias) return { kind: alias, alias: true };
   if (tenantSlugOf(name, config)) return { kind: "site", alias: false };
   return { kind: prefixRule(name, apex), alias: false };
+}
+
+/**
+ * The RS Link sign-in face's own hostname (`LINK_HOST`, e.g. `link.example.org`), or null. Unset, the face is reachable only under `/link` on
+ * any host (local development), or on the `link` host of SITE_HOSTS. A whole name, not a prefix, because its final domain is chosen separately
+ * (LINK-SYSTEM.md section 14). (Test batch 3: #195's LINK_HOST kept beside #201's host map.)
+ */
+export function linkHost(): string | null {
+  const raw = (process.env.LINK_HOST ?? "").trim().toLowerCase().replace(/:\d+$/, "");
+  return raw || null;
 }
 
 /** Today's rule: fixed prefixes on one apex. */
@@ -205,13 +205,12 @@ export interface SiteInfo {
   jonnybot: boolean;
   /** Whether this is the clans hub (the public directory of clans), a third face of the same site. */
   hub: boolean;
-  /** Whether this is the neutral RS Link sign-in face (no clan or JonnyBot branding at all). */
-  link: boolean;
-  /** Whether the RS Link face has its own host (`LINK_HOST`), so its paths have no /link prefix. */
-  linkHost: boolean;
-  /** Whether the hub has its own host (clans.<domain>), so its paths have no /hub prefix. */
   /** Whether the hub has its own host (clans.<domain>, or the map's hub host), so its paths have no /hub prefix. */
   hubHost: boolean;
+  /** Whether this is the neutral RS Link sign-in face (no clan or JonnyBot branding at all). */
+  link: boolean;
+  /** Whether the RS Link face has its own host (`LINK_HOST` or the map's link host), so its paths have no /link prefix. */
+  linkHost: boolean;
   /** Whether the two faces live on different hostnames. */
   split: boolean;
   clanOrigin: string;
@@ -231,12 +230,10 @@ export function siteInfoFor(host: string, forwardedProto?: string | null, face?:
   const config = hostConfig();
   const mapped = config.hosts.size > 0;
   const scheme = schemeFor(host, forwardedProto);
-  const hub = face === "hub" || classifyHost(host) === "hub";
-  const link = face === "link" || classifyHost(host) === "link";
-  const jonnybot = !hub && (face === "jonnybot" || (split && classifyHost(host) === "jonnybot"));
   const kind = classifyHost(host);
   const hub = face === "hub" || kind === "hub";
   const jonnybot = !hub && (face === "jonnybot" || (split && kind === "jonnybot"));
+  const link = face === "link" || kind === "link";
   const origin = (f: Face) => {
     const h = mappedHost(f, config);
     return h ? `${schemeFor(h, forwardedProto)}://${h}` : "";
@@ -245,10 +242,9 @@ export function siteInfoFor(host: string, forwardedProto?: string | null, face?:
     host,
     jonnybot,
     hub,
-    link,
-    linkHost: classifyHost(host) === "link",
-    hubHost: classifyHost(host) === "hub",
     hubHost: kind === "hub",
+    link,
+    linkHost: kind === "link",
     split,
     clanOrigin: split || mapped || kind === "hub" ? `${scheme}://${clanHostOf(host)}` : "",
     jonnybotOrigin: split || mapped || kind === "hub" ? `${scheme}://${jonnybotHostOf(host)}` : "",

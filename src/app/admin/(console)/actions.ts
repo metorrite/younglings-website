@@ -4,9 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireOwner } from "@/lib/admin";
 import { forgetSwitches } from "@/lib/siteSwitches";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig, type SiteSwitchInfo } from "@/lib/jonnybot-admin";
-import { adminApi, type AccessGrantList, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
-import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PromotionDue, type ScheduledPost, type SelfRoleConfig, type SiteSwitchInfo, type AccessGrantList } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -170,28 +168,6 @@ export async function removeBetaGuildAction(guildId: string): Promise<ActionResu
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };
   const result = await adminApi.removeBetaGuild(ctx, guildId.trim());
   if (result.ok) revalidatePath("/admin/beta-access");
-  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
-}
-
-// ---------- premium polling plan ----------
-
-export async function savePremiumGuildAction(guildId: string, label: string): Promise<ActionResult<PremiumGuilds>> {
-  const ctx = await requireOwner("/admin/polling-plan");
-  const slow = throttle(ctx.actorId, "admin");
-  if (slow) return { ok: false, error: slow };
-  if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "A Discord server ID is 17 to 20 digits." };
-  const result = await adminApi.savePremiumGuild(ctx, guildId.trim(), label.trim().slice(0, 60));
-  if (result.ok) revalidatePath("/admin/polling-plan");
-  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
-}
-
-export async function removePremiumGuildAction(guildId: string): Promise<ActionResult<PremiumGuilds>> {
-  const ctx = await requireOwner("/admin/polling-plan");
-  const slow = throttle(ctx.actorId, "admin");
-  if (slow) return { ok: false, error: slow };
-  if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };
-  const result = await adminApi.removePremiumGuild(ctx, guildId.trim());
-  if (result.ok) revalidatePath("/admin/polling-plan");
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
 }
 

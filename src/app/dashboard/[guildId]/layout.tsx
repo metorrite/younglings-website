@@ -3,7 +3,6 @@ import { Sidebar } from "@/components/dashboard/shell/Sidebar";
 import { NoticeBanners } from "@/components/dashboard/overview/NoticeBanners";
 import { requireEventAccess } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
-import { switchOpen } from "@/lib/siteSwitches";
 
 const ROLE_LABEL: Record<string, string> = { ADMIN: "Admin", DEVELOPER: "Developer", COORDINATOR: "Event coordinator" };
 
@@ -36,9 +35,6 @@ export default async function GuildLayout({ children, params }: { children: Reac
     adminApi.viewMode(guild),
     adminApi.devSnapshots(guild),
   ]);
-  const open = process.env.DASHBOARD_PUBLIC === "true";
-  const [notices, setup, favorites, view] = await Promise.all([adminApi.notices(guild), adminApi.serverSetup(guild), adminApi.favorites(guild), adminApi.viewMode(guild)]);
-  const open = await switchOpen("dashboard");
 
   return (
     <div className="flex min-h-[calc(100vh-4.1rem)] flex-col lg:flex-row">

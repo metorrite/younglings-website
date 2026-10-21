@@ -136,8 +136,7 @@ export function Sidebar({
   const [failed, setFailed] = useState<string | null>(null);
   const starredItems = favoriteItems(starred, hasClan);
   // the Basic view leaves out the pages most servers never open, except the one being looked at and the ones this person starred
-  const { groups, hidden } = visibleGroups(groupsFor(hasClan, isOwner), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
-  const { groups, hidden } = visibleGroups(restrictGroups(groupsFor(hasClan), restrictTo), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
+  const { groups, hidden } = visibleGroups(restrictGroups(groupsFor(hasClan, isOwner), restrictTo), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
 
   /** Stars or unstars a page: it moves at once, then is saved; if the save fails it moves back and says so. */
   function toggleStar(item: NavItem) {
@@ -191,11 +190,9 @@ export function Sidebar({
           {!restrictTo && <ViewModeSlider onChange={canStar ? (next) => void setViewModeAction(server.id, next) : undefined} />}
         </div>
 
-        <div className="hidden px-3 pt-3 lg:block">
-          <QuickJump base={base} hasClan={hasClan} isOwner={isOwner} />
-        </div>
         {!restrictTo && (
-            <QuickJump base={base} hasClan={hasClan} />
+          <div className="hidden px-3 pt-3 lg:block">
+            <QuickJump base={base} hasClan={hasClan} isOwner={isOwner} />
           </div>
         )}
 
