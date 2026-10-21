@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { whoAmI } from "@/lib/jonnybot-admin";
 import { switchOpen } from "@/lib/siteSwitches";
+import { canEnter } from "@/lib/restrictedAccess";
 
 /**
  * Whether JonnyBot's public pages (home, docs, install, FAQ, privacy, terms) are open to everyone yet. They start closed:
@@ -13,7 +14,7 @@ export const publicSiteOpen = (): Promise<boolean> => switchOpen("jonnybot");
 
 /**
  * Whether this visitor may see JonnyBot's pages: everyone once the site is open, otherwise signed-in admins and developers of
- * the clan's server and the admin teams of the trusted beta servers (the bot works that out). Worked out once per request, since the
+ * the clan's server and the admin teams of the trusted beta servers, and anyone on the owner's access list (the bot works that out). Worked out once per request, since the
  * header, the layout and the page all ask.
  */
 export const canSeeJonnyBot = cache(async (): Promise<boolean> => {
@@ -23,4 +24,6 @@ export const canSeeJonnyBot = cache(async (): Promise<boolean> => {
   const result = await whoAmI(session.user.id);
   if (!result.ok) return false; // can't ask the bot: closed, not guessed
   return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
+  if (publicSiteOpen()) return true;
+  return canEnter("jonnybot"); // can't ask the bot: closed, not guessed
 });

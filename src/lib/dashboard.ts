@@ -5,6 +5,7 @@ import { AdminUnavailableError } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { currentSite } from "@/lib/siteHostsServer";
 import { switchOpen } from "@/lib/siteSwitches";
+import { areaAllowed } from "@/lib/restrictedRule";
 import { createGuildContext, whoAmI, type ApiResult, type GuildContext } from "@/lib/jonnybot-admin";
 
 /**
@@ -30,7 +31,7 @@ async function betaAllows(userId: string): Promise<boolean> {
   const result = await whoAmI(userId);
   if (!result.ok) throw new AdminUnavailableError();
   // `beta` also lets in the admins of the trusted beta servers; an older bot without it falls back to the clan's own admins.
-  return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
+  return areaAllowed(result.data, "dashboard");
 }
 
 /** A signed-in user who may see the dashboard at all. Not signed in goes to sign-in; no beta access is a 404. */

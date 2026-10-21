@@ -70,6 +70,8 @@ export interface WhoAmI {
   /** Whether this person owns the bot itself; only sent to someone allowed in. Gates the dev snapshot button. */
   isOwner?: boolean;
   /** Whether the person owns the bot itself (not just a server); only present when they are allowed in. Absent from an older bot, which counts as no. */
+  /** Per restricted area, whether this person may enter it: the beta rule or a grant on the owner's access list. Absent from an older bot. */
+  areas?: Partial<Record<string, boolean>>;
   /** The server the answer is about; only present when the user is allowed in. */
   guildName?: string;
   guildIconUrl?: string | null;
@@ -517,6 +519,40 @@ export interface WebFormSubmissions {
 /** One live site-access switch as the owner sees it. */
 export interface SiteSwitchInfo {
   key: "jonnybot" | "hub" | "dashboard";
+}
+
+/** One entry on the restricted-content access list. */
+export interface AccessGrant {
+  id: string;
+  area: string;
+  subject: "user" | "server";
+  userId?: string;
+  guildId?: string;
+  level?: string;
+  levelLabel?: string;
+  botPresent?: boolean;
+  serverName?: string | null;
+  note: string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt: string | null;
+  expired: boolean;
+}
+
+export interface AccessGrantList {
+  grants: AccessGrant[];
+  areas: { key: string; label: string }[];
+  levels: { key: string; label: string }[];
+}
+
+export interface NewAccessGrant {
+  area: string;
+  subject: "user" | "server";
+  userId?: string;
+  guildId?: string;
+  level?: string;
+  note: string;
+  expiresOn?: string;
 }
 
 export interface BetaGuilds {
@@ -1999,6 +2035,9 @@ export const adminApi = {
   webFormSubmissions: (ctx: ApiContext, id: string) => call<WebFormSubmissions>(ctx, "GET", `forms/${encodeURIComponent(id)}/submissions`),
   siteSwitches: (ctx: ApiContext) => call<{ switches: SiteSwitchInfo[] }>(ctx, "GET", "site-switches"),
   saveSiteSwitch: (ctx: ApiContext, key: string, enabled: boolean) => call<{ switches: SiteSwitchInfo[] }>(ctx, "PUT", `site-switches/${encodeURIComponent(key)}`, { enabled }),
+  accessGrants: (ctx: ApiContext) => call<AccessGrantList>(ctx, "GET", "access-grants"),
+  addAccessGrant: (ctx: ApiContext, grant: NewAccessGrant) => call<AccessGrantList>(ctx, "POST", "access-grants", grant),
+  removeAccessGrant: (ctx: ApiContext, id: string) => call<AccessGrantList>(ctx, "DELETE", `access-grants/${encodeURIComponent(id)}`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),

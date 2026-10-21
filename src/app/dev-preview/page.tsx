@@ -47,6 +47,7 @@ import { ClanPointsForm } from "@/components/admin/ClanPointsForm";
 import { PromotionsList } from "@/components/admin/AdminExtras";
 import { SelfRolesEditor } from "@/components/admin/SelfRolesEditor";
 import { SiteAccessForm } from "@/components/admin/SiteAccessForm";
+import { AccessGrantsForm } from "@/components/admin/AccessGrantsForm";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -515,6 +516,22 @@ function Preview() {
                   { key: "hub", label: "Clans hub", description: "The public directory of clans.", enabled: true, envName: "HUB_PUBLIC", source: "live" },
                   { key: "dashboard", label: "Bot dashboard", description: "The per-server dashboard.", enabled: false, envName: "DASHBOARD_PUBLIC", source: "env-closed" },
                 ]}
+              />
+            </>
+          )}
+          {view === "access" && (
+            <>
+              <PageHeader title="Restricted access" description="Let in one person, or everyone at a permission level in one server." />
+              <AccessGrantsForm
+                actions={{ add: async () => ({ ok: false, error: "Preview only" }), remove: async () => ({ ok: false, error: "Preview only" }) }}
+                initial={{
+                  areas: [{ key: "jonnybot", label: "JonnyBot website" }, { key: "hub", label: "Clans hub" }, { key: "dashboard", label: "Bot dashboard" }],
+                  levels: [{ key: "member", label: "Any member" }, { key: "manage_server", label: "Manage Server or above" }, { key: "administrator", label: "Administrator or above" }, { key: "owner", label: "Server owner only" }],
+                  grants: [
+                    { id: "1", area: "hub", subject: "user", userId: "577853260153618443", note: "Tester", grantedBy: "7", grantedAt: "2026-10-19T10:00:00Z", expiresAt: "2026-11-30T23:59:59Z", expired: false },
+                    { id: "2", area: "dashboard", subject: "server", guildId: "1388208054008545300", level: "manage_server", levelLabel: "Manage Server or above", botPresent: true, serverName: "RS Noobs", note: "", grantedBy: "7", grantedAt: "2026-10-19T10:00:00Z", expiresAt: null, expired: false },
+                  ],
+                }}
               />
             </>
           )}
