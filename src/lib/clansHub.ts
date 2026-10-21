@@ -37,6 +37,11 @@ export interface ClanDetail extends ClanSummary {
   timezone: string | null;
   updatedAt: string | null;
   alliances?: ClanAlliances | null;
+  /**
+   * The clan's recruiting post (an older bot sends none). `applyFormPath` (its application web form, on the clan-site face) and `inviteUrl`
+   * (a Discord invite) only while it is recruiting.
+   */
+  recruitingPost?: { post: string; applyFormPath: string | null; inviteUrl: string | null };
 }
 
 /** An alliance's public page: only clans that chose to show their alliances are in it. */

@@ -1722,6 +1722,16 @@ export interface ClanSiteSave {
   pages: unknown[];
 }
 
+/** A server's recruiting post on the Clans Hub (T-070): what it looks for, the web form Apply opens, and the Discord invite shown first. */
+export interface ClanRecruitingData {
+  post: string;
+  applyFormId: string | null;
+  inviteUrl: string | null;
+  /** This server's web forms to choose from (a switched-off one is not offered to applicants). */
+  forms: { id: string; name: string; enabled: boolean }[];
+  maxPost: number;
+}
+
 /** The bot owner's view of the clan directory. Everyone else gets `canEdit: false` and empty lists. */
 export interface ClanListings {
   canEdit: boolean;
@@ -2434,6 +2444,8 @@ export const adminApi = {
   exportClanSite: (ctx: ApiContext) => call<Record<string, unknown>>(ctx, "GET", "clan-site/export"),
   takedownClanSite: (ctx: ApiContext, reason: string | null) =>
     call<ClanSiteAdmin>(ctx, "POST", reason === null ? "clan-site/restore" : "clan-site/takedown", reason === null ? undefined : { reason }),
+  clanRecruiting: (ctx: ApiContext) => call<ClanRecruitingData>(ctx, "GET", "clan-recruiting"),
+  saveClanRecruiting: (ctx: ApiContext, body: Pick<ClanRecruitingData, "post" | "applyFormId" | "inviteUrl">) => call<ClanRecruitingData>(ctx, "PUT", "clan-recruiting", body),
   clanListings: (ctx: ApiContext) => call<ClanListings>(ctx, "GET", "clan-listings"),
   suspendClanListing: (ctx: ApiContext, guildId: string, reason: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/suspend`, { reason }),
   restoreClanListing: (ctx: ApiContext, guildId: string) => call<ClanListings>(ctx, "POST", `clan-listings/${encodeURIComponent(guildId)}/restore`),
