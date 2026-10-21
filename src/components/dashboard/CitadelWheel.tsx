@@ -33,7 +33,7 @@ const MAX_WINNERS = 10;
 type PrizeInput = { amount: string; paidBy: string; recipient: string | null; note: string };
 
 type Actions = {
-  saveSettings: (autoPost: boolean, channelId: string | null, message: string) => Promise<{ ok: true; data: WheelSettings } | Failure>;
+  saveSettings: (autoPost: boolean, channelId: string | null, message: string, video: boolean) => Promise<{ ok: true; data: WheelSettings } | Failure>;
   post: (winner: string, entries: string[], end: string) => Promise<{ ok: true; channel: string } | Failure>;
   /** Locks the next place of a week. `labels` and `winnerIndex` are the wheel as spun. */
   lock: (end: string, winner: string, labels: string[], winnerIndex: number) => Promise<{ ok: true; data: WheelWeek; picture: "website" | "bot" } | Failure>;
@@ -289,6 +289,7 @@ export function CitadelWheel({
   const [mode] = useViewMode();
   const advanced = mode === "advanced";
   const [autoPost, setAutoPost] = useState(initialSettings.autoPost);
+  const [video, setVideo] = useState(initialSettings.video);
   const [channelId, setChannelId] = useState<string | null>(initialSettings.channelId);
   const [message, setMessage] = useState(initialSettings.message);
   const [settingsNote, setSettingsNote] = useState<Note | null>(null);
@@ -450,14 +451,15 @@ export function CitadelWheel({
     if (parsed.extras.length > 0) setExtrasText("");
   }
 
-  const settingsChanged = autoPost !== settings.autoPost || channelId !== settings.channelId || message.trim() !== settings.message;
+  const settingsChanged = autoPost !== settings.autoPost || video !== settings.video || channelId !== settings.channelId || message.trim() !== settings.message;
 
   function saveSettings() {
     startSave(async () => {
-      const result = await actions.saveSettings(autoPost, channelId, message);
+      const result = await actions.saveSettings(autoPost, channelId, message, video);
       if (!result.ok) return setSettingsNote({ tone: "error", title: result.error, items: result.problems });
       setSettings(result.data);
       setAutoPost(result.data.autoPost);
+      setVideo(result.data.video);
       setChannelId(result.data.channelId);
       setMessage(result.data.message);
       setSettingsNote({ tone: "success", title: "Saved." });
@@ -908,6 +910,13 @@ export function CitadelWheel({
               <span>
                 Post a winner automatically when the weekly Citadel list is made
                 <span className="block text-xs text-muted">Wednesday at 12:00 UTC, or when the list is sent now. The winner is locked in for the week, and a week you already locked is left alone. Off by default.</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={video} onChange={(ev) => setVideo(ev.target.checked)} />
+              <span>
+                Post the spin as a video instead of a GIF
+                <span className="block text-xs text-muted">Smoother and usually smaller, but Discord shows a video with a play button: it doesn&apos;t start by itself or loop like a GIF does. If the video can&apos;t be made or is too big, the GIF is posted instead. Off by default.</span>
               </span>
             </label>
             {settingsNote && <Notice tone={settingsNote.tone} title={settingsNote.title} items={settingsNote.items} />}
