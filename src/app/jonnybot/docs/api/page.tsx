@@ -90,8 +90,8 @@ export default async function ApiDocsPage() {
         </p>
         <pre className="overflow-x-auto rounded-xl border border-surface-border bg-surface p-4 text-xs leading-relaxed">{EXAMPLE}</pre>
         <p>
-          Event types: <code>DROP</code>, <code>KILL</code>, <code>LEVEL_UP</code>, <code>QUEST_COMPLETE</code>, <code>ACHIEVEMENT</code>, <code>COLLECTION_LOG</code>, <code>PRESENCE</code>. A drop can carry a{" "}
-          <code>source</code> (NPC, activity, chest, player), so a qualifying drop can be told from another way of getting the item. The full contract is the{" "}
+          Event types: <code>XP</code>, <code>CLUE</code>, <code>DROP</code>, <code>KILL</code>, <code>LEVEL_UP</code>, <code>QUEST_COMPLETE</code>, <code>ACHIEVEMENT</code>, <code>COLLECTION_LOG</code>, <code>PRESENCE</code>. A drop can carry a{" "}
+          <code>source</code> (NPC, activity, chest, player), so a qualifying drop can be told from another way of getting the item. A drop&apos;s worth is never taken from the plugin: the server prices it from Grand Exchange prices. Skill XP is sent as the game reports it (tenths of a point) and the server scales it. The full contract is the{" "}
           <a href="/openapi/jonnybot-v1.yaml">OpenAPI file</a>.
         </p>
         <p>
