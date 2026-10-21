@@ -411,6 +411,8 @@ export interface SpaceView {
 /** What happens to an event's roles and channels once it is over (`events/{id}/wrapup`). Days: 0 is straight away, -1 is never (an organiser decides). */
 export interface WrapupSettings {
   lockOnFinish: boolean;
+  /** Reopening a finished event unlocks the channels JonnyBot locked (on unless switched off; older bots don't send it). */
+  unlockOnReopen?: boolean;
   rolesDays: number;
   channelsDays: number;
   channelsAction: "NONE" | "ARCHIVE" | "DELETE";

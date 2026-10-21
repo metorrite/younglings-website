@@ -169,6 +169,15 @@ export function WrapupTab({ detail, call }: { detail: EventDetail; call: EventCa
           label="Make the channels read-only"
           detail="Players can still read the channels but can't write in them. Staff and organisers can."
         />
+        {draft.lockOnFinish && (
+          <Toggle
+            checked={draft.unlockOnReopen !== false}
+            onChange={(unlockOnReopen) => setDraft({ ...draft, unlockOnReopen })}
+            disabled={busy}
+            label="Unlock them if the event is reopened"
+            detail="When a finished event is moved back to running, players can write in its channels again."
+          />
+        )}
         <div className="grid gap-4 md:grid-cols-2">
           <FormField label="Take the event roles back after (days)" hint="0 is straight away. Empty keeps them until you remove them. Without the roles, players lose the access they gave.">
             <input className={inputClass} inputMode="numeric" disabled={busy} value={daysText(draft.rolesDays)} placeholder="never" onChange={(e) => setDraft({ ...draft, rolesDays: daysFrom(e.target.value) })} />
@@ -217,7 +226,7 @@ export function WrapupTab({ detail, call }: { detail: EventDetail; call: EventCa
           <li className="flex flex-wrap items-center justify-between gap-3 py-3">
             <span className="min-w-0 flex-1">
               <span className="font-medium">Export everything</span>
-              <span className="block text-xs text-muted">One zip: the event&apos;s data, every channel&apos;s messages (the bot&apos;s duplicate receipts folded into one), and the images that fit. Discord&apos;s own image links expire, so do this before deleting.</span>
+              <span className="block text-xs text-muted">One zip: the event&apos;s data (with spreadsheet files of the players, standings and proof sent), every channel&apos;s messages (the bot&apos;s duplicate receipts folded into one), and the images that fit. Discord&apos;s own image links expire, so do this before deleting.</span>
               {view.export && (
                 <span className="block text-xs text-muted">
                   Ready: {view.export.messages} messages, {view.export.images} images{view.export.links > 0 ? `, ${view.export.links} more as links` : ""} ({(view.export.size / 1024 / 1024).toFixed(1)} MB). Kept for an hour.
