@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
-import { notFound, redirect } from "next/navigation";
+import { forbidden, notFound, redirect } from "next/navigation";
+import { ownerAllowed } from "@/lib/ownerGate";
 import { authOptions } from "@/lib/auth";
 import { AdminContext, ApiResult, createAdminContext, whoAmI } from "@/lib/jonnybot-admin";
 
@@ -25,6 +26,27 @@ export class AdminUnavailableError extends Error {
 }
 
 export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
+  return (await resolveAdmin(returnTo)).admin;
+}
+
+/**
+ * {@link requireAdmin} that also lets only the bot's owner through (Discord application owner / OWNER_IDS, as the bot itself decides). For the Super admin
+ * area: premium servers, beta servers, platform health, site-access switches and the restricted-content list. Anyone else, however high their role in a
+ * server, gets a 403. Call it at the top of every Super admin page AND Server Action; the bot re-checks the owner on its own routes too.
+ */
+export async function requireOwner(returnTo = "/admin"): Promise<AdminContext> {
+  const { admin, isOwner } = await resolveAdmin(returnTo);
+  if (!ownerAllowed(isOwner)) forbidden();
+  return admin;
+}
+
+/** The admin and whether they are the bot's owner, for the admin header (it shows the Super admin group to owners only). */
+export async function requireAdminWithOwner(returnTo = "/admin"): Promise<{ admin: AdminContext; isOwner: boolean }> {
+  const { admin, isOwner } = await resolveAdmin(returnTo);
+  return { admin, isOwner: ownerAllowed(isOwner) };
+}
+
+async function resolveAdmin(returnTo: string): Promise<{ admin: AdminContext; isOwner: boolean | undefined }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(returnTo)}`);
@@ -35,12 +57,13 @@ export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
   if (!result.ok) throw new AdminUnavailableError();
   if (!result.data.allowed || result.data.tier === "NONE") redirect("/admin/no-access");
 
-  return createAdminContext({
+  const admin = createAdminContext({
     actorId: session.user.id,
     displayName: result.data.displayName ?? session.user.name ?? "Admin",
     avatarUrl: result.data.avatarUrl ?? session.user.image ?? null,
     tier: result.data.tier,
   });
+  return { admin, isOwner: result.data.isOwner };
 }
 
 /**

@@ -1,12 +1,12 @@
 import { BetaAccessForm } from "@/components/admin/BetaAccessForm";
-import { requireAdmin, unwrap } from "@/lib/admin";
+import { requireOwner, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
 
 export const metadata = { title: "JonnyBot beta access — Admin — Younglings" };
 export const dynamic = "force-dynamic";
 
 export default async function BetaAccessPage() {
-  const admin = await requireAdmin("/admin/beta-access");
+  const admin = await requireOwner("/admin/beta-access");
   const guilds = unwrap(await adminApi.betaGuilds(admin));
 
   return (

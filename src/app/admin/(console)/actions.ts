@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/admin";
+import { requireAdmin, requireOwner } from "@/lib/admin";
 import { throttle } from "@/lib/ratelimit";
 import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
 
@@ -151,7 +151,7 @@ export async function saveSiteOptionsAction(navEventBubble: boolean): Promise<Ac
 // ---------- JonnyBot beta access ----------
 
 export async function saveBetaGuildAction(guildId: string, label: string): Promise<ActionResult<BetaGuilds>> {
-  const ctx = await requireAdmin("/admin/beta-access");
+  const ctx = await requireOwner("/admin/beta-access");
   const slow = throttle(ctx.actorId, "admin");
   if (slow) return { ok: false, error: slow };
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "A Discord server ID is 17 to 20 digits." };
@@ -161,7 +161,7 @@ export async function saveBetaGuildAction(guildId: string, label: string): Promi
 }
 
 export async function removeBetaGuildAction(guildId: string): Promise<ActionResult<BetaGuilds>> {
-  const ctx = await requireAdmin("/admin/beta-access");
+  const ctx = await requireOwner("/admin/beta-access");
   const slow = throttle(ctx.actorId, "admin");
   if (slow) return { ok: false, error: slow };
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };
@@ -173,7 +173,7 @@ export async function removeBetaGuildAction(guildId: string): Promise<ActionResu
 // ---------- premium polling plan ----------
 
 export async function savePremiumGuildAction(guildId: string, label: string): Promise<ActionResult<PremiumGuilds>> {
-  const ctx = await requireAdmin("/admin/polling-plan");
+  const ctx = await requireOwner("/admin/polling-plan");
   const slow = throttle(ctx.actorId, "admin");
   if (slow) return { ok: false, error: slow };
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "A Discord server ID is 17 to 20 digits." };
@@ -183,7 +183,7 @@ export async function savePremiumGuildAction(guildId: string, label: string): Pr
 }
 
 export async function removePremiumGuildAction(guildId: string): Promise<ActionResult<PremiumGuilds>> {
-  const ctx = await requireAdmin("/admin/polling-plan");
+  const ctx = await requireOwner("/admin/polling-plan");
   const slow = throttle(ctx.actorId, "admin");
   if (slow) return { ok: false, error: slow };
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };

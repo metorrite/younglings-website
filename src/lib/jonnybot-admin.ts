@@ -69,6 +69,7 @@ export interface WhoAmI {
   beta?: boolean;
   /** Whether this person owns the bot itself; only sent to someone allowed in. Gates the dev snapshot button. */
   isOwner?: boolean;
+  /** Whether the person owns the bot itself (not just a server); only present when they are allowed in. Absent from an older bot, which counts as no. */
   /** The server the answer is about; only present when the user is allowed in. */
   guildName?: string;
   guildIconUrl?: string | null;
