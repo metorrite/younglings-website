@@ -28,39 +28,62 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/**
+ * Grouped by the job an admin comes to do (docs/DASHBOARD-NAV.md section 3), setup first and tools last. A new page joins the group for its job;
+ * Basic shows at most 7 pages a group, Advanced at most 12.
+ */
 export const NAV_GROUPS: NavGroup[] = [
   { title: null, items: [{ label: "Overview", icon: "home", path: "" }] },
   {
-    title: "Setup",
+    title: "Get started",
     items: [
-      { label: "Server setup", icon: "sliders", path: "/settings" },
-      { label: "Bot appearance", icon: "smile", path: "/branding" },
-      { label: "Language", icon: "chat", path: "/language", advanced: true },
-      { label: "Roles & permissions", icon: "shield", path: "/permissions" },
       { label: "Guided setup", icon: "wand", path: "/guide", also: ["/wizard"] },
+      { label: "Server setup", icon: "sliders", path: "/settings" },
+      { label: "Roles & permissions", icon: "shield", path: "/permissions" },
+      { label: "Commands", icon: "terminal", path: "/commands" },
+      { label: "Bot appearance", icon: "smile", path: "/branding" },
+      { label: "Checkup", icon: "check", path: "/checkup" },
+      { label: "Language", icon: "chat", path: "/language", advanced: true },
     ],
   },
   {
-    title: "Members",
+    title: "New members & roles",
     items: [
       { label: "Welcome message", icon: "smile", path: "/welcome" },
       { label: "Goodbye message", icon: "door", path: "/goodbye" },
       { label: "Announcements", icon: "bell", path: "/announcements" },
       { label: "Message embedder", icon: "chat", path: "/embedder", advanced: true },
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
-      { label: "Voice text", icon: "chat", path: "/voice-text", advanced: true },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
       { label: "Self roles", icon: "tag", path: "/self-roles" },
       { label: "Role toolkit", icon: "shield", path: "/role-toolkit", advanced: true },
       { label: "Kept roles", icon: "clock", path: "/role-keeper", advanced: true },
       { label: "Role rules", icon: "swap", path: "/role-rules", advanced: true },
+      { label: "New accounts", icon: "users", path: "/newaccounts", advanced: true },
     ],
   },
   {
-    title: "Features",
+    title: "Keep it safe",
     items: [
-      { label: "Commands", icon: "terminal", path: "/commands" },
-      { label: "Activity announcements", icon: "bell", path: "/tracking" },
+      { label: "Automod", icon: "shield", path: "/automod" },
+      { label: "Warnings", icon: "alert", path: "/warnings" },
+      { label: "Lockdown", icon: "shield", path: "/lockdown" },
+      { label: "Moderation log", icon: "list", path: "/modlog" },
+      { label: "Auto-clean", icon: "broom", path: "/autoclean", advanced: true },
+      { label: "Auto-delete", icon: "broom", path: "/autodelete", advanced: true },
+      { label: "Message & voice logs", icon: "list", path: "/message-logs", advanced: true },
+    ],
+  },
+  {
+    title: "Posts & feeds",
+    items: [
+      { label: "Post a message", icon: "send", path: "/post" },
+      // Until its ban-announcement card moves onto Post a message (T-215).
+      { label: "Announcements", icon: "bell", path: "/announcements" },
+      { label: "Server reminders", icon: "bell", path: "/server-reminders" },
+      { label: "Feeds", icon: "swap", path: "/feeds" },
+      { label: "Twitch alerts", icon: "bell", path: "/twitch" },
+      { label: "Scheduled posts", icon: "clock", path: "/scheduled", advanced: true },
       { label: "Automatic replies", icon: "chat", path: "/autoresponder", advanced: true },
       { label: "Custom tags", icon: "chat", path: "/custom-tags", advanced: true },
       { label: "Polls & signups", icon: "poll", path: "/community" },
@@ -73,14 +96,22 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Community",
     items: [
+      { label: "Polls & signups", icon: "poll", path: "/community" },
+      { label: "Giveaways", icon: "gift", path: "/giveaways" },
+      { label: "Suggestions", icon: "bulb", path: "/suggestions" },
       { label: "Starboard", icon: "star", path: "/starboard" },
+      { label: "Points", icon: "trophy", path: "/points" },
+      { label: "Tickets", icon: "ticket", path: "/tickets" },
+      { label: "Web forms", icon: "list", path: "/forms" },
+      { label: "Chat levels", icon: "trophy", path: "/chat-levels", advanced: true },
       { label: "Highlights", icon: "bell", path: "/highlights", advanced: true },
       { label: "Temp voice", icon: "users", path: "/temp-voice", advanced: true },
-      { label: "Giveaways", icon: "gift", path: "/giveaways" },
-      { label: "Chat levels", icon: "trophy", path: "/chat-levels", advanced: true },
-      { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
-      { label: "Suggestions", icon: "bulb", path: "/suggestions" },
-      { label: "Points", icon: "trophy", path: "/points" },
+      { label: "Voice text", icon: "chat", path: "/voice-text", advanced: true },
+    ],
+  },
+  {
+    title: "Events",
+    items: [
       { label: "Event manager", icon: "clock", path: "/event-manager" },
     ],
   },
@@ -110,16 +141,19 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Feeds", icon: "swap", path: "/feeds" },
       { label: "Twitch alerts", icon: "bell", path: "/twitch" },
       { label: "Kick alerts", icon: "bell", path: "/kick", advanced: true },
+      { label: "Citadel wheel", icon: "gift", path: "/citadel-wheel", advanced: true },
+      { label: "Discord events", icon: "clock", path: "/events", clanOnly: true, advanced: true },
     ],
   },
   {
-    title: "Clan",
+    title: "RuneScape clan",
     items: [
       { label: "Clan profile", icon: "smile", path: "/clan-profile", clanOnly: true },
-      { label: "Public events", icon: "clock", path: "/events", clanOnly: true, advanced: true },
+      { label: "Roster", icon: "users", path: "/members", clanOnly: true },
+      { label: "Clan activity feed", icon: "bell", path: "/tracking" },
+      { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
       { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
-      { label: "Roster", icon: "users", path: "/members", clanOnly: true },
       { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
       { label: "Needs attention", icon: "alert", path: "/attention", clanOnly: true },
       { label: "Promotions", icon: "trophy", path: "/promotions", clanOnly: true },
@@ -128,9 +162,8 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: "Server",
+    title: "Logs & tools",
     items: [
-      { label: "Checkup", icon: "check", path: "/checkup" },
       { label: "Activity log", icon: "list", path: "/audit", advanced: true },
       { label: "Snapshots", icon: "terminal", path: "/snapshots", ownerOnly: true, advanced: true },
     ],
