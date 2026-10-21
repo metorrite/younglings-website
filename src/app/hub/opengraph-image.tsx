@@ -8,7 +8,7 @@ export const contentType = "image/png";
 
 /** The hub's own preview card (instead of the Younglings one): what it is, and while it is open, how many clans are listed and recruiting. */
 export default async function Image() {
-  const clans = hubOpen() ? await listClans() : null;
+  const clans = (await hubOpen()) ? await listClans() : null;
   const stats = clans
     ? [
         { label: "Clans listed", value: String(clans.length) },

@@ -15,7 +15,7 @@ const BRAND = "CLANS HUB";
  */
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const plain = () => ogCard("Clans Hub", "Find a RuneScape 3 clan that fits how you play", [], "#d4af37", undefined, BRAND);
-  if (!hubOpen()) return plain();
+  if (!(await hubOpen())) return plain();
   const { slug } = await params;
   const clan = await getClan(slug);
   if (!clan) return plain();
