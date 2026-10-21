@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { getServerSession } from "next-auth";
 import { gateHub } from "@/components/clanshub/gate";
+import { HubEngineEventCard } from "@/components/clanshub/HubEventParts";
+import { authOptions } from "@/lib/auth";
+import { eventsHubOn, hubEngineEvents, type HubAccess } from "@/lib/hubEvents";
+import { hubHref, type SiteInfo } from "@/lib/siteHosts";
 import { EventCard, SectionHeader, Stat, Unavailable } from "@/components/clanshub/parts";
 import { allEvents, msUntil, type HubEvent } from "@/lib/clansHub";
 import { currentSite } from "@/lib/siteHostsServer";
@@ -9,10 +15,74 @@ export const dynamic = "force-dynamic";
 
 const DAY = 24 * 3600 * 1000;
 
-export default async function HubEvents() {
+/** The events hub's tabs (T-217): open events, alliance events and your own servers' (engine events), and the Discord events clans share. */
+const TABS: { key: string; label: string; access?: HubAccess }[] = [
+  { key: "open", label: "Open events", access: "PUBLIC" },
+  { key: "alliance", label: "Alliance", access: "ALLIANCE" },
+  { key: "mine", label: "My servers", access: "MINE" },
+  { key: "discord", label: "Discord events" },
+];
+
+export default async function HubEvents({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const closed = await gateHub();
   if (closed) return closed;
   const site = await currentSite();
+  if (!eventsHubOn()) return <DiscordEvents site={site} />;
+  const { tab: rawTab } = await searchParams;
+  const tab = TABS.find((t) => t.key === rawTab) ?? TABS[0];
+  const session = await getServerSession(authOptions);
+  const viewer = session?.user?.id ?? null;
+  return (
+    <div className="space-y-8">
+      <nav className="flex flex-wrap gap-2" aria-label="Kinds of event">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={hubHref(site, t.key === "open" ? "/events" : `/events?tab=${t.key}`)}
+            aria-current={t.key === tab.key ? "page" : undefined}
+            className={`rounded-full border px-4 py-1.5 text-sm ${t.key === tab.key ? "border-gold bg-gold/10 text-gold" : "border-surface-border text-muted hover:text-foreground"}`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
+      {tab.access ? <EngineEvents site={site} access={tab.access} viewer={viewer} /> : <DiscordEvents site={site} />}
+    </div>
+  );
+}
+
+const EMPTY: Record<HubAccess, string> = {
+  PUBLIC: "No open events right now. Clans and communities using JonnyBot can open theirs to everyone from their dashboard.",
+  ALLIANCE: "No alliance events for you right now.",
+  MINE: "None of your servers has an event on the hub right now.",
+};
+
+async function EngineEvents({ site, access, viewer }: { site: SiteInfo; access: HubAccess; viewer: string | null }) {
+  if (access !== "PUBLIC" && !viewer) {
+    return (
+      <p className="rounded-2xl border border-dashed border-surface-border p-10 text-center text-sm text-muted">
+        <a href={`/api/auth/signin?callbackUrl=${encodeURIComponent(hubHref(site, `/events?tab=${access === "ALLIANCE" ? "alliance" : "mine"}`))}`} className="text-gold underline">
+          Sign in with Discord
+        </a>{" "}
+        to see {access === "ALLIANCE" ? "events of servers allied with yours" : "your own servers' events"}.
+      </p>
+    );
+  }
+  const all = await hubEngineEvents(viewer);
+  if (all === null) return <Unavailable />;
+  const events = all.filter((e) => e.access === access);
+  if (events.length === 0) return <p className="rounded-2xl border border-dashed border-surface-border p-10 text-center text-sm text-muted">{EMPTY[access]}</p>;
+  return (
+    <ul className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 24rem), 1fr))" }}>
+      {events.map((e) => (
+        <HubEngineEventCard key={e.id} event={e} site={site} />
+      ))}
+    </ul>
+  );
+}
+
+/** The Discord scheduled events clans share (what this page always showed). */
+async function DiscordEvents({ site }: { site: SiteInfo }) {
   const events = await allEvents();
 
   const live = events?.filter((e) => e.status === "ACTIVE") ?? [];
