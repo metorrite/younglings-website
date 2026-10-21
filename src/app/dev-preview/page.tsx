@@ -52,6 +52,7 @@ import { SelfRolesEditor } from "@/components/admin/SelfRolesEditor";
 import { SiteAccessForm } from "@/components/admin/SiteAccessForm";
 import { AccessGrantsForm } from "@/components/admin/AccessGrantsForm";
 import { RoleToolkitManager } from "@/components/dashboard/RoleToolkitManager";
+import { RoleKeeperManager } from "@/components/dashboard/RoleKeeperManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -597,6 +598,26 @@ function Preview() {
                   saveAllow: async () => ({ ok: false, error: "Preview only", problems: [] }),
                   plan: async () => ({ ok: true, data: { id: "4", mode: "ADD", status: "PLANNED", sourceRoleId: "r1", sourceName: "Raiders", targetRoleId: "r2", targetName: "Event ping", total: 30, done: 0, failed: 0, createdAt: "2026-10-20T10:00:00Z", preview: [{ id: "1", name: "Xtusy" }, { id: "2", name: "Hodant" }] } }),
                   act: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                }}
+              />
+            </>
+          )}
+          {view === "rolekeeper" && (
+            <>
+              <PageHeader title="Kept roles" description="Roles that outlast a visit: sticky roles, roles kept on a member, and timed roles." />
+              <RoleKeeperManager
+                initial={{
+                  maxSticky: 25,
+                  sticky: [structure.roles[0]?.id ?? "r1"],
+                  kept: [{ id: "1", userId: "7", userName: "Xtusy", roleId: structure.roles[0]?.id ?? "r1", addedBy: "1", createdAt: "2026-10-19T10:00:00Z" }],
+                  temp: [{ id: "2", userId: "8", userName: "Hodant", roleId: structure.roles[0]?.id ?? "r1", expiresAt: "2026-10-25T10:00:00Z" }],
+                }}
+                actions={{
+                  saveSticky: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  addKept: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  removeKept: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  addTemp: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  endTemp: async () => ({ ok: false, error: "Preview only", problems: [] }),
                 }}
               />
             </>
