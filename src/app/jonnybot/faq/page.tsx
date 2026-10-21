@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Page } from "@/components/jonnybot/Prose";
 import { jonnybotHref } from "@/lib/siteHosts";
 import { currentSite } from "@/lib/siteHostsServer";
+import { supportUrl } from "@/lib/support";
 
 export const metadata: Metadata = { title: "FAQ", description: "Common questions about JonnyBot." };
 
@@ -12,6 +13,7 @@ export default async function FaqPage() {
   if (gated) return gated;
   const site = await currentSite();
   const link = "text-gold underline-offset-2 hover:underline";
+  const support = supportUrl();
 
   const items: { q: string; a: ReactNode }[] = [
     {
@@ -57,7 +59,17 @@ export default async function FaqPage() {
     },
     {
       q: "Something is broken or I need help.",
-      a: "Join the Younglings Discord (linked from the clan site) and ask there. Include what you clicked and what you expected.",
+      a: support ? (
+        <>
+          Ask in{" "}
+          <a href={support} className={link}>
+            JonnyBot&apos;s support server
+          </a>
+          . Include what you clicked and what you expected.
+        </>
+      ) : (
+        "Join the Younglings Discord (linked from the clan site) and ask there. Include what you clicked and what you expected."
+      ),
     },
   ];
 
