@@ -9,7 +9,28 @@ export function draftOf(s: SpaceSettings): SpaceDraft {
   const names: Record<string, string> = {};
   for (const slot of s.slots) if (slot.pattern !== slot.defaultPattern) names[slot.key] = slot.pattern;
   for (const name of s.names) if (name.pattern !== name.defaultPattern) names[name.key] = name.pattern;
-  return { enabled: s.enabled, teamChannels: s.teamChannels, playerChannels: s.playerChannels, slots, names };
+  const draft: SpaceDraft = { enabled: s.enabled, teamChannels: s.teamChannels, playerChannels: s.playerChannels, slots, names };
+  if (s.welcome && Object.keys(s.welcome).length > 0) draft.welcome = { ...s.welcome };
+  return draft;
+}
+
+/** The kinds of channel that can have a welcome message, in the order the page shows them. */
+export const WELCOME_KINDS: { key: string; label: string; teamOnly?: boolean; soloOnly?: boolean }[] = [
+  { key: "announcements", label: "Announcements" },
+  { key: "general", label: "General chat" },
+  { key: "teamChannel", label: "Each team's channel", teamOnly: true },
+  { key: "playerChannel", label: "Each player's channel", soloOnly: true },
+];
+
+/** The draft with the welcome message for one kind of channel set (an empty text removes it). */
+export function withWelcome(draft: SpaceDraft, key: string, text: string): SpaceDraft {
+  const welcome = { ...(draft.welcome ?? {}) };
+  if (text.trim() === "") delete welcome[key];
+  else welcome[key] = text;
+  const next: SpaceDraft = { ...draft };
+  if (Object.keys(welcome).length > 0) next.welcome = welcome;
+  else delete next.welcome;
+  return next;
 }
 
 function sorted(value: unknown): unknown {

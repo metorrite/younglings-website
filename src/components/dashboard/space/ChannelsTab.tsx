@@ -8,7 +8,7 @@ import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard
 import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
-import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, withPattern } from "@/lib/eventSpace";
+import { accessLine, draftOf, effectiveUse, groupChannels, patternOf, sameDraft, stateLine, WELCOME_KINDS, withPattern, withWelcome } from "@/lib/eventSpace";
 import type { EventDetail, SpaceAction, SpaceDraft, SpaceView } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
 
@@ -308,8 +308,35 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
               <p className="text-xs text-muted">A channel&apos;s name is tidied to the way Discord writes them (lowercase, words joined with dashes).</p>
             </CollapsibleCard>
           )}
+          {mode === "advanced" && (
+            <CollapsibleCard
+              id="event-channels-welcome"
+              title="Welcome messages"
+              hint="Optional. The first message JonnyBot posts in a channel when it makes it. Empty means no message. Nobody is pinged."
+              summary={<Chip>{Object.keys(draft.welcome ?? {}).length === 0 ? "None" : `${Object.keys(draft.welcome ?? {}).length} written`}</Chip>}
+            >
+              <div className="space-y-3">
+                {WELCOME_KINDS.filter((k) => (k.teamOnly ? view.teamEvent : k.soloOnly ? !view.teamEvent : true)).map((k) => (
+                  <FormField key={k.key} label={k.label} size="full">
+                    <textarea
+                      className={inputClass}
+                      rows={3}
+                      maxLength={1500}
+                      disabled={busy}
+                      value={draft.welcome?.[k.key] ?? ""}
+                      placeholder="No message"
+                      onChange={(ev) => change(withWelcome(draft, k.key, ev.target.value))}
+                    />
+                  </FormField>
+                ))}
+                <p className="text-xs text-muted">
+                  You can use {"{event}"}, {"{team}"}, {"{player}"}, {"{start}"} (shown in each reader&apos;s own time) and {"{rules-link}"} (the event&apos;s page on the website). Only channels made after you save get one.
+                </p>
+              </div>
+            </CollapsibleCard>
+          )}
           </PanelGrid>
-          <MoreInAdvanced>renaming the category, the roles and the private channels.</MoreInAdvanced>
+          <MoreInAdvanced>renaming the category, the roles and the private channels, and welcome messages.</MoreInAdvanced>
         </>
       )}
     </section>
