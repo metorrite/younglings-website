@@ -189,7 +189,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
     setDraftCustom(info?.boss ? "" : (o?.label ?? ""));
     setDraftPoints(String(o?.points ?? 25));
     if (!catalog) {
-      call("GET", "events/bingo-catalog").then((r) => {
+      void call("GET", "events/bingo-catalog").then((r) => {
         if (r.ok) setCatalog(r.data as BingoCatalog);
         else setProblem({ title: r.error, items: r.problems });
       });

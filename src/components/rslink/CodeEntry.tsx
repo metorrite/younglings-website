@@ -39,7 +39,7 @@ export function CodeEntry({ api, initialCode = "", signInError, accepted: accept
 
   useEffect(() => {
     let live = true;
-    api.state().then((s) => {
+    void api.state().then((s) => {
       if (!live) return;
       setReady(true);
       if (!s.ok) setError(s.message);

@@ -109,7 +109,7 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
     setOpen(true);
     setProblem(null);
     if (holders === null) {
-      actions.holders().then((r) => {
+      void actions.holders().then((r) => {
         if (r.ok) setHolders(r.data);
         else setProblem({ tone: "error", title: r.error, items: r.problems });
       });
@@ -379,10 +379,10 @@ export function CitadelWheel({
   const waitingEnd = locked?.end ?? null;
   useEffect(() => {
     if (!waitingForGif || !waitingEnd) return;
-    const timer = setInterval(async () => {
+    const timer = setInterval(() => void (async () => {
       const result = await actions.week(waitingEnd);
       if (result.ok && result.data.winners.every((w) => w.hasGif)) applyWeek(result.data);
-    }, 3000);
+    })(), 3000);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `actions` is rebuilt by the page on each render; only the week matters here
   }, [waitingForGif, waitingEnd, applyWeek]);
