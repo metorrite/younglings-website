@@ -1,8 +1,11 @@
 import { getServerSession } from "next-auth";
 import { forbidden, notFound, redirect } from "next/navigation";
+import { AdminUnavailableError } from "@/lib/botUnreachable";
 import { ownerAllowed } from "@/lib/ownerGate";
 import { authOptions } from "@/lib/auth";
 import { AdminContext, ApiResult, createAdminContext, whoAmI } from "@/lib/jonnybot-admin";
+
+export { AdminUnavailableError };
 
 /**
  * The one gate in front of everything under /admin. Call it at the top of every admin page AND every admin
@@ -19,12 +22,6 @@ import { AdminContext, ApiResult, createAdminContext, whoAmI } from "@/lib/jonny
  *  - the check can't run (JonnyBot down, wrong secret) → throws, which the /admin error boundary shows as "can't reach JonnyBot"
  *    (access fails closed; it is never granted because the check couldn't run)
  */
-export class AdminUnavailableError extends Error {
-  constructor() {
-    super("JonnyBot is unreachable, so admin access can't be verified.");
-  }
-}
-
 export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
   return (await resolveAdmin(returnTo)).admin;
 }
