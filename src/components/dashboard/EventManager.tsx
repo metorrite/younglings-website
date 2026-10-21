@@ -9,6 +9,7 @@ import { STAGE_LABEL, type EventCall } from "@/components/dashboard/EventListVie
 import { BingoLookPicker } from "@/components/dashboard/BingoLookPicker";
 import { BingoOptionsCard } from "@/components/dashboard/BingoOptionsCard";
 import { ShapeSizeControl } from "@/components/dashboard/ShapeSizeControl";
+import { CohostsCard } from "@/components/dashboard/events/CohostCards";
 import { EventVisibilityCard, scopeLabel } from "@/components/dashboard/events/EventVisibilityCard";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
@@ -525,6 +526,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             hubEnabled={hubEnabled}
             onSave={(scope, config) => run("PUT", base, { scope, config }, "Saved who can see and join.")}
           />
+          {e.scope !== "PRIVATE" && <CohostsCard eventId={e.id} call={call} over={e.status === "DONE" || e.status === "CANCELLED"} />}
           <CollapsibleCard
             id="event-setup"
             title="Setup and verification"
