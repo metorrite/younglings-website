@@ -5,7 +5,7 @@
  *
  * - `site:<name>`: a clan-site read, `<name>` being the first segment of the bot's `/internal/site/<name>` path
  *   (members, overview, member, leaderboard, events, polls, signups, news, options, online, feed, ...).
- * - `hub:clans`, `hub:events`, `hub:leaderboards`: the clans hub's directory reads.
+ * - `hub:clans`, `hub:events`, `hub:leaderboards`: the clans hub's directory reads; `hub:sites`: the clan websites from the builder.
  */
 
 const TAG = /^(site|hub):[a-z0-9-]{1,40}$/;
@@ -28,6 +28,7 @@ export function tagsForInternalPath(path: string): string[] {
   const rest = clean.slice("/internal/directory/".length).split("/");
   if (rest[0] === "leaderboards") return ["hub:leaderboards"];
   if (rest[0] === "events") return ["hub:events"];
+  if (rest[0] === "sites") return ["hub:sites"];
   if (rest[0] === "clans") return rest[2] === "events" ? ["hub:events", "hub:clans"] : ["hub:clans"];
   return [];
 }

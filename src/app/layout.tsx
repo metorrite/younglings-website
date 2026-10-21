@@ -29,6 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
     // The neutral RS Link face: its own name, no clan or JonnyBot branding, and not for search engines until it is released (T-120).
     return { title: { default: "RS Link", template: "%s | RS Link" }, description: "Link your RuneScape name to your Discord account.", robots: { index: false, follow: false } };
   }
+  // A hosted clan site (website builder) names itself in its own layout; the builder is in beta, so no search engines yet.
+  if (site.tenant) return { robots: { index: false, follow: false } };
   if (site.hub) {
     return {
       metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
@@ -69,6 +71,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <main className="flex-1">{children}</main>
           {!site.jonnybot && !site.hub && !site.link && <LinkModalGate />}
           {!site.link && <DevSnapshotMount site={site} />}
+          {site.tenant ? (
+            // A clan's own website: its template draws the header and footer; none of the Younglings site's chrome.
+            children
+          ) : (
+            <>
+              {site.hub ? <ClansNavbar site={site} /> : site.jonnybot ? <JonnyBotNavbar site={site} /> : <Navbar site={site} />}
+              {!site.jonnybot && !site.hub && <LinkModalGate />}
+              <DevSnapshotMount site={site} />
+            </>
+          )}
           </DialogProvider>
         </SessionProviderWrapper>
       </body>
