@@ -33,6 +33,8 @@ import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
 import { LanguageForm } from "@/components/dashboard/LanguageForm";
+import { ClanPanelSwitch } from "@/components/dashboard/ClanPanelSwitch";
+import { RuneSyncActivity } from "@/components/profile/RuneSyncActivity";
 import { messagesFor, t } from "@/lib/i18n";
 import { ModerationManager } from "@/components/dashboard/ModerationManager";
 import { HoneypotForm } from "@/components/dashboard/HoneypotForm";
@@ -660,6 +662,28 @@ function Preview() {
                 { id: "pick", label: "How did you find us?", kind: "CHOICE", required: false, options: ["A friend", "The hub"], maxLength: 100 },
                 { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
               ]}
+            />
+          )}
+          {view === "plugin-settings" && (
+            <>
+              <PageHeader title="Clan plugin" description="What the RuneSync plugin may show your members in the game." />
+              <ClanPanelSwitch initial={false} save={async (next) => ({ ok: true, data: { clanPanel: next } })} />
+            </>
+          )}
+          {view === "runesync-activity" && (
+            <RuneSyncActivity
+              view={{
+                client: { client: "RuneSync 0.0.6", lastSeen: "2026-10-21T18:02:00Z", paused: false, lastBatchAt: "2026-10-21T18:01:00Z", lastBatch: { accepted: 4, duplicates: 1, rejected: 0 } },
+                recent: {
+                  XP: [{ at: "2026-10-21T18:01:00Z", sourceKind: null, sourceName: null, data: { skill: "Fletching", xp: 10573570, xpScaled: 10573570, level: 99 } }],
+                  DROP: [{ at: "2026-10-21T17:40:00Z", sourceKind: "NPC", sourceName: "Telos", data: { itemName: "Dormant anima core helm", quantity: 1, valueGp: 3200000 } }],
+                  KILL: [{ at: "2026-10-21T17:40:00Z", sourceKind: null, sourceName: null, data: { bossName: "Telos", killCount: 412 } }],
+                  CLUE: [],
+                },
+                diagnostics: [{ id: "RS-7K2M9Q", createdAt: "2026-10-21T17:00:00Z", expiresAt: "2026-11-04T17:00:00Z" }],
+                minClientVersion: "0.0.0",
+                diagnosticsKeptDays: 14,
+              }}
             />
           )}
           {view === "language" && (
