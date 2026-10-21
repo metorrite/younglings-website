@@ -1,12 +1,15 @@
 import { NoticesEditor } from "@/components/dashboard/overview/NoticesEditor";
 import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/OverviewView";
-import { dashboardData, requireGuild } from "@/lib/dashboard";
+import { redirect } from "next/navigation";
+import { dashboardData, requireEventAccess, requireGuild } from "@/lib/dashboard";
 import { adminApi, dashboardApi } from "@/lib/jonnybot-admin";
 import { setupChecklist } from "@/lib/setupChecklist";
 import { addNoticeAction, removeNoticeAction } from "./notices/actions";
 
 export default async function GuildOverview({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
+  // An Event coordinator has no overview: their home is the event manager.
+  if ((await requireEventAccess(guildId)).tier === "COORDINATOR") redirect(`/dashboard/${guildId}/event-manager`);
   const guild = await requireGuild(guildId);
   const [overview, welcome, setup, permissions, tracking, hub, checkupResult, favorites] = await Promise.all([
     adminApi.overview(guild).then(dashboardData),

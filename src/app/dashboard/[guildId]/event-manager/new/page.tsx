@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { EventWizard } from "@/components/dashboard/setup/EventWizard";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
-import { dashboardData, requireGuild } from "@/lib/dashboard";
+import { dashboardData, requireEventAccess } from "@/lib/dashboard";
 import type { EventDraft, OptionSchema } from "@/lib/eventOptions";
 import { adminApi } from "@/lib/jonnybot-admin";
 import { eventApiAction } from "../actions";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function NewEventPage({ params, searchParams }: { params: Promise<{ guildId: string }>; searchParams: Promise<{ draft?: string }> }) {
   const { guildId } = await params;
   const { draft: draftId } = await searchParams;
-  const guild = await requireGuild(guildId);
+  const guild = await requireEventAccess(guildId);
   const back = `/dashboard/${guildId}/event-manager`;
   if (!draftId || !/^\d{1,18}$/.test(draftId)) redirect(back);
 

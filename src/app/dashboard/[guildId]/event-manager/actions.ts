@@ -1,6 +1,6 @@
 "use server";
 
-import { requireGuild } from "@/lib/dashboard";
+import { requireEventAccess } from "@/lib/dashboard";
 import { adminApi, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 
@@ -50,7 +50,7 @@ export async function eventApiAction(
   path: string,
   body?: unknown,
 ): Promise<WelcomeActionResult<unknown>> {
-  const guild = await requireGuild(guildId);
+  const guild = await requireEventAccess(guildId);
   if (!["GET", "POST", "PUT", "DELETE"].includes(method) || typeof path !== "string" || !ALLOWED.some((re) => re.test(path)))
     return { ok: false, error: "That isn't something the event manager can do.", problems: [] };
   if (method !== "GET") {

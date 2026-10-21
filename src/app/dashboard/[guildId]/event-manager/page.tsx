@@ -1,7 +1,7 @@
 import { EventListView } from "@/components/dashboard/EventListView";
 import type { DraftList, TemplateList } from "@/components/dashboard/setup/EventStreams";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
-import { dashboardData, requireGuild } from "@/lib/dashboard";
+import { dashboardData, requireEventAccess } from "@/lib/dashboard";
 import type { EventKind } from "@/lib/eventOptions";
 import type { EventList } from "@/lib/eventTypes";
 import { adminApi } from "@/lib/jonnybot-admin";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EventManagerPage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
-  const guild = await requireGuild(guildId);
+  const guild = await requireEventAccess(guildId);
   const [list, structure, kinds, drafts, templates] = await Promise.all([
     adminApi.eventsCall(guild, "GET", "events").then(dashboardData) as Promise<EventList>,
     adminApi.structure(guild).then(dashboardData),

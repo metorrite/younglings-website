@@ -389,7 +389,7 @@ function Preview() {
   const scenarioParam = useSearchParams().get("s") ?? "solo";
   return (
     <div className="flex min-h-[calc(100vh-4.1rem)] flex-col lg:flex-row">
-        <Sidebar server={{ id: "1", name: "Younglings", iconUrl: null, role: "Admin" }} base="/dev-preview" canStar={false} favorites={["/event-manager", "/tickets"]} footer="JonnyBot dashboard · Beta. Signed in as metorrite." />
+        <Sidebar server={{ id: "1", name: "Younglings", iconUrl: null, role: view === "coordinator" ? "Event coordinator" : "Admin" }} restrictTo={view === "coordinator" ? ["/event-manager"] : undefined} base="/dev-preview" canStar={false} favorites={["/event-manager", "/tickets"]} footer="JonnyBot dashboard · Beta. Signed in as metorrite." />
         <div className="min-w-0 flex-1 space-y-6 px-4 py-6 sm:px-8 lg:px-10">
           {view === "events" && <EventListView structure={previewStructure} kinds={previewKinds} drafts={previewDrafts} templates={previewTemplates} initial={{ events: [{ ...evSummary, players: 7, waiting: 2, proofWaiting: 0, config: { ...evSummary.config, signupClosesAt: new Date(Date.now() + 20 * 3600 * 1000).toISOString() } }, { ...evSummary, id: "8", name: "Sunday Competition", status: "RUNNING" as const, scoringMode: "INDIVIDUAL" as const, scope: "ALLIANCE" as const, players: 11, waiting: 0, proofWaiting: 3 }, { ...evSummary, id: "7", name: "Spring Raids Draft", status: "DRAFT" as const, players: 0, waiting: 0, proofWaiting: 0 }], maxOpen: 20 }} guildId="1" call={setupCall} />}
           {view === "teams" && <TeamsPreview />}
@@ -537,6 +537,7 @@ function Preview() {
               />
             </>
           )}
+          {view === "coordinator" && <PageHeader title="Event manager" description="What an Event coordinator sees: the event manager is their whole dashboard." />}
           {view === "commands" && (
             <>
               <PageHeader title="Commands" description="The slash commands members can use in this server." />

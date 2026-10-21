@@ -41,7 +41,8 @@ export interface GuildContext {
   readonly guildId: string;
   readonly displayName: string;
   readonly avatarUrl: string | null;
-  readonly tier: "ADMIN" | "DEVELOPER";
+  /** COORDINATOR: an Event coordinator, who may use the event manager of this server and nothing else (see requireEventAccess). */
+  readonly tier: "ADMIN" | "DEVELOPER" | "COORDINATOR";
 }
 
 export function createGuildContext(guild: Omit<GuildContext, typeof guildContextBrand>): GuildContext {
@@ -54,7 +55,7 @@ export interface ManagedGuild {
   name: string;
   iconUrl: string | null;
   memberCount: number;
-  tier: "ADMIN" | "DEVELOPER";
+  tier: "ADMIN" | "DEVELOPER" | "COORDINATOR";
 }
 
 // ---------- shapes the bot returns ----------
@@ -74,6 +75,8 @@ export interface WhoAmI {
   areas?: Partial<Record<string, boolean>>;
   /** The server the answer is about; only present when the user is allowed in. */
   guildId?: string;
+  /** An Event coordinator: not a dashboard admin (`allowed` is false), but allowed into the event manager. Present only when true. */
+  coordinator?: boolean;
   guildName?: string;
   guildIconUrl?: string | null;
 }
