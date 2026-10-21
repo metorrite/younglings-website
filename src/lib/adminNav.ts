@@ -73,6 +73,8 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     icon: "📈",
     blurb: "Is everything running, and who changed what.",
     pages: [
+      { href: "/admin/health", label: "Bot health", blurb: "Connection, database, refresh cycle and memory at a glance." },
+      { href: "/admin/runemetrics", label: "RuneMetrics budget", blurb: "How the shared request queue is used: per tier, per server, and how far behind it is." },
       { href: "/admin/audit", label: "Audit log", blurb: "Every change made from this dashboard, who made it and when." },
       { href: "/admin/tickets/history", label: "Ticket history", blurb: "Browse open and closed tickets and read their saved transcripts." },
       { href: "/admin/health", label: "Bot health", blurb: "Connection, database, refresh cycle and memory at a glance." },
