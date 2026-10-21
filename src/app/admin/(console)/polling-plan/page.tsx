@@ -1,6 +1,7 @@
 import { PremiumPlanForm } from "@/components/admin/PremiumPlanForm";
 import { requireOwner, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Polling plan — Admin — Younglings" };
 export const dynamic = "force-dynamic";
@@ -21,4 +22,7 @@ export default async function PollingPlanPage() {
       <PremiumPlanForm initial={plan} />
     </div>
   );
+/** The polling plan became the Premium page (every plan, its end date and its history). The old address keeps working. */
+export default function PollingPlanRedirect() {
+  redirect("/admin/premium");
 }

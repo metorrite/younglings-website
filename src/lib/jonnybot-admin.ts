@@ -1673,10 +1673,39 @@ export interface DevSnapshotFile extends DevSnapshotMeta {
 
 /** The servers on the faster polling plan. Only the bot's owner gets the list; everyone else just learns about their own server. */
 export interface PremiumGuilds {
-  guilds: BetaGuild[];
+  guilds: PremiumGrant[];
+  /** The grants that end within a week (owner only). */
+  endingSoon: PremiumGrant[];
   canEdit: boolean;
-  /** Whether the server the question was asked about is on the plan. */
+  /** Whether the server the question was asked about has a plan in force. */
   thisServer: boolean;
+  /** That server's own plan: what it is, when it ends and what it includes. Null on the free plan. Older bots leave it out. */
+  thisServerPlan?: { tier: string; expiresAt: string | null; features: { key: string; title: string; description: string }[] } | null;
+}
+
+/** One server on a plan above the free one (owner only). */
+export interface PremiumGrant extends BetaGuild {
+  tier: string;
+  /** When the plan ends; null = no end. */
+  expiresAt: string | null;
+  note: string | null;
+  source: string;
+  /** False once the end has passed but the daily sweep has not removed it yet. */
+  inForce: boolean;
+}
+
+export interface PremiumGrantInput {
+  label: string;
+  tier?: string;
+  /** A date like 2026-12-31 (the plan runs through that day, UTC) or empty for no end. */
+  expiresAt?: string;
+  note?: string;
+  source?: string;
+}
+
+export interface PremiumHistory {
+  guildId: string;
+  history: { action: "GRANT" | "CHANGE" | "REVOKE" | "EXPIRE"; tier: string | null; expiresAt: string | null; byUser: string | null; note: string | null; at: string }[];
 }
 
 export interface PollJobStatus {
@@ -2322,7 +2351,8 @@ export const adminApi = {
     call<DevSnapshotFile>(ctx, "POST", "dev/snapshot", { focus, siteCommit }),
   deleteDevSnapshot: (ctx: ApiContext, id: string) => call<{ deleted: string }>(ctx, "DELETE", `dev/snapshots/${encodeURIComponent(id)}`),
   premiumGuilds: (ctx: ApiContext) => call<PremiumGuilds>(ctx, "GET", "premium-guilds"),
-  savePremiumGuild: (ctx: ApiContext, guildId: string, label: string) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, { label }),
+  savePremiumGuild: (ctx: ApiContext, guildId: string, grant: PremiumGrantInput) => call<PremiumGuilds>(ctx, "PUT", `premium-guilds/${encodeURIComponent(guildId)}`, grant),
+  premiumHistory: (ctx: ApiContext, guildId: string) => call<PremiumHistory>(ctx, "GET", `premium-guilds/${encodeURIComponent(guildId)}/history`),
   removePremiumGuild: (ctx: ApiContext, guildId: string) => call<PremiumGuilds>(ctx, "DELETE", `premium-guilds/${encodeURIComponent(guildId)}`),
   roleFixStatus: (ctx: ApiContext) => call<RoleFixStatus>(ctx, "GET", "role-sync"),
   roleFixPlan: (ctx: ApiContext) => call<RoleFixPlan>(ctx, "POST", "role-sync/plan", {}),

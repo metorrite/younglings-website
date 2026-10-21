@@ -36,6 +36,35 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     pages: [
       { href: "/admin/news", label: "News feed", blurb: "Which Discord channels appear in the middle of the home page." },
       { href: "/admin/site-options", label: "Site options", blurb: "How the site behaves for visitors, such as the bubble on the Events menu." },
+      { href: "/admin/premium", label: "Premium", blurb: "Which servers have a plan above the free one, until when, and what changed." },
+      { href: "/admin/beta-access", label: "JonnyBot beta access", blurb: "Trusted servers whose admins can use JonnyBot's website while it is closed to everyone else." },
+    ],
+  },
+  {
+    id: "bot",
+    label: "Bot settings",
+    icon: "🤖",
+    blurb: "How JonnyBot behaves in Discord.",
+    pages: [
+      { href: "/admin/clan", label: "Clan points & ranks", blurb: "Points for membership and Citadel activity, and what each rank needs." },
+      { href: "/admin/clan-website", label: "Clan website", blurb: "The address the clan name in Discord links to (same as /configure)." },
+      { href: "/admin/tracking", label: "Tracking channels", blurb: "Where drops, quests, boss kills, Citadel, joins and leaves are announced." },
+      { href: "/admin/pvm-help", label: "PvM Help", blurb: "The PVM Helper roles and guidelines, and when help tickets ping helpers for members and guests." },
+      { href: "/dashboard", label: "Bot dashboard (beta)", blurb: "The dashboard other Discord servers will use to install and set up JonnyBot. Only clan admins can open it for now." },
+      { href: "/admin/welcome", label: "Welcome message", blurb: "Greet new members with text and an embed in a channel, and by DM too if you like." },
+      { href: "/admin/tickets", label: "Ticket panels", blurb: "Create and edit ticket panels and post them to a channel." },
+      { href: "/admin/tickets/defaults", label: "Panel defaults", blurb: "What every new ticket panel starts with: staff roles, who can close, limits and wording." },
+      { href: "/admin/tickets/settings", label: "Ticket settings", blurb: "Transcript log channel, retention, and the close delay." },
+    ],
+  },
+  {
+    id: "actions",
+    label: "Admin actions",
+    icon: "⚡",
+    blurb: "Do something: post, schedule, run a poll or a signup.",
+    pages: [
+      { href: "/admin/post", label: "Post a message", blurb: "Write a formatted announcement and post it to any channel, with a check first." },
+      { href: "/admin/scheduled", label: "Scheduled posts", blurb: "Queue a message to post later, and cancel it if plans change." },
     ],
   },
   {
