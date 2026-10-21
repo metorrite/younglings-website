@@ -305,7 +305,8 @@ export interface EventAward {
 // ---------- roles and channels ----------
 
 export type SpaceUse = "create" | "existing" | "none";
-export type SpaceAction = "create" | "keep" | "use_existing" | "remove";
+/** `repair`: JonnyBot made it and it is still there, but it was renamed or its access was changed; setting up puts it back. */
+export type SpaceAction = "create" | "keep" | "use_existing" | "remove" | "repair";
 
 /** One of the single channels an event can have (staff, announcements, general, board, review) and how it is provided. */
 export interface SpaceSlot {
@@ -404,7 +405,7 @@ export interface SpaceView {
   roles: SpaceRole[];
   channels: SpaceChannel[];
   staffRoles: { id: string; name: string }[];
-  summary: { newRoles: number; newChannels: number; toRemove: number; players: number; excluded: number };
+  summary: { newRoles: number; newChannels: number; toRemove: number; toRepair?: number; players: number; excluded: number };
 }
 
 /** What happens to an event's roles and channels once it is over (`events/{id}/wrapup`). Days: 0 is straight away, -1 is never (an organiser decides). */
