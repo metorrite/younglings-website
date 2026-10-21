@@ -237,6 +237,14 @@ export interface HelpExtras {
   relatedTickets: boolean;
   /** The bosses that count as group content, comma separated. */
   groupBosses: string;
+  /** Rank tickets by who asks: clan members, then longtime guests, then new guests. */
+  priorityTiers: boolean;
+  longtimeGuestDays: number;
+  longtimeGuestPings: boolean;
+  /** Hours before a longtime guest's ticket pings the next role up; 0 for never. */
+  longtimeGuestEscalationHours: number;
+  /** Kill counts new guests need for a CA tier, like "Master=50, Grandmaster=100". */
+  kcRequirements: string;
   maxStartHours: number;
   maxDays: number;
 }
@@ -1949,7 +1957,7 @@ export const adminApi = {
     call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
   helpExtras: (ctx: ApiContext) => call<HelpExtras>(ctx, "GET", "help-extras"),
-  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays" | "relatedTickets" | "groupBosses">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
+  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays" | "relatedTickets" | "groupBosses" | "priorityTiers" | "longtimeGuestDays" | "longtimeGuestPings" | "longtimeGuestEscalationHours" | "kcRequirements">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
   helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
   saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
