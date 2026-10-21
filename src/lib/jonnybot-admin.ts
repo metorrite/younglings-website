@@ -233,6 +233,10 @@ export interface HelpExtras {
   eventButton: boolean;
   eventStartHours: number;
   eventDays: number;
+  /** Show other open tickets for the same group boss, with Link and Merge buttons. */
+  relatedTickets: boolean;
+  /** The bosses that count as group content, comma separated. */
+  groupBosses: string;
   maxStartHours: number;
   maxDays: number;
 }
@@ -1945,7 +1949,7 @@ export const adminApi = {
     call<PanelDefinition>(ctx, "POST", `ticket/panels/${encodeURIComponent(id)}/post`, { channelId }),
 
   helpExtras: (ctx: ApiContext) => call<HelpExtras>(ctx, "GET", "help-extras"),
-  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
+  saveHelpExtras: (ctx: ApiContext, body: Partial<Pick<HelpExtras, "eventButton" | "eventStartHours" | "eventDays" | "relatedTickets" | "groupBosses">>) => call<HelpExtras>(ctx, "PUT", "help-extras", body),
   helpSettings: (ctx: ApiContext) => call<HelpSettings>(ctx, "GET", "help/settings"),
   saveHelpSettings: (ctx: ApiContext, settings: Partial<Omit<HelpSettings, "guidelinesAreDefault" | "defaultGuidelines" | "postedChannelId" | "panels" | "createdPanels" | "existingPanels">>) =>
     call<HelpSettings>(ctx, "PUT", "help/settings", settings),
