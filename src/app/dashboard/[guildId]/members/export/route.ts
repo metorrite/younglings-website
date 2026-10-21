@@ -1,9 +1,9 @@
-import { requireAdmin, unwrap } from "@/lib/admin";
+import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
 
 export const dynamic = "force-dynamic";
 
-/** A spreadsheet-friendly copy of the roster table. Admin-only: it carries Discord names next to RuneScape names. */
+/** A spreadsheet-friendly copy of the roster table. For people who manage this server only: it carries Discord names next to RuneScape names. */
 const cell = (value: string | number | boolean | null) => {
   const text = value === null ? "" : String(value);
   // A leading = + - @ would be run as a formula by spreadsheet apps, so it is defused with a quote.
@@ -11,9 +11,10 @@ const cell = (value: string | number | boolean | null) => {
   return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 };
 
-export async function GET() {
-  const admin = await requireAdmin("/admin/members");
-  const roster = unwrap(await adminApi.roster(admin));
+export async function GET(_request: Request, { params }: { params: Promise<{ guildId: string }> }) {
+  const { guildId } = await params;
+  const guild = await requireGuild(guildId);
+  const roster = await adminApi.roster(guild).then(dashboardData);
 
   const header = ["RSN", "Rank", "Points", "Promotion due", "Verified", "Discord name", "Discord ID", "Verified on", "Joined", "Total level", "Combat level", "Total XP", "Boss kills", "Last refreshed", "Next refresh (est.)", "Last activity", "Visited Citadel this week", "Capped this week", "Notes"];
   const lines = [header.map(cell).join(",")];
@@ -28,7 +29,7 @@ export async function GET() {
   return new Response("﻿" + lines.join("\r\n") + "\r\n", {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="younglings-roster-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "Content-Disposition": `attachment; filename="roster-${guildId}-${new Date().toISOString().slice(0, 10)}.csv"`,
       "Cache-Control": "no-store",
     },
   });

@@ -73,6 +73,7 @@ export interface WhoAmI {
   /** Per restricted area, whether this person may enter it: the beta rule or a grant on the owner's access list. Absent from an older bot. */
   areas?: Partial<Record<string, boolean>>;
   /** The server the answer is about; only present when the user is allowed in. */
+  guildId?: string;
   guildName?: string;
   guildIconUrl?: string | null;
 }

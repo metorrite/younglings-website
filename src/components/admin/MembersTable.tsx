@@ -34,7 +34,7 @@ const FILTERS = [
   { id: "notes", label: "Has notes", test: (m: RosterMember) => m.notes > 0 },
 ] as const;
 
-export function MembersTable({ roster, notes }: { roster: Roster; notes?: { load: typeof loadNotesAction; add: typeof addNoteAction; remove: typeof deleteNoteAction } }) {
+export function MembersTable({ roster, exportHref, notes }: { roster: Roster; /** Where the CSV copy of the table is downloaded from. */ exportHref: string; notes?: { load: typeof loadNotesAction; add: typeof addNoteAction; remove: typeof deleteNoteAction } }) {
   const loadNotes = notes?.load ?? loadNotesAction;
   const addNote = notes?.add ?? addNoteAction;
   const deleteNote = notes?.remove ?? deleteNoteAction;
@@ -117,7 +117,7 @@ export function MembersTable({ roster, notes }: { roster: Roster; notes?: { load
         <span className="ml-auto text-sm text-muted">
           {rows.length} of {roster.members.length}
         </span>
-        <a href="/admin/members/export" className="rounded-md border border-surface-border px-3 py-1.5 text-sm hover:border-gold/50">
+        <a href={exportHref} className="rounded-md border border-surface-border px-3 py-1.5 text-sm hover:border-gold/50">
           Export CSV
         </a>
       </div>

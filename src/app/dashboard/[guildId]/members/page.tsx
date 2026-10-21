@@ -16,6 +16,7 @@ export default async function MembersPage({ params }: { params: Promise<{ guildI
       <PageHeader title="Clan roster" description="Every clan member in one place: who is verified, how fresh their data is, and where they stand this Citadel week. Open a member to leave staff-only notes." />
       <MembersTable
         roster={roster}
+        exportHref={`/dashboard/${guildId}/members/export`}
         notes={{ load: loadGuildNotesAction.bind(null, guildId), add: addGuildNoteAction.bind(null, guildId), remove: deleteGuildNoteAction.bind(null, guildId) }}
       />
     </div>

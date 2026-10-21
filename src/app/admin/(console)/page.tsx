@@ -2,10 +2,10 @@ import Link from "next/link";
 import { requireAdminWithOwner } from "@/lib/admin";
 import { adminGroupsFor } from "@/lib/adminNav";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { requireAdmin } from "@/lib/admin";
+import { ADMIN_GROUPS } from "@/lib/adminNav";
 
 export const dynamic = "force-dynamic";
-
-const chip = (n: number, good = "text-emerald-400", bad = "text-gold") => (n === 0 ? good : bad);
 
 export default async function AdminHomePage() {
   const { admin, isOwner } = await requireAdminWithOwner("/admin");
@@ -22,19 +22,16 @@ export default async function AdminHomePage() {
         { label: "Promotions due", n: a.promotions.length, href: "/admin/promotions" },
       ]
     : [];
+  const admin = await requireAdmin("/admin");
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold">Welcome, {admin.displayName}</h1>
-        <p className="mt-1 text-sm text-muted">Everything here is checked against your roles in the Discord server each time.</p>
-      </div>
-
-      <section aria-label="Right now" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {cards.map((c) => (
-          <Link key={c.label} href={c.href} className="rounded-lg border border-surface-border bg-surface p-4 transition hover:border-gold/50">
-            <p className="text-xs tracking-wider text-muted uppercase">{c.label}</p>
-            <p className={`mt-1 text-2xl font-semibold ${chip(c.n)}`}>{c.n}</p>
+        <p className="mt-1 text-sm text-muted">
+          These are the settings of the Younglings website. Everything that changes how JonnyBot behaves in Discord is on the{" "}
+          <Link href="/dashboard" className="text-gold hover:underline">
+            bot dashboard
           </Link>
         ))}
         {isOwner && (
@@ -48,6 +45,9 @@ export default async function AdminHomePage() {
         </Link>
         )}
       </section>
+          . Everything here is checked against your roles in the Discord server each time.
+        </p>
+      </div>
 
       {adminGroupsFor(isOwner).filter((g) => g.id !== "overview").map((group) => (
         <section key={group.id} aria-labelledby={`group-${group.id}`}>
