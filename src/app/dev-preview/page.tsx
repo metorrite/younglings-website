@@ -63,6 +63,11 @@ import { SettingsForm } from "@/components/admin/SettingsForm";
 import { PanelDefaultsForm } from "@/components/admin/PanelDefaultsForm";
 import { PanelEditor } from "@/components/admin/PanelEditor";
 import { RsLinkAbuseView } from "@/components/admin/RsLinkAbuseView";
+import { LinkShell } from "@/components/rslink/LinkShell";
+import { CodeEntry } from "@/components/rslink/CodeEntry";
+import { ConfirmLink } from "@/components/rslink/ConfirmLink";
+import { MyLinks } from "@/components/rslink/MyLinks";
+import { makeRsLinkApi } from "./rslinkMock";
 import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
@@ -878,6 +883,20 @@ function Preview() {
           {view === "setupwizard" && (<><PageHeader title="Guided setup" description="A step-by-step run through the parts of JonnyBot." /><SetupWizard guildId="1" guildName="Younglings" initialPath={null} data={{ structure, setup, permissions: perms as never, tracking: trackingGroups, welcome: welcomeFull, hub: hub as never, isAdmin: true }} quick={{ permissions: nope as never, clan: nope as never, tracking: nope as never, welcome: nope as never, commands: nope as never }} full={{ setup: nope as never, permissions: nope as never, tracking: nope as never, welcome: nope as never, welcomeTest: nope as never, welcomeUploadUrl: "/x", welcomeRemoveImage: nope as never, hub: nope as never }} /></>)}
           {view === "setupwizard-quick" && (<><PageHeader title="Guided setup" description="Quick setup, the first steps." /><SetupWizard guildId="1" guildName="Younglings" initialPath="quick" data={{ structure, setup, permissions: perms as never, tracking: trackingGroups, welcome: welcomeFull, hub: hub as never, isAdmin: true }} quick={{ permissions: nope as never, clan: nope as never, tracking: nope as never, welcome: nope as never, commands: nope as never }} full={{ setup: nope as never, permissions: nope as never, tracking: nope as never, welcome: nope as never, welcomeTest: nope as never, welcomeUploadUrl: "/x", welcomeRemoveImage: nope as never, hub: nope as never }} /></>)}
           {view === "rs-link-abuse" && (<><PageHeader title="RS Link abuse" description="Made-up data: one open dispute, two blocks." /><RsLinkAbuseView loadProblems={[]} initialBlocks={[{ id: "1", subjectKind: "ip", subject: "3fa2c1d0", reason: "automatic: 3 lockouts in 24 hours", until: "2026-10-21T12:00:00Z", createdBy: "auto", createdAt: "2026-10-20T12:00:00Z" }, { id: "2", subjectKind: "discord", subject: "9b01e7aa", reason: "DM spam", until: "2026-11-19T12:00:00Z", createdBy: "owner:1", createdAt: "2026-10-20T13:00:00Z" }]} initialDisputes={[{ id: "00000000-0000-4000-8000-000000000001", rsn: "Zezima", status: "open", openedAt: "2026-10-20T11:00:00Z", resolvedAt: null, resolvedBy: null, note: null, incumbent: { linkId: "00000000-0000-4000-8000-000000000002", status: "active", method: "oauth", verification: "implicit", linkedAt: "2026-10-01T10:00:00Z", lastSeenAt: "2026-10-19T20:00:00Z", tracked: true, devices: 1, discord: "51c0ffee" }, claimant: { linkId: "00000000-0000-4000-8000-000000000003", status: "disputed", method: "dm", verification: "implicit", linkedAt: "2026-10-20T11:00:00Z", lastSeenAt: "2026-10-20T11:00:00Z", tracked: true, devices: 1, discord: "a7d4be11" } }]} /></>)}
+          {view.startsWith("rslink-") && (
+            <LinkShell base="/link" source="https://github.com/example/rs-link" contact={null}>
+              {view === "rslink-code" && <CodeEntry api={makeRsLinkApi()} />}
+              {view === "rslink-code-wrong" && <CodeEntry api={makeRsLinkApi({ codeAnswer: "wrong_code" })} initialCode="BHKD-7Q2M" signInError="signin_cancelled" />}
+              {view === "rslink-code-limited" && <CodeEntry api={makeRsLinkApi({ codeAnswer: "rate_limited" })} initialCode="BHKD-7Q2M" />}
+              {view === "rslink-accepted" && <CodeEntry api={makeRsLinkApi()} accepted />}
+              {view === "rslink-confirm" && <ConfirmLink api={makeRsLinkApi()} base="/link" />}
+              {view === "rslink-signin" && <ConfirmLink api={makeRsLinkApi({ signedIn: false })} base="/link" />}
+              {view === "rslink-linked" && <ConfirmLink api={makeRsLinkApi()} base="/link" result="linked" />}
+              {view === "rslink-disputed" && <ConfirmLink api={makeRsLinkApi()} base="/link" result="disputed" />}
+              {view === "rslink-expired" && <ConfirmLink api={makeRsLinkApi({ pairing: "expired" })} base="/link" />}
+              {view === "rslink-links" && <MyLinks api={makeRsLinkApi()} base="/link" />}
+            </LinkShell>
+          )}
           {view === "setup" && (
             <>
               <PageHeader title="Server setup" description="The basics JonnyBot needs to work in this server." />

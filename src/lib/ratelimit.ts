@@ -30,6 +30,9 @@ const RULES = {
   publicRead: { capacity: 60, refillMs: 1000 },
   publicReport: { capacity: 3, refillMs: 600_000 },
   ingest: { capacity: 30, refillMs: 1000 },
+  // RS Link (the neutral sign-in face): its page and the plugin's calls, per address. The bot applies the real limits (LINK-SYSTEM.md section 8).
+  link: { capacity: 20, refillMs: 3000 },
+  linkPlugin: { capacity: 30, refillMs: 1000 },
 } satisfies Record<string, Rule>;
 
 export type LimitKind = keyof typeof RULES;

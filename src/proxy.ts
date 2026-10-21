@@ -16,6 +16,8 @@ import { apexHost, classifyHost, clanHostOf, FACE_HEADER, jonnybotHostOf, scheme
 const OWN_PAGES = new Set(["docs", "install", "faq", "privacy", "terms"]);
 /** What the JonnyBot host serves as it is, from the shared app. */
 const SHARED = new Set(["dashboard", "api", "_next"]);
+/** The RS Link face's pages, as shown on its own host (served from /link/...). */
+const LINK_PAGES = new Set(["confirm", "links", "privacy"]);
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -50,6 +52,28 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ apiVersion: 1, error: "Not found. See https://" + requestHost + "/ for the list of endpoints." }, { status: 404 });
   }
 
+  // The RS Link sign-in face on its own host (LINK_HOST): neutral and unbranded, sharing nothing with the clan site but the theme. The visible
+  // paths are short (/, /confirm, /links, /privacy, and the plugin API at /v1/... and the page's calls at /web/...); they are served from the
+  // /link pages and /api/link routes. Nothing of the clan site is reachable here. Without LINK_HOST the same pages live under /link.
+  if (classifyHost(requestHost, apexHost()) === "link") {
+    const linkFace = () => {
+      const headers = new Headers(request.headers);
+      headers.set(FACE_HEADER, "link");
+      return headers;
+    };
+    const rewriteLink = (path: string) => {
+      const url = request.nextUrl.clone();
+      url.pathname = path;
+      return NextResponse.rewrite(url, { request: { headers: linkFace() } });
+    };
+    if (pathname === "/") return rewriteLink("/link");
+    if (LINK_PAGES.has(segment)) return rewriteLink(`/link${pathname}`);
+    if (segment === "v1" || segment === "web") return rewriteLink(`/api/link${pathname}`);
+    if (pathname.startsWith("/api/link/") || segment === "_next" || /\.[a-z0-9]{2,6}$/i.test(pathname)) return NextResponse.next({ request: { headers: linkFace() } });
+    if (segment === "link") return new NextResponse(null, { status: 307, headers: { Location: pathname.slice("/link".length) || "/", "Cache-Control": "no-store" } });
+    return new NextResponse(null, { status: 307, headers: { Location: "/", "Cache-Control": "no-store" } });
+  }
+
   // The clans hub on its own host (clans.<domain>): the visible paths are short (/, /c/<slug>, /events, /leaderboards) and are served from
   // the /hub pages. Shared things (API, files, Next's own) pass straight through. The same pages are reachable under /hub on any host.
   if (classifyHost(requestHost, apexHost()) === "hub") {
@@ -64,14 +88,16 @@ export function proxy(request: NextRequest) {
     return NextResponse.rewrite(url, { request: { headers: hubFace() } });
   }
 
-  const faced = (face: "jonnybot" | "clan" | "hub") => {
+  const faced = (face: "jonnybot" | "clan" | "hub" | "link") => {
     const headers = new Headers(request.headers);
     headers.set(FACE_HEADER, face);
     return headers;
   };
-  const pass = (face: "jonnybot" | "clan" | "hub") => NextResponse.next({ request: { headers: faced(face) } });
+  const pass = (face: "jonnybot" | "clan" | "hub" | "link") => NextResponse.next({ request: { headers: faced(face) } });
 
   if (segment === "hub") return pass("hub");
+  // The RS Link page under /link (local development, or before it has its own host): the neutral face, no clan header.
+  if (segment === "link") return pass("link");
   if (!subdomainMode()) return pass(segment === "jonnybot" || segment === "dashboard" ? "jonnybot" : "clan");
 
   const host = (request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "").split(",")[0].trim();

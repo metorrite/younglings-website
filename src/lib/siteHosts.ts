@@ -16,7 +16,16 @@ const HUB_PREFIX = "clans.";
 /** The request header the proxy sets so pages know which face a request is for, whatever its path or host. */
 export const FACE_HEADER = "x-site-face";
 
-export type HostKind = "jonnybot" | "clan" | "api" | "hub" | "unknown";
+export type HostKind = "jonnybot" | "clan" | "api" | "hub" | "link" | "unknown";
+
+/**
+ * The RS Link sign-in face's own hostname (`LINK_HOST`, e.g. `link.example.org`), or null. Unset, the face is reachable only under `/link` on
+ * any host (local development). It is a whole name, not a prefix, because its final domain is chosen separately (LINK-SYSTEM.md section 14).
+ */
+export function linkHost(): string | null {
+  const raw = (process.env.LINK_HOST ?? "").trim().toLowerCase().replace(/:\d+$/, "");
+  return raw || null;
+}
 
 export function subdomainMode(): boolean {
   return process.env.JONNYBOT_SUBDOMAIN === "true";
@@ -36,6 +45,8 @@ const portOf = (host: string) => host.match(/:\d+$/)?.[0] ?? "";
 export function classifyHost(host: string | null | undefined, apex: string | null = apexHost()): HostKind {
   if (!host) return "clan";
   const name = bare(host);
+  const link = linkHost();
+  if (link && name === link) return "link";
   if (name.startsWith(PREFIX)) return "jonnybot";
   if (name.startsWith(API_PREFIX)) return "api";
   if (name.startsWith(HUB_PREFIX)) return "hub";
@@ -83,6 +94,10 @@ export interface SiteInfo {
   jonnybot: boolean;
   /** Whether this is the clans hub (the public directory of clans), a third face of the same site. */
   hub: boolean;
+  /** Whether this is the neutral RS Link sign-in face (no clan or JonnyBot branding at all). */
+  link: boolean;
+  /** Whether the RS Link face has its own host (`LINK_HOST`), so its paths have no /link prefix. */
+  linkHost: boolean;
   /** Whether the hub has its own host (clans.<domain>), so its paths have no /hub prefix. */
   hubHost: boolean;
   /** Whether the two faces live on different hostnames. */
@@ -95,11 +110,14 @@ export function siteInfoFor(host: string, forwardedProto?: string | null, face?:
   const split = subdomainMode();
   const scheme = schemeFor(host, forwardedProto);
   const hub = face === "hub" || classifyHost(host) === "hub";
+  const link = face === "link" || classifyHost(host) === "link";
   const jonnybot = !hub && (face === "jonnybot" || (split && classifyHost(host) === "jonnybot"));
   return {
     host,
     jonnybot,
     hub,
+    link,
+    linkHost: classifyHost(host) === "link",
     hubHost: classifyHost(host) === "hub",
     split,
     clanOrigin: split || classifyHost(host) === "hub" ? `${scheme}://${clanHostOf(host)}` : "",
