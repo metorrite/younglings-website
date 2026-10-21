@@ -121,7 +121,7 @@ export function proxy(request: NextRequest) {
       headers.set(FACE_HEADER, "hub");
       return headers;
     };
-    if (segment === "api" || segment === "_next" || segment === "hub" || /\.[a-z0-9]{2,6}$/i.test(pathname)) return NextResponse.next({ request: { headers: hubFace() } });
+    if (segment === "api" || segment === "_next" || segment === "hub" || segment === "auth" || /\.[a-z0-9]{2,6}$/i.test(pathname)) return NextResponse.next({ request: { headers: hubFace() } });
     const url = request.nextUrl.clone();
     url.pathname = pathname === "/" ? "/hub" : `/hub${pathname}`;
     return NextResponse.rewrite(url, { request: { headers: hubFace() } });
@@ -163,7 +163,7 @@ export function proxy(request: NextRequest) {
       if (/^\/jonnybot\/(opengraph-image|icon)/.test(pathname)) return pass("jonnybot");
       return to(host, pathname.slice("/jonnybot".length) || "/");
     }
-    if (SHARED.has(segment) || /\.[a-z0-9]{2,6}$/i.test(pathname)) return pass("jonnybot");
+    if (SHARED.has(segment) || pathname === "/auth/handoff" || /\.[a-z0-9]{2,6}$/i.test(pathname)) return pass("jonnybot");
     return to(clanHostOf(host, apex), pathname);
   }
 
