@@ -53,6 +53,7 @@ import { SiteAccessForm } from "@/components/admin/SiteAccessForm";
 import { AccessGrantsForm } from "@/components/admin/AccessGrantsForm";
 import { RoleToolkitManager } from "@/components/dashboard/RoleToolkitManager";
 import { RoleKeeperManager } from "@/components/dashboard/RoleKeeperManager";
+import { RoleRulesManager } from "@/components/dashboard/RoleRulesManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -619,6 +620,18 @@ function Preview() {
                   addTemp: async () => ({ ok: false, error: "Preview only", problems: [] }),
                   endTemp: async () => ({ ok: false, error: "Preview only", problems: [] }),
                 }}
+              />
+            </>
+          )}
+          {view === "rolerules" && (
+            <>
+              <PageHeader title="Role rules" description="Roles that follow other roles." />
+              <RoleRulesManager
+                initial={{
+                  max: 50, maxWhen: 5, maxThen: 10,
+                  rules: [{ id: "1", name: "Raid chat", event: "GAINS", enabled: true, when: [structure.roles[0]?.id ?? "r1"], add: [structure.roles[1]?.id ?? "r2"], remove: [] }],
+                }}
+                actions={{ save: async () => ({ ok: false, error: "These rules would loop: @Raider then @Raid chat then @Raider.", problems: [] }), remove: async () => ({ ok: false, error: "Preview only", problems: [] }) }}
               />
             </>
           )}

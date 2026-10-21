@@ -52,6 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Self roles", icon: "tag", path: "/self-roles" },
       { label: "Role toolkit", icon: "shield", path: "/role-toolkit", advanced: true },
       { label: "Kept roles", icon: "clock", path: "/role-keeper", advanced: true },
+      { label: "Role rules", icon: "swap", path: "/role-rules", advanced: true },
     ],
   },
   {

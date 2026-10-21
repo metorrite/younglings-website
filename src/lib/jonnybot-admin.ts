@@ -589,6 +589,20 @@ export interface RoleKeeper {
   maxSticky: number;
 }
 
+/** One connected / trigger role rule. */
+export interface RoleRule {
+  id: string;
+  event: "GAINS" | "LOSES";
+  when: string[];
+}
+
+export interface RoleRuleList {
+  rules: RoleRule[];
+  max: number;
+  maxWhen: number;
+  maxThen: number;
+}
+
 export interface BetaGuilds {
   guilds: BetaGuild[];
   /** Only the bot's owner may change the list. */
@@ -2209,6 +2223,10 @@ export const adminApi = {
   removeKeptRole: (ctx: ApiContext, id: string) => call<RoleKeeper>(ctx, "DELETE", `role-keeper/kept/${encodeURIComponent(id)}`),
   addTempRole: (ctx: ApiContext, userId: string, roleId: string, duration: string) => call<RoleKeeper>(ctx, "POST", "role-keeper/temp", { userId, roleId, duration }),
   endTempRole: (ctx: ApiContext, id: string) => call<RoleKeeper>(ctx, "DELETE", `role-keeper/temp/${encodeURIComponent(id)}`),
+  roleRules: (ctx: ApiContext) => call<RoleRuleList>(ctx, "GET", "role-rules"),
+  createRoleRule: (ctx: ApiContext, rule: Omit<RoleRule, "id">) => call<RoleRuleList>(ctx, "POST", "role-rules", rule),
+  saveRoleRule: (ctx: ApiContext, id: string, rule: Omit<RoleRule, "id">) => call<RoleRuleList>(ctx, "PUT", `role-rules/${encodeURIComponent(id)}`, rule),
+  deleteRoleRule: (ctx: ApiContext, id: string) => call<RoleRuleList>(ctx, "DELETE", `role-rules/${encodeURIComponent(id)}`),
   betaGuilds: (ctx: ApiContext) => call<BetaGuilds>(ctx, "GET", "beta-guilds"),
   saveBetaGuild: (ctx: ApiContext, guildId: string, label: string) => call<BetaGuilds>(ctx, "PUT", `beta-guilds/${encodeURIComponent(guildId)}`, { label }),
   removeBetaGuild: (ctx: ApiContext, guildId: string) => call<BetaGuilds>(ctx, "DELETE", `beta-guilds/${encodeURIComponent(guildId)}`),
