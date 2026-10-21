@@ -50,6 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Voice text", icon: "chat", path: "/voice-text", advanced: true },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
       { label: "Self roles", icon: "tag", path: "/self-roles" },
+      { label: "Role toolkit", icon: "shield", path: "/role-toolkit", advanced: true },
     ],
   },
   {

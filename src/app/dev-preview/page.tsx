@@ -50,6 +50,7 @@ import { PromotionsList } from "@/components/admin/AdminExtras";
 import { SelfRolesEditor } from "@/components/admin/SelfRolesEditor";
 import { SiteAccessForm } from "@/components/admin/SiteAccessForm";
 import { AccessGrantsForm } from "@/components/admin/AccessGrantsForm";
+import { RoleToolkitManager } from "@/components/dashboard/RoleToolkitManager";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -564,6 +565,27 @@ function Preview() {
                   save: async (settings) => ({ ok: true, data: { settings, maxProtectedRoles: 25, limit: 100, cases: modCases as never } }),
                   editReason: async (caseNo, reason) => ({ ok: true, data: { ...(modCases.find((c) => c.caseNo === caseNo) as never as ModerationCase), reason } }),
                   lookUp: async () => ({ ok: true, data: modCases.filter((c) => c.userId === "111") as never }),
+                }}
+              />
+            </>
+          )}
+          {view === "roletoolkit" && (
+            <>
+              <PageHeader title="Role toolkit" description="Let junior staff give and take only the roles you choose, and change a role for many members with a preview first." />
+              <RoleToolkitManager
+                initial={{
+                  maxMembers: 5000,
+                  groups: [
+                    { key: "admin", name: "Admin", roleIds: [] },
+                    { key: "support", name: "Support", roleIds: [structure.roles[0]?.id ?? "r1"] },
+                    { key: "developer", name: "Developer", roleIds: [] },
+                  ],
+                  jobs: [{ id: "3", mode: "ADD", status: "DONE", sourceRoleId: "r1", sourceName: "Raiders", targetRoleId: "r2", targetName: "Event ping", total: 12, done: 11, failed: 1, createdAt: "2026-10-19T10:00:00Z" }],
+                }}
+                actions={{
+                  saveAllow: async () => ({ ok: false, error: "Preview only", problems: [] }),
+                  plan: async () => ({ ok: true, data: { id: "4", mode: "ADD", status: "PLANNED", sourceRoleId: "r1", sourceName: "Raiders", targetRoleId: "r2", targetName: "Event ping", total: 30, done: 0, failed: 0, createdAt: "2026-10-20T10:00:00Z", preview: [{ id: "1", name: "Xtusy" }, { id: "2", name: "Hodant" }] } }),
+                  act: async () => ({ ok: false, error: "Preview only", problems: [] }),
                 }}
               />
             </>
