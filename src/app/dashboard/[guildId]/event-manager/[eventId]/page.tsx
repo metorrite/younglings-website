@@ -28,7 +28,7 @@ export default async function EventPage({ params }: { params: Promise<{ guildId:
         title={detail.event.name}
         description="Build the event, run it and pay it out. Everything here is checked again by the bot, and every change is kept in the audit log."
       />
-      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} structure={structure} call={eventApiAction.bind(null, guildId)} />
+      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} structure={structure} call={eventApiAction.bind(null, guildId)} hubEnabled={process.env.EVENTS_HUB === "true"} />
     </div>
   );
 }

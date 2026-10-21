@@ -38,6 +38,8 @@ export interface EventSummary {
     bonuses?: EventBonus[];
     lineBonus?: number;
     blackoutBonus?: number;
+    /** The events hub (T-216): the host's switch for standings there, and JonnyBot staff's takedown (read-only for the host). */
+    hub?: { publicStandings?: boolean; takedown?: { reason?: string; at?: string } | null };
   };
   createdAt: string;
 }
