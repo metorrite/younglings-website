@@ -6,7 +6,8 @@ import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { useState, useTransition } from "react";
-import { markPromotedAction, postMessageAction, saveCommunityAction, saveTrackingAction } from "@/app/admin/(console)/actions";
+import type { ActionResult } from "@/app/admin/(console)/actions";
+import { postMessageAction, saveCommunityAction, saveTrackingAction } from "@/app/admin/(console)/actions";
 import type { ChannelChoices, ForumInfo, ForumThread, GuildStructure, PromotionDue, TrackingGroupConfig } from "@/lib/jonnybot-admin";
 import { ChannelSelect } from "./pickers";
 import { ChannelListPicker } from "@/components/dashboard/pickers";
@@ -14,7 +15,7 @@ import { Card, dangerButton, FormField, ghostButton, inputClass, Notice, primary
 
 // ---------- promotions ----------
 
-export function PromotionsList({ initial }: { initial: PromotionDue[] }) {
+export function PromotionsList({ initial, markDone }: { initial: PromotionDue[]; markDone: (rsn: string) => Promise<ActionResult<PromotionDue[]>> }) {
   const [members, setMembers] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -22,7 +23,7 @@ export function PromotionsList({ initial }: { initial: PromotionDue[] }) {
   function done(rsn: string) {
     setError(null);
     start(async () => {
-      const result = await markPromotedAction(rsn);
+      const result = await markDone(rsn);
       if (!result.ok) setError(result.error);
       else setMembers(result.data);
     });

@@ -43,6 +43,9 @@ import { RoleFixPanel } from "@/components/dashboard/RoleFixPanel";
 import { TwitchManager } from "@/components/dashboard/TwitchManager";
 import { FormsManager } from "@/components/dashboard/FormsManager";
 import { FormFiller } from "@/components/forms/FormFiller";
+import { ClanPointsForm } from "@/components/admin/ClanPointsForm";
+import { PromotionsList } from "@/components/admin/AdminExtras";
+import { SelfRolesEditor } from "@/components/admin/SelfRolesEditor";
 import { TicketsOverview } from "@/components/dashboard/tickets/TicketsOverview";
 import { TicketHistoryList } from "@/components/dashboard/tickets/TicketHistoryList";
 import { TicketTabs } from "@/components/dashboard/TicketTabs";
@@ -485,6 +488,16 @@ function Preview() {
                 texts={messagesFor("en", ["dashboard.language.panel", "dashboard.language.description", "dashboard.language.field", "dashboard.language.hint", "dashboard.language.only", "dashboard.language.saved", "dashboard.language.title"] as const)}
                 save={async (language) => ({ ok: true, data: { language, languages: [{ code: "en", name: "English" }] } })}
               />
+            </>
+          )}
+          {view === "botpages" && (
+            <>
+              <PageHeader title="Clan points & ranks" description="What earns clan points (membership, Citadel), and how many points each clan rank needs." />
+              <ClanPointsForm initial={{ dailyMembershipPoints: 10, citadelVisitPoints: 25, citadelCapPoints: 50, ranks: [{ id: "r1", name: "Recruit", order: 1, threshold: 0 }, { id: "r2", name: "Corporal", order: 2, threshold: 500 }] }} save={async () => ({ ok: false, error: "Preview only" })} />
+              <PageHeader title="Promotions" description="Members whose clan points have reached their next rank." />
+              <PromotionsList initial={[{ rsn: "Xtusy", rank: "Recruit", nextRank: "Corporal", points: 520, since: "2026-10-12" }]} markDone={async () => ({ ok: false, error: "Preview only" })} />
+              <PageHeader title="Self roles" description="The roles members can give themselves from their profile page." />
+              <SelfRolesEditor initial={[{ roleId: "r1", name: "Raids", label: "Raider", description: "Pinged for raids", safe: true }]} roles={structure.roles} save={async () => ({ ok: false, error: "Preview only" })} />
             </>
           )}
           {view === "commands" && (

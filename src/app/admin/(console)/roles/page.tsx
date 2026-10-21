@@ -1,5 +1,6 @@
 import { requireAdmin, unwrap } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { saveSelfRolesAction } from "../actions";
 import { SelfRolesEditor } from "@/components/admin/SelfRolesEditor";
 
 export const metadata = { title: "Self-assignable roles — Younglings" };
@@ -14,7 +15,7 @@ export default async function SelfRolesPage() {
         <h1 className="text-2xl font-semibold">Self-assignable roles</h1>
         <p className="mt-1 text-sm text-muted">The roles members can give themselves from their profile page.</p>
       </div>
-      <SelfRolesEditor initial={configured} roles={structure.roles} />
+      <SelfRolesEditor initial={configured} roles={structure.roles} save={saveSelfRolesAction} />
     </div>
   );
 }

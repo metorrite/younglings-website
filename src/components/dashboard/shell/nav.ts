@@ -49,6 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Autoroles", icon: "tag", path: "/autoroles" },
       { label: "Voice text", icon: "chat", path: "/voice-text", advanced: true },
       { label: "Role panels", icon: "toggle", path: "/role-panels" },
+      { label: "Self roles", icon: "tag", path: "/self-roles" },
     ],
   },
   {
@@ -61,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Tickets", icon: "ticket", path: "/tickets" },
       { label: "Web forms", icon: "list", path: "/forms" },
       { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
+      { label: "PvM Help", icon: "bulb", path: "/pvm-help", advanced: true },
     ],
   },
   {
@@ -110,6 +112,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
       { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
+      { label: "Needs attention", icon: "alert", path: "/attention", clanOnly: true },
+      { label: "Promotions", icon: "trophy", path: "/promotions", clanOnly: true },
+      { label: "Clan points & ranks", icon: "list", path: "/clan-points", clanOnly: true },
+      { label: "Clan website", icon: "swap", path: "/clan-website", clanOnly: true, advanced: true },
     ],
   },
   {

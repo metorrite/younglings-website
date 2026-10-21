@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveClanWebsiteAction, saveSiteOptionsAction } from "@/app/admin/(console)/actions";
+import type { ActionResult } from "@/app/admin/(console)/actions";
+import { saveSiteOptionsAction } from "@/app/admin/(console)/actions";
 import { Card, FormField, inputClass, Notice, primaryButton } from "./ui";
 
 /** The clan's website — the same setting as the Website Link button in Discord's /configure. */
-export function ClanWebsiteForm({ initial }: { initial: string | null }) {
+export function ClanWebsiteForm({ initial, save }: { initial: string | null; save: (websiteUrl: string) => Promise<ActionResult<{ websiteUrl: string | null }>> }) {
   const [value, setValue] = useState(initial ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -37,7 +38,7 @@ export function ClanWebsiteForm({ initial }: { initial: string | null }) {
           setError(null);
           setSaved(false);
           start(async () => {
-            const result = await saveClanWebsiteAction(value);
+            const result = await save(value);
             if (!result.ok) return setError(result.error);
             setValue(result.data.websiteUrl ?? "");
             setSaved(true);
