@@ -30,7 +30,7 @@ export default async function RuneSyncDiagnosticsPage({ searchParams }: { search
       <div>
         <h1 className="text-2xl font-semibold">RuneSync diagnostics</h1>
         <p className="mt-1 text-sm text-muted">
-          Members make an id (like <code>RS-7K2M9Q</code>) with &quot;Copy diagnostics id&quot; in RuneSync&apos;s panel and put it in a bug report. Open it here to see their
+          Members make an id (like <code>RS-7K2M9Q</code>) with &quot;Get diagnostics id&quot; in RuneSync&apos;s settings panel and put it in a bug report. Open it here to see their
           plugin version, settings, queue and last 20 batch results.
         </p>
       </div>

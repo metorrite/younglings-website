@@ -108,7 +108,7 @@ export function RuneSyncActivity({ view }: { view: RuneSyncView }) {
       <section className="rounded-xl border border-surface-border bg-surface p-5">
         <h2 className="font-semibold text-gold">Bug-report ids</h2>
         <p className="mt-1 text-xs text-muted">
-          &quot;Copy diagnostics id&quot; in RuneSync&apos;s panel makes one. Put it in a bug report. Each is kept {view.diagnosticsKeptDays} days and never holds your link, tokens or chat.
+          &quot;Get diagnostics id&quot; in RuneSync&apos;s settings panel makes one. Put it in a bug report. Each is kept {view.diagnosticsKeptDays} days and never holds your link, tokens or chat.
         </p>
         {view.diagnostics.length > 0 ? (
           <ul className="mt-3 divide-y divide-surface-border/60 text-sm">
