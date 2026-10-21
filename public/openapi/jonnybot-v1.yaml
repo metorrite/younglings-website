@@ -146,7 +146,7 @@ paths:
       tags: [Plugin]
       summary: Store a bug-report snapshot
       description: |
-        Any JSON object up to 16 KB. Fields whose names mention a token, assertion, tracking id, chat, secret, password, authorization,
+        Any JSON object up to 16 KB. Fields whose names mention a token, assertion, tracking id, chat text, secret, password, authorization,
         cookie or Discord are removed before it is stored. Kept 14 days; 10 a day per player.
       security: [{ rsLink: [] }, { pluginToken: [] }]
       requestBody:
