@@ -35,6 +35,7 @@ import { HubEditor } from "@/components/dashboard/HubEditor";
 import { LanguageForm } from "@/components/dashboard/LanguageForm";
 import { messagesFor, t } from "@/lib/i18n";
 import { HoneypotForm } from "@/components/dashboard/HoneypotForm";
+import { ServerTagForm } from "@/components/dashboard/ServerTagForm";
 import { ModerationManager } from "@/components/dashboard/ModerationManager";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
@@ -547,6 +548,15 @@ function Preview() {
             </>
           )}
           {view === "coordinator" && <PageHeader title="Event manager" description="What an Event coordinator sees: the event manager is their whole dashboard." />}
+          {view === "servertags" && (
+            <>
+              <PageHeader title="Server tags" description="Be told about, or act on, members who show the tag of a flagged server." />
+              <ServerTagForm
+                initial={{ enabled: false, flaggedGuildIds: ["123456789012345678"], action: "ALERT", timeoutMinutes: 1440, alertChannelId: null, exemptRoleIds: [], maxFlagged: 50, maxExemptRoles: 25, canBan: true, canKick: true, canTimeout: false }}
+                save={async (draft) => ({ ok: true, data: { ...draft, maxFlagged: 50, maxExemptRoles: 25, canBan: true, canKick: true, canTimeout: false } })}
+              />
+            </>
+          )}
           {view === "honeypot" && (
             <>
               <PageHeader title="Honeypot" description="A decoy channel or role that no real member should touch." />
