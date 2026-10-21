@@ -999,6 +999,43 @@ export interface WarningItem {
   createdAt: string;
 }
 
+/** One numbered moderation case. `caseNo` and the ids are strings (Discord ids). */
+export interface ModerationCase {
+  caseNo: string;
+  userId: string;
+  userName: string;
+  moderatorId: string;
+  moderatorName: string;
+  action: "BAN" | "UNBAN" | "KICK" | "TIMEOUT" | "UNTIMEOUT" | "SOFTBAN" | "WARN";
+  actionLabel: string;
+  reason: string;
+  durationMinutes: number | null;
+  /** COMMAND, WARN, AUTOPUNISH, AUTOMOD, HONEYPOT or SERVER_TAG. */
+  source: string;
+  createdAt: string;
+  editedAt: string | null;
+  editedBy: string | null;
+  /** The reason as first written, only when it was edited. */
+  originalReason: string | null;
+}
+
+export interface ModerationSettings {
+  /** Tell the member by DM what happened and why. */
+  dmReason: boolean;
+  /** Name the moderator in that DM. */
+  showModerator: boolean;
+  appealUrl: string | null;
+  /** Role ids whose holders can never be moderated. */
+  protectedRoleIds: string[];
+}
+
+export interface ModerationOverview {
+  settings: ModerationSettings;
+  maxProtectedRoles: number;
+  limit: number;
+  cases: ModerationCase[];
+}
+
 export interface WarningList {
   warnings: WarningItem[];
   limit: number;
@@ -1926,6 +1963,11 @@ export const adminApi = {
   savePoints: (ctx: ApiContext, body: { enabled: boolean; unit: string; reviewChannelId: string | null }) => call<PointsOverview>(ctx, "PUT", "points", body),
   awardPoints: (ctx: ApiContext, body: { userId: string; points: number; reason: string }) =>
     call<PointsOverview>(ctx, "POST", "points/award", body),
+  moderation: (ctx: ApiContext) => call<ModerationOverview>(ctx, "GET", "moderation"),
+  moderationOfUser: (ctx: ApiContext, userId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/user/${encodeURIComponent(userId)}`),
+  moderationByModerator: (ctx: ApiContext, moderatorId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/moderator/${encodeURIComponent(moderatorId)}`),
+  saveModerationSettings: (ctx: ApiContext, settings: ModerationSettings) => call<ModerationOverview>(ctx, "PUT", "moderation/settings", settings),
+  editModerationCase: (ctx: ApiContext, caseNo: string, reason: string) => call<{ case: ModerationCase }>(ctx, "PUT", `moderation/case/${encodeURIComponent(caseNo)}`, { reason }),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
   autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
   saveAutopunish: (ctx: ApiContext, rules: AutopunishRule[]) => call<Autopunish>(ctx, "PUT", "warnings/autopunish", { rules }),
