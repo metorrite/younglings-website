@@ -1578,6 +1578,8 @@ export interface HubCommandConfig {
   description: string;
   /** Plain English for who may use it when nothing has been changed. */
   defaultAccess: string;
+  /** What the command is for: keys of {@link HubConfig.tags}. Never empty. */
+  tags: string[];
   enabled: boolean;
   /** false: the command's own rule. true: only admins plus {@link allowedRefs}. */
   customAccess: boolean;
@@ -1595,6 +1597,8 @@ export interface HubConfig {
   commands: HubCommandConfig[];
   /** The permission groups a "who can use it" list can name. */
   groups: { ref: string; name: string; builtin: boolean }[];
+  /** Every tag a command can carry, in the order the filter chips show them. */
+  tags: { key: string; label: string }[];
   maxList: number;
 }
 
