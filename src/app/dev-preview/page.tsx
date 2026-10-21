@@ -34,6 +34,7 @@ import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
 import { LanguageForm } from "@/components/dashboard/LanguageForm";
 import { messagesFor, t } from "@/lib/i18n";
+import { HoneypotForm } from "@/components/dashboard/HoneypotForm";
 import { ModerationManager } from "@/components/dashboard/ModerationManager";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
@@ -544,6 +545,15 @@ function Preview() {
             </>
           )}
           {view === "coordinator" && <PageHeader title="Event manager" description="What an Event coordinator sees: the event manager is their whole dashboard." />}
+          {view === "honeypot" && (
+            <>
+              <PageHeader title="Honeypot" description="A decoy channel or role that no real member should touch." />
+              <HoneypotForm
+                initial={{ enabled: false, channelId: null, roleId: null, action: "TIMEOUT", timeoutMinutes: 1440, exemptRoleIds: [], deleteDays: 0, maxExemptRoles: 25, canBan: true, canKick: true, canTimeout: false }}
+                save={async (draft) => ({ ok: true, data: { ...draft, maxExemptRoles: 25, canBan: true, canKick: true, canTimeout: false } })}
+              />
+            </>
+          )}
           {view === "moderation" && (
             <>
               <PageHeader title="Moderation cases" description="Every ban, kick, timeout and warning is a numbered case." />
