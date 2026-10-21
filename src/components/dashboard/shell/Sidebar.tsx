@@ -9,7 +9,7 @@ import { Icon } from "./icons";
 import { LinkPending } from "./LinkPending";
 import { QuickJump } from "./QuickJump";
 import { useViewMode, ViewModeSlider } from "@/components/dashboard/ui/ViewMode";
-import { favoriteItems, groupsFor, isActive, restrictGroups, visibleGroups, type NavItem } from "./nav";
+import { favoriteItems, groupsFor, isActive, restrictGroups, visibleGroups, type NavFeature, type NavItem } from "./nav";
 
 export interface SidebarServer {
   id: string;
@@ -97,6 +97,7 @@ export function Sidebar({
   savedView,
   canStar: canStarProp = true,
   restrictTo,
+  features = [],
 }: {
   server: SidebarServer;
   footer?: string;
@@ -112,6 +113,8 @@ export function Sidebar({
   canStar?: boolean;
   /** Show only these pages (an Event coordinator sees the event manager and nothing else): no search, no stars, no Basic/Advanced switch. */
   restrictTo?: readonly string[];
+  /** Optional features switched on for the site, whose pages then show. */
+  features?: NavFeature[];
 }) {
   const canStar = canStarProp && !restrictTo;
   const pathname = usePathname();
@@ -136,7 +139,7 @@ export function Sidebar({
   const [failed, setFailed] = useState<string | null>(null);
   const starredItems = favoriteItems(starred, hasClan);
   // the Basic view leaves out the pages most servers never open, except the one being looked at and the ones this person starred
-  const { groups, hidden } = visibleGroups(restrictGroups(groupsFor(hasClan, isOwner), restrictTo), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
+  const { groups, hidden } = visibleGroups(restrictGroups(groupsFor(hasClan, isOwner, features), restrictTo), view === "advanced", (item) => isActive(item, base, pathname) || (item.path !== undefined && starred.includes(item.path)));
 
   /** Stars or unstars a page: it moves at once, then is saved; if the save fails it moves back and says so. */
   function toggleStar(item: NavItem) {
@@ -192,7 +195,7 @@ export function Sidebar({
 
         {!restrictTo && (
           <div className="hidden px-3 pt-3 lg:block">
-            <QuickJump base={base} hasClan={hasClan} isOwner={isOwner} />
+            <QuickJump base={base} hasClan={hasClan} isOwner={isOwner} features={features} />
           </div>
         )}
 

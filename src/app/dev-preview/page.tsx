@@ -98,6 +98,8 @@ import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/OverviewView";
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
+import { ClanWebsiteEditor } from "@/components/dashboard/ClanWebsiteEditor";
+import type { ClanSiteAdmin } from "@/lib/jonnybot-admin";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import type { GuildStructure, ModerationCase, Overview, ServerSetup } from "@/lib/jonnybot-admin";
 import { EMPTY_MESSAGE } from "@/lib/messageDraft";
@@ -505,7 +507,7 @@ function Preview() {
   const scenarioParam = useSearchParams().get("s") ?? "solo";
   return (
     <div className="flex min-h-[calc(100vh-4.1rem)] flex-col lg:flex-row">
-        <Sidebar server={{ id: "1", name: "Younglings", iconUrl: null, role: view === "coordinator" ? "Event coordinator" : "Admin" }} restrictTo={view === "coordinator" ? ["/event-manager"] : undefined} base="/dev-preview" canStar={false} favorites={["/event-manager", "/tickets"]} footer="JonnyBot dashboard · Beta. Signed in as metorrite." />
+        <Sidebar server={{ id: "1", name: "Younglings", iconUrl: null, role: view === "coordinator" ? "Event coordinator" : "Admin" }} restrictTo={view === "coordinator" ? ["/event-manager"] : undefined} base="/dev-preview" canStar={false} favorites={["/event-manager", "/tickets"]} footer="JonnyBot dashboard · Beta. Signed in as metorrite." features={["clanSites"]} />
         <div className="min-w-0 flex-1 space-y-6 px-4 py-6 sm:px-8 lg:px-10">
           {view === "events" && <EventListView structure={previewStructure} kinds={previewKinds} drafts={previewDrafts} templates={previewTemplates} initial={{ events: [{ ...evSummary, players: 7, waiting: 2, proofWaiting: 0, config: { ...evSummary.config, signupClosesAt: new Date(Date.now() + 20 * 3600 * 1000).toISOString() } }, { ...evSummary, id: "8", name: "Sunday Competition", status: "RUNNING" as const, scoringMode: "INDIVIDUAL" as const, scope: "ALLIANCE" as const, players: 11, waiting: 0, proofWaiting: 3 }, { ...evSummary, id: "7", name: "Spring Raids Draft", status: "DRAFT" as const, players: 0, waiting: 0, proofWaiting: 0 }], maxOpen: 20 }} guildId="1" call={setupCall} />}
           {view === "teams" && <TeamsPreview />}
@@ -517,6 +519,24 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "clan-website" && (
+            <>
+              <PageHeader title="Clan website" description="Your clan's own website, filled from JonnyBot's data. Beta." />
+              <ClanWebsiteEditor
+                initial={previewClanSite}
+                clan={{ name: "Younglings", tagline: "The best and also the biggest clan in RuneScape!", description: "A friendly RS3 clan.", logoUrl: null }}
+                siteUrl="https://younglings.rsclans.example/"
+                downloadHref="#"
+                profileHref="#"
+                actions={{
+                  save: async (d) => ({ ok: true, data: { ...previewClanSite, site: { ...previewClanSite.site, enabled: d.enabled, template: d.template, theme: { ...d.theme }, pages: d.pages } } }),
+                  saveBlocks: async () => ({ ok: true, data: previewClanSite }),
+                  publish: async (on) => ({ ok: true, data: { ...previewClanSite, site: { ...previewClanSite.site, published: on } } }),
+                  takedown: async () => ({ ok: false, error: "Preview only.", problems: [] }),
+                }}
+              />
+            </>
+          )}
           {view === "rolefix" && (
             <>
               <PageHeader title="Fix clan roles" description="Fix Member and Guest roles from before the sync started." />
@@ -1037,6 +1057,21 @@ function Preview() {
     </div>
   );
 }
+
+/** The Clan website page's harness data (?v=clan-website): a site switched on, not yet published, with a welcome block. */
+const previewClanSite: ClanSiteAdmin = {
+  inBeta: true,
+  isOwner: true,
+  slug: "younglings",
+  profileProblem: null,
+  site: { enabled: true, published: false, template: "HALL", theme: { primary: "orange", accent: "gold" }, pages: [{ key: "home" }, { key: "custom1", title: "Clan rules" }], publishedAt: null, updatedAt: null, takedownReason: null },
+  blocks: [
+    { page: "home", position: 0, kind: "TEXT", body: { markdown: ["## Welcome", "We meet **every evening** on Discord.", "", "- Weekly bossing", "- Skilling competitions"].join("\n") } },
+    { page: "home", position: 1, kind: "LINKS", body: { links: [{ label: "Join our Discord", url: "https://discord.com" }] } },
+    { page: "custom1", position: 0, kind: "TEXT", body: { markdown: ["1. Be kind", "2. No scamming"].join("\n") } },
+  ],
+  limits: { title: 30, blocksPerPage: 20, markdown: 5000, links: 12, url: 500 },
+};
 
 export default function DevPreview() {
   return (

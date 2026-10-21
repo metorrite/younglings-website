@@ -21,7 +21,12 @@ export interface NavItem {
   advanced?: boolean;
   /** Only shown to the bot's owner (the bot refuses everyone else whatever the sidebar shows). */
   ownerOnly?: boolean;
+  /** Only shown while this optional feature is switched on for the site (the layout passes which are; the page itself checks too). */
+  feature?: NavFeature;
 }
+
+/** Optional site features that bring a dashboard page: `clanSites` = the clan website builder (CLAN_SITES=true). */
+export type NavFeature = "clanSites";
 
 export interface NavGroup {
   title: string | null;
@@ -129,7 +134,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Alliances", icon: "users", path: "/alliances", clanOnly: true, advanced: true },
       { label: "Clan plugin", icon: "swap", path: "/plugin", clanOnly: true, advanced: true },
       { label: "Fix clan roles", icon: "check", path: "/role-sync", clanOnly: true, advanced: true },
-      { label: "Clan website", icon: "swap", path: "/clan-website", clanOnly: true, advanced: true },
+      { label: "Clan website", icon: "home", path: "/clan-website", clanOnly: true, advanced: true },
     ],
   },
   {
@@ -141,9 +146,15 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, what only the bot's owner sees when this person isn't, and any group that leaves empty. */
-export function groupsFor(hasClan: boolean, isOwner = false): NavGroup[] {
-  return NAV_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => (hasClan || !item.clanOnly) && (isOwner || !item.ownerOnly)) })).filter((group) => group.items.length > 0);
+/**
+ * The sidebar's groups for a server, leaving out what only a clan server has when this one has no clan, what only the bot's owner sees when
+ * this person isn't, an optional feature's page while it is off, and any group that leaves empty.
+ */
+export function groupsFor(hasClan: boolean, isOwner = false, features: readonly NavFeature[] = []): NavGroup[] {
+  return NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => (hasClan || !item.clanOnly) && (isOwner || !item.ownerOnly) && (!item.feature || features.includes(item.feature))),
+  })).filter((group) => group.items.length > 0);
 }
 
 /**

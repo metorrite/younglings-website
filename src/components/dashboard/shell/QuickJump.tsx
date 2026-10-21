@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
-import { groupsFor } from "./nav";
+import { groupsFor, type NavFeature } from "./nav";
 
 /**
  * Press Ctrl+K (or Cmd+K), or the button, to jump to any page of the dashboard by typing a few letters of its name. Arrow keys move,
@@ -14,10 +14,12 @@ export function QuickJump({
   base,
   hasClan = true,
   isOwner = false,
+  features = [],
 }: {
   base: string;
   hasClan?: boolean;
   isOwner?: boolean;
+  features?: NavFeature[];
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -27,7 +29,7 @@ export function QuickJump({
 
   const pages = useMemo(
     () =>
-      groupsFor(hasClan, isOwner).flatMap((group) =>
+      groupsFor(hasClan, isOwner, features).flatMap((group) =>
         group.items
           .filter((item) => !item.soon && item.path !== undefined)
           .map((item) => ({
@@ -37,7 +39,7 @@ export function QuickJump({
             href: `${base}${item.path}`,
           })),
       ),
-    [base, hasClan, isOwner],
+    [base, hasClan, isOwner, features],
   );
   const shown = pages.filter((p) =>
     `${p.label} ${p.group}`.toLowerCase().includes(query.trim().toLowerCase()),
