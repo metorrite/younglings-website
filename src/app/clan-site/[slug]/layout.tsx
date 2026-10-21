@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { clanSitesOn, getTenantSite } from "@/lib/clanSites";
+import { SiteShell } from "@/components/clansite/SiteShell";
+import { clanSitesOn } from "@/lib/clanSites";
+import { siteContext } from "@/lib/clanSitePage";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +12,12 @@ export const dynamic = "force-dynamic";
  */
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const site = clanSitesOn() ? await getTenantSite(slug) : undefined;
-  if (!site) return { title: "Clan website", robots: { index: false, follow: false } };
+  const ctx = clanSitesOn() ? await siteContext(slug) : undefined;
+  if (!ctx) return { title: "Clan website", robots: { index: false, follow: false } };
+  const { clan } = ctx.site;
   return {
-    title: { default: site.clan.name, template: `%s | ${site.clan.name}` },
-    description: site.clan.tagline || `${site.clan.name}, a RuneScape 3 clan`,
+    title: { default: clan.name, template: `%s | ${clan.name}` },
+    description: clan.tagline || `${clan.name}, a RuneScape 3 clan`,
     robots: { index: false, follow: false },
   };
 }
@@ -22,9 +25,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ClanSiteLayout({ children, params }: { children: React.ReactNode; params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   if (!clanSitesOn()) notFound();
-  const site = await getTenantSite(slug);
-  if (site === undefined) notFound();
-  if (site === null) {
+  const ctx = await siteContext(slug);
+  if (ctx === undefined) notFound();
+  if (ctx === null) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
         <h1 className="text-2xl font-semibold">This clan website can&apos;t be shown right now</h1>
@@ -32,5 +35,5 @@ export default async function ClanSiteLayout({ children, params }: { children: R
       </main>
     );
   }
-  return <>{children}</>;
+  return <SiteShell ctx={ctx}>{children}</SiteShell>;
 }

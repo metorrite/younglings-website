@@ -28,7 +28,7 @@ export function tagsForInternalPath(path: string): string[] {
   const rest = clean.slice("/internal/directory/".length).split("/");
   if (rest[0] === "leaderboards") return ["hub:leaderboards"];
   if (rest[0] === "events") return ["hub:events"];
-  if (rest[0] === "sites") return ["hub:sites"];
+  if (rest[0] === "sites") return rest[2] === "data" && rest[3] ? ["hub:sites", `site:${rest[3]}`] : ["hub:sites"];
   if (rest[0] === "clans") return rest[2] === "events" ? ["hub:events", "hub:clans"] : ["hub:clans"];
   return [];
 }

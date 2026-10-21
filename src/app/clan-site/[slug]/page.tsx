@@ -1,28 +1,46 @@
-import { notFound } from "next/navigation";
-import { ReportClan } from "@/components/clanshub/ReportClan";
-import { getTenantSite } from "@/lib/clanSites";
+import { Blocks } from "@/components/clansite/Blocks";
+import { SiteCard } from "@/components/clansite/SiteShell";
+import { sitePage } from "@/lib/clanSitePage";
+import { tenantData, tenantEvents } from "@/lib/clanSites";
+import { EventList, RecapSummary } from "@/components/clansite/parts";
 
-/** The clan site's home page. The templates (Classic, Hall, Minimal) and the other pages arrive with the builder's page system (T-066). */
+/** Home: banner, the clan's own intro blocks, the next events and the latest weekly recap. */
 export default async function ClanSiteHome({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const site = await getTenantSite(slug);
-  if (!site) notFound();
+  const { site, theme, template, pages } = await sitePage(slug, "home");
+  const showEvents = pages.find((p) => p.key === "events")?.enabled;
+  const showRecaps = pages.find((p) => p.key === "recaps")?.enabled;
+  const [events, recap] = await Promise.all([showEvents ? tenantEvents(slug) : [], showRecaps ? tenantData(slug, "recap", "period=last-week") : null]);
   const { clan } = site;
+  const hasIntro = site.blocks.some((b) => b.page === "home");
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-        {clan.logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- a clan's own logo from any host it chose
-          <img src={clan.logoUrl} alt="" className="h-24 w-24 rounded-2xl object-cover" />
+    <div className="space-y-10">
+      {template !== "HALL" && theme.bannerUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- a clan's own banner from the host it chose
+        <img src={theme.bannerUrl} alt="" className="h-56 w-full rounded-xl object-cover" />
+      )}
+      {template !== "HALL" && (
+        <div>
+          <h1 className="text-4xl font-semibold tracking-tight">{clan.name}</h1>
+          {clan.tagline && <p className="mt-2 text-lg text-[var(--cs-muted)]">{clan.tagline}</p>}
+        </div>
+      )}
+      {hasIntro ? <Blocks blocks={site.blocks} page="home" /> : clan.description && <p className="max-w-2xl whitespace-pre-line text-[var(--cs-muted)]">{clan.description}</p>}
+      <div className="grid gap-6 md:grid-cols-2">
+        {showEvents && (
+          <SiteCard>
+            <h2 className="mb-4 text-lg font-semibold">Coming up</h2>
+            <EventList events={events.slice(0, 3)} empty="No events planned right now." />
+          </SiteCard>
         )}
-        <h1 className="mt-6 text-4xl font-semibold tracking-tight">{clan.name}</h1>
-        {clan.tagline && <p className="mt-3 text-lg text-muted">{clan.tagline}</p>}
-        {clan.description && <p className="mt-6 max-w-xl whitespace-pre-line text-sm text-muted">{clan.description}</p>}
-      </main>
-      <footer className="flex flex-wrap items-center justify-center gap-4 border-t border-surface-border px-6 py-4 text-xs text-muted">
-        <span>Made with JonnyBot</span>
-        <ReportClan slug={site.slug} />
-      </footer>
+        {showRecaps && recap && (
+          <SiteCard>
+            <h2 className="mb-4 text-lg font-semibold">Last week</h2>
+            <RecapSummary recap={recap} />
+          </SiteCard>
+        )}
+      </div>
     </div>
   );
 }
