@@ -64,6 +64,7 @@ import { GuideCards } from "@/components/dashboard/wizard/GuideCards";
 import { SetupWizard } from "@/components/dashboard/wizard/SetupWizard";
 import { GoodbyeForm } from "@/components/dashboard/GoodbyeForm";
 import { EmbedderPanels } from "@/components/dashboard/EmbedderPanels";
+import { TicketFlagsCard, TicketFlagsPage } from "@/components/dashboard/TicketFlags";
 import { SnapshotsManager } from "@/components/dashboard/SnapshotsManager";
 import { DevSnapshotButton } from "@/components/devtools/DevSnapshotButton";
 import { AutomodForm } from "@/components/dashboard/AutomodForm";
@@ -102,6 +103,17 @@ const overview: Overview = {
 };
 const setup: ServerSetup = { clanName: "Younglings", clanEnabled: true, clanActive: true, verificationReviewChannelId: "1", renameAlertChannelId: null, verifiedClanRoleId: "r1", verifiedNonClanRoleId: null, unverifiedRoleId: null, onboardingRoleId: null, inviteUrl: "https://discord.gg/younglings" };
 const EMBEDDER_SAMPLE = { ...EMPTY_MESSAGE, messageType: "EMBED" as const, enabled: false, channelId: null, alsoDm: false };
+
+const ticketFlagsSample = {
+  enabled: true,
+  maxNote: 500,
+  flags: [{ id: "1", ticketId: "7", ticketNumber: 12, playerId: "5", playerName: "PvmRyan", flaggedBy: "9", flaggedByName: "Helper Hana", note: "Ignored the helpers and left halfway through.", createdAt: "2026-10-18T12:00:00Z" }],
+};
+const ticketFlagActions = {
+  setEnabled: async () => ({ ok: true as const, data: ticketFlagsSample }),
+  add: async () => ({ ok: true as const, data: ticketFlagsSample }),
+  remove: async () => ({ ok: true as const, data: { deleted: true } }),
+};
 
 const structure: GuildStructure = {
   roles: [
@@ -754,6 +766,13 @@ function Preview() {
                 role="bot owner (admin)"
                 send={async () => ({ id: "snap-20261019-030000-c0de", filename: "jb-snapshot-snap-20261019-030000-c0de.zip", blob: new Blob(["preview"], { type: "application/zip" }) })}
               />
+            </>
+          )}
+          {view === "ticket-flags" && (
+            <>
+              <PageHeader title="Tickets" description="The Flags tab." />
+              <TicketFlagsPage initial={ticketFlagsSample} guildId="1" actions={ticketFlagActions} />
+              <TicketFlagsCard initial={ticketFlagsSample} ticketId="7" guildId="1" actions={ticketFlagActions} />
             </>
           )}
           {view === "goodbye" && (
