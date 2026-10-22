@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireEventAccess } from "@/lib/dashboard";
 import type { EventAward, EventClaims, EventDetail, EventStandings } from "@/lib/eventTypes";
 import { adminApi } from "@/lib/jonnybot-admin";
-import { eventApiAction } from "../actions";
+import { eventApiAction, tileHintsAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ export default async function EventPage({ params }: { params: Promise<{ guildId:
         title={detail.event.name}
         description="Build the event, run it and pay it out. Everything here is checked again by the bot, and every change is kept in the audit log."
       />
-      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} structure={structure} call={eventApiAction.bind(null, guildId)} hubEnabled={process.env.EVENTS_HUB === "true"} />
+      <EventManager initial={detail} initialClaims={claims} initialStandings={standings} initialAwards={awards.awards} structure={structure} call={eventApiAction.bind(null, guildId)} hubEnabled={process.env.EVENTS_HUB === "true"} tileHints={tileHintsAction.bind(null, guildId)} />
     </div>
   );
 }
