@@ -16,6 +16,7 @@ export function JonnyBotFooter({ site }: { site: SiteInfo }) {
           <a className={link} href={jonnybotHref(site, "/dashboard")}>Bot Dashboard</a>
           <a className={link} href={jonnybotHref(site, "/privacy")}>Privacy</a>
           <a className={link} href={jonnybotHref(site, "/terms")}>Terms</a>
+          <a className={link} href={jonnybotHref(site, "/runesync/privacy")}>RuneSync privacy</a>
           <a className={link} href={clanHref(site, "/")}>The Younglings clan site</a>
         </div>
       </div>

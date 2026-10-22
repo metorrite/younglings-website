@@ -4,6 +4,8 @@ import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
 import { PluginPointsForm } from "@/components/dashboard/PluginPointsForm";
 import { savePluginPointsAction } from "./pointsActions";
+import { ClanPanelSwitch } from "@/components/dashboard/ClanPanelSwitch";
+import { saveClanPanelAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +26,19 @@ function Bar({ value, of }: { value: number; of: number }) {
 export default async function PluginCoveragePage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [c, pluginPoints] = await Promise.all([adminApi.pluginCoverage(guild).then(dashboardData), adminApi.pluginPoints(guild)]);
+  const [c, pluginPoints, settings] = await Promise.all([
+    adminApi.pluginCoverage(guild).then(dashboardData),
+    adminApi.pluginPoints(guild),
+    adminApi.pluginSettings(guild),
+  ]);
   const savePoints = savePluginPointsAction.bind(null, guildId);
+  const save = saveClanPanelAction.bind(null, guildId);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Clan plugin"
-        description="How many of your members use the JonnyBot clan plugin. You only ever see counts: nobody is named, and no member is expected to install anything."
+        description="How many of your members use the JonnyBot clan plugin, and what it may show them in the game. You only ever see counts: nobody is named, and no member is expected to install anything."
       />
       <PanelGrid min="26rem">
       <section className="rounded-xl border border-surface-border bg-surface p-5">
@@ -75,6 +82,17 @@ export default async function PluginCoveragePage({ params }: { params: Promise<{
             <PluginPointsForm initial={pluginPoints.data} save={savePoints} />
           ) : (
             <p className="text-sm text-red-300">These settings couldn&apos;t be loaded: {pluginPoints.error}</p>
+          )}
+        </div>
+      </section>
+      <section className="rounded-xl border border-surface-border bg-surface p-5">
+        <h2 className="font-semibold text-gold">In the game</h2>
+        <p className="mt-1 text-xs text-muted">What the RuneSync plugin may show your members inside RuneScape.</p>
+        <div className="mt-4">
+          {settings.ok ? (
+            <ClanPanelSwitch initial={settings.data.clanPanel} save={save} />
+          ) : (
+            <p className="text-sm text-red-300">This setting couldn&apos;t be loaded: {settings.error}</p>
           )}
         </div>
       </section>
