@@ -57,5 +57,8 @@ export const pluginApi = {
   createToken: (userId: string, label: string) => account<PluginView & { token: string; view: PluginView }>(userId, "me/tokens", "POST", { label }),
   revokeToken: (userId: string, tokenId: string) => account<PluginView>(userId, `me/tokens/${encodeURIComponent(tokenId)}`, "DELETE"),
   setConsent: (userId: string, categories: string[]) => account<PluginView>(userId, "me/consent", "PUT", { categories }),
+  /** "Show my clan that I use RuneSync" (T-140): off until the member switches it on; only then does clan staff see them by name. */
+  visibility: (userId: string) => account<{ showToClan: boolean }>(userId, "me/visibility", "GET"),
+  setVisibility: (userId: string, showToClan: boolean) => account<{ showToClan: boolean }>(userId, "me/visibility", "PUT", { showToClan }),
   deleteData: (userId: string) => account<{ removedEvents: number; view: PluginView }>(userId, "me/data", "DELETE"),
 };

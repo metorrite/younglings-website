@@ -1810,6 +1810,12 @@ export interface PluginCoverage {
   consent: { key: string; label: string; players: number }[];
 }
 
+/** The has-plugin list (T-140): only roster members who switched on "Show my clan that I use RuneSync" on their profile. */
+export interface PluginUsers {
+  users: { rsn: string; client: string | null; lastSeenDay: string | null }[];
+  linkedPlayers: number;
+}
+
 /** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
 export interface DevSnapshotMeta {
   /** snap-yyyyMMdd-HHmmss-xxxx */
@@ -2470,6 +2476,7 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  pluginUsers: (ctx: ApiContext) => call<PluginUsers>(ctx, "GET", "plugin-users"),
   pluginPoints: (ctx: ApiContext) => call<PluginPointsView>(ctx, "GET", "plugin-points"),
   setPluginPoints: (ctx: ApiContext, rules: PluginPointsView["rules"]) =>
     call<PluginPointsView>(ctx, "PUT", "plugin-points", { rules: rules.map((r) => ({ type: r.type, points: r.points, dailyCap: r.dailyCap, minValueGp: r.minValueGp ?? null })) }),
