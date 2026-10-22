@@ -2190,6 +2190,14 @@ export interface HubCommandConfig {
   afk?: { nicknameTag: boolean; ignoreChannelIds: string[]; away: { userId: string; name: string; reason: string; since: string }[] };
 }
 
+/** How often each slash command was used in this server over the last `days` days (T-191), keyed by top-level slash name. Counts only, nobody's id. */
+export interface CommandUsage {
+  days: number;
+  /** First day counted (UTC, yyyy-mm-dd). */
+  since: string;
+  counts: Record<string, number>;
+}
+
 export interface HubConfig {
   commands: HubCommandConfig[];
   /** The permission groups a "who can use it" list can name. */
@@ -2356,6 +2364,7 @@ export const adminApi = {
   postHelpGuidelines: (ctx: ApiContext, channelId: string) => call<HelpSettings>(ctx, "POST", "help/guidelines/post", { channelId }),
 
   hub: (ctx: ApiContext) => call<HubConfig>(ctx, "GET", "hub"),
+  commandUsage: (ctx: ApiContext) => call<CommandUsage>(ctx, "GET", "command-usage"),
   saveHubCommand: (ctx: ApiContext, key: string, draft: Partial<HubCommandDraft>) => call<HubCommandConfig>(ctx, "PUT", `hub/${encodeURIComponent(key)}`, draft),
 
   permissions: (ctx: ApiContext) => call<PermissionGroups>(ctx, "GET", "permissions"),

@@ -87,7 +87,7 @@ export function withSession(response: NextResponse, ctx: WebContext, session: Li
 }
 
 /**
- * Calls the bot's `/internal/rsnlink/<path>` with a JSON body and the client IP, or the same route on the RSClans hub when `HUB_BASE_URL`
+ * Calls the bot's `/internal/rsnlink/<path>` with a JSON body and the client IP, or the same route on the RuneClans hub when `HUB_BASE_URL`
  * is set (lib/hub.ts). Null when it can't be reached.
  */
 export async function linkBot(request: NextRequest, path: string, body: Record<string, unknown>, headers: Record<string, string> = {}) {

@@ -8,7 +8,7 @@ import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { FormField, Notice, primaryButton } from "@/components/admin/ui";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { ChannelListPicker, RolePicker } from "@/components/dashboard/pickers";
-import { choicesOf, type GuildStructure, type HubCommandConfig, type HubCommandDraft, type HubConfig, type WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { choicesOf, type CommandUsage, type GuildStructure, type HubCommandConfig, type HubCommandDraft, type HubConfig, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Outcome = { tone: "error" | "success"; title: string; items?: string[] } | null;
 
@@ -28,12 +28,17 @@ function HubCard({
   structure,
   maxList,
   tagLabels,
+  uses,
+  usageDays,
   canEditAccess,
   save,
 }: {
   command: HubCommandConfig;
   /** The labels of the command's tags. */
   tagLabels: string[];
+  /** Times it was used in the last {@link usageDays} days, or undefined when the bot sent no usage figures. */
+  uses?: number;
+  usageDays?: number;
   groups: HubConfig["groups"];
   structure: GuildStructure;
   maxList: number;
@@ -120,6 +125,11 @@ function HubCard({
           <span className={`rounded-full px-2.5 py-1 font-medium ${enabled ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{enabled ? "On" : "Off"}</span>
           {enabled && <span className="rounded-full bg-white/10 px-2.5 py-1 text-muted">{accessLabel}</span>}
           {enabled && <span className="rounded-full bg-white/10 px-2.5 py-1 text-muted">{placeLabel}</span>}
+          {uses !== undefined && (
+            <span className="rounded-full bg-white/10 px-2.5 py-1 text-muted" title={`Times members used /${command.slashName} in the last ${usageDays} days`}>
+              {uses === 0 ? "Not used lately" : `${uses.toLocaleString("en-GB")} use${uses === 1 ? "" : "s"}`}
+            </span>
+          )}
           <span aria-hidden="true" className="text-muted">{open ? "▴" : "▾"}</span>
         </span>
       </button>
@@ -334,31 +344,42 @@ function HubCard({
   );
 }
 
-/** The Commands page: a row for every command that stands on its own, opening to its settings. Filter by search, by enabled / disabled and by what the command is for (tags). */
+/**
+ * The Commands page: a row for every command that stands on its own, opening to its settings. Filter by search, by enabled / disabled / not used
+ * lately and by what the command is for (tags). With usage figures from the bot (T-191) each row says how often it was used, and the list can be
+ * sorted by that.
+ */
 export function HubEditor({
   hub,
   structure,
+  usage = null,
   canEditAccess,
   save,
 }: {
   hub: HubConfig;
   structure: GuildStructure;
+  /** How often each command was used lately; null when the bot sent none (an older bot), and then nothing about usage shows. */
+  usage?: CommandUsage | null;
   canEditAccess: boolean;
   save: (key: string, draft: HubCommandDraft) => Promise<WelcomeActionResult<HubCommandConfig>>;
 }) {
   const [query, setQuery] = useState("");
-  const [show, setShow] = useState<"all" | "on" | "off">("all");
+  const [show, setShow] = useState<"all" | "on" | "off" | "unused">("all");
+  const [sort, setSort] = useState<"usual" | "used">("usual");
   // tags ticked as filters: a command is shown when it has any of them (none ticked shows every command)
   const [picked, setPicked] = useState<string[]>([]);
   const needle = query.trim().toLowerCase();
   const labelOf = (key: string) => hub.tags.find((t) => t.key === key)?.label ?? key;
-  const shown = hub.commands.filter(
+  const usesOf = (c: HubCommandConfig) => (usage ? (usage.counts[c.slashName] ?? 0) : undefined);
+  const filtered = hub.commands.filter(
     (c) =>
-      (show === "all" || (show === "on" ? c.enabled : !c.enabled)) &&
+      (show === "all" || (show === "on" ? c.enabled : show === "off" ? !c.enabled : c.enabled && usesOf(c) === 0)) &&
       (picked.length === 0 || c.tags.some((t) => picked.includes(t))) &&
       (needle === "" || `${c.title} ${c.slashName} ${c.description} ${c.tags.map(labelOf).join(" ")}`.toLowerCase().includes(needle)),
   );
+  const shown = sort === "used" && usage ? [...filtered].sort((a, b) => (usesOf(b) ?? 0) - (usesOf(a) ?? 0)) : filtered;
   const onCount = hub.commands.filter((c) => c.enabled).length;
+  const filters = usage ? (["all", "on", "off", "unused"] as const) : (["all", "on", "off"] as const);
 
   return (
     <div className="space-y-4">
@@ -372,20 +393,30 @@ export function HubEditor({
           className="w-full max-w-sm rounded-md border border-surface-border bg-background px-3 py-2 text-sm outline-none focus:border-gold"
         />
         <div className="flex gap-1.5" role="group" aria-label="Show">
-          {(["all", "on", "off"] as const).map((key) => (
+          {filters.map((key) => (
             <button
               key={key}
               type="button"
               aria-pressed={show === key}
               onClick={() => setShow(key)}
+              title={key === "unused" && usage ? `Turned on, but nobody used it in the last ${usage.days} days` : undefined}
               className={`rounded-full border px-3 py-1 text-xs transition ${show === key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
             >
-              {key === "all" ? "All" : key === "on" ? "Enabled" : "Disabled"}
+              {key === "all" ? "All" : key === "on" ? "Enabled" : key === "off" ? "Disabled" : "Not used lately"}
             </button>
           ))}
         </div>
+        {usage && (
+          <label className="flex items-center gap-2 text-xs text-muted">
+            Sort
+            <select value={sort} onChange={(e) => setSort(e.target.value as "usual" | "used")} className="rounded-md border border-surface-border bg-background px-2 py-1 text-xs text-foreground">
+              <option value="usual">Usual order</option>
+              <option value="used">Most used first</option>
+            </select>
+          </label>
+        )}
         <p className="ml-auto text-sm text-muted">
-          {onCount} of {hub.commands.length} turned on
+          {onCount} of {hub.commands.length} turned on{usage ? ` · uses are from the last ${usage.days} days` : ""}
         </p>
       </div>
       {hub.tags.length > 0 && (
@@ -414,7 +445,7 @@ export function HubEditor({
       )}
       <div className="space-y-3">
         {shown.map((command) => (
-          <HubCard key={command.key} command={command} tagLabels={command.tags.map(labelOf)} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
+          <HubCard key={command.key} command={command} tagLabels={command.tags.map(labelOf)} uses={usesOf(command)} usageDays={usage?.days} groups={hub.groups} structure={structure} maxList={hub.maxList} canEditAccess={canEditAccess} save={save} />
         ))}
         {shown.length === 0 && (
           <p className="rounded-xl border border-dashed border-surface-border p-8 text-center text-sm text-muted">
