@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { blockSubjectAction, removeLinkAction, resolveDisputeAction, revealDiscordAction, searchLinksAction, unblockAction } from "@/app/admin/(console)/rs-link/actions";
+import { XP_CHECK, verifyWords } from "@/lib/rslink/verify";
 import { SUBJECT_LABELS, subjectProblem, type RsLinkBlock, type RsLinkDispute, type RsLinkSide, type SubjectKind } from "@/lib/rsnLinkAdmin";
 import { Card, FormField, Notice, StatusBadge, dangerButton, formatUtc, ghostButton, inputClass, primaryButton } from "./ui";
 
@@ -218,6 +219,13 @@ export function RsLinkAbuseView({ initialBlocks, initialDisputes, loadProblems }
   );
 }
 
+/** The "plugin knew it first" check for one link, with the numbers (owner only). */
+function SideVerify({ side }: { side: RsLinkSide }) {
+  const words = verifyWords(side.verification, side.verify?.[XP_CHECK], true);
+  if (!words) return null;
+  return <div className={words.tone === "good" ? "text-emerald-300" : words.tone === "warn" ? "text-amber-300" : "text-muted"}>{words.text}</div>;
+}
+
 function Side({ title, side }: { title: string; side: RsLinkSide | null }) {
   if (!side) return <div className="text-sm text-muted">{title}: gone</div>;
   return (
@@ -227,6 +235,7 @@ function Side({ title, side }: { title: string; side: RsLinkSide | null }) {
         <StatusBadge tone={side.status === "active" ? "good" : side.status === "disputed" ? "warn" : "muted"}>{side.status}</StatusBadge>
         {side.verification && side.verification !== "implicit" && <StatusBadge tone="good">{side.verification.replace(/_/g, " ")}</StatusBadge>}
       </div>
+      <SideVerify side={side} />
       <div className="text-muted">
         Linked {formatUtc(side.linkedAt ?? null)} · last seen {formatUtc(side.lastSeenAt ?? null)} · {side.tracked ? "tracking id" : "no tracking id"} · {side.devices ?? 0} device(s) · by{" "}
         {side.method === "dm" ? "DM code" : "sign-in"}

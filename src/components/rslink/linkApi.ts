@@ -1,3 +1,5 @@
+import type { VerifyByMethod } from "@/lib/rslink/verify";
+
 /**
  * What the RS Link pages ask of the site, as one object, so the preview harness can hand them made-up answers. The real one calls
  * `/api/link/web/*` (the same path on every host) with the session's CSRF token.
@@ -29,6 +31,8 @@ export interface LinkRow {
   tracked: boolean;
   devices: number;
   previousNames: string[];
+  /** The link checks' state by method (bot T-170); absent on older bots. */
+  verify?: VerifyByMethod;
 }
 
 export interface LinkApi {
