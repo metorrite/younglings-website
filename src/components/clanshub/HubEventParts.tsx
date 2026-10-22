@@ -26,7 +26,7 @@ export function HubEventBadge({ event }: { event: HubEngineEvent }) {
 
 /** A card of the events hub's list: the event and its host, never who is in it. */
 export function HubEngineEventCard({ event, site }: { event: HubEngineEvent; site: SiteInfo }) {
-  const colour = clanAccent({ slug: event.host.slug ?? event.host.guildId, name: event.host.name, colour: null });
+  const colour = clanAccent({ slug: event.host.slug ?? undefined, name: event.host.name, colour: null });
   const href = hubHref(site, `/e/${event.id}`);
   return (
     <li className="flex items-start gap-4 rounded-2xl border border-surface-border bg-surface p-4 transition hover:border-white/20">
