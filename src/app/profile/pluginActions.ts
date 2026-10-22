@@ -60,7 +60,7 @@ export async function savePluginVisibilityAction(showToClan: boolean): Promise<P
   return result;
 }
 
-/** With the RSClans hub: stop one bot seeing the player's plugin data (T-163). Answers the refreshed view. */
+/** With the RuneClans hub: stop one bot seeing the player's plugin data (T-163). Answers the refreshed view. */
 export async function revokeBotGrantAction(appId: string): Promise<PluginResult> {
   const id = await userId();
   if (!id) return signedOut;
