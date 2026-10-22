@@ -514,7 +514,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
             <div><dt className="text-xs text-muted">Created</dt><dd>{formatUtc(e.createdAt)}</dd></div>
             <div><dt className="text-xs text-muted">Signups close</dt><dd>{e.config.signupClosesAt ? formatUtc(e.config.signupClosesAt) : "No deadline"}</dd></div>
             <div><dt className="text-xs text-muted">Who may join</dt><dd>{{ everyone: "Everyone, mixed freely", home: "Only this server", clanVsOutsiders: "Clan members apart from everyone else", separate: "Every kind on its own teams" }[e.config.teamPolicy ?? "everyone"] ?? e.config.teamPolicy}</dd></div>
-            <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : "First come, first served"}</dd></div>
+            <div><dt className="text-xs text-muted">When full</dt><dd>{e.config.queue === "CLAN_FIRST" ? "Clan members first" : e.config.queue === "ROUND_ROBIN" ? "Round robin between servers" : "First come, first served"}</dd></div>
             <div><dt className="text-xs text-muted">Buy-in</dt><dd>{e.config.buyIn?.enabled ? `${gp(e.config.buyIn.amount ?? 0)} per player` : "None"}</dd></div>
           </dl>
           </CollapsibleCard>
