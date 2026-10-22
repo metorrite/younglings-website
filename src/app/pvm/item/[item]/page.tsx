@@ -86,24 +86,26 @@ export default async function ItemPage({ params, searchParams }: Props) {
           {data.receivers.length === 0 ? (
             <p className="text-sm text-muted">Nobody yet in this window.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs tracking-wider text-muted uppercase">
-                  <th className="pb-2 font-medium">Member</th>
-                  <th className="pb-2 text-right font-medium">Times</th>
-                  <th className="pb-2 text-right font-medium">Latest</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-border/50">
-                {data.receivers.map((r) => (
-                  <tr key={r.rsn}>
-                    <td className="py-1.5"><Link href={`/members/${encodeURIComponent(r.rsn)}`} className="hover:text-gold">{r.rsn}</Link></td>
-                    <td className="py-1.5 text-right tabular-nums text-gold">{r.count}</td>
-                    <td className="py-1.5 text-right text-xs text-muted">{r.last.slice(0, 10)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs tracking-wider text-muted uppercase">
+                    <th className="pb-2 font-medium">Member</th>
+                    <th className="pb-2 text-right font-medium">Times</th>
+                    <th className="pb-2 text-right font-medium">Latest</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-surface-border/50">
+                  {data.receivers.map((r) => (
+                    <tr key={r.rsn}>
+                      <td className="py-1.5"><Link href={`/members/${encodeURIComponent(r.rsn)}`} className="hover:text-gold">{r.rsn}</Link></td>
+                      <td className="py-1.5 text-right tabular-nums text-gold">{r.count}</td>
+                      <td className="py-1.5 text-right text-xs text-muted">{r.last.slice(0, 10)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Panel>
       </div>
