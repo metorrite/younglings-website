@@ -100,6 +100,7 @@ import { PointsManager } from "@/components/dashboard/PointsManager";
 import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/OverviewView";
+import { StaffDigestForm } from "@/components/dashboard/StaffDigestForm";
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
 import { ClanWebsiteEditor } from "@/components/dashboard/ClanWebsiteEditor";
 import type { ClanSiteAdmin } from "@/lib/jonnybot-admin";
@@ -523,6 +524,21 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "staff-digest" && (
+            <>
+              <PageHeader title="Staff digest" description="One weekly post for staff: who needs attention, open tickets and what's coming up." />
+              <StaffDigestForm
+                initial={{
+                  settings: { enabled: true, channelId: structure.channels[0]?.id ?? null, weekday: 1, hour: 9, lastPostedOn: "2026-10-19" },
+                  preview: { rosterSize: 69, inactive: 4, unverified: 2, promotionsDue: 1, stale: 0, openTickets: 3, escalated: 1, events: [{ name: "Raid night", start: "2026-10-24T19:00:00Z" }, { name: "Clan meeting", start: "2026-10-26T20:00:00Z" }], maxEvents: 10 },
+                }}
+                structure={structure}
+                links={{ attention: "#", tickets: "#", events: "#" }}
+                save={async (d) => ({ ok: true, data: { settings: { ...d, lastPostedOn: "2026-10-19" }, preview: { rosterSize: 69, inactive: 4, unverified: 2, promotionsDue: 1, stale: 0, openTickets: 3, escalated: 1, events: [], maxEvents: 10 } } })}
+                send={async () => ({ ok: false, error: "Preview only.", problems: [] })}
+              />
+            </>
+          )}
           {view === "clan-website" && (
             <>
               <PageHeader title="Clan website" description="Your clan's own website, filled from JonnyBot's data. Beta." />
