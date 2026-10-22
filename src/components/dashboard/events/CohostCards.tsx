@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { dangerButton, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
 import { LocalTime } from "@/components/site/LocalTime";
 import type { WelcomeActionResult } from "@/lib/jonnybot-admin";
 
@@ -27,6 +28,8 @@ export interface CohostView {
   max: number;
   canRemove: boolean;
   queue?: FillQueueView;
+  /** T-221: the event's start is announced in each co-host's panel channel (off unless switched on). */
+  announceStart?: boolean;
 }
 
 const POLICIES: { value: FillQueueView["policy"]; label: string }[] = [
@@ -203,6 +206,15 @@ export function CohostsCard({ eventId, call, over }: { eventId: string; call: Ca
             ))}
           </ul>
           {!view.canRemove && view.cohosts.length > 0 && <p className="text-xs text-muted">Signups have closed, so co-hosts stay. You can still remove their players on the Teams and players tab.</p>}
+          {!over && view.announceStart !== undefined && (
+            <Toggle
+              checked={view.announceStart}
+              onChange={(next) => run("PUT", `${base}/settings`, { announceStart: next })}
+              disabled={pending}
+              label="Announce the start in co-hosts' channels"
+              detail="When the event starts, JonnyBot posts a short note in each co-host's signup panel channel with your server's invite. Off by default."
+            />
+          )}
           {!over && (
             <FillQueue
               key={JSON.stringify(view.queue) + view.cohosts.map((c) => `${c.guildId}:${c.status}:${c.quota ?? ""}`).join(",")}
@@ -241,20 +253,55 @@ export function CohostsCard({ eventId, call, over }: { eventId: string; call: Ca
 /** A co-host's view (bot route `cohost-events`, T-219): invitations, and the events it co-hosts with its own players only. */
 export interface CohostingView {
   invitations: { eventId: string; name: string; host: string; status: string; startsAt: string | null }[];
-  events: { eventId: string; name: string; host: string; status: string; startsAt: string | null; players: number; yours: { userId: string; name: string; waiting: boolean }[]; canRemove: boolean; quota?: number | null }[];
+  events: {
+    eventId: string;
+    name: string;
+    host: string;
+    status: string;
+    startsAt: string | null;
+    players: number;
+    yours: { userId: string; name: string; waiting: boolean }[];
+    canRemove: boolean;
+    quota?: number | null;
+    /** T-221: where this server's signup panel for the event goes, and whether it is up. */
+    panelChannelId?: string | null;
+    panelPosted?: boolean;
+  }[];
+}
+
+type Channel = { id: string; name: string; canPost: boolean };
+
+/** A text channel this server's members can see the signup panel in (only ones JonnyBot can post in). */
+function PanelChannelPicker({ channels, value, onChange, disabled, label }: { channels: Channel[]; value: string; onChange: (id: string) => void; disabled: boolean; label: string }) {
+  return (
+    <label className="text-sm">
+      <span className="mb-1 block text-xs text-muted">{label}</span>
+      <select className={inputClass} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}>
+        <option value="">No signup panel</option>
+        {channels
+          .filter((c) => c.canPost)
+          .map((c) => (
+            <option key={c.id} value={c.id}>
+              #{c.name}
+            </option>
+          ))}
+      </select>
+    </label>
+  );
 }
 
 /** The Event manager's "Co-hosting" card for this server: accept or decline invitations, see the events it co-hosts and take its own players out. */
-export function CohostingCard({ initial, call }: { initial: CohostingView; call: Call }) {
+export function CohostingCard({ initial, call, channels = [] }: { initial: CohostingView; call: Call; channels?: Channel[] }) {
   const [view, setView] = useState(initial);
   const [problem, setProblem] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [panelPick, setPanelPick] = useState<Record<string, string>>({});
   if (view.invitations.length === 0 && view.events.length === 0) return null;
 
-  const run = (method: "POST" | "DELETE", path: string) =>
+  const run = (method: "POST" | "PUT" | "DELETE", path: string, body?: unknown) =>
     start(async () => {
       setProblem(null);
-      const r = await call(method, path);
+      const r = await call(method, path, body);
       if (r.ok) setView(r.data as CohostingView);
       else setProblem(r.error);
     });
@@ -280,8 +327,20 @@ export function CohostingCard({ initial, call }: { initial: CohostingView; call:
               <span className="font-medium">{i.name}</span> <span className="text-muted">· hosted by {i.host}{i.startsAt ? " · " : ""}</span>
               {i.startsAt && <LocalTime iso={i.startsAt} />}
             </span>
-            <span className="flex gap-2">
-              <button type="button" className={primaryButton} disabled={pending} onClick={() => run("POST", `cohost-events/${i.eventId}/accept`)}>
+            <span className="flex flex-wrap items-end gap-2">
+              <PanelChannelPicker
+                channels={channels}
+                value={panelPick[i.eventId] ?? ""}
+                onChange={(id) => setPanelPick((all) => ({ ...all, [i.eventId]: id }))}
+                disabled={pending}
+                label="Signup panel channel (optional)"
+              />
+              <button
+                type="button"
+                className={primaryButton}
+                disabled={pending}
+                onClick={() => run("POST", `cohost-events/${i.eventId}/accept`, { panelChannelId: panelPick[i.eventId] || null })}
+              >
                 Co-host it
               </button>
               <button type="button" className={ghostButton} disabled={pending} onClick={() => run("POST", `cohost-events/${i.eventId}/decline`)}>
@@ -295,6 +354,23 @@ export function CohostingCard({ initial, call }: { initial: CohostingView; call:
             <p>
               <span className="font-medium">{e.name}</span> <span className="text-muted">· hosted by {e.host} · {e.players} players in all</span>
               {e.quota ? <span className="text-muted"> · {e.quota} places kept for your server until the release</span> : null}
+            </p>
+            <div className="flex flex-wrap items-end gap-2">
+              <PanelChannelPicker
+                channels={channels}
+                value={panelPick[e.eventId] ?? e.panelChannelId ?? ""}
+                onChange={(id) => setPanelPick((all) => ({ ...all, [e.eventId]: id }))}
+                disabled={pending}
+                label={e.panelPosted ? "Signup panel (posted)" : "Signup panel channel"}
+              />
+              {(panelPick[e.eventId] ?? e.panelChannelId ?? "") !== (e.panelChannelId ?? "") && (
+                <button type="button" className={ghostButton} disabled={pending} onClick={() => run("PUT", `cohost-events/${e.eventId}/panel`, { panelChannelId: panelPick[e.eventId] || null })}>
+                  Save channel
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted">
+              Members press Join on the panel. Anyone not yet in the host&apos;s Discord gets its invite and is added when they join it, while signups are open.
             </p>
             {e.yours.length === 0 ? (
               <p className="text-xs text-muted">None of your members have joined through your server yet.</p>
