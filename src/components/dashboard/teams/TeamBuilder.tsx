@@ -43,7 +43,7 @@ const withoutKey = (record: Record<string, string | null>, key: string) => {
  * strong each looks (their stats suggest one), how level the teams are, a suggestion to start from, and the word that the teams are final. A player who hasn't
  * passed the verification the event needs before teams sits apart, with the two ways through it. Every change is made by the bot, which checks every rule again.
  */
-export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; call: EventCall; onDetail: (next: EventDetail) => void }) {
+export function TeamBuilder({ detail, call, onDetail, clanVsClan = false }: { detail: EventDetail; call: EventCall; onDetail: (next: EventDetail) => void; clanVsClan?: boolean }) {
   const [problem, setProblem] = useState<Problem>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -261,7 +261,7 @@ export function TeamBuilder({ detail, call, onDetail }: { detail: EventDetail; c
           <Toggle checked={dragMode} onChange={changeDragMode} label="Drag and drop" detail="Pick cards up and drop them onto a team. Off, only the Move lists change teams." />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {editable && (
+          {editable && !clanVsClan && (
             <button type="button" className={ghostButton} disabled={busy || detail.teams.length === 0 || view.unassigned.length === 0} onClick={() => void suggest()}>
               Suggest teams
             </button>
