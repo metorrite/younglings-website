@@ -143,6 +143,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Logs & tools",
     items: [
       { label: "Activity log", icon: "list", path: "/audit", advanced: true },
+      { label: "Staff digest", icon: "bell", path: "/staff-digest", advanced: true },
       { label: "Snapshots", icon: "terminal", path: "/snapshots", ownerOnly: true, advanced: true },
     ],
   },
