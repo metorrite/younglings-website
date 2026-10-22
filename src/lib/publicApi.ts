@@ -1,3 +1,4 @@
+import { clientIpFrom } from "@/lib/clientIp";
 import { throttle, type LimitKind } from "@/lib/ratelimit";
 
 /**
@@ -36,11 +37,9 @@ export function preflight(): Response {
   return new Response(null, { status: 204, headers: { ...CORS, "Access-Control-Max-Age": "86400" } });
 }
 
-/** The caller's address as seen behind the host's proxy (first entry of x-forwarded-for), or "unknown". */
+/** The caller's real address: `CLIENT_IP_HEADER`, else the trusted right-most `X-Forwarded-For` hop (lib/clientIp.ts, T-175). */
 export function clientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim() || "unknown";
-  return request.headers.get("x-real-ip")?.trim() || "unknown";
+  return clientIpFrom(request.headers);
 }
 
 /** Takes a token from the caller's bucket; returns a 429 response when they are going too fast, otherwise `null`. */
