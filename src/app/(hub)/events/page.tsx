@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CalendarSubscribe } from "@/components/site/CalendarSubscribe";
 import { DiscordLink } from "@/components/site/DiscordLink";
 import { LocalTime } from "@/components/site/LocalTime";
 import { PageHeader, Unavailable } from "@/components/site/blocks";
@@ -106,6 +107,7 @@ export default async function EventsPage() {
           </Link>
         </div>
       </PageHeader>
+      <CalendarSubscribe path="/api/events/calendar.ics" className="-mt-4 mb-8" />
 
       {events === null ? (
         <Unavailable what="Events" />

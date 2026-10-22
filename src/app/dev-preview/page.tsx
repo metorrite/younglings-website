@@ -93,6 +93,7 @@ import { ChatLevelsForm } from "@/components/dashboard/ChatLevelsForm";
 import { ChatLevelPanel } from "@/components/profile/ChatLevelPanel";
 import { LookupRemindersForm } from "@/components/dashboard/LookupRemindersForm";
 import { CustomTagsEditor } from "@/components/dashboard/CustomTagsEditor";
+import { AnniversariesForm } from "@/components/dashboard/AnniversariesForm";
 import { StarboardForm } from "@/components/dashboard/StarboardForm";
 import { MessageLogsForm } from "@/components/dashboard/MessageLogsForm";
 import { HighlightsForm } from "@/components/dashboard/HighlightsForm";
@@ -101,6 +102,7 @@ import { PointsManager } from "@/components/dashboard/PointsManager";
 import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import type { WelcomeConfig, WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { OverviewView, type FeatureRow } from "@/components/dashboard/overview/OverviewView";
+import { StaffDigestForm } from "@/components/dashboard/StaffDigestForm";
 import { Sidebar } from "@/components/dashboard/shell/Sidebar";
 import { ClanWebsiteEditor } from "@/components/dashboard/ClanWebsiteEditor";
 import type { ClanSiteAdmin } from "@/lib/jonnybot-admin";
@@ -502,6 +504,21 @@ function Preview() {
           {view === "shape" && <EventManager initial={shapeDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "event" && <EventManager initial={evDetail as never} initialClaims={evClaims as never} initialStandings={evStandings} initialAwards={evAwards} call={evCall} />}
           {view === "overview" && <OverviewView base="/dev-preview" overview={overview} setup={setup} rows={rows} />}
+          {view === "staff-digest" && (
+            <>
+              <PageHeader title="Staff digest" description="One weekly post for staff: who needs attention, open tickets and what's coming up." />
+              <StaffDigestForm
+                initial={{
+                  settings: { enabled: true, channelId: structure.channels[0]?.id ?? null, weekday: 1, hour: 9, lastPostedOn: "2026-10-19" },
+                  preview: { rosterSize: 69, inactive: 4, unverified: 2, promotionsDue: 1, stale: 0, openTickets: 3, escalated: 1, events: [{ name: "Raid night", start: "2026-10-24T19:00:00Z" }, { name: "Clan meeting", start: "2026-10-26T20:00:00Z" }], maxEvents: 10 },
+                }}
+                structure={structure}
+                links={{ attention: "#", tickets: "#", events: "#" }}
+                save={async (d) => ({ ok: true, data: { settings: { ...d, lastPostedOn: "2026-10-19" }, preview: { rosterSize: 69, inactive: 4, unverified: 2, promotionsDue: 1, stale: 0, openTickets: 3, escalated: 1, events: [], maxEvents: 10 } } })}
+                send={async () => ({ ok: false, error: "Preview only.", problems: [] })}
+              />
+            </>
+          )}
           {view === "clan-website" && (
             <>
               <PageHeader title="Clan website" description="Your clan's own website, filled from JonnyBot's data. Beta." />
@@ -937,6 +954,22 @@ function Preview() {
           {view === "highlights" && (<><PageHeader title="Highlights" description="Direct messages for words members care about." /><HighlightsForm initial={{ enabled: true, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: ["1"], allowedRoles: [], memberCount: 4, wordCount: 11, messageContent: true, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
           {view === "highlights-nointent" && (<><PageHeader title="Highlights" description="The bot runs without the Message Content intent." /><HighlightsForm initial={{ enabled: false, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: [], allowedRoles: [], memberCount: 0, wordCount: 0, messageContent: false, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
           {view === "my-highlights" && (<><PageHeader title="My highlights" description="A member's own words on their profile." /><HighlightsPanel initial={{ enabled: true, usable: true, refusal: null, words: [{ id: "1", word: "zulrah", wholeWord: true }, { id: "2", word: "bingo", wholeWord: false }], max: 10, maxWord: 50, minWord: 2, cooldownSeconds: 300, ignored: [{ id: "9", name: "off-topic" }], maxIgnored: 25, channels: [{ id: "2", name: "general" }, { id: "3", name: "drops" }] }} actions={{ add: nope as never, remove: nope as never, ignore: nope as never }} /></>)}
+          {view === "anniversaries" && (
+            <>
+              <PageHeader title="Clan anniversaries" description="A weekly post of members reaching another year in the clan." />
+              <AnniversariesForm
+                initial={{
+                  settings: { enabled: true, channelId: structure.channels[0]?.id ?? null, weekday: 1, hour: 12, minYears: 1, lastPostedOn: "2026-10-19" },
+                  preview: { from: "2026-10-22", to: "2026-10-28", items: [{ rsn: "Old Timer", years: 9, date: "2026-10-24" }, { rsn: "Raid Leader Ray", years: 3, date: "2026-10-22" }, { rsn: "Skiller Sue", years: 1, date: "2026-10-27" }] },
+                  hasRoster: true,
+                  limits: { maxMinYears: 20 },
+                }}
+                structure={structure}
+                save={async (d) => ({ ok: true, data: { settings: { ...d, lastPostedOn: "2026-10-19" }, preview: { from: "2026-10-22", to: "2026-10-28", items: [] }, hasRoster: true, limits: { maxMinYears: 20 } } })}
+                send={async () => ({ ok: false, error: "Preview only.", problems: [] })}
+              />
+            </>
+          )}
           {view === "custom-tags" && (<><PageHeader title="Custom tags" description="Saved replies members bring up with /tag use." /><CustomTagsEditor initial={{ enabled: true, tags: [{ id: "1", name: "rules", content: "Be kind, {user}. Full rules are in #rules.", embed: true, embedTitle: "Server rules", embedColor: "#5865f2", delivery: "CHANNEL", allowedRoles: [], cooldownSeconds: 30, enabled: true, uses: 12 }, { id: "2", name: "boss", content: "Guide for {args}: see the wiki.", embed: false, embedTitle: "", embedColor: "", delivery: "PRIVATE", allowedRoles: ["1"], cooldownSeconds: 0, enabled: false, uses: 0 }], limits: { max: 100, maxName: 32, maxContent: 1800, maxTitle: 100, maxRoles: 25, maxCooldown: 86400 } }} structure={structure} actions={{ setEnabled: nope as never, save: nope as never, remove: nope as never }} /></>)}
           {view === "custom-tags-off" && (<><PageHeader title="Custom tags" description="A fresh server: off, no tags." /><CustomTagsEditor initial={{ enabled: false, tags: [], limits: { max: 100, maxName: 32, maxContent: 1800, maxTitle: 100, maxRoles: 25, maxCooldown: 86400 } }} structure={structure} actions={{ setEnabled: nope as never, save: nope as never, remove: nope as never }} /></>)}
           {view === "help-extras" && (<><PageHeader title="Help extras" description="Optional extras for PvM Help and CA Help tickets." /><HelpExtrasForm initial={{ eventButton: true, eventStartHours: 24, eventDays: 1, relatedTickets: true, groupBosses: "Vorago, Solak", priorityTiers: true, longtimeGuestDays: 30, longtimeGuestPings: true, longtimeGuestEscalationHours: 120, kcRequirements: "Master=50, Grandmaster=100", maxStartHours: 720, maxDays: 30 }} save={nope as never} /></>)}
