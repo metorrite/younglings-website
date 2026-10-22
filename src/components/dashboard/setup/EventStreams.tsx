@@ -78,7 +78,7 @@ export function EventStreams({
   useEffect(() => {
     if (schemas[kind]) return;
     let cancelled = false;
-    call("GET", `events/setup/schema/${kind}`).then((result) => {
+    void call("GET", `events/setup/schema/${kind}`).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         setLoadProblem(null);

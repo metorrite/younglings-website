@@ -45,7 +45,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
 
   useEffect(() => {
     let cancelled = false;
-    call("GET", base).then((result) => {
+    void call("GET", base).then((result) => {
       if (cancelled) return;
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const next = result.data as SpaceView;
@@ -64,10 +64,10 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
   // while the bot is working, ask how far it got; when it stops, the checklist on the Overview tab needs the news
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(async () => {
+    const timer = setInterval(() => void (async () => {
       const result = await call("GET", base);
       if (result.ok) setView(result.data as SpaceView);
-    }, 2000);
+    })(), 2000);
     return () => clearInterval(timer);
   }, [running, base, call]);
 
@@ -78,7 +78,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
     }
     if (!wasRunning.current) return;
     wasRunning.current = false;
-    call("GET", `events/${detail.event.id}`).then((refreshed) => {
+    void call("GET", `events/${detail.event.id}`).then((refreshed) => {
       if (refreshed.ok) onDetail(refreshed.data as EventDetail);
     });
   }, [running, call, detail.event.id, onDetail]);
@@ -95,7 +95,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
       if (!result.ok) {
         // a burst of edits can use up the allowance for changes: wait a moment and ask once more, rather than shouting about it
         if (attempt < 2 && /too fast/i.test(result.error)) {
-          typing.current = setTimeout(() => preview(attempt + 1), 1500);
+          typing.current = setTimeout(() => void preview(attempt + 1), 1500);
           return;
         }
         return setProblem({ title: result.error, items: result.problems });
@@ -103,7 +103,7 @@ export function ChannelsTab({ detail, call, structure, onDetail }: { detail: Eve
       setProblem(null);
       setView(result.data as SpaceView);
     };
-    typing.current = setTimeout(() => preview(1), 600);
+    typing.current = setTimeout(() => void preview(1), 600);
   }
 
   async function save() {
