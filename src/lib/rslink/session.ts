@@ -17,8 +17,8 @@ export interface LinkSession {
   /** The signed-in Discord account, from the verified OAuth callback. */
   did?: string;
   dname?: string;
-  /** An OAuth sign-in in progress: state, PKCE verifier, when it started and where to go after. */
-  oauth?: { state: string; verifier: string; at: number; next: "confirm" | "links" };
+  /** An OAuth sign-in in progress: state, PKCE verifier, when it started and where to go after (for the grant page, which app). */
+  oauth?: { state: string; verifier: string; at: number; next: "confirm" | "links" | "grant"; app?: string };
 }
 
 export const IDLE_MS = 15 * 60_000;
