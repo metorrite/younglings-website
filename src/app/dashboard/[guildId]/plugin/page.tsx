@@ -2,6 +2,8 @@ import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
+import { PluginPointsForm } from "@/components/dashboard/PluginPointsForm";
+import { savePluginPointsAction } from "./pointsActions";
 import { ClanPanelSwitch } from "@/components/dashboard/ClanPanelSwitch";
 import { saveClanPanelAction } from "./actions";
 
@@ -24,7 +26,12 @@ function Bar({ value, of }: { value: number; of: number }) {
 export default async function PluginCoveragePage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [c, settings] = await Promise.all([adminApi.pluginCoverage(guild).then(dashboardData), adminApi.pluginSettings(guild)]);
+  const [c, pluginPoints, settings] = await Promise.all([
+    adminApi.pluginCoverage(guild).then(dashboardData),
+    adminApi.pluginPoints(guild),
+    adminApi.pluginSettings(guild),
+  ]);
+  const savePoints = savePluginPointsAction.bind(null, guildId);
   const save = saveClanPanelAction.bind(null, guildId);
 
   return (
@@ -64,6 +71,20 @@ export default async function PluginCoveragePage({ params }: { params: Promise<{
         </div>
       </section>
       </PanelGrid>
+      <section className="rounded-xl border border-surface-border bg-surface p-5">
+        <h2 className="font-semibold text-gold">Points for plugin reports</h2>
+        <p className="mt-1 text-xs text-muted">
+          Clan points a member earns here for what RuneSync reports from their game. Bingo and scavenger tiles also tick themselves for clues (&ldquo;Elite clue&rdquo;,
+          &ldquo;Any clue&rdquo;), levels (&ldquo;99 Fletching&rdquo;), &ldquo;Collection log: item&rdquo;, &ldquo;Quest: name&rdquo; and &ldquo;Achievement: name&rdquo;, as well as drops and boss kills.
+        </p>
+        <div className="mt-4">
+          {pluginPoints.ok ? (
+            <PluginPointsForm initial={pluginPoints.data} save={savePoints} />
+          ) : (
+            <p className="text-sm text-red-300">These settings couldn&apos;t be loaded: {pluginPoints.error}</p>
+          )}
+        </div>
+      </section>
       <section className="rounded-xl border border-surface-border bg-surface p-5">
         <h2 className="font-semibold text-gold">In the game</h2>
         <p className="mt-1 text-xs text-muted">What the RuneSync plugin may show your members inside RuneScape.</p>
