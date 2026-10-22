@@ -92,28 +92,30 @@ export default async function BossPage({ params, searchParams }: Props) {
             {data.players.length === 0 ? (
               <p className="text-sm text-muted">Nobody has a recorded kill in this window.</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs tracking-wider text-muted uppercase">
-                    <th className="w-8 pb-2 font-medium">#</th>
-                    <th className="pb-2 font-medium">Member</th>
-                    <th className="pb-2 text-right font-medium">Kills</th>
-                    <th className="pb-2 text-right font-medium">Drops</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-border/50">
-                  {data.players.map((p, i) => (
-                    <tr key={p.rsn}>
-                      <td className="py-1.5 text-xs text-muted">{i + 1}</td>
-                      <td className="py-1.5">
-                        <Link href={`/members/${encodeURIComponent(p.rsn)}`} className="hover:text-gold">{p.rsn}</Link>
-                      </td>
-                      <td className="py-1.5 text-right tabular-nums">{full(p.kills)}</td>
-                      <td className={`py-1.5 text-right tabular-nums ${p.drops > 0 ? "text-gold" : "text-muted"}`}>{p.drops}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs tracking-wider text-muted uppercase">
+                      <th className="w-8 pb-2 font-medium">#</th>
+                      <th className="pb-2 font-medium">Member</th>
+                      <th className="pb-2 text-right font-medium">Kills</th>
+                      <th className="pb-2 text-right font-medium">Drops</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-surface-border/50">
+                    {data.players.map((p, i) => (
+                      <tr key={p.rsn}>
+                        <td className="py-1.5 text-xs text-muted">{i + 1}</td>
+                        <td className="py-1.5">
+                          <Link href={`/members/${encodeURIComponent(p.rsn)}`} className="hover:text-gold">{p.rsn}</Link>
+                        </td>
+                        <td className="py-1.5 text-right tabular-nums">{full(p.kills)}</td>
+                        <td className={`py-1.5 text-right tabular-nums ${p.drops > 0 ? "text-gold" : "text-muted"}`}>{p.drops}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Panel>
         </div>

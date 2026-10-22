@@ -1,4 +1,5 @@
 import { botCall } from "@/lib/botCall";
+import { hubBaseUrl, hubCall, hubPluginPath } from "@/lib/hub";
 import { apiError, clientIp, limited, unavailable } from "@/lib/publicApi";
 import { throttle } from "@/lib/ratelimit";
 
@@ -28,7 +29,7 @@ export function bearerToken(request: Request): string | null {
 }
 
 /** Forwards a plugin call to the bot and returns its answer as-is (status and JSON), or a tidy error. */
-export async function forwardToBot(request: Request, path: string, method: "GET" | "POST"): Promise<Response> {
+export async function forwardToBot(request: Request, path: string, method: "GET" | "POST" | "PUT"): Promise<Response> {
   const early = limited(request, "ingest");
   if (early) return early;
   // Either a manual plugin token, or (RuneSync) an RS Link assertion the bot verifies.
@@ -39,7 +40,7 @@ export async function forwardToBot(request: Request, path: string, method: "GET"
   if (throttle((token ?? assertion ?? "").slice(-16), "ingest") || throttle(clientIp(request), "ingest")) return apiError(429, "Too many requests. Send fewer, larger batches.", { "Retry-After": "2" });
 
   let body: string | undefined;
-  if (method === "POST") {
+  if (method !== "GET") {
     const length = Number(request.headers.get("content-length") ?? "0");
     if (length > MAX_BODY_BYTES) return apiError(413, `The batch is larger than ${MAX_BODY_BYTES / 1024} KB.`);
     body = await request.text();
@@ -47,8 +48,17 @@ export async function forwardToBot(request: Request, path: string, method: "GET"
     if (!body.trim()) return apiError(400, "The request body is empty.");
   }
 
-  const answer = await botCall(path, { method, headers: token ? { "X-Plugin-Token": token } : { Authorization: `RSLink ${assertion}` }, body });
+  // RuneSync's RS Link uploads go to the RSClans hub when HUB_BASE_URL is set (lib/hub.ts); manual jbp_ tokens stay with the bot.
+  const hubPath = assertion && hubBaseUrl() ? hubPluginPath(path) : null;
+  const answer = hubPath
+    ? await hubCall(hubPath, { method, headers: { Authorization: `RSLink ${assertion}` }, body })
+    : await botCall(path, { method, headers: token ? { "X-Plugin-Token": token } : { Authorization: `RSLink ${assertion}` }, body });
   if (!answer) return unavailable();
+  // The hub's settings answer can't know about JonnyBot's clan panel: ask the bot for that one flag (off when it can't say).
+  if (hubPath?.startsWith("/v1/plugin/runesync/config") && answer.status === 200 && answer.json && typeof answer.json === "object") {
+    const bot = await botCall<{ panelAvailable?: boolean }>(path, { method: "GET", headers: { Authorization: `RSLink ${assertion}` } });
+    (answer.json as Record<string, unknown>).panelAvailable = bot?.status === 200 && bot.json.panelAvailable === true;
+  }
   return new Response(JSON.stringify(answer.json), {
     status: answer.status,
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-API-Version": "1" },

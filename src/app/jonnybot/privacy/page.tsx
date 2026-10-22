@@ -2,6 +2,8 @@ import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
 import { supportUrl } from "@/lib/support";
+import { jonnybotHref } from "@/lib/siteHosts";
+import { currentSite } from "@/lib/siteHostsServer";
 
 export const metadata: Metadata = { title: "Privacy", description: "What JonnyBot stores, why, and how to have it removed." };
 
@@ -9,6 +11,7 @@ export default async function PrivacyPage() {
   const gated = await gateJonnyBot();
   if (gated) return gated;
   const support = supportUrl();
+  const site = await currentSite();
   return (
     <Page title="Privacy" intro="What JonnyBot and this website keep, why, and how to have it removed. Last updated October 2026.">
       <Section title="What JonnyBot stores">
@@ -24,6 +27,14 @@ export default async function PrivacyPage() {
           </li>
           <li>
             <strong>Tickets, polls and signups:</strong> what members submit through them, including ticket messages and transcripts, kept for the retention the server chooses.
+          </li>
+          <li>
+            <strong>The RuneSync plugin (only if you install it and switch kinds on):</strong> your own skill XP, drops, boss kill counts and clue completions from the game,
+            kept 180 days. See the{" "}
+            <a href={jonnybotHref(site, "/runesync/privacy")} className="text-gold underline-offset-2 hover:underline">
+              RuneSync privacy notice
+            </a>
+            .
           </li>
           <li>
             <strong>Admin activity:</strong> a log of changes made from the dashboard (who changed what, and when), kept so a server&apos;s admins can see it.

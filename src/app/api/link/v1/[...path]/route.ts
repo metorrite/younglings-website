@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { botCall } from "@/lib/botCall";
+import { hubBaseUrl, hubCall, hubLinkPath } from "@/lib/hub";
 import { clientIp } from "@/lib/publicApi";
 import { throttle } from "@/lib/ratelimit";
 import { linkEnabled } from "@/lib/rslink/config";
@@ -33,7 +34,11 @@ async function forward(request: Request, route: string, method: "GET" | "POST", 
   const headers: Record<string, string> = { "X-Link-Client-Ip": clientIp(request) };
   const auth = /^Bearer\s+(\S+)$/i.exec((request.headers.get("authorization") ?? "").trim());
   if (auth && TOKEN.test(auth[1])) headers.Authorization = `Bearer ${auth[1]}`;
-  const bot = await botCall<Record<string, unknown>>(`/internal/rsnlink/v1/${route}`, { method, headers, body });
+  // With HUB_BASE_URL set, the RSClans hub answers instead of the bot (lib/hub.ts); same routes, same answers.
+  const hubPath = hubBaseUrl() ? hubLinkPath(`v1/${route}`) : null;
+  const bot = hubPath
+    ? await hubCall<Record<string, unknown>>(hubPath, { method, headers, body })
+    : await botCall<Record<string, unknown>>(`/internal/rsnlink/v1/${route}`, { method, headers, body });
   if (!bot) return answer(503, { error: "unavailable", message: "Linking isn't available right now. Try again in a minute.", retryAfter: 30 }, { "Retry-After": "30" });
   const extra: Record<string, string> = {};
   const retry = bot.json.retryAfter;

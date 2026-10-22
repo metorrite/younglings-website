@@ -4,6 +4,8 @@ import { dangerButton, ghostButton, inputClass } from "@/components/admin/ui";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { Advanced, MoreInAdvanced } from "@/components/dashboard/ui/ViewMode";
 import type { EventObjective } from "@/lib/eventTypes";
+import type { TileHint } from "@/lib/jonnybot-admin";
+import { useEffect, useState } from "react";
 
 const EVIDENCE: { value: EventObjective["evidence"]; label: string }[] = [
   { value: "EITHER", label: "Proof or automatic" },
@@ -16,6 +18,44 @@ const EVIDENCE: { value: EventObjective["evidence"]; label: string }[] = [
 const COLUMNS = "md:grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_5.5rem_11rem_5.5rem]";
 
 const num = (v: string) => (v.trim() === "" ? 0 : Number(v.replace(/[, ]/g, "")) || 0);
+
+export type TileHintsCall = (template: string, labels: string[]) => Promise<{ ok: true; data: TileHint[] } | { ok: false; error: string }>;
+
+/** Templates whose objective labels RuneSync can never tick (they score kills or totals instead). */
+const NO_HINTS = new Set(["competition", "boss-night"]);
+
+/**
+ * "Auto with RuneSync" hints for the labels being typed (T-141): asked about 0.6 s after typing stops, for every label at once, and kept by label
+ * so a hint stays put while its row is edited elsewhere. A failed request leaves the last hints in place (the hints are only a help).
+ */
+/** The hint under one label. A tile set to proof or organiser only never ticks by itself, so it says that instead of promising it. */
+function TileHintLine({ hint, evidence }: { hint: TileHint | undefined; evidence: EventObjective["evidence"] }) {
+  if (!hint?.text) return null;
+  const blocked = hint.auto && (evidence === "PROOF" || evidence === "ORGANISER");
+  const text = blocked ? "RuneSync could tick this, but How it's proven doesn't allow automatic progress." : hint.text;
+  return <p className={`text-xs ${hint.auto && !blocked ? "text-emerald-300" : "text-muted"}`}>{text}</p>;
+}
+
+function useTileHints(objectives: EventObjective[], template: string | undefined, hints: TileHintsCall | undefined): Record<string, TileHint> {
+  const [byLabel, setByLabel] = useState<Record<string, TileHint>>({});
+  const labelsKey = JSON.stringify([...new Set(objectives.map((o) => o.label.trim()).filter(Boolean))].sort());
+  useEffect(() => {
+    if (!hints || !template || NO_HINTS.has(template)) return;
+    const labels: string[] = JSON.parse(labelsKey);
+    if (labels.length === 0) return;
+    let live = true;
+    const timer = setTimeout(() => {
+      void hints(template, labels).then((result) => {
+        if (live && result.ok) setByLabel(Object.fromEntries(result.data.map((h) => [h.label, h])));
+      });
+    }, 600);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [labelsKey, template, hints]);
+  return byLabel;
+}
 
 /**
  * What players can score, as a list with its columns named once at the top (Points, Needed, Times, How it's proven) instead of numbers with no label. The basic
@@ -30,6 +70,8 @@ export function ObjectivesTab({
   pending,
   onSave,
   onAdd,
+  template,
+  hints,
 }: {
   objectives: EventObjective[];
   saved: EventObjective[];
@@ -38,9 +80,14 @@ export function ObjectivesTab({
   pending: boolean;
   onSave: () => void;
   onAdd: () => void;
+  /** The event's template key; hints are only asked for templates whose tiles RuneSync can tick (not competitions or boss nights). */
+  template?: string;
+  /** Asks the bot whether RuneSync can tick each label by itself (T-141). Without it no hints are shown. */
+  hints?: TileHintsCall;
 }) {
   const dirty = JSON.stringify(objectives) !== JSON.stringify(saved);
   const set = (i: number, patch: Partial<EventObjective>) => onChange(objectives.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const tileHints = useTileHints(objectives, template, hints);
 
   return (
     <section className="space-y-4">
@@ -78,7 +125,10 @@ export function ObjectivesTab({
             {objectives.map((o, i) => (
               <li key={i} className="space-y-2 rounded-xl border border-surface-border bg-surface p-4">
                 <div className={`grid items-start gap-2 ${COLUMNS}`}>
-                  <input className={inputClass} disabled={!editable} aria-label={`Objective ${i + 1}: title`} placeholder="What players do" value={o.label} onChange={(ev) => set(i, { label: ev.target.value })} />
+                  <div className="space-y-1">
+                    <input className={inputClass} disabled={!editable} aria-label={`Objective ${i + 1}: title`} placeholder="What players do" value={o.label} onChange={(ev) => set(i, { label: ev.target.value })} />
+                    <TileHintLine hint={tileHints[o.label.trim()]} evidence={o.evidence} />
+                  </div>
                   <label className="text-xs text-muted md:text-[0px]">
                     <span className="md:sr-only">Points</span>
                     <input className={inputClass} disabled={!editable} inputMode="numeric" value={o.points} onChange={(ev) => set(i, { points: num(ev.target.value) })} />

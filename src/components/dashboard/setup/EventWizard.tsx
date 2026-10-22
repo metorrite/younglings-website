@@ -50,13 +50,13 @@ export function EventWizard({ guildId, initial, schema, structure, call }: { gui
 
   useEffect(() => {
     if (rev === 0 || finished) return;
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => void (async () => {
       const result = await call("PUT", `events/drafts/${initial.id}`, { answers, step: stage });
       if (result.ok) {
         setSavedRev((saved) => Math.max(saved, rev));
         setSaveFailed(null);
       } else setSaveFailed(result.error);
-    }, SAVE_DELAY_MS);
+    })(), SAVE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [rev, answers, stage, finished, call, initial.id]);
 

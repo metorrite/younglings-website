@@ -23,13 +23,16 @@ export interface HubEngineEvent {
   summary: string;
   needsRsn: boolean;
   access: HubAccess;
-  host: { guildId: string; name: string; iconUrl: string | null; slug: string | null; inviteUrl: string | null };
+  /** Named by its listed clan profile, else its server's name; never by a Discord id (the hub is public). */
+  host: { name: string; iconUrl: string | null; slug: string | null; inviteUrl: string | null };
 }
 
 export interface HubEngineEventDetail extends HubEngineEvent {
   description: string;
   prizes: { place: number; placeTo: number; kind: string; description: string; amount: number }[];
   standings?: { rank: number; name: string; points: number }[];
+  /** A clan-vs-clan event (T-222): its standings are the clans', by name. */
+  clanVsClan?: boolean;
 }
 
 /** Whether the events hub's engine events are switched on (`EVENTS_HUB=true`); off by default. */

@@ -123,12 +123,73 @@ paths:
         "403": { description: The name isn't linked to the token's owner, content: { application/json: { schema: { $ref: "#/components/schemas/PluginError" } } } }
         "413": { $ref: "#/components/responses/PluginError" }
         "429": { $ref: "#/components/responses/PluginError" }
+  /ingest/v1/runesync/config:
+    get:
+      tags: [Plugin]
+      summary: RuneSync's settings for this player
+      description: |
+        RuneSync asks on login and every 10 minutes. `client` and `paused` are optional and only feed the device card on the player's profile.
+        Below `minClientVersion` the plugin stops sending and asks the player to update.
+      security: [{ rsLink: [] }, { pluginToken: [] }]
+      parameters:
+        - { name: client, in: query, required: false, schema: { type: string, maxLength: 80 }, description: "e.g. RuneSync 0.1.0" }
+        - { name: paused, in: query, required: false, schema: { type: string, enum: ["true", "false"] } }
+      responses:
+        "200": { description: The settings, content: { application/json: { schema: { $ref: "#/components/schemas/RuneSyncConfig" } } } }
+        "401": { $ref: "#/components/responses/PluginError" }
+        "429": { $ref: "#/components/responses/PluginError" }
+  /ingest/v1/runesync/consent:
+    post:
+      tags: [Plugin]
+      summary: Set the player's categories from the game
+      description: The same record as the profile's Plugin tab; the server stays the source of truth. Answers the new settings. PUT works too; the game client can only send GET and POST.
+      security: [{ rsLink: [] }, { pluginToken: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { categories: { type: array, items: { $ref: "#/components/schemas/Category" } } } } } }
+      responses:
+        "200": { description: The settings, content: { application/json: { schema: { $ref: "#/components/schemas/RuneSyncConfig" } } } }
+        "400": { $ref: "#/components/responses/PluginError" }
+        "401": { $ref: "#/components/responses/PluginError" }
+  /ingest/v1/runesync/diagnostics:
+    post:
+      tags: [Plugin]
+      summary: Store a bug-report snapshot
+      description: |
+        Any JSON object up to 16 KB. Fields whose names mention a token, assertion, tracking id, chat text, secret, password, authorization,
+        cookie or Discord are removed before it is stored. Kept 14 days; 10 a day per player.
+      security: [{ rsLink: [] }, { pluginToken: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object } } }
+      responses:
+        "200": { description: Stored, content: { application/json: { schema: { type: object, properties: { id: { type: string, example: RS-7K2M9Q }, expiresAt: { type: string, format: date-time } } } } } }
+        "401": { $ref: "#/components/responses/PluginError" }
+        "413": { $ref: "#/components/responses/PluginError" }
+        "429": { $ref: "#/components/responses/PluginError" }
+  /ingest/v1/runesync/panel:
+    get:
+      tags: [Plugin]
+      summary: RuneSync's in-game clan panel
+      description: |
+        For each of the player's clans that allows the panel (dashboard, Clan plugin page; off by default): its open and running events,
+        the player's own points and the player's own progress in running events they are in. Nobody else is named. Cached 60 seconds.
+      security: [{ rsLink: [] }, { pluginToken: [] }]
+      responses:
+        "200": { description: The panel, content: { application/json: { schema: { $ref: "#/components/schemas/RuneSyncPanel" } } } }
+        "401": { $ref: "#/components/responses/PluginError" }
+        "429": { $ref: "#/components/responses/PluginError" }
 components:
   securitySchemes:
     pluginToken:
       type: http
       scheme: bearer
       description: A token made on your JonnyBot profile, starting jbp_
+    rsLink:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "RSLink <assertion>: a short-lived signed proof from the RS Link plugin (RuneSync uses this)"
   parameters:
     Slug: { name: slug, in: path, required: true, schema: { type: string, pattern: "^[a-z0-9]+(-[a-z0-9]+)*$", maxLength: 40 } }
   responses:
@@ -187,6 +248,28 @@ components:
               type: array
               items: { type: object, properties: { rank: { type: integer }, slug: { type: string }, name: { type: string }, logoUrl: { type: [string, "null"] }, colour: { type: [integer, "null"] }, xpGained: { type: integer }, members: { type: integer }, perMember: { type: integer } } }
     Category: { enum: [XP, DROPS, KILLS, ACHIEVEMENTS, PRESENCE] }
+    RuneSyncPanel:
+      type: object
+      properties:
+        available: { type: boolean }
+        cacheSeconds: { type: integer }
+        generatedAt: { type: string, format: date-time }
+        clans:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              events: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, template: { type: string }, status: { enum: [SIGNUPS, RUNNING] }, startsAt: { type: [string, "null"] }, endsAt: { type: [string, "null"] }, joined: { type: boolean } } } }
+              points: { type: object, properties: { enabled: { type: boolean }, balance: { type: integer }, unit: { type: string } } }
+              progress: { type: array, items: { type: object, properties: { eventId: { type: string }, name: { type: string }, team: { type: boolean }, points: { type: integer }, objectivesDone: { type: integer }, objectivesTotal: { type: integer }, bingo: { type: [object, "null"], properties: { tilesDone: { type: integer }, tiles: { type: integer } } } } } }
+    RuneSyncConfig:
+      type: object
+      properties:
+        consent: { type: array, items: { $ref: "#/components/schemas/Category" } }
+        panelAvailable: { type: boolean, description: Whether the in-game clan panel may be shown }
+        minClientVersion: { type: string, example: 0.1.0 }
+        sendEverySeconds: { type: integer, example: 60 }
     WhoAmI:
       type: object
       properties:
