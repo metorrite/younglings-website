@@ -28,7 +28,7 @@ export function bearerToken(request: Request): string | null {
 }
 
 /** Forwards a plugin call to the bot and returns its answer as-is (status and JSON), or a tidy error. */
-export async function forwardToBot(request: Request, path: string, method: "GET" | "POST"): Promise<Response> {
+export async function forwardToBot(request: Request, path: string, method: "GET" | "POST" | "PUT"): Promise<Response> {
   const early = limited(request, "ingest");
   if (early) return early;
   // Either a manual plugin token, or (RuneSync) an RS Link assertion the bot verifies.
@@ -39,7 +39,7 @@ export async function forwardToBot(request: Request, path: string, method: "GET"
   if (throttle((token ?? assertion ?? "").slice(-16), "ingest") || throttle(clientIp(request), "ingest")) return apiError(429, "Too many requests. Send fewer, larger batches.", { "Retry-After": "2" });
 
   let body: string | undefined;
-  if (method === "POST") {
+  if (method !== "GET") {
     const length = Number(request.headers.get("content-length") ?? "0");
     if (length > MAX_BODY_BYTES) return apiError(413, `The batch is larger than ${MAX_BODY_BYTES / 1024} KB.`);
     body = await request.text();

@@ -53,6 +53,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
       { href: "/admin/health", label: "Bot health", blurb: "Platform-wide: connection, database, refresh cycle and memory at a glance." },
       { href: "/admin/runemetrics", label: "RuneMetrics budget", blurb: "How the shared request queue is used: per tier, per server, and how far behind it is." },
       { href: "/admin/rs-link", label: "RS Link abuse", blurb: "The RS Link service: failed attempts, lockouts, the DM limit, blocks, names claimed twice, and removing a bad link." },
+      { href: "/admin/runesync", label: "RuneSync diagnostics", blurb: "Open a diagnostics id a member sent from RuneSync for a bug report." },
     ],
   },
 ];
