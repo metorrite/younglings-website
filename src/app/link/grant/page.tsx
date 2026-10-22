@@ -6,7 +6,7 @@ import { currentSite } from "@/lib/siteHostsServer";
 
 export const metadata = { title: "Allow a bot" };
 
-/** A bot's request to see some of the player's plugin data (T-163). Only with the RSClans hub (`HUB_BASE_URL`). `?app=` names the bot. */
+/** A bot's request to see some of the player's plugin data (T-163). Only with the RuneClans hub (`HUB_BASE_URL`). `?app=` names the bot. */
 export default async function LinkGrant({ searchParams }: { searchParams: Promise<{ app?: string; error?: string }> }) {
   if (!hubBaseUrl()) notFound();
   const q = await searchParams;

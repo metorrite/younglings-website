@@ -1,5 +1,5 @@
 /**
- * The grant page's calls (T-163): which bots may see the signed-in player's plugin data on the RSClans hub. Separate from `LinkApi` so the
+ * The grant page's calls (T-163): which bots may see the signed-in player's plugin data on the RuneClans hub. Separate from `LinkApi` so the
  * link pages and their preview fakes don't change. Uses the same `/api/link/web/*` session and CSRF token (call `realLinkApi.state()` first).
  */
 import { realLinkApi, type Answer } from "./linkApi";
