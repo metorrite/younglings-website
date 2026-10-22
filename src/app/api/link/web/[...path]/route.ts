@@ -14,7 +14,7 @@ import { hubBaseUrl, hubCall } from "@/lib/hub";
  *   checked; the access token is used once to read who you are and then dropped).
  * - `GET pairing`, `POST confirm` {decision}: the confirm screen.
  * - `GET links`, `POST unlink` {linkId}, `POST delete-my-data` {confirm: "DELETE"}, `POST signout`.
- * - With the RSClans hub (`HUB_BASE_URL`, T-163): `GET grant-app?app=`, `GET grants`, `POST grant` {appId, categories, identity},
+ * - With the RuneClans hub (`HUB_BASE_URL`, T-163): `GET grant-app?app=`, `GET grants`, `POST grant` {appId, categories, identity},
  *   `POST revoke-grant` {appId}: which bots may see the signed-in player's plugin data. 404 without the hub.
  */
 

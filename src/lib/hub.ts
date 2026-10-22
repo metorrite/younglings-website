@@ -1,5 +1,5 @@
 /**
- * The RSClans hub (metorrite/rsclans-hub) as this site's backend for RS Link and RuneSync, when `HUB_BASE_URL` is set (T-159). Unset,
+ * The RuneClans hub (metorrite/runeclans-hub) as this site's backend for RS Link and RuneSync, when `HUB_BASE_URL` is set (T-159). Unset,
  * every caller keeps using the bot's internal API exactly as before. Server only: it carries `HUB_WEB_SECRET`.
  *
  * What moves to the hub when it is set:
