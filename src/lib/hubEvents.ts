@@ -30,6 +30,8 @@ export interface HubEngineEventDetail extends HubEngineEvent {
   description: string;
   prizes: { place: number; placeTo: number; kind: string; description: string; amount: number }[];
   standings?: { rank: number; name: string; points: number }[];
+  /** A clan-vs-clan event (T-222): its standings are the clans', by name. */
+  clanVsClan?: boolean;
 }
 
 /** Whether the events hub's engine events are switched on (`EVENTS_HUB=true`); off by default. */
