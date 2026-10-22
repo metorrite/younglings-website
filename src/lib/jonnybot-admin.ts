@@ -1810,6 +1810,12 @@ export interface PluginCoverage {
   consent: { key: string; label: string; players: number }[];
 }
 
+/** The has-plugin list (T-140): only roster members who switched on "Show my clan that I use RuneSync" on their profile. */
+export interface PluginUsers {
+  users: { rsn: string; client: string | null; lastSeenDay: string | null }[];
+  linkedPlayers: number;
+}
+
 /** Whether RuneSync can tick a tile with this label by itself, and why (T-141). `text` is null when there is nothing to say. */
 export interface TileHint {
   label: string;
@@ -2477,6 +2483,7 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  pluginUsers: (ctx: ApiContext) => call<PluginUsers>(ctx, "GET", "plugin-users"),
   /** The objectives editor's "auto with RuneSync" hints (T-141); read-only. */
   pluginTileHints: (ctx: ApiContext, template: string, labels: string[]) => call<{ hints: TileHint[] }>(ctx, "POST", "plugin-tile-hints", { template, labels }),
   pluginPoints: (ctx: ApiContext) => call<PluginPointsView>(ctx, "GET", "plugin-points"),

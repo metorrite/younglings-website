@@ -35,7 +35,7 @@ export function CohostsCard({ eventId, call, over }: { eventId: string; call: Ca
 
   useEffect(() => {
     let live = true;
-    call("GET", base).then((r) => {
+    void call("GET", base).then((r) => {
       if (!live) return;
       if (r.ok) setView(r.data as CohostView);
       else setProblem(r.error);

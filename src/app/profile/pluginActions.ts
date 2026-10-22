@@ -50,6 +50,16 @@ export async function savePluginConsentAction(categories: string[]): Promise<Plu
   return result;
 }
 
+export async function savePluginVisibilityAction(showToClan: boolean): Promise<PluginResult<{ showToClan: boolean }>> {
+  const id = await userId();
+  if (!id) return signedOut;
+  const busy = slow(id);
+  if (busy) return { ok: false, error: busy };
+  const result = await pluginApi.setVisibility(id, showToClan === true);
+  revalidatePath("/profile");
+  return result;
+}
+
 export async function deletePluginDataAction(): Promise<PluginResult<{ removedEvents: number; view: PluginView }>> {
   const id = await userId();
   if (!id) return signedOut;
