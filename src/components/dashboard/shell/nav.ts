@@ -128,6 +128,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
       { label: "Needs attention", icon: "alert", path: "/attention", clanOnly: true },
       { label: "Promotions", icon: "trophy", path: "/promotions", clanOnly: true },
+      { label: "Clan anniversaries", icon: "smile", path: "/anniversaries", clanOnly: true, advanced: true },
       { label: "Clan points & ranks", icon: "list", path: "/clan-points", clanOnly: true },
       { label: "Clan activity feed", icon: "bell", path: "/tracking" },
       { label: "RuneScape timers", icon: "clock", path: "/rs-timers" },
