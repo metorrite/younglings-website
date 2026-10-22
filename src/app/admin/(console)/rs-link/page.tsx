@@ -65,24 +65,26 @@ export default async function RsLinkAbusePage() {
         {kinds.length === 0 ? (
           <p className="text-sm text-muted">Nothing in the last 7 days.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-muted">
-              <tr>
-                <th className="py-1 font-normal">Kind</th>
-                <th className="py-1 text-right font-normal">24 h</th>
-                <th className="py-1 text-right font-normal">7 days</th>
-              </tr>
-            </thead>
-            <tbody>
-              {kinds.map(([kind, n]) => (
-                <tr key={kind} className="border-t border-white/10">
-                  <td className="py-1.5">{EVENT_LABELS[kind] ?? kind}</td>
-                  <td className="py-1.5 text-right tabular-nums">{n.day}</td>
-                  <td className="py-1.5 text-right tabular-nums">{n.week}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-muted">
+                <tr>
+                  <th className="py-1 font-normal">Kind</th>
+                  <th className="py-1 text-right font-normal">24 h</th>
+                  <th className="py-1 text-right font-normal">7 days</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {kinds.map(([kind, n]) => (
+                  <tr key={kind} className="border-t border-white/10">
+                    <td className="py-1.5">{EVENT_LABELS[kind] ?? kind}</td>
+                    <td className="py-1.5 text-right tabular-nums">{n.day}</td>
+                    <td className="py-1.5 text-right tabular-nums">{n.week}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 

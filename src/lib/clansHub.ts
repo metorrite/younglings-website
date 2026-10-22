@@ -42,6 +42,11 @@ export interface ClanDetail extends ClanSummary {
    * (a Discord invite) only while it is recruiting.
    */
   recruitingPost?: { post: string; applyFormPath: string | null; inviteUrl: string | null };
+  /**
+   * Finished clan-vs-clan events this clan took part in (T-223), newest first: only events open to everyone, only on a listed clan's page, clan names only.
+   * `place` is null when the host kept the standings to staff. `host` is the host clan's name when its page is listed.
+   */
+  clanVsClan?: { eventId: string; name: string; game: string; endedAt: string | null; place: number | null; clans: number; host: string | null; hosted: boolean }[];
 }
 
 /** An alliance's public page: only clans that chose to show their alliances are in it. */

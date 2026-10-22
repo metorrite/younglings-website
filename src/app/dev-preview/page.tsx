@@ -4,6 +4,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { EventManager } from "@/components/dashboard/EventManager";
+import { CohostsCard, type CohostView } from "@/components/dashboard/events/CohostCards";
 import { CitadelWheel } from "@/components/dashboard/CitadelWheel";
 import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { EventListView, type EventCall } from "@/components/dashboard/EventListView";
@@ -35,6 +36,7 @@ import { HubEditor } from "@/components/dashboard/HubEditor";
 import { AbsenceManager } from "@/components/dashboard/AbsenceManager";
 import { AbsencePanel } from "@/components/profile/AbsencePanel";
 import { LanguageForm } from "@/components/dashboard/LanguageForm";
+import { PluginPointsForm } from "@/components/dashboard/PluginPointsForm";
 import { ClanPanelSwitch } from "@/components/dashboard/ClanPanelSwitch";
 import { RuneSyncActivity } from "@/components/profile/RuneSyncActivity";
 import { messagesFor, t } from "@/lib/i18n";
@@ -664,6 +666,45 @@ function Preview() {
                 { id: "pick", label: "How did you find us?", kind: "CHOICE", required: false, options: ["A friend", "The hub"], maxLength: 100 },
                 { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
               ]}
+            />
+          )}
+          {view === "plugin-points" && (
+            <>
+              <PageHeader title="Clan plugin" description="Points for plugin reports." />
+              <PluginPointsForm
+                initial={{
+                  pointsEnabled: true,
+                  unit: "points",
+                  maxPoints: 10000,
+                  rules: [
+                    { type: "KILL", label: "Boss kill", points: 2, dailyCap: 50 },
+                    { type: "DROP", label: "Valuable drop", points: 10, dailyCap: 0, minValueGp: 1000000 },
+                    { type: "CLUE", label: "Clue scroll", points: 0, dailyCap: 0 },
+                    { type: "LEVEL_UP", label: "Level up", points: 0, dailyCap: 0 },
+                  ],
+                }}
+                save={async (rules) => ({ ok: true, data: { pointsEnabled: true, unit: "points", maxPoints: 10000, rules } })}
+              />
+            </>
+          )}
+          {view === "fill-queue" && (
+            <CohostsCard
+              eventId="9"
+              over={false}
+              call={async (method, _path, body) => {
+                const base: CohostView = {
+                  cohosts: [
+                    { guildId: "2", name: "Iron Legion", status: "ACCEPTED", players: 3, quota: 4 },
+                    { guildId: "3", name: "Skilling Squad", status: "INVITED", players: 0, quota: null },
+                  ],
+                  candidates: [{ guildId: "4", name: "Dragon Slayers" }],
+                  max: 10,
+                  canRemove: true,
+                  queue: { policy: "ROUND_ROBIN", hostQuota: 6, releaseHours: 24, quotaSum: 10, maxParticipants: 12, released: false, releaseAt: "2026-10-24T18:00:00Z", canChange: true },
+                };
+                if (method === "PUT" && body) return { ok: true, data: base };
+                return { ok: true, data: base };
+              }}
             />
           )}
           {view === "plugin-settings" && (

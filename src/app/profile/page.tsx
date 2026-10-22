@@ -6,6 +6,7 @@ import { LinkRsn } from "@/components/link/LinkRsn";
 import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { PluginPanel } from "@/components/profile/PluginPanel";
 import { RuneSyncActivity } from "@/components/profile/RuneSyncActivity";
+import { ShowToClanSwitch } from "@/components/profile/ShowToClanSwitch";
 import { ChatLevelPanel } from "@/components/profile/ChatLevelPanel";
 import { AbsencePanel } from "@/components/profile/AbsencePanel";
 import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
@@ -79,7 +80,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const coffer = tab === "coffer" ? await memberApi.myCoffer(user.id) : null;
   const chatLevel = tab === "level" ? await memberApi.chatLevel(user.id) : null;
   const highlights = tab === "highlights" ? await memberApi.highlights(user.id) : null;
-  const [plugin, runeSync] = tab === "plugin" ? await Promise.all([pluginApi.view(user.id), pluginApi.runeSync(user.id)]) : [null, null];
+  const [plugin, runeSync, visibility] =
+    tab === "plugin" ? await Promise.all([pluginApi.view(user.id), pluginApi.runeSync(user.id), pluginApi.visibility(user.id)]) : [null, null, null];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -407,6 +409,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         {tab === "plugin" && (
           <Panel title="RuneSync" hint="What the RuneSync plugin has sent from your game, and your bug-report ids.">
             {runeSync?.ok ? <RuneSyncActivity view={runeSync.data} /> : <Unavailable what="Your RuneSync activity" />}
+          </Panel>
+        )}
+        {tab === "plugin" && (
+          <Panel title="Your clan" hint="Whether your clan's staff may see that you use RuneSync.">
+            {visibility?.ok ? <ShowToClanSwitch initial={visibility.data.showToClan} /> : <Unavailable what="This setting" />}
           </Panel>
         )}
       </div>

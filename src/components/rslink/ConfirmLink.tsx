@@ -21,7 +21,7 @@ export function ConfirmLink({ api, base, result: resultAtStart = null }: { api: 
 
   useEffect(() => {
     let live = true;
-    (async () => {
+    void (async () => {
       const s = await api.state();
       if (!live) return;
       if (!s.ok) return setProblem(s.message);
