@@ -13,7 +13,7 @@ import { CohostsCard } from "@/components/dashboard/events/CohostCards";
 import { EventVisibilityCard, scopeLabel } from "@/components/dashboard/events/EventVisibilityCard";
 import { EventSetupFields, GATES, setupFromConfig, setupToConfig, type SetupDraft } from "@/components/dashboard/EventSetupFields";
 import { EventDashboard } from "@/components/dashboard/events/EventDashboard";
-import { ObjectivesTab } from "@/components/dashboard/events/ObjectivesTab";
+import { ObjectivesTab, type TileHintsCall } from "@/components/dashboard/events/ObjectivesTab";
 import { PlayersTab } from "@/components/dashboard/events/PlayersTab";
 import { ProgressTab } from "@/components/dashboard/events/ProgressTab";
 import { PrizeListEditor } from "@/components/dashboard/setup/PrizeListEditor";
@@ -50,7 +50,7 @@ const gp = (n: number) => n.toLocaleString("en-GB") + " gp";
 const emptyObjective = (): EventObjective => ({ key: "", label: "", description: "", points: 10, evidence: "EITHER", target: 1, repeatLimit: 1, prerequisites: [] });
 
 /** Runs one event: its stages, objectives, teams and players, progress and proof, standings, and prizes. */
-export function EventManager({ initial, initialClaims, initialStandings, initialAwards, structure, call, hubEnabled = false }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; structure?: GuildStructure; call: EventCall; hubEnabled?: boolean }) {
+export function EventManager({ initial, initialClaims, initialStandings, initialAwards, structure, call, hubEnabled = false, tileHints }: { initial: EventDetail; initialClaims: EventClaims; initialStandings: EventStandings; initialAwards: EventAward[]; structure?: GuildStructure; call: EventCall; hubEnabled?: boolean; tileHints?: TileHintsCall }) {
   const [detail, setDetail] = useState(initial);
   const [claims, setClaims] = useState<EventClaims>(initialClaims);
   const [standings, setStandings] = useState<EventStandings>(initialStandings);
@@ -893,6 +893,8 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           pending={pending}
           onAdd={() => setObjs([...objs, emptyObjective()])}
           onSave={() => run("PUT", `${base}/objectives`, { objectives: objs.map((o) => ({ ...o })) }, "Objectives saved.")}
+          template={e.template}
+          hints={tileHints}
         />
       )}
 

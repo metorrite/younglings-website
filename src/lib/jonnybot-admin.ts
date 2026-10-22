@@ -1810,6 +1810,13 @@ export interface PluginCoverage {
   consent: { key: string; label: string; players: number }[];
 }
 
+/** Whether RuneSync can tick a tile with this label by itself, and why (T-141). `text` is null when there is nothing to say. */
+export interface TileHint {
+  label: string;
+  auto: boolean;
+  text: string | null;
+}
+
 /** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
 export interface DevSnapshotMeta {
   /** snap-yyyyMMdd-HHmmss-xxxx */
@@ -2470,6 +2477,8 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  /** The objectives editor's "auto with RuneSync" hints (T-141); read-only. */
+  pluginTileHints: (ctx: ApiContext, template: string, labels: string[]) => call<{ hints: TileHint[] }>(ctx, "POST", "plugin-tile-hints", { template, labels }),
   pluginPoints: (ctx: ApiContext) => call<PluginPointsView>(ctx, "GET", "plugin-points"),
   setPluginPoints: (ctx: ApiContext, rules: PluginPointsView["rules"]) =>
     call<PluginPointsView>(ctx, "PUT", "plugin-points", { rules: rules.map((r) => ({ type: r.type, points: r.points, dailyCap: r.dailyCap, minValueGp: r.minValueGp ?? null })) }),
