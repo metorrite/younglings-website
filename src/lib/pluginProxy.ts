@@ -48,7 +48,7 @@ export async function forwardToBot(request: Request, path: string, method: "GET"
     if (!body.trim()) return apiError(400, "The request body is empty.");
   }
 
-  // RuneSync's RS Link uploads go to the RSClans hub when HUB_BASE_URL is set (lib/hub.ts); manual jbp_ tokens stay with the bot.
+  // RuneSync's RS Link uploads go to the RuneClans hub when HUB_BASE_URL is set (lib/hub.ts); manual jbp_ tokens stay with the bot.
   const hubPath = assertion && hubBaseUrl() ? hubPluginPath(path) : null;
   const answer = hubPath
     ? await hubCall(hubPath, { method, headers: { Authorization: `RSLink ${assertion}` }, body })
