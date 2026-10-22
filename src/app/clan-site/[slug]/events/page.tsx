@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteCard, SiteHeading } from "@/components/clansite/SiteShell";
 import { EventList } from "@/components/clansite/parts";
+import { CalendarSubscribe } from "@/components/site/CalendarSubscribe";
 import { sitePage } from "@/lib/clanSitePage";
 import { tenantEvents } from "@/lib/clanSites";
 
@@ -16,6 +17,7 @@ export default async function Events({ params }: { params: Promise<{ slug: strin
       <SiteHeading title={page.title} sub="Times are game time (UTC)." />
       <SiteCard>
         <EventList events={events} empty="No events planned right now." />
+        <CalendarSubscribe path={`/api/v1/clans/${slug}/calendar.ics`} api className="mt-4" />
       </SiteCard>
     </>
   );
