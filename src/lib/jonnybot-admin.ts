@@ -2462,6 +2462,9 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  /** A clan's plugin switches (T-206): today only whether RuneSync's in-game clan panel is allowed. */
+  pluginSettings: (ctx: ApiContext) => call<{ clanPanel: boolean }>(ctx, "GET", "plugin-settings"),
+  setPluginSettings: (ctx: ApiContext, settings: { clanPanel: boolean }) => call<{ clanPanel: boolean }>(ctx, "PUT", "plugin-settings", settings),
   voiceText: (ctx: ApiContext) => call<VoiceText>(ctx, "GET", "voice-text"),
   saveVoiceText: (ctx: ApiContext, body: { enabled: boolean; announce: boolean; purgeWhenEmpty: boolean; links: { voiceChannelId: string; textChannelId: string }[] }) => call<VoiceText>(ctx, "PUT", "voice-text", body),
 
