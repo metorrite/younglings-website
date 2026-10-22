@@ -73,6 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Lockdown", icon: "shield", path: "/lockdown" },
       { label: "Moderation log", icon: "list", path: "/modlog" },
       { label: "Cases", icon: "list", path: "/moderation" },
+      { label: "Appeals", icon: "list", path: "/appeals" },
       { label: "Auto-clean", icon: "broom", path: "/autoclean", advanced: true },
       { label: "Auto-delete", icon: "broom", path: "/autodelete", advanced: true },
       { label: "Message & voice logs", icon: "list", path: "/message-logs", advanced: true },

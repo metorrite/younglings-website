@@ -35,7 +35,8 @@ export function LiveSummary({
   const name = typeof answers.name === "string" && answers.name.trim() !== "" ? answers.name.trim() : null;
 
   let preview: string | null = null;
-  if (schema.template === "bingo") {
+  // a clan-vs-clan event playing a bingo shows the board too (T-222)
+  if (schema.template === "bingo" || (schema.template === "clan-vs-clan" && String(getPath(answers, "config.cvcGame") ?? "bingo") === "bingo")) {
     const shape = String(getPath(answers, "config.board.layout") ?? "grid") || "grid";
     const picked = String(getPath(answers, "config.board.look") ?? DEFAULT_BINGO_LOOK);
     const look = BINGO_LOOKS.some((l) => l.id === picked) ? picked : DEFAULT_BINGO_LOOK;

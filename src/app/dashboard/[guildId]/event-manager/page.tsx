@@ -31,7 +31,7 @@ export default async function EventManagerPage({ params }: { params: Promise<{ g
         description="Run bingos, competitions and any other event: objectives with points, teams or solo players, proof from your members, buy-ins and prizes, all in one place."
       />
       <EventListView initial={list} kinds={kinds.templates} drafts={drafts} templates={templates} structure={structure} guildId={guildId} call={eventApiAction.bind(null, guildId)} />
-      <CohostingCard initial={cohosting} call={eventApiAction.bind(null, guildId)} />
+      <CohostingCard initial={cohosting} call={eventApiAction.bind(null, guildId)} channels={structure.channels} />
       <EventDefaultsCard initial={defaults} call={eventApiAction.bind(null, guildId)} />
     </div>
   );
