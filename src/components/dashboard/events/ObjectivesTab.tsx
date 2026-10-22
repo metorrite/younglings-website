@@ -44,9 +44,10 @@ function useTileHints(objectives: EventObjective[], template: string | undefined
     const labels: string[] = JSON.parse(labelsKey);
     if (labels.length === 0) return;
     let live = true;
-    const timer = setTimeout(async () => {
-      const result = await hints(template, labels);
-      if (live && result.ok) setByLabel(Object.fromEntries(result.data.map((h) => [h.label, h])));
+    const timer = setTimeout(() => {
+      void hints(template, labels).then((result) => {
+        if (live && result.ok) setByLabel(Object.fromEntries(result.data.map((h) => [h.label, h])));
+      });
     }, 600);
     return () => {
       live = false;
