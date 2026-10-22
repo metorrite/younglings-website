@@ -34,7 +34,7 @@ const STREAM_LABEL: Record<string, string> = { standard: "Standard", quick: "Qui
 type Problem = { title: string; items: string[] } | null;
 
 /** The kinds people reach for first come first, the empty "custom" event last; a kind the website doesn't know yet follows in the bot's order. */
-const KIND_ORDER = ["bingo", "scavenger-hunt", "competition", "boss-night", "custom"];
+const KIND_ORDER = ["bingo", "scavenger-hunt", "competition", "boss-night", "clan-vs-clan", "custom"];
 const rankOf = (key: string) => (KIND_ORDER.includes(key) ? KIND_ORDER.indexOf(key) : KIND_ORDER.length);
 
 /**
@@ -78,7 +78,7 @@ export function EventStreams({
   useEffect(() => {
     if (schemas[kind]) return;
     let cancelled = false;
-    call("GET", `events/setup/schema/${kind}`).then((result) => {
+    void call("GET", `events/setup/schema/${kind}`).then((result) => {
       if (cancelled) return;
       if (result.ok) {
         setLoadProblem(null);

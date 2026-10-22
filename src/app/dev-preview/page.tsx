@@ -4,6 +4,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { EventManager } from "@/components/dashboard/EventManager";
+import { CohostsCard, type CohostView } from "@/components/dashboard/events/CohostCards";
 import { CitadelWheel } from "@/components/dashboard/CitadelWheel";
 import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { EventListView, type EventCall } from "@/components/dashboard/EventListView";
@@ -699,6 +700,26 @@ function Preview() {
                 save={async (rules) => ({ ok: true, data: { pointsEnabled: true, unit: "points", maxPoints: 10000, rules } })}
               />
             </>
+          )}
+          {view === "fill-queue" && (
+            <CohostsCard
+              eventId="9"
+              over={false}
+              call={async (method, _path, body) => {
+                const base: CohostView = {
+                  cohosts: [
+                    { guildId: "2", name: "Iron Legion", status: "ACCEPTED", players: 3, quota: 4 },
+                    { guildId: "3", name: "Skilling Squad", status: "INVITED", players: 0, quota: null },
+                  ],
+                  candidates: [{ guildId: "4", name: "Dragon Slayers" }],
+                  max: 10,
+                  canRemove: true,
+                  queue: { policy: "ROUND_ROBIN", hostQuota: 6, releaseHours: 24, quotaSum: 10, maxParticipants: 12, released: false, releaseAt: "2026-10-24T18:00:00Z", canChange: true },
+                };
+                if (method === "PUT" && body) return { ok: true, data: base };
+                return { ok: true, data: base };
+              }}
+            />
           )}
           {view === "plugin-settings" && (
             <>

@@ -76,7 +76,7 @@ export function RecruitingPostForm({
       <a href={formsHref} className="text-sm text-gold underline">
         Open Web forms
       </a>
-      <FormField label="Discord invite" hint="Shown to applicants first, so they can join before applying. A permanent invite works best.">
+      <FormField label="Discord invite" hint="Shown to applicants first, so they can join before applying. Only used when Server setup has no invite: the server's invite there is the one join link everywhere on the hub.">
         <input className={inputClass} placeholder="https://discord.gg/..." value={draft.inviteUrl ?? ""} onChange={(e) => change({ inviteUrl: e.target.value || null })} />
       </FormField>
       <SaveBar inline pending={pending} onSave={submit} outcome={outcome} dirty={dirty} onDiscard={() => setDraft(saved)} label="Save recruiting post" />
