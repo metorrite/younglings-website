@@ -12,6 +12,29 @@ export interface PluginView {
   maxTokens: number;
 }
 
+/** One of the member's own recent RuneSync events, as stored (the `data` fields depend on the type: XP {skill, xp, level, xpScaled}, DROP {itemName, quantity, valueGp}, KILL {bossName, killCount}, CLUE {tier, count}). */
+export interface RuneSyncEvent {
+  at: string;
+  sourceKind: string | null;
+  sourceName: string | null;
+  data: Record<string, unknown>;
+}
+
+/** What the profile shows about RuneSync (T-202): the member's client, their own latest events per type and their diagnostics ids. */
+export interface RuneSyncView {
+  client: {
+    client: string | null;
+    lastSeen: string;
+    paused: boolean;
+    lastBatchAt: string | null;
+    lastBatch: { accepted: number; duplicates: number; rejected: number };
+  } | null;
+  recent: Record<"XP" | "DROP" | "KILL" | "CLUE", RuneSyncEvent[]>;
+  diagnostics: { id: string; createdAt: string; expiresAt: string }[];
+  minClientVersion: string;
+  diagnosticsKeptDays: number;
+}
+
 export type PluginResult<T = PluginView> = { ok: true; data: T } | { ok: false; error: string };
 
 type BotError = { error?: string };
@@ -30,6 +53,7 @@ async function account<T>(userId: string, path: string, method: string, body?: u
 
 export const pluginApi = {
   view: (userId: string) => account<PluginView>(userId, "me", "GET"),
+  runeSync: (userId: string) => account<RuneSyncView>(userId, "me/runesync", "GET"),
   createToken: (userId: string, label: string) => account<PluginView & { token: string; view: PluginView }>(userId, "me/tokens", "POST", { label }),
   revokeToken: (userId: string, tokenId: string) => account<PluginView>(userId, `me/tokens/${encodeURIComponent(tokenId)}`, "DELETE"),
   setConsent: (userId: string, categories: string[]) => account<PluginView>(userId, "me/consent", "PUT", { categories }),
