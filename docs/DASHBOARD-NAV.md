@@ -38,7 +38,7 @@ Favourites (stars) and the search stay the fast path; the grouping is for findin
 | **Posts & feeds** | Post a message (was "Announcements" + "Post a message", see 4.2) · Server reminders · Feeds · Twitch alerts *(merge train)* · Scheduled posts (A) · Automatic replies (A) · Custom tags (A, merge train) |
 | **Community** | Polls & signups · Giveaways · Suggestions · Starboard · Points · Tickets · Web forms *(merge train)* · Chat levels (A, merge train) · Highlights (A) · Temp voice (A) · Voice text (A) |
 | **Events** | Event manager · Event announcer (A) · Citadel wheel (A) · Discord events (A, clan; was "Public events") |
-| **RuneScape clan** | Clan profile (clan) · Roster (clan) · Needs attention (clan, merge train) · Promotions (clan, merge train) · Clan points & ranks (clan, merge train) · Clan activity feed (was "Activity announcements") · RuneScape timers · PvM Help (A, merge train) · Alliances (A, clan) · Clan plugin (A, clan) · Clan website (A, clan, merge train) · Fix clan roles (A, clan, merge train) |
+| **RuneScape clan** | Clan profile (clan) · Roster (clan) · Needs attention (clan, merge train) · Leave of absence (A, clan, T-190) · Promotions (clan, merge train) · Clan points & ranks (clan, merge train) · Clan activity feed (was "Activity announcements") · RuneScape timers · PvM Help (A, merge train) · Alliances (A, clan) · Clan plugin (A, clan) · Clan website (A, clan, merge train) · Fix clan roles (A, clan, merge train) |
 | **Logs & tools** | Activity log (A) · Snapshots (A, owner) |
 
 Counts (Basic / Advanced, clan server, everything merged): Get started 6/7 · New members & roles 5/9 · Keep it safe 4/7 · Posts & feeds 4/7 · Community 7/11 · Events 1/4 · RuneScape clan 6/12 · Logs & tools 0/2.

@@ -491,6 +491,24 @@ export interface Attention {
   inactive: AttentionItem[];
   promotions: AttentionItem[];
   notCapped: AttentionItem[];
+  /** Members on leave of absence (T-190), left out of inactive and not capped meanwhile. An older bot sends none. */
+  away?: AttentionItem[];
+}
+
+/** One member's leave of absence on the dashboard (T-190). `until` is the last day it covers (UTC, yyyy-mm-dd). */
+export interface AbsenceNotice {
+  userId: string;
+  name: string | null;
+  until: string;
+  reason: string;
+  since: string | null;
+}
+
+/** The Leave of absence page: the switch and who is away now. */
+export interface AbsenceAdmin {
+  enabled: boolean;
+  maxDays: number;
+  notices: AbsenceNotice[];
 }
 
 export interface BotNotice {
@@ -2327,6 +2345,9 @@ export const adminApi = {
   saveSiteOptions: (ctx: ApiContext, options: { navEventBubble: boolean }) => call<{ navEventBubble: boolean }>(ctx, "PUT", "site/options", options),
   roster: (ctx: ApiContext) => call<Roster>(ctx, "GET", "members"),
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
+  absence: (ctx: ApiContext) => call<AbsenceAdmin>(ctx, "GET", "absence"),
+  saveAbsence: (ctx: ApiContext, enabled: boolean) => call<AbsenceAdmin>(ctx, "PUT", "absence", { enabled }),
+  endAbsence: (ctx: ApiContext, userId: string) => call<AbsenceAdmin>(ctx, "DELETE", `absence/${encodeURIComponent(userId)}`),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
   suggestions: (ctx: ApiContext) => call<SuggestionList>(ctx, "GET", "suggestions"),

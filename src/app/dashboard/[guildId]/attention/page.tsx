@@ -52,8 +52,17 @@ export default async function AttentionPage({ params }: { params: Promise<{ guil
       <Section id="promotions" title="Promotions due" hint="Points have reached the next rank. Promote in game, then mark them done on the Promotions page." items={a.promotions} tone="text-gold" />
       <Section id="unverified" title="Unverified" hint="No Discord account linked to this RuneScape name, so they cannot use member features or appear as verified." items={a.unverified} tone="text-gold" />
       <Section id="stale" title="Stale data" hint="Not refreshed from RuneMetrics in over 8 hours. Usually a private profile, a renamed account, or rate limiting." items={a.stale} tone="text-red-400" />
-      <Section id="inactive" title="Inactive 30+ days" hint="No adventure-log activity for a month (members who joined in the last week are skipped)." items={a.inactive} tone="text-gold" />
-      <Section id="uncapped" title="Not capped this week" hint={`Citadel week of ${a.weekStart}. Anyone who has not capped yet.`} items={a.notCapped} tone="text-muted" />
+      <Section id="inactive" title="Inactive 30+ days" hint={`No adventure-log activity for a month (members who joined in the last week${a.away ? ", and members on leave," : ""} are skipped).`} items={a.inactive} tone="text-gold" />
+      <Section id="uncapped" title="Not capped this week" hint={`Citadel week of ${a.weekStart}. Anyone who has not capped yet${a.away ? " (members on leave are skipped)" : ""}.`} items={a.notCapped} tone="text-muted" />
+      {a.away && a.away.length > 0 && (
+        <Section
+          id="away"
+          title="Away"
+          hint="On leave of absence, so not counted as inactive or not capped until they're back. Manage it on the Leave of absence page."
+          items={a.away}
+          tone="text-muted"
+        />
+      )}
     </div>
   );
 }

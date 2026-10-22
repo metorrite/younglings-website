@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import { setColorRole, setNickname } from "@/lib/jonnybot";
-import { memberApi, type Goal, type MemberSettings, type MyEvents, type MyHighlights, type SelfRole } from "@/lib/member";
+import { memberApi, type Goal, type MemberSettings, type MyAbsence, type MyEvents, type MyHighlights, type SelfRole } from "@/lib/member";
 import { throttle } from "@/lib/ratelimit";
 
 /**
@@ -142,6 +142,32 @@ export async function toggleRoleAction(roleId: string, on: boolean): Promise<Act
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/profile");
   return { ok: true, data: result.data.roles };
+}
+
+// ---------- leave of absence (T-190) ----------
+
+export async function setAbsenceAction(until: string, reason: string): Promise<ActionResult<MyAbsence>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  if (typeof until !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(until)) return { ok: false, error: "Pick the day you'll be back." };
+  if (typeof reason !== "string" || reason.length > 200) return { ok: false, error: "That reason couldn't be read." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.setAbsence(userId, until, reason);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
+}
+
+export async function endAbsenceAction(): Promise<ActionResult<MyAbsence>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.endAbsence(userId);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
 }
 
 // ---------- highlights (words that send me a direct message) ----------

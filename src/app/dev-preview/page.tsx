@@ -32,6 +32,8 @@ import { WarningsManager } from "@/components/dashboard/WarningsManager";
 import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
+import { AbsenceManager } from "@/components/dashboard/AbsenceManager";
+import { AbsencePanel } from "@/components/profile/AbsencePanel";
 import { LanguageForm } from "@/components/dashboard/LanguageForm";
 import { ClanPanelSwitch } from "@/components/dashboard/ClanPanelSwitch";
 import { RuneSyncActivity } from "@/components/profile/RuneSyncActivity";
@@ -915,6 +917,24 @@ function Preview() {
           {view === "message-logs" && (<><PageHeader title="Message & voice logs" description="Edits, deletes and voice moves." /><MessageLogsForm initial={{ enabled: true, retentionDays: 7, excludedChannels: ["1"], editChannelId: "2", deleteChannelId: "2", voiceChannelId: null, remembered: 1280, messageContent: true, limits: { minDays: 1, maxDays: 30, maxExcluded: 50 } }} structure={structure} save={nope as never} clear={nope as never} /></>)}
           {view === "message-logs-off" && (<><PageHeader title="Message & voice logs" description="Fresh server, and the bot without the Message Content intent." /><MessageLogsForm initial={{ enabled: false, retentionDays: 7, excludedChannels: [], editChannelId: null, deleteChannelId: null, voiceChannelId: null, remembered: 0, messageContent: false, limits: { minDays: 1, maxDays: 30, maxExcluded: 50 } }} structure={structure} save={nope as never} clear={nope as never} /></>)}
           {view === "rs-timers" && (<><PageHeader title="RuneScape timers" description="Optional reminders for RuneScape 3 timers." /><LookupRemindersForm initial={{ reminders: [{ kind: "vos", title: "Voice of Seren", description: "Posted at the top of every hour, when the two boosted districts change.", enabled: true, channelId: "2", roleId: null }] }} structure={structure} save={nope as never} /></>)}
+          {view === "absence" && (
+            <>
+              <PageHeader title="Leave of absence" description="Members say they're away for a while, so Needs attention doesn't flag them." />
+              <AbsenceManager
+                initial={{ enabled: true, maxDays: 90, notices: [{ userId: "11", name: "Raid Leader Ray", until: "2026-10-30", reason: "Holiday in Spain", since: "2026-10-20T10:00:00Z" }, { userId: "12", name: "Skiller Sue", until: "2026-11-14", reason: "", since: "2026-10-21T08:00:00Z" }] }}
+                attentionHref="#"
+                save={async (on) => ({ ok: true, data: { enabled: on, maxDays: 90, notices: [] } })}
+                end={async () => ({ ok: true, data: { enabled: true, maxDays: 90, notices: [{ userId: "12", name: "Skiller Sue", until: "2026-11-14", reason: "", since: "2026-10-21T08:00:00Z" }] } })}
+              />
+              <div className="mt-6 max-w-2xl rounded-xl border border-surface-border bg-surface p-5">
+                <h2 className="mb-3 font-semibold">Member profile panel</h2>
+                <AbsencePanel
+                  initial={{ enabled: true, today: "2026-10-22", latest: "2027-01-20", maxReason: 100, notice: { until: "2026-10-30", reason: "Holiday in Spain" } }}
+                  actions={{ set: async (until, reason) => ({ ok: true, data: { enabled: true, today: "2026-10-22", latest: "2027-01-20", maxReason: 100, notice: { until, reason } } }), end: async () => ({ ok: true, data: { enabled: true, today: "2026-10-22", latest: "2027-01-20", maxReason: 100, notice: null } }) }}
+                />
+              </div>
+            </>
+          )}
           {view === "highlights" && (<><PageHeader title="Highlights" description="Direct messages for words members care about." /><HighlightsForm initial={{ enabled: true, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: ["1"], allowedRoles: [], memberCount: 4, wordCount: 11, messageContent: true, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
           {view === "highlights-nointent" && (<><PageHeader title="Highlights" description="The bot runs without the Message Content intent." /><HighlightsForm initial={{ enabled: false, maxKeywords: 10, cooldownSeconds: 300, excludedChannels: [], allowedRoles: [], memberCount: 0, wordCount: 0, messageContent: false, limits: { maxKeywords: 25, minCooldown: 10, maxCooldown: 86400, maxList: 50 } }} structure={structure} save={nope as never} /></>)}
           {view === "my-highlights" && (<><PageHeader title="My highlights" description="A member's own words on their profile." /><HighlightsPanel initial={{ enabled: true, usable: true, refusal: null, words: [{ id: "1", word: "zulrah", wholeWord: true }, { id: "2", word: "bingo", wholeWord: false }], max: 10, maxWord: 50, minWord: 2, cooldownSeconds: 300, ignored: [{ id: "9", name: "off-topic" }], maxIgnored: 25, channels: [{ id: "2", name: "general" }, { id: "3", name: "drops" }] }} actions={{ add: nope as never, remove: nope as never, ignore: nope as never }} /></>)}

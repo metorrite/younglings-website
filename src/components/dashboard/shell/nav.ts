@@ -126,6 +126,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Clan profile", icon: "smile", path: "/clan-profile", clanOnly: true },
       { label: "Roster", icon: "users", path: "/members", clanOnly: true },
       { label: "Needs attention", icon: "alert", path: "/attention", clanOnly: true },
+      { label: "Leave of absence", icon: "clock", path: "/absence", clanOnly: true, advanced: true },
       { label: "Promotions", icon: "trophy", path: "/promotions", clanOnly: true },
       { label: "Clan points & ranks", icon: "list", path: "/clan-points", clanOnly: true },
       { label: "Clan activity feed", icon: "bell", path: "/tracking" },

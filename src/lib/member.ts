@@ -172,6 +172,15 @@ async function request<T>(method: "GET" | "PUT" | "POST" | "DELETE", path: strin
   return { ok: true, data: json as T };
 }
 
+/** The member's own leave of absence (T-190). `notice.until` and the bounds are UTC days (yyyy-mm-dd). */
+export interface MyAbsence {
+  enabled: boolean;
+  today: string;
+  latest: string;
+  maxReason: number;
+  notice: { until: string; reason: string } | null;
+}
+
 export interface LinkResult {
   state: "NONE" | "PENDING" | "LINKED";
   rsns: string[];
@@ -187,6 +196,9 @@ export const memberApi = {
   settings: (userId: string) => request<MemberSettings>("GET", "settings", userId),
   saveSettings: (userId: string, settings: Omit<MemberSettings, "rsns">) => request<MemberSettings>("PUT", "settings", userId, settings),
   chatLevel: (userId: string) => request<MyChatLevel>("GET", "level", userId),
+  absence: (userId: string) => request<MyAbsence>("GET", "absence", userId),
+  setAbsence: (userId: string, until: string, reason: string) => request<MyAbsence>("PUT", "absence", userId, { until, reason }),
+  endAbsence: (userId: string) => request<MyAbsence>("DELETE", "absence", userId),
   highlights: (userId: string) => request<MyHighlights>("GET", "highlights", userId),
   addHighlight: (userId: string, word: string, wholeWord: boolean) => request<MyHighlights>("POST", "highlights", userId, { word, wholeWord }),
   removeHighlight: (userId: string, id: string) => request<MyHighlights>("DELETE", `highlights?id=${encodeURIComponent(id)}`, userId),

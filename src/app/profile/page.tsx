@@ -7,6 +7,7 @@ import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { PluginPanel } from "@/components/profile/PluginPanel";
 import { RuneSyncActivity } from "@/components/profile/RuneSyncActivity";
 import { ChatLevelPanel } from "@/components/profile/ChatLevelPanel";
+import { AbsencePanel } from "@/components/profile/AbsencePanel";
 import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
@@ -65,6 +66,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const maxOrder = overview ? Math.max(0, ...overview.ranks.map((r) => r.order)) : 11;
 
   const goals = tab === "goals" || tab === "overview" ? await memberApi.goals(user.id) : null;
+  // leave of absence shows on the overview only while the server has it switched on (T-190)
+  const absence = tab === "overview" ? await memberApi.absence(user.id) : null;
   const roles = tab === "server" ? await memberApi.roles(user.id) : null;
 
   // "My activity": open polls I've voted in and signup sheets I'm on.
@@ -125,6 +128,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <div className="mt-6 space-y-6">
         {tab === "overview" && (
           <>
+            {absence?.ok && absence.data.enabled && (
+              <Panel title="Leave of absence" hint="The same as /absence in Discord.">
+                <AbsencePanel initial={absence.data} />
+              </Panel>
+            )}
             {!settings.ok ? (
               <Unavailable what="Your profile" />
             ) : rsns.length === 0 ? (
