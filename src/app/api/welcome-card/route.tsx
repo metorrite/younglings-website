@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { clientIpFrom } from "@/lib/clientIp";
 import { throttle } from "@/lib/ratelimit";
 
 /**
@@ -25,8 +26,7 @@ function allowedPicture(raw: string | null, origin: string): string | null {
 }
 
 export async function GET(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  if (throttle(`welcome-card:${forwarded}`, "publicRead")) return new Response("Slow down.", { status: 429 });
+  if (throttle(`welcome-card:${clientIpFrom(request.headers)}`, "publicRead")) return new Response("Slow down.", { status: 429 });
 
   const { searchParams, origin } = new URL(request.url);
   const title = (searchParams.get("title") ?? "").slice(0, 120);

@@ -21,12 +21,33 @@ export interface HubAnswer<T = unknown> {
 
 type Env = Record<string, string | undefined>;
 
-/** The hub's address without a trailing slash, or null when the site doesn't use the hub. Plain http only for localhost. */
+/** True for localhost, ::1, *.railway.internal, 127/8, 10/8, 172.16/12 and 192.168/16: hosts that can't be on the public internet. */
+export function isPrivateHost(rawHost: string): boolean {
+  let host = rawHost.toLowerCase();
+  if (host.startsWith("[") && host.endsWith("]")) host = host.slice(1, -1);
+  if (host === "localhost" || host === "::1" || host.endsWith(".railway.internal")) return true;
+  const parts = host.split(".");
+  if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p) && Number(p) <= 255)) return false;
+  const [a, b] = parts.map(Number);
+  return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
+/**
+ * The hub's address without a trailing slash, or null when the site doesn't use the hub. https anywhere; plain http only to a private
+ * host (e.g. http://runeclans-hub.railway.internal:8090 inside the Railway project), so the web secret never crosses the internet in clear.
+ */
 export function hubBaseUrl(env: Env = process.env): string | null {
   const raw = (env.HUB_BASE_URL ?? "").trim().replace(/\/+$/, "");
   if (!raw) return null;
-  if (!(raw.startsWith("https://") || raw.startsWith("http://localhost") || raw.startsWith("http://127.0.0.1"))) return null;
-  return raw;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (parsed.username || parsed.password || !parsed.hostname) return null;
+  if (parsed.protocol === "https:") return raw;
+  return parsed.protocol === "http:" && isPrivateHost(parsed.hostname) ? raw : null;
 }
 
 /** The hub path for a bot `/internal/rsnlink/<path>` path (`v1/...` or `web/...`), or null when the hub has no such route. */

@@ -51,6 +51,12 @@ Vercel, if you'd rather). Whichever host you use:
 One deployment serves several faces, chosen by the host a request was sent to (`src/lib/siteHosts.ts`, `src/proxy.ts`). With none
 of these set the site runs on one host, as in local development. Design: `docs/DOMAINS-AND-SITE-BUILDER.md` part A.
 
+**The visitor's address** (rate limits, RS Link's IP rules; T-175) comes from `src/lib/clientIp.ts`:
+- Behind Cloudflare's proxy (orange cloud), set `CLIENT_IP_HEADER=CF-Connecting-IP`.
+- With DNS only (grey cloud), leave it unset: the site takes the right-most `X-Forwarded-For` entry, which is what Railway's edge saw.
+  Visitors can only add entries to the left, so they can't choose their address.
+- `TRUSTED_PROXY_HOPS` (default 1) is the number of proxies that append to that header.
+
 | Variable | What it does |
 |---|---|
 | `JONNYBOT_SUBDOMAIN` | `true` puts JonnyBot's pages and the dashboard on `jonnybot.<apex>` instead of `/jonnybot` (also on when `SITE_HOSTS` names a `jonnybot` host). |
