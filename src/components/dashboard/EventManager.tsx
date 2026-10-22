@@ -27,7 +27,7 @@ import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
 import { Toast } from "@/components/dashboard/ui/Toast";
 import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
-import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog } from "@/lib/eventTypes";
+import { BINGO_LOOKS, PLAIN_LOOK, type EventAward, type EventClaims, type EventDetail, type EventObjective, type EventPrize, type EventStandings, type EventStatus, type BingoCatalog, CLAN_VS_CLAN, gameOf } from "@/lib/eventTypes";
 import type { GuildStructure } from "@/lib/jonnybot-admin";
 
 type Tab = "overview" | "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "standings" | "prizes" | "wrapup";
@@ -383,7 +383,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
       </div>
 
       <div ref={tabBar} role="tablist" aria-label="This event" className="sticky top-0 z-20 -mx-1 flex items-stretch gap-1 overflow-x-auto border-b border-surface-border bg-background/95 px-1 backdrop-blur">
-        {TABS.filter((t) => (t.key !== "board" || e.template === "bingo") && (t.key !== "teams" || e.scoringMode === "TEAM")).map((t, i, shown) => (
+        {TABS.filter((t) => (t.key !== "board" || gameOf(e) === "bingo") && (t.key !== "teams" || e.scoringMode === "TEAM")).map((t, i, shown) => (
           <Fragment key={t.key}>
             {i > 0 && shown[i - 1].group !== t.group && <span aria-hidden className="mx-1 my-2 w-px shrink-0 bg-surface-border" />}
             <button
@@ -685,7 +685,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
         </section>
       )}
 
-      {tab === "board" && e.template === "bingo" && e.config.board && (
+      {tab === "board" && gameOf(e) === "bingo" && e.config.board && (
         <section className="space-y-4">
           <p className="text-sm text-muted">
             {layout ? `A ${layout.name} board of ${layout.tiles} tiles.` : `A ${e.config.board.size} × ${e.config.board.size} board.`} Lock the tiles you like, then re-roll to change the rest, or press Edit on a tile to pick its boss and item (or type your own tile). Tiles are ordinary objectives, so you can also rename them on the Objectives tab.
@@ -893,12 +893,18 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           pending={pending}
           onAdd={() => setObjs([...objs, emptyObjective()])}
           onSave={() => run("PUT", `${base}/objectives`, { objectives: objs.map((o) => ({ ...o })) }, "Objectives saved.")}
-          template={e.template}
+          template={gameOf(e)}
           hints={tileHints}
         />
       )}
 
-      {tab === "teams" && e.scoringMode === "TEAM" && <TeamBuilder detail={detail} call={call} onDetail={setDetail} />}
+      {tab === "teams" && e.template === CLAN_VS_CLAN && (
+        <p className="rounded-lg border border-surface-border bg-surface p-3 text-sm text-muted">
+          Each clan taking part is a team, and players are put on their clan&apos;s team by its in-game list. You only need to place someone whose names are on two
+          clans&apos; lists and who didn&apos;t join through either.
+        </p>
+      )}
+      {tab === "teams" && e.scoringMode === "TEAM" && <TeamBuilder detail={detail} call={call} onDetail={setDetail} clanVsClan={e.template === CLAN_VS_CLAN} />}
 
       {tab === "channels" && <ChannelsTab detail={detail} call={call} structure={structure} onDetail={setDetail} />}
       {tab === "wrapup" && <WrapupTab detail={detail} call={call} />}
@@ -937,6 +943,7 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
               </table>
             </div>
           )}
+          {standings.clanVsClan && <ClanContributions view={standings.clanVsClan} standings={standings} />}
         </section>
       )}
 
@@ -997,6 +1004,46 @@ export function EventManager({ initial, initialClaims, initialStandings, initial
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+const CLAN_SCORING: Record<string, string> = {
+  TOP_N: "best players",
+  AVERAGE: "the average of the players who scored",
+  TOTAL: "everything the clan scored",
+};
+
+/** What each player earned for their clan in a clan-vs-clan event (T-222), under the clan standings. */
+function ClanContributions({ view, standings }: { view: NonNullable<EventStandings["clanVsClan"]>; standings: EventStandings }) {
+  const how = view.scoring === "TOP_N" ? `the best ${view.topN} players` : CLAN_SCORING[view.scoring] ?? view.scoring;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted">Clans are scored by {how}; board bonuses count once for the clan. A player earns the points of every tile or goal their report completed for their clan.</p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {standings.standings.map((s) => {
+          const players = view.contributions[s.subject.replace(/^t:/, "")] ?? [];
+          return (
+            <div key={s.subject} className="rounded-xl border border-surface-border bg-surface p-3">
+              <p className="text-sm font-medium">{s.label}</p>
+              {players.length === 0 ? (
+                <p className="mt-1 text-xs text-muted">Nobody has scored yet.</p>
+              ) : (
+                <ol className="mt-2 space-y-1 text-sm">
+                  {players.map((p, i) => (
+                    <li key={p.userId} className="flex justify-between gap-2">
+                      <span className={view.scoring === "TOP_N" && i >= view.topN ? "text-muted" : ""}>
+                        {i + 1}. {p.name}
+                      </span>
+                      <span className="tabular-nums">{p.points.toLocaleString("en-GB")}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
