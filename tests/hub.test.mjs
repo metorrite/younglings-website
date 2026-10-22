@@ -20,10 +20,13 @@ test("RS Link routes map to the hub's /v1/link and /web/link", () => {
   assert.equal(hubLinkPath("v1/../admin"), null);
 });
 
-test("only RuneSync's ingest and whoami move to the hub", () => {
+test("RuneSync's routes move to the hub, except JonnyBot's clan panel", () => {
   assert.equal(hubPluginPath("/internal/plugin/ingest"), "/v1/plugin/ingest");
   assert.equal(hubPluginPath("/internal/plugin/whoami"), "/v1/plugin/whoami");
-  assert.equal(hubPluginPath("/internal/plugin/runesync/consent"), null);
+  assert.equal(hubPluginPath("/internal/plugin/runesync/consent"), "/v1/plugin/runesync/consent");
+  assert.equal(hubPluginPath("/internal/plugin/runesync/diagnostics"), "/v1/plugin/runesync/diagnostics");
+  assert.equal(hubPluginPath("/internal/plugin/runesync/config?client=RuneSync%200.0.9&paused=false"), "/v1/plugin/runesync/config?client=RuneSync%200.0.9&paused=false");
+  assert.equal(hubPluginPath("/internal/plugin/runesync/panel"), null);
   assert.equal(hubPluginPath("/internal/plugin/me"), null);
 });
 
