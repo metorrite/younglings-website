@@ -1,5 +1,14 @@
 # Younglings Website
 
+> [!IMPORTANT]
+> **This repo is frozen (2026-10-22). Don't open new PRs here.** The site now lives in the RuneClans monorepo as
+> [`apps/younglings` in metorrite/runeclans](https://github.com/metorrite/runeclans/tree/dev/apps/younglings), with this repo's full history
+> (ticket T-266). Make every change there.
+>
+> This repo still deploys rsyounglings.com until the Railway service is repointed
+> ([steps](https://github.com/metorrite/runeclans/blob/dev/docs/RAILWAY-REPOINT.md)), so it is **not archived** yet. Its `master` is
+> what's live; nothing new gets merged here.
+
 The companion website for the Younglings Discord server. v1 is Discord login + a profile page;
 "who's online" and "upcoming events" are planned next, pulled live from JonnyBot (the Discord bot
 in the sibling `JonnyBot` repo) rather than tracked independently here.
