@@ -165,7 +165,7 @@ export function ServerSetupForm({
           hint="Shown to players who need to join the server before they can take part in an event."
           defaultOpen
           summary={setup.inviteUrl ? <Chip tone="good">{setup.inviteUrl.replace("https://", "")}</Chip> : <Chip tone="warn">Not set</Chip>}
-          info="Use a permanent invite that doesn't expire (Server Settings, then Invites). If you leave this empty, events use your clan profile's apply link instead, and without either the player is told to ask an organiser."
+          info="Use a permanent invite that doesn't expire (Server Settings, then Invites). If you leave this empty, the recruiting post's invite is used instead, then your clan profile's apply link when it's a Discord invite; without any of them the player is told to ask an organiser."
         >
           <FormField label="Discord invite" size="md" hint="Like https://discord.gg/abc123 or https://discord.com/invite/abc123. This is your server's join link everywhere on the clans hub: the recruiting post and your events use it. A permanent invite works best.">
             <input
