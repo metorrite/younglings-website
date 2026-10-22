@@ -1,4 +1,5 @@
 import { botCall } from "@/lib/botCall";
+import { hubBaseUrl, hubCall, hubPluginPath } from "@/lib/hub";
 import { apiError, clientIp, limited, unavailable } from "@/lib/publicApi";
 import { throttle } from "@/lib/ratelimit";
 
@@ -47,7 +48,11 @@ export async function forwardToBot(request: Request, path: string, method: "GET"
     if (!body.trim()) return apiError(400, "The request body is empty.");
   }
 
-  const answer = await botCall(path, { method, headers: token ? { "X-Plugin-Token": token } : { Authorization: `RSLink ${assertion}` }, body });
+  // RuneSync's RS Link uploads go to the RSClans hub when HUB_BASE_URL is set (lib/hub.ts); manual jbp_ tokens stay with the bot.
+  const hubPath = assertion && hubBaseUrl() ? hubPluginPath(path) : null;
+  const answer = hubPath
+    ? await hubCall(hubPath, { method, headers: { Authorization: `RSLink ${assertion}` }, body })
+    : await botCall(path, { method, headers: token ? { "X-Plugin-Token": token } : { Authorization: `RSLink ${assertion}` }, body });
   if (!answer) return unavailable();
   return new Response(JSON.stringify(answer.json), {
     status: answer.status,
