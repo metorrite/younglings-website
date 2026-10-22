@@ -2,7 +2,7 @@
 
 import { formatUtc, StatusBadge } from "@/components/admin/ui";
 import { StatTile } from "@/components/dashboard/overview/StatTile";
-import type { EventDetail, EventPrepStep } from "@/lib/eventTypes";
+import { gameOf, type EventDetail, type EventPrepStep } from "@/lib/eventTypes";
 
 export type EventDashboardTab = "board" | "objectives" | "teams" | "channels" | "players" | "progress" | "prizes" | "wrapup";
 
@@ -134,7 +134,7 @@ export function EventDashboard({
         {teamEvent ? (
           <StatTile label="Teams" value={detail.teams.length} hint={detail.setup.teamsFinalisedAt ? "Final" : "Not final yet"} tone="plain" onClick={() => onOpen("teams")} />
         ) : (
-          <StatTile label="Objectives" value={detail.objectives.length} hint={detail.objectives.length === 0 ? "None yet" : "What players can score"} tone="plain" onClick={() => onOpen(e.template === "bingo" && e.config.board ? "board" : "objectives")} />
+          <StatTile label="Objectives" value={detail.objectives.length} hint={detail.objectives.length === 0 ? "None yet" : "What players can score"} tone="plain" onClick={() => onOpen(gameOf(e) === "bingo" && e.config.board ? "board" : "objectives")} />
         )}
         {(detail.potVisible || detail.buyInEnabled) && <StatTile label="Pot" value={gp(detail.pot)} hint="Buy-ins paid so far" tone="plain" onClick={() => onOpen("prizes")} />}
         {(e.status === "SIGNUPS" || e.status === "DRAFT") && (

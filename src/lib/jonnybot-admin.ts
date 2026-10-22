@@ -1792,6 +1792,48 @@ export interface AllianceEvents {
   }[];
 }
 
+/** A clan's points for plugin reports (T-061): one rule per report type, 0 points = off. `minValueGp` is only on DROP. */
+export interface PluginPointsView {
+  rules: { type: string; label: string; points: number; dailyCap: number; minValueGp?: number }[];
+  pointsEnabled: boolean;
+  unit: string;
+  maxPoints: number;
+}
+
+/** A server's appeal settings (T-033): off until switched on. */
+export interface AppealSettings {
+  enabled: boolean;
+  panelId: string | null;
+  cooldownDays: number;
+  mirrorChannelId: string | null;
+}
+
+/** One appeal on the dashboard's Appeals page. */
+export interface AppealRow {
+  id: string;
+  userId: string;
+  userName: string;
+  caseNo: string;
+  action: "BAN" | "TIMEOUT" | null;
+  actionLabel: string | null;
+  caseReason: string | null;
+  text: string;
+  status: "OPEN" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  note: string | null;
+  ticketChannelId: string | null;
+}
+
+export interface AppealsView {
+  settings: AppealSettings;
+  panels: { id: string; name: string }[];
+  appeals: AppealRow[];
+  /** The address the moderation DM links to, or null while appeals are off or the site's address isn't set. */
+  appealLink: string | null;
+}
+
 /** How much of a clan reports through the plugin: counts only, never who. */
 export interface PluginCoverage {
   rosterSize: number;
@@ -1800,6 +1842,19 @@ export interface PluginCoverage {
   reportingRecently: number;
   recentDays: number;
   consent: { key: string; label: string; players: number }[];
+}
+
+/** The has-plugin list (T-140): only roster members who switched on "Show my clan that I use RuneSync" on their profile. */
+export interface PluginUsers {
+  users: { rsn: string; client: string | null; lastSeenDay: string | null }[];
+  linkedPlayers: number;
+}
+
+/** Whether RuneSync can tick a tile with this label by itself, and why (T-141). `text` is null when there is nothing to say. */
+export interface TileHint {
+  label: string;
+  auto: boolean;
+  text: string | null;
 }
 
 /** A stored dev snapshot (bot owner only); the zip is fetched separately. Format: JonnyBot/docs/DEV-SNAPSHOT.md. */
@@ -2417,6 +2472,11 @@ export const adminApi = {
   moderationOfUser: (ctx: ApiContext, userId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/user/${encodeURIComponent(userId)}`),
   moderationByModerator: (ctx: ApiContext, moderatorId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/moderator/${encodeURIComponent(moderatorId)}`),
   saveModerationSettings: (ctx: ApiContext, settings: ModerationSettings) => call<ModerationOverview>(ctx, "PUT", "moderation/settings", settings),
+  /** Ban and mute appeals (T-033): settings, the ticket panels to pick from, the appeal page's address and the appeals, open first. */
+  appeals: (ctx: ApiContext) => call<AppealsView>(ctx, "GET", "appeals"),
+  saveAppealSettings: (ctx: ApiContext, settings: AppealSettings) => call<AppealsView>(ctx, "PUT", "appeals/settings", settings),
+  decideAppeal: (ctx: ApiContext, id: string, approve: boolean, note: string) =>
+    call<AppealsView>(ctx, "POST", `appeals/${encodeURIComponent(id)}/${approve ? "approve" : "reject"}`, { note }),
   editModerationCase: (ctx: ApiContext, caseNo: string, reason: string) => call<{ case: ModerationCase }>(ctx, "PUT", `moderation/case/${encodeURIComponent(caseNo)}`, { reason }),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
   autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),
@@ -2462,6 +2522,15 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  pluginUsers: (ctx: ApiContext) => call<PluginUsers>(ctx, "GET", "plugin-users"),
+  /** The objectives editor's "auto with RuneSync" hints (T-141); read-only. */
+  pluginTileHints: (ctx: ApiContext, template: string, labels: string[]) => call<{ hints: TileHint[] }>(ctx, "POST", "plugin-tile-hints", { template, labels }),
+  pluginPoints: (ctx: ApiContext) => call<PluginPointsView>(ctx, "GET", "plugin-points"),
+  setPluginPoints: (ctx: ApiContext, rules: PluginPointsView["rules"]) =>
+    call<PluginPointsView>(ctx, "PUT", "plugin-points", { rules: rules.map((r) => ({ type: r.type, points: r.points, dailyCap: r.dailyCap, minValueGp: r.minValueGp ?? null })) }),
+  /** A clan's plugin switches (T-206): today only whether RuneSync's in-game clan panel is allowed. */
+  pluginSettings: (ctx: ApiContext) => call<{ clanPanel: boolean }>(ctx, "GET", "plugin-settings"),
+  setPluginSettings: (ctx: ApiContext, settings: { clanPanel: boolean }) => call<{ clanPanel: boolean }>(ctx, "PUT", "plugin-settings", settings),
   voiceText: (ctx: ApiContext) => call<VoiceText>(ctx, "GET", "voice-text"),
   saveVoiceText: (ctx: ApiContext, body: { enabled: boolean; announce: boolean; purgeWhenEmpty: boolean; links: { voiceChannelId: string; textChannelId: string }[] }) => call<VoiceText>(ctx, "PUT", "voice-text", body),
 

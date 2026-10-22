@@ -1,7 +1,7 @@
 "use server";
 
 import { requireEventAccess } from "@/lib/dashboard";
-import { adminApi, type WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { adminApi, type TileHint, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 
 /**
@@ -67,4 +67,17 @@ export async function eventApiAction(
   }
   const result = await adminApi.eventsCall(guild, method, path, body && typeof body === "object" ? body : undefined);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
+}
+
+/**
+ * The objectives editor's "auto with RuneSync" hints (T-141): for the tile labels being typed, whether RuneSync can tick each one by itself.
+ * Read-only on the bot (nothing is saved), so it isn't throttled like a change; labels are trimmed, de-duplicated and capped at 100 here and
+ * checked again by the bot.
+ */
+export async function tileHintsAction(guildId: string, template: string, labels: string[]): Promise<{ ok: true; data: TileHint[] } | { ok: false; error: string }> {
+  const guild = await requireEventAccess(guildId);
+  const clean = Array.isArray(labels) ? [...new Set(labels.filter((l): l is string => typeof l === "string").map((l) => l.trim().slice(0, 200)).filter(Boolean))].slice(0, 100) : [];
+  if (clean.length === 0) return { ok: true, data: [] };
+  const result = await adminApi.pluginTileHints(guild, typeof template === "string" ? template.slice(0, 40) : "", clean);
+  return result.ok ? { ok: true, data: result.data.hints } : { ok: false, error: result.error };
 }

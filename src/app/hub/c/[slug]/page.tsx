@@ -6,8 +6,19 @@ import { ClanMark, compact, EventCard, FocusChips, RecruitingBadge, SectionHeade
 import { ReportClan } from "@/components/clanshub/ReportClan";
 import { clanAccent, clanEvents, getClan, leaderboard, withAlpha } from "@/lib/clansHub";
 import { canSeeHub } from "@/lib/hubAccess";
+import { eventsHubOn } from "@/lib/hubEvents";
 import { hubHref } from "@/lib/siteHosts";
 import { currentSite } from "@/lib/siteHostsServer";
+
+/** What the clans played in a clan-vs-clan event (T-223). */
+const GAME: Record<string, string> = { bingo: "Bingo", competition: "XP competition", "boss-night": "Boss night", "scavenger-hunt": "Scavenger hunt" };
+
+/** 1st, 2nd, 3rd, 4th, ..., 11th, 12th, 13th, 21st. */
+function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? "th" : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th";
+  return `${n}${suffix}`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -155,6 +166,26 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
                   ))}
                 </div>
               )}
+            </section>
+          )}
+          {eventsHubOn() && clan.clanVsClan && clan.clanVsClan.length > 0 && (
+            <section aria-label="Clan vs clan" className="space-y-4">
+              <SectionHeader title="Clan vs clan" hint={`Open clan-vs-clan events ${clan.name} took part in.`} />
+              <ul className="divide-y divide-surface-border/60 rounded-2xl border border-surface-border bg-surface text-sm">
+                {clan.clanVsClan.map((h) => (
+                  <li key={h.eventId} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                    <span className="min-w-0">
+                      <span className="font-medium break-words">{h.name}</span>
+                      <span className="block text-xs text-muted">
+                        {GAME[h.game] ?? "Event"}
+                        {h.hosted ? " · hosted" : h.host ? ` · hosted by ${h.host}` : ""}
+                        {h.endedAt ? ` · ended ${new Date(h.endedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}` : ""}
+                      </span>
+                    </span>
+                    <span className="shrink-0 tabular-nums">{h.place ? `${ordinal(h.place)} of ${h.clans}` : `${h.clans} clans`}</span>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
           <section aria-label="Upcoming events" className="space-y-4">

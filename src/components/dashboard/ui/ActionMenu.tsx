@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export type ActionMenuItem = { label: string; onSelect: () => void; tone?: "default" | "danger"; hint?: string };
+/** `onSelect` may be async (most ask for confirmation first); the menu closes at once and doesn't wait for it. */
+export type ActionMenuItem = { label: string; onSelect: () => void | Promise<unknown>; tone?: "default" | "danger"; hint?: string };
 
 /**
  * A "more actions" button for a row: one small button that opens a short list, so a row shows its one main action and keeps the rest (rare or risky ones) out
@@ -69,7 +70,7 @@ export function ActionMenu({ label, items, disabled }: { label: string; items: A
               onClick={() => {
                 setOpen(false);
                 button.current?.focus();
-                item.onSelect();
+                void item.onSelect();
               }}
               className={`block w-full rounded-md px-3 py-2 text-left text-sm transition hover:bg-white/5 focus-visible:bg-white/5 ${item.tone === "danger" ? "text-red-300" : "text-foreground"}`}
             >

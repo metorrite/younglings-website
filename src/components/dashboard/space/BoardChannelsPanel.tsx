@@ -27,7 +27,7 @@ export function BoardChannelsPanel({ detail, call, structure, onOpenChannels }: 
 
   useEffect(() => {
     let cancelled = false;
-    call("GET", base).then((result) => {
+    void call("GET", base).then((result) => {
       if (cancelled) return;
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const next = result.data as SpaceView;

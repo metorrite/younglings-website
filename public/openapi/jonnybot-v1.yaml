@@ -157,6 +157,18 @@ paths:
         "401": { $ref: "#/components/responses/PluginError" }
         "413": { $ref: "#/components/responses/PluginError" }
         "429": { $ref: "#/components/responses/PluginError" }
+  /ingest/v1/runesync/panel:
+    get:
+      tags: [Plugin]
+      summary: RuneSync's in-game clan panel
+      description: |
+        For each of the player's clans that allows the panel (dashboard, Clan plugin page; off by default): its open and running events,
+        the player's own points and the player's own progress in running events they are in. Nobody else is named. Cached 60 seconds.
+      security: [{ rsLink: [] }, { pluginToken: [] }]
+      responses:
+        "200": { description: The panel, content: { application/json: { schema: { $ref: "#/components/schemas/RuneSyncPanel" } } } }
+        "401": { $ref: "#/components/responses/PluginError" }
+        "429": { $ref: "#/components/responses/PluginError" }
 components:
   securitySchemes:
     pluginToken:
@@ -226,6 +238,21 @@ components:
               type: array
               items: { type: object, properties: { rank: { type: integer }, slug: { type: string }, name: { type: string }, logoUrl: { type: [string, "null"] }, colour: { type: [integer, "null"] }, xpGained: { type: integer }, members: { type: integer }, perMember: { type: integer } } }
     Category: { enum: [XP, DROPS, KILLS, ACHIEVEMENTS, PRESENCE] }
+    RuneSyncPanel:
+      type: object
+      properties:
+        available: { type: boolean }
+        cacheSeconds: { type: integer }
+        generatedAt: { type: string, format: date-time }
+        clans:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              events: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, template: { type: string }, status: { enum: [SIGNUPS, RUNNING] }, startsAt: { type: [string, "null"] }, endsAt: { type: [string, "null"] }, joined: { type: boolean } } } }
+              points: { type: object, properties: { enabled: { type: boolean }, balance: { type: integer }, unit: { type: string } } }
+              progress: { type: array, items: { type: object, properties: { eventId: { type: string }, name: { type: string }, team: { type: boolean }, points: { type: integer }, objectivesDone: { type: integer }, objectivesTotal: { type: integer }, bingo: { type: [object, "null"], properties: { tilesDone: { type: integer }, tiles: { type: integer } } } } } }
     RuneSyncConfig:
       type: object
       properties:
