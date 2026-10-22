@@ -17,6 +17,7 @@ export async function GET() {
         runeSyncConfig: "GET /ingest/v1/runesync/config",
         runeSyncConsent: "POST /ingest/v1/runesync/consent",
         runeSyncDiagnostics: "POST /ingest/v1/runesync/diagnostics",
+        runeSyncPanel: "GET /ingest/v1/runesync/panel",
       },
       openapi: "/openapi.yaml",
     },

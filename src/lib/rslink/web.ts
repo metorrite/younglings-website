@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { botCall } from "@/lib/botCall";
+import { hubBaseUrl, hubCall, hubLinkPath } from "@/lib/hub";
 import { clientIp } from "@/lib/publicApi";
 import { throttle } from "@/lib/ratelimit";
 import { linkEnabled } from "@/lib/rslink/config";
@@ -85,13 +86,19 @@ export function withSession(response: NextResponse, ctx: WebContext, session: Li
   return response;
 }
 
-/** Calls the bot's `/internal/rsnlink/<path>` with a JSON body and the client IP. Null when the bot can't be reached. */
+/**
+ * Calls the bot's `/internal/rsnlink/<path>` with a JSON body and the client IP, or the same route on the RSClans hub when `HUB_BASE_URL`
+ * is set (lib/hub.ts). Null when it can't be reached.
+ */
 export async function linkBot(request: NextRequest, path: string, body: Record<string, unknown>, headers: Record<string, string> = {}) {
-  return botCall<Record<string, unknown>>(`/internal/rsnlink/${path}`, {
+  const init = {
     method: path === "v1/keys" ? "GET" : "POST",
     headers: { "X-Link-Client-Ip": clientIp(request), ...headers },
     body: path === "v1/keys" ? undefined : JSON.stringify(body),
-  });
+  };
+  const hubPath = hubBaseUrl() ? hubLinkPath(path) : null;
+  if (hubPath) return hubCall<Record<string, unknown>>(hubPath, init);
+  return botCall<Record<string, unknown>>(`/internal/rsnlink/${path}`, init);
 }
 
 export const unavailable = () => problem(503, "unavailable", "Linking isn't available right now. Try again in a minute.", { retryAfter: 30 });

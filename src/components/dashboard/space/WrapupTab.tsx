@@ -53,7 +53,7 @@ export function WrapupTab({ detail, call }: { detail: EventDetail; call: EventCa
 
   useEffect(() => {
     let cancelled = false;
-    call("GET", base).then((result) => {
+    void call("GET", base).then((result) => {
       if (cancelled) return;
       if (!result.ok) return setProblem({ title: result.error, items: result.problems });
       const next = result.data as WrapupView;
@@ -68,10 +68,10 @@ export function WrapupTab({ detail, call }: { detail: EventDetail; call: EventCa
   const running = view?.job?.state === "running";
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(async () => {
+    const timer = setInterval(() => void (async () => {
       const result = await call("GET", base);
       if (result.ok) setView(result.data as WrapupView);
-    }, 2000);
+    })(), 2000);
     return () => clearInterval(timer);
   }, [running, base, call]);
 

@@ -6,7 +6,7 @@ import type { EventPage } from "@/lib/member";
 import { compact, shortDate } from "@/lib/site";
 
 const STAGE: Record<EventPage["event"]["status"], string> = { SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Finished", CANCELLED: "Cancelled" };
-const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", custom: "Event" };
+const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", "clan-vs-clan": "Clan vs clan", custom: "Event" };
 const SUBMISSION: Record<"PENDING" | "APPROVED" | "DENIED", string> = { PENDING: "Waiting for staff", APPROVED: "Approved", DENIED: "Not accepted" };
 const AWARD: Record<"PENDING" | "PAID" | "REVOKED" | "REFUNDED", string> = { PENDING: "Not paid yet", PAID: "Paid", REVOKED: "Revoked", REFUNDED: "Refunded" };
 const BUY_IN: Record<"NONE" | "DUE" | "PAID" | "REFUNDED", string> = { NONE: "Not required", DUE: "Due: pay the host", PAID: "Paid", REFUNDED: "Refunded" };

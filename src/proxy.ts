@@ -13,11 +13,11 @@ import { apexHost, classifyHost, clanHostOf, FACE_HEADER, jonnybotHostOf, mapped
  */
 
 /** JonnyBot's own pages: the first path segment, as shown on its host, and the folder under /jonnybot that serves it. */
-const OWN_PAGES = new Set(["docs", "install", "faq", "privacy", "terms"]);
+const OWN_PAGES = new Set(["docs", "install", "faq", "privacy", "terms", "runesync", "appeal"]);
 /** What the JonnyBot host serves as it is, from the shared app. */
 const SHARED = new Set(["dashboard", "api", "_next"]);
 /** The RS Link face's pages, as shown on its own host (served from /link/...). */
-const LINK_PAGES = new Set(["confirm", "links", "privacy"]);
+const LINK_PAGES = new Set(["confirm", "links", "privacy", "grant"]);
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
