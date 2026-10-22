@@ -1800,6 +1800,40 @@ export interface PluginPointsView {
   maxPoints: number;
 }
 
+/** A server's appeal settings (T-033): off until switched on. */
+export interface AppealSettings {
+  enabled: boolean;
+  panelId: string | null;
+  cooldownDays: number;
+  mirrorChannelId: string | null;
+}
+
+/** One appeal on the dashboard's Appeals page. */
+export interface AppealRow {
+  id: string;
+  userId: string;
+  userName: string;
+  caseNo: string;
+  action: "BAN" | "TIMEOUT" | null;
+  actionLabel: string | null;
+  caseReason: string | null;
+  text: string;
+  status: "OPEN" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  note: string | null;
+  ticketChannelId: string | null;
+}
+
+export interface AppealsView {
+  settings: AppealSettings;
+  panels: { id: string; name: string }[];
+  appeals: AppealRow[];
+  /** The address the moderation DM links to, or null while appeals are off or the site's address isn't set. */
+  appealLink: string | null;
+}
+
 /** How much of a clan reports through the plugin: counts only, never who. */
 export interface PluginCoverage {
   rosterSize: number;
@@ -2438,6 +2472,11 @@ export const adminApi = {
   moderationOfUser: (ctx: ApiContext, userId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/user/${encodeURIComponent(userId)}`),
   moderationByModerator: (ctx: ApiContext, moderatorId: string) => call<{ cases: ModerationCase[] }>(ctx, "GET", `moderation/moderator/${encodeURIComponent(moderatorId)}`),
   saveModerationSettings: (ctx: ApiContext, settings: ModerationSettings) => call<ModerationOverview>(ctx, "PUT", "moderation/settings", settings),
+  /** Ban and mute appeals (T-033): settings, the ticket panels to pick from, the appeal page's address and the appeals, open first. */
+  appeals: (ctx: ApiContext) => call<AppealsView>(ctx, "GET", "appeals"),
+  saveAppealSettings: (ctx: ApiContext, settings: AppealSettings) => call<AppealsView>(ctx, "PUT", "appeals/settings", settings),
+  decideAppeal: (ctx: ApiContext, id: string, approve: boolean, note: string) =>
+    call<AppealsView>(ctx, "POST", `appeals/${encodeURIComponent(id)}/${approve ? "approve" : "reject"}`, { note }),
   editModerationCase: (ctx: ApiContext, caseNo: string, reason: string) => call<{ case: ModerationCase }>(ctx, "PUT", `moderation/case/${encodeURIComponent(caseNo)}`, { reason }),
   warnings: (ctx: ApiContext) => call<WarningList>(ctx, "GET", "warnings"),
   autopunish: (ctx: ApiContext) => call<Autopunish>(ctx, "GET", "warnings/autopunish"),

@@ -5,7 +5,7 @@ import type { MyEvent, MyEvents } from "@/lib/member";
 import { compact, shortDate } from "@/lib/site";
 
 const STAGE: Record<MyEvent["status"], string> = { SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Finished", CANCELLED: "Cancelled" };
-const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", custom: "Event" };
+const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", "clan-vs-clan": "Clan vs clan", custom: "Event" };
 const AWARD: Record<MyEvent["awards"][number]["status"], string> = { PENDING: "Not paid yet", PAID: "Paid", REVOKED: "Revoked", REFUNDED: "Refunded" };
 const BUY_IN: Record<MyEvent["buyIn"]["status"], string> = { NONE: "Not required", DUE: "Due: pay the host", PAID: "Paid", REFUNDED: "Refunded" };
 

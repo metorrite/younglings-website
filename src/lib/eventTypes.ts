@@ -287,9 +287,27 @@ export interface EventStanding {
   bonuses: string[];
 }
 
+/** A clan-vs-clan event's scoring (T-222): the inner game, how clans are scored, and what each player earned for their clan, by team id. */
+export interface ClanVsClanStandings {
+  game: string;
+  scoring: "TOP_N" | "AVERAGE" | "TOTAL";
+  topN: number;
+  contributions: Record<string, { userId: string; name: string; points: number }[]>;
+}
+
 export interface EventStandings {
   scoringMode: "INDIVIDUAL" | "TEAM";
   standings: EventStanding[];
+  clanVsClan?: ClanVsClanStandings;
+}
+
+export const CLAN_VS_CLAN = "clan-vs-clan";
+
+/** The game an event plays: its template, or for a clan-vs-clan event the inner game its clans play (T-222). */
+export function gameOf(e: { template: string; config?: Record<string, unknown> | null }): string {
+  if (e.template !== CLAN_VS_CLAN) return e.template;
+  const game = e.config?.cvcGame;
+  return typeof game === "string" && ["bingo", "competition", "boss-night", "scavenger-hunt"].includes(game) ? game : "bingo";
 }
 
 export interface EventAward {

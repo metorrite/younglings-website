@@ -314,7 +314,11 @@ export function summaryLines(schema: OptionSchema, answers: Answers, channelName
   lines.push({ label: "Players", text: `${solo ? "Solo players" : "Teams"} · ${choiceLabel(schema, "scope", answers) || "Clan only"} · ${max > 0 ? `up to ${max}` : "no player limit"}` });
 
   const rules: string[] = [];
-  switch (schema.template) {
+  // a clan-vs-clan event: what the clans play and how they are scored, then that game's own rules (T-222)
+  const clanVsClan = schema.template === "clan-vs-clan";
+  const game = clanVsClan ? String(getPath(answers, "config.cvcGame") ?? "bingo") : schema.template;
+  if (clanVsClan) rules.push(`Clans play: ${choiceLabel(schema, "config.cvcGame", answers) || "Bingo"}`, `scored by ${(choiceLabel(schema, "config.cvc.scoring", answers) || "Best players").toLowerCase()}`);
+  switch (game) {
     case "bingo": {
       const layout = String(getPath(answers, "config.board.layout") ?? "grid");
       const size = Number(getPath(answers, "config.board.size") ?? 5);
