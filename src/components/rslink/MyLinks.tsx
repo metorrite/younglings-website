@@ -40,7 +40,7 @@ export function MyLinks({ api, base }: { api: LinkApi; base: string }) {
 
   useEffect(() => {
     let live = true;
-    (async () => {
+    void (async () => {
       const s = await api.state();
       if (!live) return;
       if (!s.ok) return setProblem(s.message);

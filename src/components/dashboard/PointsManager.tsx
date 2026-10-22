@@ -42,6 +42,7 @@ const CATEGORY: Record<string, string> = {
   REDEMPTION: "Reward",
   ADJUSTMENT: "Adjustment",
   KEYWORD: "Keyword",
+  PLUGIN: "RuneSync",
 };
 
 function amount(n: number): string {

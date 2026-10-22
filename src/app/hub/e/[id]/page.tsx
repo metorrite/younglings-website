@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { gateHub } from "@/components/clanshub/gate";
 import { HubEventBadge } from "@/components/clanshub/HubEventParts";
+import { ReportHubEvent } from "@/components/clanshub/ReportHubEvent";
 import { Unavailable } from "@/components/clanshub/parts";
 import { LocalTime } from "@/components/site/LocalTime";
 import { authOptions } from "@/lib/auth";
@@ -101,7 +102,7 @@ export default async function HubEventPage({ params }: { params: Promise<{ id: s
 
       {event.standings && event.standings.length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-semibold">Standings</h2>
+          <h2 className="font-semibold">{event.clanVsClan ? "Clan standings" : "Standings"}</h2>
           <ol className="divide-y divide-surface-border/60 rounded-2xl border border-surface-border text-sm">
             {event.standings.map((r) => (
               <li key={r.rank} className="flex items-center justify-between gap-3 px-4 py-2">
@@ -115,6 +116,10 @@ export default async function HubEventPage({ params }: { params: Promise<{ id: s
           </ol>
         </section>
       )}
+
+      <div className="border-t border-surface-border pt-4">
+        <ReportHubEvent eventId={event.id} />
+      </div>
     </div>
   );
 }

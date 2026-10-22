@@ -11,7 +11,7 @@ export const metadata = { title: "Clan events — Younglings" };
 export const dynamic = "force-dynamic";
 
 const STAGE: Record<MyEvent["status"], string> = { SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Finished", CANCELLED: "Cancelled" };
-const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", custom: "Event" };
+const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", "clan-vs-clan": "Clan vs clan", custom: "Event" };
 
 export default async function ClanEventsPage() {
   const session = await getServerSession(authOptions);

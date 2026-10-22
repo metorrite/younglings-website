@@ -269,7 +269,7 @@ export function ClanProfileForm({ initial, actions, moderationHref }: { initial:
               onChange={(e) => change({ requirements: e.target.value })}
             />
           </FormField>
-          <FormField label="Where to apply" size="lg" hint="A Discord invite or any https:// link.">
+          <FormField label="Where to apply" size="lg" hint="A Discord invite or any https:// link. The hub's join link comes from Server setup; this is only used for it when it's a Discord invite and nothing else is set.">
             <input className={inputClass} value={draft.applyUrl ?? ""} placeholder="https://discord.gg/..." onChange={(e) => change({ applyUrl: e.target.value || null })} />
           </FormField>
         </CollapsibleCard>
