@@ -1,4 +1,5 @@
 import { adminCall, type ApiContext } from "@/lib/jonnybot-admin";
+import type { VerifyByMethod, VerifyOverview } from "@/lib/rslink/verify";
 
 /**
  * The owner's RS Link abuse view (T-118): typed calls to the bot's `/internal/admin/rsnlink/*` routes. The bot checks the owner on every one of
@@ -16,6 +17,10 @@ export interface RsLinkOverview {
   dmsLastHour: number;
   dmHourlyCap: number;
   dmBreakerOpen: boolean;
+  /** Links above implicit (bot T-170); absent on older bots. */
+  verifiedLinks?: number;
+  /** Each link check's service-wide counts by method (bot T-170); empty when none is switched on. */
+  verify?: Record<string, VerifyOverview | undefined>;
   generatedAt: string;
 }
 
@@ -58,6 +63,8 @@ export interface RsLinkSide {
   devices?: number;
   /** Fingerprint of the Discord account, so two links of the same account can be told apart without revealing it. */
   discord?: string;
+  /** The link checks' state by method (bot T-170). */
+  verify?: VerifyByMethod;
 }
 
 export interface RsLinkDispute {
@@ -111,6 +118,7 @@ export const EVENT_LABELS: Record<string, string> = {
   character_mismatch: "Token used by another character",
   dm_not_me: "DM recipient pressed “Not me”",
   dm_breaker: "DM limit for the hour reached",
+  dispute_settled_by_verification: "Dispute settled by the XP check (the confirmed side kept the name)",
 };
 
 export const SUBJECT_LABELS: Record<string, string> = { ip: "IP", discord: "Discord", tracking: "Tracking id", rsn: "RSN", service: "Service" };

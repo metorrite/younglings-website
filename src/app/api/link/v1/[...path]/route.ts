@@ -13,7 +13,7 @@ import { linkEnabled } from "@/lib/rslink/config";
 
 export const dynamic = "force-dynamic";
 
-const POST_ROUTES = new Set(["pair/start", "pair/poll", "pair/dm", "pair/dm/confirm", "session", "alias", "unlink", "forget-me"]);
+const POST_ROUTES = new Set(["pair/start", "pair/poll", "pair/dm", "pair/dm/confirm", "session", "xp", "alias", "unlink", "forget-me"]);
 const TOKEN = /^lnk_[A-Za-z0-9_-]{43}$/;
 const MAX_BODY = 8 * 1024;
 

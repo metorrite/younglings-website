@@ -2,6 +2,7 @@ import { RsLinkAbuseView } from "@/components/admin/RsLinkAbuseView";
 import { Card, Notice, StatusBadge, formatUtc } from "@/components/admin/ui";
 import { requireOwner } from "@/lib/admin";
 import { EVENT_LABELS, SUBJECT_LABELS, rsnLinkAdmin } from "@/lib/rsnLinkAdmin";
+import { XP_CHECK } from "@/lib/rslink/verify";
 
 export const metadata = { title: "RS Link abuse — Admin — Younglings" };
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ export default async function RsLinkAbusePage() {
     );
   }
   const o = overview.data;
+  const xp = o.verify?.[XP_CHECK];
   const kinds = Object.entries(o.events).sort((a, b) => b[1].day - a[1].day || b[1].week - a[1].week);
 
   return (
@@ -59,6 +61,53 @@ export default async function RsLinkAbusePage() {
           {o.dmsLastHour} of {o.dmHourlyCap} sent in the last hour{" "}
           {o.dmBreakerOpen ? <StatusBadge tone="warn">Limit reached: new DM requests are not sent</StatusBadge> : <StatusBadge tone="good">Sending normally</StatusBadge>}
         </p>
+      </Card>
+
+      <Card
+        title="Link verification"
+        hint="The “plugin knew it first” check: RS Link reports a player's exact XP before the Hiscores show it; when the Hiscores later match, the link is confirmed and wins any dispute over the name. Switched on with LINK_VERIFY_ENABLED on the bot."
+      >
+        {!xp ? (
+          <p className="text-sm">
+            <StatusBadge tone="muted">Off</StatusBadge> <span className="text-muted">Every link stays “implicit”. {o.verifiedLinks ? `${o.verifiedLinks} link(s) were confirmed earlier.` : ""}</span>
+          </p>
+        ) : (
+          <div className="space-y-3 text-sm">
+            <p>
+              <StatusBadge tone="good">On</StatusBadge>{" "}
+              <span className="text-muted">
+                {o.verifiedLinks ?? 0} confirmed link(s). Needs {xp.minMatches} matches of at least {xp.minGainXp} XP; at most {xp.checksPerMinute} checks a minute and{" "}
+                {xp.checksPerLinkPerDay} per link a day.
+              </span>
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Stat label="Watching" value={xp.totals.watches ?? 0} />
+              <Stat label="Checks due now" value={xp.totals.watchesDue ?? 0} />
+              <Stat label="Waiting for the Hiscores" value={xp.totals.claims_pending ?? 0} />
+              <Stat label="Matches" value={xp.totals.claims_match ?? 0} />
+              <Stat label="Misses" value={xp.totals.claims_miss ?? 0} warn={(xp.totals.claims_miss ?? 0) > (xp.totals.claims_match ?? 0) * 2} />
+              <Stat label="Refused (already public)" value={xp.totals.claims_refused_public ?? 0} warn={(xp.totals.claims_refused_public ?? 0) > 0} />
+              <Stat label="Over a daily budget" value={xp.budgetRefusals} />
+              <Stat label="Failed reads" value={xp.failedReads} warn={xp.failedReads > 0} />
+            </div>
+            <p className="text-xs text-muted">
+              Many “already public” values from one link mean someone is copying the Hiscores rather than playing. Budget and failed-read counts reset when the bot restarts.
+            </p>
+            {xp.recent.length > 0 && (
+              <ul className="divide-y divide-white/10">
+                {xp.recent.map((r) => (
+                  <li key={r.linkId} className="flex flex-wrap gap-3 py-1.5">
+                    <code>{r.linkId.slice(0, 8)}</code>
+                    <span>
+                      {r.matches} matches, {r.misses} misses
+                    </span>
+                    <span className="text-muted">confirmed {formatUtc(r.corroboratedAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </Card>
 
       <Card title="What is being tried" hint="Abuse events by kind, in the last 24 hours and 7 days. They are kept for 30 days.">

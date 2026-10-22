@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { LinkApi, LinkRow } from "./linkApi";
 import { LinkPanel, linkButton, linkGhostButton } from "./LinkShell";
+import { XP_CHECK, verifyWords } from "@/lib/rslink/verify";
 
 const STATUS: Record<LinkRow["status"], string> = {
   active: "Linked",
@@ -17,6 +18,14 @@ function day(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toISOString().slice(0, 10);
+}
+
+/** Whether the link is confirmed by the "plugin knew it first" check, in plain words. Nothing when the check is off. */
+function VerifyLine({ row }: { row: LinkRow }) {
+  const words = verifyWords(row.verification, row.verify?.[XP_CHECK]);
+  if (!words) return null;
+  const colour = words.tone === "good" ? "text-emerald-300" : words.tone === "warn" ? "text-amber-300" : "text-muted";
+  return <p className={`mt-1 text-xs ${colour}`}>{words.text}</p>;
 }
 
 /** The signed-in Discord account's links (section 9): each character, unlink, and delete everything. */
@@ -124,6 +133,7 @@ export function MyLinks({ api, base }: { api: LinkApi; base: string }) {
                       {l.method === "dm" ? "by DM code" : "by sign-in"} · {l.verification === "implicit" ? "not verified" : l.verification.replace(/_/g, " ")}
                     </p>
                     {l.previousNames.length > 0 && <p className="text-xs text-muted">Previously: {l.previousNames.join(", ")}</p>}
+                    <VerifyLine row={l} />
                   </div>
                   <button type="button" className="shrink-0 rounded-lg border border-red-500/40 px-3 py-1.5 text-sm text-red-300 hover:bg-red-500/10 disabled:opacity-50" disabled={busy} onClick={() => void unlink(l)}>
                     Unlink
