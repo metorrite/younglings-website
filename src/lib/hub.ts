@@ -5,8 +5,10 @@
  * What moves to the hub when it is set:
  * - the RS Link sign-in page (`/api/link/web/*`): bot `/internal/rsnlink/web/<route>` becomes hub `/web/link/<route>`;
  * - the RS Link plugin proxy (`/api/link/v1/*`): bot `/internal/rsnlink/v1/<route>` becomes hub `/v1/link/<route>`;
- * - RuneSync's upload and whoami with an RS Link assertion: bot `/internal/plugin/ingest|whoami` becomes hub `/v1/plugin/ingest|whoami`.
- * Everything else (manual `jbp_` tokens, the RuneSync settings panel routes, the profile's plugin page) stays on the bot for now.
+ * - RuneSync with an RS Link assertion: upload, whoami, settings, in-game consent and diagnostics go to the hub's `/v1/plugin/...`
+ *   (T-163); the settings answer still takes `panelAvailable` from the bot, whose clan panel stays there;
+ * - the profile's plugin tab: consent, stored events, RuneSync activity and the bots the player granted (lib/plugin.ts).
+ * Manual `jbp_` tokens, the clan visibility switch and the in-game clan panel stay on the bot.
  *
  * No imports, so the path rules can be tested with `node --test`.
  */
@@ -35,11 +37,22 @@ export function hubLinkPath(rsnlinkPath: string): string | null {
   return null;
 }
 
-/** The hub path for a bot `/internal/plugin/...` path when the hub serves it for RS Link assertions, else null (keep it on the bot). */
+/**
+ * The hub path for a bot `/internal/plugin/...` path when the hub serves it for RS Link assertions, else null (keep it on the bot). A query
+ * string is kept. The in-game clan panel (`runesync/panel`) is JonnyBot's and stays there.
+ */
 export function hubPluginPath(internalPath: string): string | null {
-  if (internalPath === "/internal/plugin/ingest") return "/v1/plugin/ingest";
-  if (internalPath === "/internal/plugin/whoami") return "/v1/plugin/whoami";
-  return null;
+  const q = internalPath.indexOf("?");
+  const path = q < 0 ? internalPath : internalPath.slice(0, q);
+  const query = q < 0 ? "" : internalPath.slice(q);
+  const mapped: Record<string, string> = {
+    "/internal/plugin/ingest": "/v1/plugin/ingest",
+    "/internal/plugin/whoami": "/v1/plugin/whoami",
+    "/internal/plugin/runesync/config": "/v1/plugin/runesync/config",
+    "/internal/plugin/runesync/consent": "/v1/plugin/runesync/consent",
+    "/internal/plugin/runesync/diagnostics": "/v1/plugin/runesync/diagnostics",
+  };
+  return mapped[path] ? mapped[path] + query : null;
 }
 
 /**

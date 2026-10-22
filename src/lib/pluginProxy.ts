@@ -54,6 +54,11 @@ export async function forwardToBot(request: Request, path: string, method: "GET"
     ? await hubCall(hubPath, { method, headers: { Authorization: `RSLink ${assertion}` }, body })
     : await botCall(path, { method, headers: token ? { "X-Plugin-Token": token } : { Authorization: `RSLink ${assertion}` }, body });
   if (!answer) return unavailable();
+  // The hub's settings answer can't know about JonnyBot's clan panel: ask the bot for that one flag (off when it can't say).
+  if (hubPath?.startsWith("/v1/plugin/runesync/config") && answer.status === 200 && answer.json && typeof answer.json === "object") {
+    const bot = await botCall<{ panelAvailable?: boolean }>(path, { method: "GET", headers: { Authorization: `RSLink ${assertion}` } });
+    (answer.json as Record<string, unknown>).panelAvailable = bot?.status === 200 && bot.json.panelAvailable === true;
+  }
   return new Response(JSON.stringify(answer.json), {
     status: answer.status,
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-API-Version": "1" },

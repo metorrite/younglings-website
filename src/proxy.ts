@@ -17,7 +17,7 @@ const OWN_PAGES = new Set(["docs", "install", "faq", "privacy", "terms", "runesy
 /** What the JonnyBot host serves as it is, from the shared app. */
 const SHARED = new Set(["dashboard", "api", "_next"]);
 /** The RS Link face's pages, as shown on its own host (served from /link/...). */
-const LINK_PAGES = new Set(["confirm", "links", "privacy"]);
+const LINK_PAGES = new Set(["confirm", "links", "privacy", "grant"]);
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
