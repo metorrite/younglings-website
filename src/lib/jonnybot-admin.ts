@@ -500,6 +500,33 @@ export interface Anniversaries {
   sent?: boolean;
 }
 
+/** The weekly staff digest (T-193). `weekday` 1 = Monday … 7 = Sunday; `hour` is UTC. */
+export interface StaffDigestSettings {
+  enabled: boolean;
+  channelId: string | null;
+  weekday: number;
+  hour: number;
+  /** The day it last posted (yyyy-mm-dd), or null. */
+  lastPostedOn: string | null;
+}
+
+export interface StaffDigest {
+  settings: StaffDigestSettings;
+  /** What a digest posted now would say. `rosterSize` 0 = no clan line; `openTickets` null = no ticket line (tickets never used). */
+  preview: {
+    rosterSize: number;
+    inactive: number;
+    unverified: number;
+    promotionsDue: number;
+    stale: number;
+    openTickets: number | null;
+    escalated: number | null;
+    events: { name: string; start: string }[];
+    maxEvents: number;
+  };
+  sent?: boolean;
+}
+
 export interface AttentionItem {
   rsn: string;
   detail: string;
@@ -2415,6 +2442,9 @@ export const adminApi = {
   anniversaries: (ctx: ApiContext) => call<Anniversaries>(ctx, "GET", "anniversaries"),
   saveAnniversaries: (ctx: ApiContext, body: Omit<AnniversarySettings, "lastPostedOn">) => call<Anniversaries>(ctx, "PUT", "anniversaries", body),
   sendAnniversaries: (ctx: ApiContext) => call<Anniversaries>(ctx, "POST", "anniversaries/send"),
+  staffDigest: (ctx: ApiContext) => call<StaffDigest>(ctx, "GET", "staff-digest"),
+  saveStaffDigest: (ctx: ApiContext, body: Omit<StaffDigestSettings, "lastPostedOn">) => call<StaffDigest>(ctx, "PUT", "staff-digest", body),
+  sendStaffDigest: (ctx: ApiContext) => call<StaffDigest>(ctx, "POST", "staff-digest/send"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
   suggestions: (ctx: ApiContext) => call<SuggestionList>(ctx, "GET", "suggestions"),
