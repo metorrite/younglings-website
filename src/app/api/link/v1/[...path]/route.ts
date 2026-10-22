@@ -34,7 +34,7 @@ async function forward(request: Request, route: string, method: "GET" | "POST", 
   const headers: Record<string, string> = { "X-Link-Client-Ip": clientIp(request) };
   const auth = /^Bearer\s+(\S+)$/i.exec((request.headers.get("authorization") ?? "").trim());
   if (auth && TOKEN.test(auth[1])) headers.Authorization = `Bearer ${auth[1]}`;
-  // With HUB_BASE_URL set, the RSClans hub answers instead of the bot (lib/hub.ts); same routes, same answers.
+  // With HUB_BASE_URL set, the RuneClans hub answers instead of the bot (lib/hub.ts); same routes, same answers.
   const hubPath = hubBaseUrl() ? hubLinkPath(`v1/${route}`) : null;
   const bot = hubPath
     ? await hubCall<Record<string, unknown>>(hubPath, { method, headers, body })

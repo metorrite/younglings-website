@@ -11,7 +11,7 @@ export default async function LinkMyLinks() {
   return (
     <div className="space-y-4">
       <MyLinksPage base={linkPagePath(site.linkHost, "/")} />
-      {/* with the RSClans hub, the bots the player let see their plugin data (T-163) */}
+      {/* with the RuneClans hub, the bots the player let see their plugin data (T-163) */}
       {hubBaseUrl() && <MyGrants />}
     </div>
   );

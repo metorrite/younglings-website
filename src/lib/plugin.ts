@@ -11,7 +11,7 @@ export interface PluginView {
   categories: { key: string; label: string; description: string }[];
   storedEvents: number;
   maxTokens: number;
-  /** With the RSClans hub (HUB_BASE_URL): the bots the player let see their data. Absent without the hub. */
+  /** With the RuneClans hub (HUB_BASE_URL): the bots the player let see their data. Absent without the hub. */
   grants?: HubGrant[];
 }
 
@@ -88,7 +88,7 @@ async function hubAccount<T>(discordId: string, path: string, method: string, bo
 type HubPlayer = { characters: { rsn: string }[]; consented: string[]; categories: PluginView["categories"]; grants: HubGrant[]; storedEvents: number };
 
 /**
- * With the RSClans hub, consent, stored events, RuneSync's records and grants live there; plugin tokens (jbp_) and the clan visibility
+ * With the RuneClans hub, consent, stored events, RuneSync's records and grants live there; plugin tokens (jbp_) and the clan visibility
  * switch stay with the bot. A player with no RS Link character yet has nothing on the hub, which is not an error.
  */
 async function hubView(userId: string): Promise<PluginResult<PluginView>> {
