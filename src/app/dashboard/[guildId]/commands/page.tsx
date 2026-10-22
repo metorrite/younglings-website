@@ -7,12 +7,17 @@ import { saveHubCommandAction } from "./actions";
 export default async function CommandsPage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [hub, structure] = await Promise.all([adminApi.hub(guild).then(dashboardData), adminApi.structure(guild).then(dashboardData)]);
+  // usage figures are a nice-to-have: an older bot (or a failed read) just leaves them out
+  const [hub, structure, usage] = await Promise.all([
+    adminApi.hub(guild).then(dashboardData),
+    adminApi.structure(guild).then(dashboardData),
+    adminApi.commandUsage(guild).then((r) => (r.ok ? r.data : null)),
+  ]);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Commands" description="The slash commands members can use in this server. Open one to turn it off. The Advanced view adds who may use it (admins always can), the channels it works in and, for Signups, the admin channel and where the public panel can go." />
-      <HubEditor hub={hub} structure={structure} canEditAccess={guild.tier === "ADMIN"} save={saveHubCommandAction.bind(null, guildId)} />
+      <HubEditor hub={hub} structure={structure} usage={usage} canEditAccess={guild.tier === "ADMIN"} save={saveHubCommandAction.bind(null, guildId)} />
     </div>
   );
 }
