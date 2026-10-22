@@ -1793,6 +1793,14 @@ export interface AllianceEvents {
 }
 
 /** How much of a clan reports through the plugin: counts only, never who. */
+/** A clan's points for plugin reports (T-061): one rule per report type, 0 points = off. `minValueGp` is only on DROP. */
+export interface PluginPointsView {
+  rules: { type: string; label: string; points: number; dailyCap: number; minValueGp?: number }[];
+  pointsEnabled: boolean;
+  unit: string;
+  maxPoints: number;
+}
+
 export interface PluginCoverage {
   rosterSize: number;
   linkedPlayers: number;
@@ -2462,6 +2470,9 @@ export const adminApi = {
     call<AllianceList>(ctx, "POST", `alliances/${encodeURIComponent(id)}/remove`, { guildId }),
   allianceEvents: (ctx: ApiContext, id: string) => call<AllianceEvents>(ctx, "GET", `alliances/${encodeURIComponent(id)}/events`),
   pluginCoverage: (ctx: ApiContext) => call<PluginCoverage>(ctx, "GET", "plugin-coverage"),
+  pluginPoints: (ctx: ApiContext) => call<PluginPointsView>(ctx, "GET", "plugin-points"),
+  setPluginPoints: (ctx: ApiContext, rules: PluginPointsView["rules"]) =>
+    call<PluginPointsView>(ctx, "PUT", "plugin-points", { rules: rules.map((r) => ({ type: r.type, points: r.points, dailyCap: r.dailyCap, minValueGp: r.minValueGp ?? null })) }),
   voiceText: (ctx: ApiContext) => call<VoiceText>(ctx, "GET", "voice-text"),
   saveVoiceText: (ctx: ApiContext, body: { enabled: boolean; announce: boolean; purgeWhenEmpty: boolean; links: { voiceChannelId: string; textChannelId: string }[] }) => call<VoiceText>(ctx, "PUT", "voice-text", body),
 

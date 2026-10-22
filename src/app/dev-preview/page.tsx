@@ -33,6 +33,7 @@ import { ModLogForm } from "@/components/dashboard/ModLogForm";
 import { AccountGateForm } from "@/components/dashboard/AccountGateForm";
 import { HubEditor } from "@/components/dashboard/HubEditor";
 import { LanguageForm } from "@/components/dashboard/LanguageForm";
+import { PluginPointsForm } from "@/components/dashboard/PluginPointsForm";
 import { messagesFor, t } from "@/lib/i18n";
 import { ModerationManager } from "@/components/dashboard/ModerationManager";
 import { HoneypotForm } from "@/components/dashboard/HoneypotForm";
@@ -661,6 +662,25 @@ function Preview() {
                 { id: "rules", label: "I have read the rules", kind: "CHECKBOX", required: true, options: [], maxLength: 3 },
               ]}
             />
+          )}
+          {view === "plugin-points" && (
+            <>
+              <PageHeader title="Clan plugin" description="Points for plugin reports." />
+              <PluginPointsForm
+                initial={{
+                  pointsEnabled: true,
+                  unit: "points",
+                  maxPoints: 10000,
+                  rules: [
+                    { type: "KILL", label: "Boss kill", points: 2, dailyCap: 50 },
+                    { type: "DROP", label: "Valuable drop", points: 10, dailyCap: 0, minValueGp: 1000000 },
+                    { type: "CLUE", label: "Clue scroll", points: 0, dailyCap: 0 },
+                    { type: "LEVEL_UP", label: "Level up", points: 0, dailyCap: 0 },
+                  ],
+                }}
+                save={async (rules) => ({ ok: true, data: { pointsEnabled: true, unit: "points", maxPoints: 10000, rules } })}
+              />
+            </>
           )}
           {view === "language" && (
             <>
