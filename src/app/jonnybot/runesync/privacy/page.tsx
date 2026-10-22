@@ -49,6 +49,10 @@ export default async function RuneSyncPrivacyPage() {
           profile can show that.
         </p>
         <p>
+          If your clan allows the in-game clan panel and you switch it on in RuneSync, RuneSync asks JonnyBot for your clan&apos;s open events and your own points and
+          progress while the panel is open. That request sends nothing beyond the signed proof above.
+        </p>
+        <p>
           Kill counts and clues need the optional chat permission. RuneSync only reads your own game messages, never clan, friends or public chat, and only the boss
           name, kill count, clue tier and count leave the game. Chat text is never sent.
         </p>
@@ -62,7 +66,8 @@ export default async function RuneSyncPrivacyPage() {
         <p>
           If you press &ldquo;Get diagnostics id&rdquo; in RuneSync&apos;s panel, it sends a snapshot of the plugin&apos;s own state: its version, your switches, whether it is paused,
           how many reports are waiting, the results of the last 20 uploads and which permissions are granted. No proof of your link, no name, no chat and none of what
-          you reported. You get a short id to put in a bug report. Snapshots are deleted after 14 days.
+          you reported. JonnyBot stores it with your Discord account id, so it knows whose report it is. You get a short id to put in a bug report. Snapshots are
+          deleted after 14 days.
         </p>
       </Section>
 
@@ -86,7 +91,7 @@ export default async function RuneSyncPrivacyPage() {
         <ul>
           <li>You see everything RuneSync sent about you on your JonnyBot profile (Plugin tab).</li>
           <li>Your clan sees what its events and points use: progress on event tiles, kills counted in a boss night, points awarded.</li>
-          <li>The person who runs JonnyBot can open a bug-report snapshot when you share its id.</li>
+          <li>The person who runs JonnyBot can open your bug-report snapshots by their id, to help with a bug report.</li>
         </ul>
       </Section>
 
