@@ -55,6 +55,16 @@ paths:
       responses:
         "200": { description: The events, content: { application/json: { schema: { $ref: "#/components/schemas/EventList" } } } }
         "404": { $ref: "#/components/responses/Error" }
+  /v1/clans/{slug}/calendar.ics:
+    get:
+      tags: [Public]
+      summary: The same events as a calendar feed (iCalendar) to subscribe to
+      description: Calendar apps subscribe to it (webcal://) and look again every few hours. Answers 404 while the site's calendar feeds are switched off.
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200": { description: The events as an iCalendar feed, content: { text/calendar: { schema: { type: string } } } }
+        "404": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
   /v1/clans/{slug}/report:
     post:
       tags: [Public]

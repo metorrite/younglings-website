@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { gateHub } from "@/components/clanshub/gate";
 import { ClanMark, compact, EventCard, FocusChips, RecruitingBadge, SectionHeader, Stat, Unavailable, VerifiedTick } from "@/components/clanshub/parts";
 import { ReportClan } from "@/components/clanshub/ReportClan";
+import { CalendarSubscribe } from "@/components/site/CalendarSubscribe";
 import { clanAccent, clanEvents, getClan, leaderboard, withAlpha } from "@/lib/clansHub";
 import { canSeeHub } from "@/lib/hubAccess";
 import { hubHref } from "@/lib/siteHosts";
@@ -159,6 +160,7 @@ export default async function ClanPage({ params }: { params: Promise<{ slug: str
           )}
           <section aria-label="Upcoming events" className="space-y-4">
             <SectionHeader title="Coming up" hint={`Public events from ${clan.name}.`} />
+            <CalendarSubscribe path={`/api/v1/clans/${slug}/calendar.ics`} api />
             {events.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-surface-border p-6 text-sm text-muted">This clan has no public events scheduled.</p>
             ) : (
