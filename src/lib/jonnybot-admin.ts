@@ -479,6 +479,27 @@ export interface Roster {
   generatedAt: string;
 }
 
+/** The weekly clan-anniversary post (T-194). `weekday` 1 = Monday … 7 = Sunday; `hour` is UTC. */
+export interface AnniversarySettings {
+  enabled: boolean;
+  channelId: string | null;
+  weekday: number;
+  hour: number;
+  minYears: number;
+  /** The day it last posted (yyyy-mm-dd), or null. */
+  lastPostedOn: string | null;
+}
+
+export interface Anniversaries {
+  settings: AnniversarySettings;
+  /** Who reaches an anniversary in the seven days from today. */
+  preview: { from: string; to: string; items: { rsn: string; years: number; date: string }[] };
+  /** False when the server has no clan roster (so nothing can ever be posted). */
+  hasRoster: boolean;
+  limits: { maxMinYears: number };
+  sent?: boolean;
+}
+
 export interface AttentionItem {
   rsn: string;
   detail: string;
@@ -2335,6 +2356,9 @@ export const adminApi = {
   saveSiteOptions: (ctx: ApiContext, options: { navEventBubble: boolean }) => call<{ navEventBubble: boolean }>(ctx, "PUT", "site/options", options),
   roster: (ctx: ApiContext) => call<Roster>(ctx, "GET", "members"),
   attention: (ctx: ApiContext) => call<Attention>(ctx, "GET", "attention"),
+  anniversaries: (ctx: ApiContext) => call<Anniversaries>(ctx, "GET", "anniversaries"),
+  saveAnniversaries: (ctx: ApiContext, body: Omit<AnniversarySettings, "lastPostedOn">) => call<Anniversaries>(ctx, "PUT", "anniversaries", body),
+  sendAnniversaries: (ctx: ApiContext) => call<Anniversaries>(ctx, "POST", "anniversaries/send"),
   health: (ctx: ApiContext) => call<BotHealth>(ctx, "GET", "health"),
   overview: (ctx: ApiContext) => call<Overview>(ctx, "GET", "overview"),
   suggestions: (ctx: ApiContext) => call<SuggestionList>(ctx, "GET", "suggestions"),
