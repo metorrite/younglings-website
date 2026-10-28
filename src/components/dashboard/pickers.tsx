@@ -108,7 +108,7 @@ export function ChannelListPicker({
       {!disabled && (
         <div className="flex flex-wrap items-start gap-2">
           <div className="min-w-0 max-w-xs flex-1">
-            <ChannelSelect channels={channels} forums={forums} threads={threads} allowForums={allowForums} onlyPostable value={adding} onChange={setAdding} none="Add a channel…" exclude={value} />
+            <ChannelSelect channels={channels} forums={forums} threads={threads} allowForums={allowForums} onlyPostable value={adding} onChange={setAdding} none="Add a channel…" exclude={value} label="Add a channel" />
           </div>
           <button type="button" className={ghostButton} disabled={!adding || value.length >= max} onClick={() => { if (adding) onChange([...value, adding]); setAdding(null); }}>
             + Add

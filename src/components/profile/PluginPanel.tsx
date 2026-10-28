@@ -1,8 +1,9 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { createPluginTokenAction, deletePluginDataAction, revokePluginTokenAction, savePluginConsentAction } from "@/app/profile/pluginActions";
+import { createPluginTokenAction, deletePluginDataAction, revokeBotGrantAction, revokePluginTokenAction, savePluginConsentAction } from "@/app/profile/pluginActions";
 import type { PluginView } from "@/lib/plugin";
 import { shortDate } from "@/lib/site";
 
@@ -55,8 +56,8 @@ export function PluginPanel({ initial }: { initial: PluginView }) {
     });
   }
 
-  function wipe() {
-    if (!window.confirm("Delete everything the plugin has reported about you, and all your plugin tokens and choices? This can't be undone.")) return;
+  async function wipe() {
+    if (!(await confirmDialog({ title: "Delete everything the plugin has reported about you?", body: "That includes all your plugin tokens and choices. This can't be undone.", confirmLabel: "Delete it all", tone: "danger" }))) return;
     setNote(null);
     setFresh(null);
     start(async () => {
@@ -64,6 +65,16 @@ export function PluginPanel({ initial }: { initial: PluginView }) {
       if (!result.ok) return say("error", result.error);
       setView(result.data.view);
       say("ok", `Deleted ${result.data.removedEvents} reported ${result.data.removedEvents === 1 ? "event" : "events"}, your tokens and your choices.`);
+    });
+  }
+
+  function removeGrant(appId: string, name: string) {
+    setNote(null);
+    start(async () => {
+      const result = await revokeBotGrantAction(appId);
+      if (!result.ok) return say("error", result.error);
+      setView(result.data);
+      say("ok", `${name} can no longer see your plugin data.`);
     });
   }
 
@@ -173,6 +184,33 @@ export function PluginPanel({ initial }: { initial: PluginView }) {
           {active.length >= view.maxTokens && <span className="text-xs text-muted">You have {view.maxTokens} active tokens. Revoke one to make another.</span>}
         </div>
       </section>
+
+      {view.grants && (
+        <section className="rounded-xl border border-surface-border bg-surface p-5">
+          <h2 className="font-semibold text-gold">Other bots that can see your plugin data</h2>
+          <p className="mt-1 text-xs text-muted">Bots ask you on the RS Link page; nothing is shared until you allow it there. Remove one here at any time.</p>
+          {view.grants.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">None.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-surface-border/60 rounded-lg border border-surface-border/60">
+              {view.grants.map((g) => (
+                <li key={g.appId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <span>
+                    <span className="font-medium">{g.appName ?? "A bot"}</span>
+                    <span className="block text-xs text-muted">
+                      Sees: {g.categories.length ? g.categories.join(", ").toLowerCase() : "nothing from the plugin"}
+                      {g.identity ? " · knows your Discord account" : ""} · since {shortDate(g.createdAt)}
+                    </span>
+                  </span>
+                  <button type="button" className={danger} disabled={pending} onClick={() => removeGrant(g.appId, g.appName ?? "That bot")}>
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="rounded-xl border border-surface-border bg-surface p-5">
         <h2 className="font-semibold text-gold">Your data</h2>

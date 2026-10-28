@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveClanPointsAction } from "@/app/admin/(console)/actions";
+import type { ActionResult } from "@/app/admin/(console)/actions";
 import type { ClanPoints } from "@/lib/jonnybot-admin";
 import { Card, FormField, inputClass, Notice, primaryButton } from "./ui";
 
-export function ClanPointsForm({ initial }: { initial: ClanPoints }) {
+/** `save` is the Server Action that writes the settings: the dashboard passes one that checks the server, the old /admin page its own. */
+export function ClanPointsForm({ initial, save: saveAction }: { initial: ClanPoints; save: (input: unknown) => Promise<ActionResult<ClanPoints>> }) {
   const [s, setS] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -21,7 +22,7 @@ export function ClanPointsForm({ initial }: { initial: ClanPoints }) {
     setError(null);
     setSaved(false);
     start(async () => {
-      const result = await saveClanPointsAction({
+      const result = await saveAction({
         dailyMembershipPoints: s.dailyMembershipPoints,
         citadelVisitPoints: s.citadelVisitPoints,
         citadelCapPoints: s.citadelCapPoints,

@@ -1,20 +1,21 @@
 "use client";
 
+import { ErrorReference } from "@/components/admin/ErrorPanel";
 import { ghostButton } from "@/components/admin/ui";
+import { errorText } from "@/lib/botUnreachable";
 
 /**
- * Shown when something under /admin throws — most often because JonnyBot can't be reached, in which case
- * `requireAdmin()` throws rather than guessing (access is never granted because the check couldn't run).
+ * Shown when something under /admin throws. "Can't reach JonnyBot" only when `requireAdmin()` couldn't run its check because the bot didn't answer
+ * (access is never granted because the check couldn't run); any other error says so plainly, with its reference for a bug report.
  */
-export default function AdminError({ reset }: { error: Error; reset: () => void }) {
+export default function AdminError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  const { title, body, reference } = errorText(error, "Make sure the bot is running, then try again.");
   return (
     <div className="mx-auto max-w-xl px-4 py-24 text-center sm:px-6">
-      <h1 className="text-xl font-semibold">Can&apos;t reach JonnyBot</h1>
-      <p className="mt-3 text-sm text-muted">
-        The dashboard checks with the bot on every action, and it isn&apos;t answering right now, so nothing can be shown or changed. Make sure the bot is
-        running, then try again.
-      </p>
-      <button type="button" onClick={reset} className={`${ghostButton} mt-6`}>
+      <h1 className="text-xl font-semibold">{title}</h1>
+      <p className="mt-3 text-sm text-muted">{body}</p>
+      <ErrorReference reference={reference} />
+      <button type="button" onClick={() => retry()} className={`${ghostButton} mt-6`}>
         Try again
       </button>
     </div>

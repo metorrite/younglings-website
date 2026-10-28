@@ -1,9 +1,11 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   dangerButton,
+  FormField,
   formatUtc,
   ghostButton,
   inputClass,
@@ -11,7 +13,9 @@ import {
   primaryButton,
   StatusBadge,
 } from "@/components/admin/ui";
-import type { Alliance, AllianceEvents, AllianceList, WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { CollapsibleCard, Chip } from "@/components/dashboard/ui/CollapsibleCard";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
+import type { Alliance, AllianceEvents, AllianceList, AllianceVisibility, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 type Result = Promise<WelcomeActionResult<AllianceList>>;
 
@@ -21,7 +25,15 @@ export interface AllianceActions {
   accept: (id: string) => Result;
   leave: (id: string) => Result;
   remove: (id: string, clanGuildId: string) => Result;
+  /** What this clan's public hub page says about its alliances. Left out where there is nothing to save it to. */
+  setVisibility?: (visibility: AllianceVisibility) => Result;
 }
+
+const VISIBILITY: { key: AllianceVisibility; label: string; hint: string }[] = [
+  { key: "HIDDEN", label: "Say nothing", hint: "Your clan page has no alliances section. This is the default." },
+  { key: "NO_ALLIES", label: "Say “No allies”", hint: "Your clan page says you have no allies, even if you have. Alliances still work for sharing events." },
+  { key: "SHOWN", label: "Show my allies", hint: "Your clan page lists the clans you are allied with, and links to each alliance's page." },
+];
 
 /** This server's alliances: start one, answer invitations, invite clans by their directory address, and see the shared calendar. */
 export function AlliancesManager({
@@ -54,6 +66,7 @@ export function AlliancesManager({
     });
   }
 
+  const visibility: AllianceVisibility = data.visibility ?? "HIDDEN";
   const invitations = data.alliances.filter((a) => a.status === "INVITED");
   const active = data.alliances.filter((a) => a.status === "ACTIVE");
 
@@ -61,6 +74,37 @@ export function AlliancesManager({
     <div className="space-y-6">
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
+
+      {actions.setVisibility && (
+        <CollapsibleCard
+          id="alliance-visibility"
+          title="On the clans hub"
+          hint="Whether your public clan page shows your alliances."
+          defaultOpen={active.length > 0}
+          summary={<Chip tone={visibility === "SHOWN" ? "good" : "plain"}>{VISIBILITY.find((v) => v.key === visibility)?.label}</Chip>}
+          info="Having alliances and showing them are separate things: alliances work the same whichever you choose. Hiding is mutual. A clan that says nothing or says it has no allies is never named on another clan's page or on an alliance page either, and only clans that are publicly listed in the directory are ever named. Whoever is hidden is never revealed by someone else."
+        >
+          <div role="radiogroup" aria-label="What your clan page shows" className="flex flex-wrap gap-2">
+            {VISIBILITY.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                role="radio"
+                aria-checked={visibility === v.key}
+                disabled={pending}
+                onClick={() => run(() => actions.setVisibility!(v.key), "Saved.")}
+                className={`rounded-full border px-3 py-1 text-xs transition ${visibility === v.key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-muted">{VISIBILITY.find((v) => v.key === visibility)?.hint}</p>
+          {visibility === "SHOWN" && (
+            <p className="text-xs text-muted">Only active allies that are publicly listed and have chosen to show their own alliances are named. If none have, your page says “No allies”.</p>
+          )}
+        </CollapsibleCard>
+      )}
 
       {invitations.length > 0 && (
         <section className="space-y-3 rounded-xl border border-gold/40 bg-gold/5 p-5">
@@ -90,21 +134,28 @@ export function AlliancesManager({
       {active.length === 0 ? (
         <p className="rounded-xl border border-dashed border-surface-border p-6 text-center text-sm text-muted">Your clan isn&apos;t in an alliance yet. Start one below.</p>
       ) : (
-        active.map((a) => <AllianceCard key={a.id} alliance={a} events={calendars[a.id] ?? []} slug={slugs[a.id] ?? ""} setSlug={(v) => setSlugs({ ...slugs, [a.id]: v })} pending={pending} run={run} actions={actions} eventsHref={eventsHref} />)
+        <PanelGrid min="26rem">
+          {active.map((a) => <AllianceCard key={a.id} alliance={a} events={calendars[a.id] ?? []} slug={slugs[a.id] ?? ""} setSlug={(v) => setSlugs({ ...slugs, [a.id]: v })} pending={pending} run={run} actions={actions} eventsHref={eventsHref} />)}
+        </PanelGrid>
       )}
 
-      <section className="space-y-3 rounded-xl border border-surface-border bg-surface p-5">
-        <h2 className="font-semibold text-gold">Start an alliance</h2>
-        <p className="text-xs text-muted">
-          A server can be in {data.maxPerServer} alliances and an alliance holds up to {data.maxMembers} clans. You invite clans afterwards, by the address they have in the clan directory.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <input className={`${inputClass} max-w-xs`} value={name} maxLength={40} placeholder="Alliance name" aria-label="Alliance name" onChange={(e) => setName(e.target.value)} />
+      <CollapsibleCard
+        id="alliance-start"
+        title="Start an alliance"
+        hint={`A server can be in ${data.maxPerServer} alliances and an alliance holds up to ${data.maxMembers} clans.`}
+        defaultOpen={active.length === 0}
+        summary={<Chip>{active.length} joined</Chip>}
+      >
+        <p className="text-xs text-muted">You invite clans afterwards, by the address they have in the clan directory.</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <FormField label="Alliance name" size="md">
+            <input className={inputClass} value={name} maxLength={40} placeholder="Alliance name" onChange={(e) => setName(e.target.value)} />
+          </FormField>
           <button type="button" className={primaryButton} disabled={pending || name.trim().length < 3} onClick={() => run(() => actions.create(name), "Alliance started.", () => setName(""))}>
             Start alliance
           </button>
         </div>
-      </section>
+      </CollapsibleCard>
     </div>
   );
 }
@@ -136,7 +187,7 @@ function AllianceCard({
           type="button"
           className={dangerButton}
           disabled={pending}
-          onClick={() => window.confirm(`Leave ${alliance.name}? You'll stop seeing each other's events.`) && run(() => actions.leave(alliance.id), `You left ${alliance.name}.`)}
+          onClick={async () => (await confirmDialog({ title: `Leave ${alliance.name}?`, body: "You'll stop seeing each other's events.", confirmLabel: "Leave", tone: "danger" })) && run(() => actions.leave(alliance.id), `You left ${alliance.name}.`)}
         >
           Leave
         </button>
@@ -155,9 +206,9 @@ function AllianceCard({
               {alliance.founder && !m.you && (
                 <button
                   type="button"
-                  className="text-xs text-red-400 underline"
+                  className="inline-flex min-h-6 items-center text-xs text-red-400 underline"
                   disabled={pending}
-                  onClick={() => window.confirm(`Remove ${m.name} from the alliance?`) && run(() => actions.remove(alliance.id, m.guildId), `${m.name} was removed.`)}
+                  onClick={async () => (await confirmDialog({ title: `Remove ${m.name} from the alliance?`, confirmLabel: "Remove", tone: "danger" })) && run(() => actions.remove(alliance.id, m.guildId), `${m.name} was removed.`)}
                 >
                   Remove
                 </button>
@@ -168,7 +219,9 @@ function AllianceCard({
       </ul>
 
       <div className="flex flex-wrap gap-2">
-        <input className={`${inputClass} max-w-xs`} value={slug} placeholder="Clan's directory address" aria-label="Clan directory address" onChange={(e) => setSlug(e.target.value)} />
+        <div className="w-80 max-w-full">
+          <input className={inputClass} value={slug} placeholder="Clan's directory address" aria-label="Clan directory address" onChange={(e) => setSlug(e.target.value)} />
+        </div>
         <button type="button" className={ghostButton} disabled={pending || !slug.trim()} onClick={() => run(() => actions.invite(alliance.id, slug), "Invitation sent.", () => setSlug(""))}>
           Invite clan
         </button>

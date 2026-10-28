@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
-import { pluginApi, type PluginResult, type PluginView } from "@/lib/plugin";
+import { hubPlayerApi, pluginApi, type PluginResult, type PluginView } from "@/lib/plugin";
 import { throttle } from "@/lib/ratelimit";
 
 /**
@@ -48,6 +48,29 @@ export async function savePluginConsentAction(categories: string[]): Promise<Plu
   const result = await pluginApi.setConsent(id, clean);
   revalidatePath("/profile");
   return result;
+}
+
+export async function savePluginVisibilityAction(showToClan: boolean): Promise<PluginResult<{ showToClan: boolean }>> {
+  const id = await userId();
+  if (!id) return signedOut;
+  const busy = slow(id);
+  if (busy) return { ok: false, error: busy };
+  const result = await pluginApi.setVisibility(id, showToClan === true);
+  revalidatePath("/profile");
+  return result;
+}
+
+/** With the RuneClans hub: stop one bot seeing the player's plugin data (T-163). Answers the refreshed view. */
+export async function revokeBotGrantAction(appId: string): Promise<PluginResult> {
+  const id = await userId();
+  if (!id) return signedOut;
+  const busy = slow(id);
+  if (busy) return { ok: false, error: busy };
+  if (typeof appId !== "string" || !/^[0-9a-f-]{36}$/.test(appId)) return { ok: false, error: "That isn't a bot this site knows." };
+  const result = await hubPlayerApi.revoke(id, appId);
+  if (!result.ok) return result;
+  revalidatePath("/profile");
+  return pluginApi.view(id);
 }
 
 export async function deletePluginDataAction(): Promise<PluginResult<{ removedEvents: number; view: PluginView }>> {

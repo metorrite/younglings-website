@@ -2,9 +2,13 @@
 
 /* eslint-disable @next/next/no-img-element -- the wheel's GIF is a one-off picture served by our own route; next/image would re-encode (and flatten) it */
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import { FormField, ghostButton, inputClass, Notice, primaryButton } from "@/components/admin/ui";
+import { andList } from "@/components/dashboard/ui/andList";
+import { FieldGrid } from "@/components/dashboard/ui/Layout";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import type { CitadelCappers, CofferHolderInfo, WheelSettings, WheelWeek, WheelWinner } from "@/lib/citadelTypes";
 import { choicesOf, type GuildStructure } from "@/lib/jonnybot-admin";
 import {
@@ -29,7 +33,7 @@ const MAX_WINNERS = 10;
 type PrizeInput = { amount: string; paidBy: string; recipient: string | null; note: string };
 
 type Actions = {
-  saveSettings: (autoPost: boolean, channelId: string | null, message: string) => Promise<{ ok: true; data: WheelSettings } | Failure>;
+  saveSettings: (autoPost: boolean, channelId: string | null, message: string, video: boolean) => Promise<{ ok: true; data: WheelSettings } | Failure>;
   post: (winner: string, entries: string[], end: string) => Promise<{ ok: true; channel: string } | Failure>;
   /** Locks the next place of a week. `labels` and `winnerIndex` are the wheel as spun. */
   lock: (end: string, winner: string, labels: string[], winnerIndex: number) => Promise<{ ok: true; data: WheelWeek; picture: "website" | "bot" } | Failure>;
@@ -105,15 +109,15 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
     setOpen(true);
     setProblem(null);
     if (holders === null) {
-      actions.holders().then((r) => {
+      void actions.holders().then((r) => {
         if (r.ok) setHolders(r.data);
         else setProblem({ tone: "error", title: r.error, items: r.problems });
       });
     }
   }
 
-  function mark(next: boolean) {
-    if (!window.confirm(next ? `Mark ${w.winner}'s prize as given? Use this when it was paid some way other than the clan coffer.` : `Mark ${w.winner}'s prize as not given?`)) return;
+  async function mark(next: boolean) {
+    if (!(await confirmDialog({ title: next ? `Mark ${w.winner}'s prize as given?` : `Mark ${w.winner}'s prize as not given?`, body: next ? "Use this when it was paid some way other than the clan coffer." : undefined, confirmLabel: next ? "Mark as given" : "Mark as not given", tone: next ? "default" : "danger" }))) return;
     start(async () => {
       const r = await actions.markPrize(w.end, w.place, next);
       if (r.ok) onWeek(r.data);
@@ -121,10 +125,10 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
     });
   }
 
-  function record() {
+  async function record() {
     if (parsed === null || payer === null || !ready) return;
     const text = `Record ${gpText(parsed)} gp paid by ${payer.name ?? `user ${payer.userId}`} to ${w.winner}${w.linkedUserName ? ` (${w.linkedUserName})` : ""} in the clan coffer?\n\nThe gp comes out of ${payer.name ?? "their"} balance in the coffer and can't be undone from here.`;
-    if (!window.confirm(text)) return;
+    if (!(await confirmDialog({ title: "Record this payment?", body: text, confirmLabel: "Record it" }))) return;
     start(async () => {
       const r = await actions.recordPrize(w.end, w.place, { amount: amount.trim(), paidBy, recipient: needsRecipient ? recipient.trim() : null, note });
       if (!r.ok) return setProblem({ tone: "error", title: r.error, items: r.problems });
@@ -209,7 +213,7 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
               <input className={`${inputClass} mt-1`} inputMode="numeric" placeholder="e.g. 123456789012345678" value={recipient} onChange={(ev) => setRecipient(ev.target.value)} />
             </label>
           )}
-          <div className="grid gap-3 sm:grid-cols-2">
+          <FieldGrid>
             <label className="block text-xs text-muted">
               Amount paid (gp)
               <input className={`${inputClass} mt-1`} placeholder="5m, 500k or 5000000" value={amount} onChange={(ev) => setAmount(ev.target.value)} />
@@ -225,7 +229,7 @@ function WinnerRow({ w, actions, onWeek, onError }: { w: WheelWinner; actions: A
                 ))}
               </select>
             </label>
-          </div>
+          </FieldGrid>
           <label className="block text-xs text-muted">
             Note (optional)
             <input className={`${inputClass} mt-1`} maxLength={200} value={note} onChange={(ev) => setNote(ev.target.value)} />
@@ -282,7 +286,10 @@ export function CitadelWheel({
   const [week, setWeek] = useState(initial);
   const [records, setRecords] = useState(initialWeeks);
   const [settings, setSettings] = useState(initialSettings);
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
   const [autoPost, setAutoPost] = useState(initialSettings.autoPost);
+  const [video, setVideo] = useState(initialSettings.video);
   const [channelId, setChannelId] = useState<string | null>(initialSettings.channelId);
   const [message, setMessage] = useState(initialSettings.message);
   const [settingsNote, setSettingsNote] = useState<Note | null>(null);
@@ -372,10 +379,10 @@ export function CitadelWheel({
   const waitingEnd = locked?.end ?? null;
   useEffect(() => {
     if (!waitingForGif || !waitingEnd) return;
-    const timer = setInterval(async () => {
+    const timer = setInterval(() => void (async () => {
       const result = await actions.week(waitingEnd);
       if (result.ok && result.data.winners.every((w) => w.hasGif)) applyWeek(result.data);
-    }, 3000);
+    })(), 3000);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `actions` is rebuilt by the page on each render; only the week matters here
   }, [waitingForGif, waitingEnd, applyWeek]);
@@ -444,14 +451,15 @@ export function CitadelWheel({
     if (parsed.extras.length > 0) setExtrasText("");
   }
 
-  const settingsChanged = autoPost !== settings.autoPost || channelId !== settings.channelId || message.trim() !== settings.message;
+  const settingsChanged = autoPost !== settings.autoPost || video !== settings.video || channelId !== settings.channelId || message.trim() !== settings.message;
 
   function saveSettings() {
     startSave(async () => {
-      const result = await actions.saveSettings(autoPost, channelId, message);
+      const result = await actions.saveSettings(autoPost, channelId, message, video);
       if (!result.ok) return setSettingsNote({ tone: "error", title: result.error, items: result.problems });
       setSettings(result.data);
       setAutoPost(result.data.autoPost);
+      setVideo(result.data.video);
       setChannelId(result.data.channelId);
       setMessage(result.data.message);
       setSettingsNote({ tone: "success", title: "Saved." });
@@ -472,12 +480,12 @@ export function CitadelWheel({
     changeEntries(last.before);
   }
 
-  function lockWinners() {
+  async function lockWinners() {
     if (!winner || winnerIndex < 0) return;
     const batch: Picked[] = [...picked, { name: winner, labels, index: winnerIndex, before: entries }];
     const label = weekLabel(week.start, week.end);
     const names = batch.map((b, i) => `${ordinal(i + 1)}: ${b.name}`).join("\n");
-    if (!window.confirm(`Lock in ${batch.length === 1 ? "this winner" : `these ${batch.length} winners`} for ${label}?\n\n${names}\n\nThe week can't be spun again unless you unlock it, and each winner's wheel GIF is kept so you can post it any time.`)) return;
+    if (!(await confirmDialog({ title: `Lock in ${batch.length === 1 ? "this winner" : `these ${batch.length} winners`} for ${label}?`, body: `${names}\n\nThe week can't be spun again unless you unlock it, and each winner's wheel GIF is kept so you can post it any time.`, confirmLabel: "Lock in" }))) return;
     startLock(async () => {
       setLockNote(null);
       let latest: WheelWeek | null = null;
@@ -499,9 +507,9 @@ export function CitadelWheel({
     });
   }
 
-  function unlockWeek(w: WheelWeek) {
+  async function unlockWeek(w: WheelWeek) {
     const label = weekLabel(w.start, w.end);
-    if (!window.confirm(`Unlock ${label}?\n\nThe winner${w.winners.length === 1 ? "" : "s"} (${w.winners.map((x) => x.winner).join(", ")}) and their GIFs are deleted, and the week can be spun again.`)) return;
+    if (!(await confirmDialog({ title: `Unlock ${label}?`, body: `The winner${w.winners.length === 1 ? "" : "s"} (${w.winners.map((x) => x.winner).join(", ")}) and their GIFs are deleted, and the week can be spun again.`, confirmLabel: "Unlock", tone: "danger" }))) return;
     startLock(async () => {
       setLockNote(null);
       const result = await actions.unlock(w.end);
@@ -577,6 +585,11 @@ export function CitadelWheel({
     }
   }
 
+  // The wheel works without the bot posting for you (the message and the GIF link can be copied), so posting from the bot is Advanced; once it is set up it stays.
+  const showAnnounce = advanced || settings.channelId !== null || settings.autoPost;
+  const hidden = [!showAnnounce && "posting the winner from the bot (the channel, the message, automatic posting)", !advanced && "recording a past week by hand"].filter(
+    (name): name is string => typeof name === "string",
+  );
   const onLocalhost = useMemo(() => typeof window !== "undefined" && /^(localhost|127\.|\[::1\])/.test(window.location.hostname), []);
   const nextPlace = picked.length + 1;
   const moreToPick = winnersWanted > nextPlace;
@@ -734,7 +747,7 @@ export function CitadelWheel({
                     {placeLabel(i + 1)} {p.name}
                   </span>
                 ))}
-                <button type="button" className="text-xs text-gold underline" disabled={spinning || locking} onClick={undoLastPick}>
+                <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" disabled={spinning || locking} onClick={undoLastPick}>
                   Undo {picked[picked.length - 1].name}
                 </button>
               </div>
@@ -760,11 +773,11 @@ export function CitadelWheel({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold">{weekLabel(r.start, r.end)}</span>
                     <span className="flex flex-wrap items-center gap-3">
-                      <button type="button" className="text-xs text-gold underline" onClick={() => copyAnnouncement(r)}>
+                      <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={() => copyAnnouncement(r)}>
                         {copiedWeek === `${r.end}:message` ? "Copied" : "Copy message"}
                       </button>
                       {r.winners.map((w) => (
-                        <button key={w.place} type="button" className="text-xs text-gold underline disabled:opacity-50" disabled={!w.hasGif} onClick={() => copyGifLink(w)}>
+                        <button key={w.place} type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline disabled:opacity-50" disabled={!w.hasGif} onClick={() => copyGifLink(w)}>
                           {copiedWeek === `${w.end}:gif${w.place}` ? "Copied" : r.winners.length > 1 ? `Copy GIF link (${ordinal(w.place)})` : "Copy GIF link"}
                         </button>
                       ))}
@@ -778,27 +791,29 @@ export function CitadelWheel({
                 </div>
               ))
             )}
-            <details className="border-t border-surface-border pt-3">
-              <summary className="cursor-pointer text-xs text-muted">Record a past week</summary>
-              <div className="mt-2 space-y-2">
-                <p className="text-xs text-muted">
-                  For weeks before you started locking winners here. Pick the Wednesday that week ended and type the winners, one per line in order of place. A GIF is drawn that lands on each one.
-                </p>
-                <div className="flex flex-wrap items-start gap-2">
-                  <label className="text-xs text-muted">
-                    Week ended (a Wednesday)
-                    <input type="date" className={`${inputClass} mt-1`} value={handDate} onChange={(ev) => setHandDate(ev.target.value)} />
-                  </label>
-                  <label className="min-w-0 flex-1 text-xs text-muted">
-                    Winners
-                    <textarea className={`${inputClass} mt-1 min-h-20`} value={handNames} placeholder={"RuneScape name\n(second place on the next line)"} onChange={(ev) => setHandNames(ev.target.value)} />
-                  </label>
-                  <button type="button" className={`${ghostButton} mt-5`} disabled={locking || !handDate || !handNames.trim()} onClick={recordByHand}>
-                    {locking ? "Saving..." : "Record"}
-                  </button>
+            {advanced && (
+              <details className="border-t border-surface-border pt-3">
+                <summary className="cursor-pointer text-xs text-muted">Record a past week</summary>
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-muted">
+                    For weeks before you started locking winners here. Pick the Wednesday that week ended and type the winners, one per line in order of place. A GIF is drawn that lands on each one.
+                  </p>
+                  <div className="flex flex-wrap items-start gap-2">
+                    <label className="text-xs text-muted">
+                      Week ended (a Wednesday)
+                      <input type="date" className={`${inputClass} mt-1`} value={handDate} onChange={(ev) => setHandDate(ev.target.value)} />
+                    </label>
+                    <label className="min-w-0 flex-1 text-xs text-muted">
+                      Winners
+                      <textarea className={`${inputClass} mt-1 min-h-20`} value={handNames} placeholder={"RuneScape name\n(second place on the next line)"} onChange={(ev) => setHandNames(ev.target.value)} />
+                    </label>
+                    <button type="button" className={`${ghostButton} mt-5`} disabled={locking || !handDate || !handNames.trim()} onClick={recordByHand}>
+                      {locking ? "Saving..." : "Record"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </details>
+              </details>
+            )}
           </div>
         </details>
       </section>
@@ -838,7 +853,7 @@ export function CitadelWheel({
             <h2 className="text-sm font-semibold">
               On the wheel ({total} {total === 1 ? "entry" : "entries"})
             </h2>
-            <button type="button" className="text-xs text-gold underline" onClick={copyList}>
+            <button type="button" className="inline-flex min-h-6 items-center text-xs text-gold underline" onClick={copyList}>
               {copied ? "Copied" : "Copy names"}
             </button>
           </div>
@@ -854,14 +869,14 @@ export function CitadelWheel({
                       e.entries
                     ) : (
                       <>
-                        <button type="button" aria-label={`Fewer entries for ${e.name}`} disabled={spinning} className="px-1 text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: Math.max(1, x.entries - 1) } : x)))}>
+                        <button type="button" aria-label={`Fewer entries for ${e.name}`} disabled={spinning} className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: Math.max(1, x.entries - 1) } : x)))}>
                           −
                         </button>
                         {e.entries}
-                        <button type="button" aria-label={`More entries for ${e.name}`} disabled={spinning || total >= MAX_ENTRIES} className="px-1 text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: x.entries + 1 } : x)))}>
+                        <button type="button" aria-label={`More entries for ${e.name}`} disabled={spinning || total >= MAX_ENTRIES} className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-foreground" onClick={() => changeEntries(entries.map((x) => (x.name === e.name ? { ...x, entries: x.entries + 1 } : x)))}>
                           +
                         </button>
-                        <button type="button" aria-label={`Remove ${e.name}`} disabled={spinning} className="px-1 text-red-400" onClick={() => changeEntries(entries.filter((x) => x.name !== e.name))}>
+                        <button type="button" aria-label={`Remove ${e.name}`} disabled={spinning} className="inline-flex min-h-6 min-w-6 items-center justify-center text-red-400" onClick={() => changeEntries(entries.filter((x) => x.name !== e.name))}>
                           ×
                         </button>
                       </>
@@ -873,34 +888,44 @@ export function CitadelWheel({
           )}
         </div>
 
-        <div className="space-y-3 rounded-xl border border-surface-border bg-surface p-4">
-          <h2 className="text-sm font-semibold">Announcing winners</h2>
-          <p className="text-xs text-muted">
-            For posting from the bot instead of pasting it yourself. The winner is posted in the channel below with your message and the wheel GIF. Copy message (under a locked
-            winner) uses the same message.
-          </p>
-          <FormField label="Channel" as="group">
-            <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={channelId} onChange={setChannelId} none="No channel chosen" />
-          </FormField>
-          <FormField label="Message" as="group">
-            <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
-            <p className="mt-1 text-xs text-muted">
-              Fills in <code>{"{winner}"}</code> (the name; with several winners, all of them: A, B and C), <code>{"{mention}"}</code> (pings them if their account is linked),{" "}
-              <code>{"{week}"}</code> and <code>{"{entries}"}</code>. Put <code>{"{wheel}"}</code> as the very last thing to post the wheel as a second message under the text: Discord only hides the GIF address when it is alone in a message. The bot does this itself when it posts; copying the message gives the text, and Copy GIF link gives the second message. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+        {showAnnounce && (
+          <div className="space-y-3 rounded-xl border border-surface-border bg-surface p-4">
+            <h2 className="text-sm font-semibold">Announcing winners</h2>
+            <p className="text-xs text-muted">
+              For posting from the bot instead of pasting it yourself. The winner is posted in the channel below with your message and the wheel GIF. Copy message (under a locked
+              winner) uses the same message.
             </p>
-          </FormField>
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" className="mt-1" checked={autoPost} onChange={(ev) => setAutoPost(ev.target.checked)} />
-            <span>
-              Post a winner automatically when the weekly Citadel list is made
-              <span className="block text-xs text-muted">Wednesday at 12:00 UTC, or when the list is sent now. The winner is locked in for the week, and a week you already locked is left alone. Off by default.</span>
-            </span>
-          </label>
-          {settingsNote && <Notice tone={settingsNote.tone} title={settingsNote.title} items={settingsNote.items} />}
-          <button type="button" className={primaryButton} disabled={saving || !settingsChanged} onClick={saveSettings}>
-            {saving ? "Saving..." : "Save"}
-          </button>
-        </div>
+            <FormField label="Channel" as="group">
+              <ChannelSelect {...choicesOf(structure)} onlyPostable allowForums={false} value={channelId} onChange={setChannelId} none="No channel chosen" />
+            </FormField>
+            <FormField label="Message" as="group">
+              <textarea className={`${inputClass} min-h-28`} maxLength={settings.maxLength} value={message} onChange={(ev) => setMessage(ev.target.value)} />
+              <p className="mt-1 text-xs text-muted">
+                Fills in <code>{"{winner}"}</code> (the name; with several winners, all of them: A, B and C), <code>{"{mention}"}</code> (pings them if their account is linked),{" "}
+                <code>{"{week}"}</code> and <code>{"{entries}"}</code>. Put <code>{"{wheel}"}</code> as the very last thing to post the wheel as a second message under the text: Discord only hides the GIF address when it is alone in a message. The bot does this itself when it posts; copying the message gives the text, and Copy GIF link gives the second message. <button type="button" className="text-gold underline" onClick={() => setMessage(settings.defaultMessage)}>Use the default</button>
+              </p>
+            </FormField>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={autoPost} onChange={(ev) => setAutoPost(ev.target.checked)} />
+              <span>
+                Post a winner automatically when the weekly Citadel list is made
+                <span className="block text-xs text-muted">Wednesday at 12:00 UTC, or when the list is sent now. The winner is locked in for the week, and a week you already locked is left alone. Off by default.</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={video} onChange={(ev) => setVideo(ev.target.checked)} />
+              <span>
+                Post the spin as a video instead of a GIF
+                <span className="block text-xs text-muted">Smoother and usually smaller, but Discord shows a video with a play button: it doesn&apos;t start by itself or loop like a GIF does. If the video can&apos;t be made or is too big, the GIF is posted instead. Off by default.</span>
+              </span>
+            </label>
+            {settingsNote && <Notice tone={settingsNote.tone} title={settingsNote.title} items={settingsNote.items} />}
+            <button type="button" className={primaryButton} disabled={saving || !settingsChanged} onClick={saveSettings}>
+              {saving ? "Saving..." : "Save"}
+            </button>
+          </div>
+        )}
+        {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
       </aside>
     </div>
   );

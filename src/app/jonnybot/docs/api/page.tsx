@@ -1,6 +1,8 @@
 import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Page, Section } from "@/components/jonnybot/Prose";
+import { apiOriginFor } from "@/lib/siteHosts";
 
 export const metadata: Metadata = { title: "API and plugin", description: "JonnyBot's public API and how the clan plugin reports to it." };
 
@@ -31,6 +33,9 @@ const READ: [string, string][] = [
 export default async function ApiDocsPage() {
   const gated = await gateJonnyBot();
   if (gated) return gated;
+  // The API's address comes from the host settings (PUBLIC_API_ORIGIN, or api. + the site's apex); without either it is the address it has always been.
+  const h = await headers();
+  const apiOrigin = apiOriginFor(h.get("host") ?? "", h.get("x-forwarded-proto")) ?? "https://api.rsyounglings.com";
 
   return (
     <Page title="API and plugin" intro="What JonnyBot shares, what the in-game clan plugin can send, and the choices players keep." wide>
@@ -60,7 +65,7 @@ export default async function ApiDocsPage() {
           includes a member&apos;s name or Discord details.
         </p>
         <p>
-          Base address: <code>https://api.rsyounglings.com</code>. The same routes also answer under <code>/api</code> on the website (for example <code>/api/v1/clans</code>), and the plugin check
+          Base address: <code>{apiOrigin}</code>. The same routes also answer under <code>/api</code> on the website (for example <code>/api/v1/clans</code>), and the plugin check
           (<code>whoami</code>) tells the plugin the current API address, so it can follow if the API ever moves.
         </p>
         <div className="overflow-x-auto rounded-xl border border-surface-border">
@@ -85,8 +90,8 @@ export default async function ApiDocsPage() {
         </p>
         <pre className="overflow-x-auto rounded-xl border border-surface-border bg-surface p-4 text-xs leading-relaxed">{EXAMPLE}</pre>
         <p>
-          Event types: <code>DROP</code>, <code>KILL</code>, <code>LEVEL_UP</code>, <code>QUEST_COMPLETE</code>, <code>ACHIEVEMENT</code>, <code>COLLECTION_LOG</code>, <code>PRESENCE</code>. A drop can carry a{" "}
-          <code>source</code> (NPC, activity, chest, player), so a qualifying drop can be told from another way of getting the item. The full contract is the{" "}
+          Event types: <code>XP</code>, <code>CLUE</code>, <code>DROP</code>, <code>KILL</code>, <code>LEVEL_UP</code>, <code>QUEST_COMPLETE</code>, <code>ACHIEVEMENT</code>, <code>COLLECTION_LOG</code>, <code>PRESENCE</code>. A drop can carry a{" "}
+          <code>source</code> (NPC, activity, chest, player), so a qualifying drop can be told from another way of getting the item. A drop&apos;s worth is never taken from the plugin: the server prices it from Grand Exchange prices. Skill XP is sent as the game reports it (tenths of a point) and the server scales it. The full contract is the{" "}
           <a href="/openapi/jonnybot-v1.yaml">OpenAPI file</a>.
         </p>
         <p>

@@ -83,6 +83,8 @@ export interface MyEvent {
   points: number;
   objectives: { key: string; label: string; points: number; target: number; repeatLimit: number; done: number }[];
   pendingProof: number;
+  /** Whether the event asks players to be verified, where theirs stands, why it was turned down (only while it is), and what they were told to send. */
+  verification: { required: boolean; state: "NOT_REQUIRED" | "PENDING" | "VERIFIED" | "REJECTED" | "WAIVED"; note: string; instructions: string };
   awards: { place: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number; status: "PENDING" | "PAID" | "REVOKED" | "REFUNDED" }[];
 }
 
@@ -94,11 +96,39 @@ export interface OpenEvent {
   scoringMode: "INDIVIDUAL" | "TEAM";
   signupClosesAt: string | null;
   buyIn: number;
+  /** An organiser has closed signups: players can't join themselves any more. */
+  closed: boolean;
+  /** Players have to be verified to take part. */
+  verification: boolean;
 }
 
 export interface MyEvents {
   events: MyEvent[];
   open: OpenEvent[];
+  /** After a join: whether the player got a place or went on the waitlist. */
+  result?: { waiting: boolean; position: number };
+}
+
+/** A member's own chat level (XP for chatting). `enabled` is false when the server hasn't switched chat levels on. */
+export type MyChatLevel =
+  | { enabled: false }
+  | { enabled: true; level: number; xp: number; intoLevel: number; toNext: number; maxed: boolean; rank: number | null; messages: number; members: number };
+
+/** A member's own Highlights words (direct messages when someone says them) and the channels they skip. */
+export interface MyHighlights {
+  enabled: boolean;
+  /** Whether this member may use Highlights here; when not, `refusal` says why. */
+  usable: boolean;
+  refusal: string | null;
+  words: { id: string; word: string; wholeWord: boolean }[];
+  max: number;
+  maxWord: number;
+  minWord: number;
+  cooldownSeconds: number;
+  ignored: { id: string; name: string }[];
+  maxIgnored: number;
+  /** Channels the member can see and has not skipped yet. */
+  channels: { id: string; name: string }[];
 }
 
 export interface NewMemberPoll {
@@ -156,6 +186,11 @@ export const memberApi = {
   cancelLink: (userId: string) => request<LinkResult>("DELETE", "link", userId),
   settings: (userId: string) => request<MemberSettings>("GET", "settings", userId),
   saveSettings: (userId: string, settings: Omit<MemberSettings, "rsns">) => request<MemberSettings>("PUT", "settings", userId, settings),
+  chatLevel: (userId: string) => request<MyChatLevel>("GET", "level", userId),
+  highlights: (userId: string) => request<MyHighlights>("GET", "highlights", userId),
+  addHighlight: (userId: string, word: string, wholeWord: boolean) => request<MyHighlights>("POST", "highlights", userId, { word, wholeWord }),
+  removeHighlight: (userId: string, id: string) => request<MyHighlights>("DELETE", `highlights?id=${encodeURIComponent(id)}`, userId),
+  ignoreHighlightChannel: (userId: string, channelId: string, ignored: boolean) => request<MyHighlights>("POST", "highlights/ignore", userId, { channelId, ignored }),
   goals: (userId: string) => request<{ goals: Goal[] }>("GET", "goals", userId),
   addGoal: (userId: string, skillId: number, targetLevel: number) => request<{ goals: Goal[] }>("POST", "goals", userId, { skillId, targetLevel }),
   deleteGoal: (userId: string, goalId: string) => request<{ goals: Goal[] }>("DELETE", `goals?id=${encodeURIComponent(goalId)}`, userId),
@@ -165,8 +200,52 @@ export const memberApi = {
   vote: (userId: string, pollId: string, optionNumber: number) => request<{ polls: MyPoll[] }>("POST", "polls/vote", userId, { pollId, optionNumber }),
   createPoll: (userId: string, poll: NewMemberPoll) => request<{ created: boolean; channel: string }>("POST", "polls", userId, { ...poll }),
   myEvents: (userId: string) => request<MyEvents>("GET", "events", userId),
+  /** One event as the member sees it: the schedule, their team, progress, submissions and channel links. */
+  eventPage: (userId: string, eventId: string) => request<EventPage>("GET", `events/detail?eventId=${encodeURIComponent(eventId)}`, userId),
+  /** Sign up for an event by the same rules as /events join: the member has to be in the Discord server. */
+  joinEvent: (userId: string, eventId: string) => request<MyEvents>("POST", "events/join", userId, { eventId }),
+  leaveEvent: (userId: string, eventId: string) => request<MyEvents>("POST", "events/leave", userId, { eventId }),
   myCoffer: (userId: string) => request<MyCoffer>("GET", "coffer", userId),
   mySignups: (userId: string) => request<MySignups>("GET", "signups", userId),
   joinSignup: (userId: string, signupId: string, body: { rsn?: string; fields?: string[] }) => request<MySignups>("POST", "signups/join", userId, { signupId, ...body }),
   leaveSignup: (userId: string, signupId: string) => request<MySignups>("POST", "signups/leave", userId, { signupId }),
 };
+
+/** One event as its player sees it (`/internal/me/events/detail`). A member who isn't in it yet gets `me: null` and only the public part. */
+export interface EventPage {
+  event: {
+    id: string;
+    name: string;
+    description: string;
+    template: string;
+    status: "SIGNUPS" | "RUNNING" | "SCORING" | "DONE" | "CANCELLED";
+    scoringMode: "INDIVIDUAL" | "TEAM";
+    startsAt: string | null;
+    endsAt: string | null;
+    signupClosesAt: string | null;
+    signupsClosed: boolean;
+    maxParticipants: number;
+    players: number;
+    buyIn: { enabled: boolean; amount: number };
+    verificationRequired: boolean;
+    verificationInstructions: string;
+  };
+  me: {
+    waiting: boolean;
+    team: string | null;
+    buyIn: { enabled: boolean; amount: number; status: "NONE" | "DUE" | "PAID" | "REFUNDED" };
+    verification: { required: boolean; state: "NOT_REQUIRED" | "PENDING" | "VERIFIED" | "REJECTED" | "WAIVED"; note: string; waitingProof: boolean };
+  } | null;
+  prizes: { place: number; placeTo: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number }[];
+  // everything below is only present when `me` is
+  teammates?: { name: string; me: boolean }[];
+  /** `hidden`: the organisers chose not to show the table to players (T-211); the player still gets their own points. */
+  standings?: { rows: { rank: number; name: string; points: number; me: boolean }[]; of: number; myRank: number; myPoints: number; hidden?: boolean; hiddenText?: string | null };
+  objectives?: { key: string; label: string; points: number; target: number; repeatLimit: number; done: number }[];
+  /** A bingo's board for this player, in tile order; `columns` is 0 when the board isn't a square grid (draw it as a list). */
+  board?: { tiles: { n: number; label: string; points: number; done: boolean; locked: boolean }[]; columns: number } | null;
+  submissions?: { id: string; kind: "OBJECTIVE" | "VERIFICATION"; label: string; status: "PENDING" | "APPROVED" | "DENIED"; note: string; decisionNote: string | null; createdAt: string }[];
+  awards?: { place: number; kind: "IN_GAME" | "CLAN_POINTS" | "OTHER"; description: string; amount: number; status: "PENDING" | "PAID" | "REVOKED" | "REFUNDED" }[];
+  channels?: { label: string; url: string }[];
+  canSubmit?: boolean;
+}

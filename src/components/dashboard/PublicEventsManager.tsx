@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { formatUtc, Notice, StatusBadge } from "@/components/admin/ui";
 import type { ClanEvents, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
@@ -55,7 +56,7 @@ export function PublicEventsManager({ initial, profileHref, actions }: { initial
           No upcoming events. Create one in Discord (Events in your server) and it will appear here.
         </p>
       ) : (
-        <ul className="grid gap-3 xl:grid-cols-2">
+        <PanelGrid as="ul" min="22rem" gap="gap-3">
           {data.events.map((e) => (
             <li key={e.id} className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5">
               <div>
@@ -91,7 +92,7 @@ export function PublicEventsManager({ initial, profileHref, actions }: { initial
               </div>
             </li>
           ))}
-        </ul>
+        </PanelGrid>
       )}
     </div>
   );

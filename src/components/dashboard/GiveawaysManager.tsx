@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
 import {
@@ -16,6 +17,10 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
+import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
   type GiveawayList,
@@ -42,7 +47,11 @@ const LENGTHS = [
   { minutes: 10080, label: "1 week" },
 ];
 
-/** Starts giveaways and manages the recent ones: how many entered, end one early, draw again, or take it down. */
+/**
+ * Starts giveaways and manages the recent ones: how many entered, end one early, draw again, or take it down. The form follows what you do: the prize, the
+ * channel, how long it runs, how many win, whether winners get a direct message, then start. Advanced adds limiting a giveaway to a role, a winner role, entering by reaction and a length of your own in minutes.
+ * The ones that ended are folded away under the running ones.
+ */
 export function GiveawaysManager({
   initial,
   structure,
@@ -60,9 +69,17 @@ export function GiveawaysManager({
   const [minutes, setMinutes] = useState(1440);
   const [winners, setWinners] = useState(1);
   const [roleId, setRoleId] = useState("");
+  const [winnerRoleId, setWinnerRoleId] = useState("");
+  const [dmWinners, setDmWinners] = useState(true);
+  const [reactionEntry, setReactionEntry] = useState(false);
   const [problem, setProblem] = useState<Problem>(null);
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
+  // a length that is not one of the usual ones keeps its box in Basic
+  const ownLength = !LENGTHS.some((l) => l.minutes === minutes);
+  const hidden = [!advanced && "limiting a giveaway to a role", !advanced && "a winner role and entering by reaction", !advanced && !ownLength && "a length of your own in minutes"].filter((name): name is string => typeof name === "string");
   const giveable = roles
     .filter((r) => r.id)
     .sort((a, b) => b.position - a.position);
@@ -97,8 +114,8 @@ export function GiveawaysManager({
         summary={<Chip>{running.length} running</Chip>}
         info="JonnyBot posts a message with an Enter button. People press it to enter and again to leave. When time is up it draws the winners at random from people still in the server and announces them."
       >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <FormField label="Prize">
+        <FieldGrid>
+          <FormField label="Prize" size="md">
             <input
               className={inputClass}
               value={prize}
@@ -107,7 +124,7 @@ export function GiveawaysManager({
               onChange={(e) => setPrize(e.target.value)}
             />
           </FormField>
-          <FormField label="Channel" as="group">
+          <FormField label="Channel" size="md" as="group">
             <ChannelSelect
               {...choicesOf(structure)}
               onlyPostable
@@ -117,45 +134,12 @@ export function GiveawaysManager({
               none="Choose a channel…"
             />
           </FormField>
-        </div>
-        <FormField label="How long it runs" as="group">
-          <div className="flex flex-wrap items-center gap-2">
-            {LENGTHS.map((l) => (
-              <button
-                key={l.minutes}
-                type="button"
-                aria-pressed={minutes === l.minutes}
-                onClick={() => setMinutes(l.minutes)}
-                className={`rounded-full border px-3 py-1 text-xs transition ${minutes === l.minutes ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
-              >
-                {l.label}
-              </button>
-            ))}
-            <span className="flex items-center gap-1.5 text-xs text-muted">
-              or
-              <input
-                type="number"
-                min={1}
-                value={minutes}
-                aria-label="Minutes"
-                onChange={(e) =>
-                  setMinutes(
-                    Math.max(1, Math.trunc(Number(e.target.value) || 1)),
-                  )
-                }
-                className={`${inputClass} w-24!`}
-              />
-              minutes
-            </span>
-          </div>
-        </FormField>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <FormField label="Winners">
+          <FormField label="Winners" size="sm">
             <input
               type="number"
               min={1}
               max={list.maxWinners}
-              className={`${inputClass} w-24!`}
+              className={inputClass}
               value={winners}
               onChange={(e) =>
                 setWinners(
@@ -170,24 +154,99 @@ export function GiveawaysManager({
               }
             />
           </FormField>
-          <FormField
-            label="Only for a role (optional)"
-            info="Leave empty to let everyone enter. Winners must still hold the role when the draw happens."
-          >
-            <select
-              className={inputClass}
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
+          {advanced && (
+            <FormField
+              label="Only for a role (optional)"
+              size="md"
+              info="Leave empty to let everyone enter. Winners must still hold the role when the draw happens."
             >
-              <option value="">Anyone can enter</option>
-              {giveable.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          </FormField>
+              <select
+                className={inputClass}
+                value={roleId}
+                onChange={(e) => setRoleId(e.target.value)}
+              >
+                <option value="">Anyone can enter</option>
+                {giveable.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
+          {advanced && (
+            <FormField
+              label="Role for the winners (optional)"
+              size="md"
+              info="Every winner is given this role when the giveaway ends (and the new winners of a reroll). JonnyBot refuses roles that are managed, above its own role or carry powerful permissions."
+            >
+              <select
+                className={inputClass}
+                value={winnerRoleId}
+                onChange={(e) => setWinnerRoleId(e.target.value)}
+              >
+                <option value="">No role</option>
+                {giveable.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
+        </FieldGrid>
+        <div className="space-y-3">
+          <Toggle
+            checked={dmWinners}
+            onChange={setDmWinners}
+            label="Send each winner a direct message"
+            detail="If someone has direct messages closed they are simply not sent one; the announcement in the channel is always made."
+          />
+          {advanced && (
+            <Toggle
+              checked={reactionEntry}
+              onChange={setReactionEntry}
+              label="Also let people enter with a 🎉 reaction"
+              detail="JonnyBot adds the reaction to the message. Reacting enters, removing the reaction leaves; the Enter button keeps working."
+            />
+          )}
         </div>
+        <FormField label="How long it runs" as="group" size="lg">
+          <div className="flex flex-wrap items-center gap-2">
+            {LENGTHS.map((l) => (
+              <button
+                key={l.minutes}
+                type="button"
+                aria-pressed={minutes === l.minutes}
+                onClick={() => setMinutes(l.minutes)}
+                className={`rounded-full border px-3 py-1 text-xs transition ${minutes === l.minutes ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+              >
+                {l.label}
+              </button>
+            ))}
+            {(advanced || ownLength) && (
+              <span className="flex items-center gap-1.5 text-xs text-muted">
+                or
+                <span className="w-24">
+                  <input
+                    type="number"
+                    min={1}
+                    value={minutes}
+                    aria-label="Minutes"
+                    onChange={(e) =>
+                      setMinutes(
+                        Math.max(1, Math.trunc(Number(e.target.value) || 1)),
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </span>
+                minutes
+              </span>
+            )}
+          </div>
+        </FormField>
+        {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
         <button
           type="button"
           className={primaryButton}
@@ -201,6 +260,9 @@ export function GiveawaysManager({
                   durationMinutes: minutes,
                   winners,
                   requiredRoleId: roleId || null,
+                  winnerRoleId: winnerRoleId || null,
+                  dmWinners,
+                  reactionEntry,
                 }),
               "Started. It is posted in the channel.",
               () => setPrize(""),
@@ -229,10 +291,8 @@ export function GiveawaysManager({
               type="button"
               className={dangerButton}
               disabled={pending}
-              onClick={() =>
-                window.confirm(
-                  `Delete the giveaway for "${g.prize}"? Its message is taken down.`,
-                ) && run(() => actions.remove(g.id), "Deleted.")
+              onClick={async () =>
+                (await confirmDialog({ title: `Delete the giveaway for "${g.prize}"?`, body: "Its message is taken down.", confirmLabel: "Delete", tone: "danger" })) && run(() => actions.remove(g.id), "Deleted.")
               }
             >
               Delete
@@ -241,7 +301,13 @@ export function GiveawaysManager({
         )}
       </Section>
 
-      <Section title="Ended" empty="Nothing has ended yet." items={ended}>
+      <CollapsibleCard
+        id="gw-ended"
+        title="Ended"
+        hint="Giveaways that have been drawn. Draw again if a winner doesn't answer."
+        summary={<Chip>{ended.length === 0 ? "None yet" : `${ended.length} ended`}</Chip>}
+      >
+      <Section title="" empty="Nothing has ended yet." items={ended}>
         {(g) => (
           <>
             <ActionButton
@@ -254,8 +320,8 @@ export function GiveawaysManager({
               type="button"
               className={dangerButton}
               disabled={pending}
-              onClick={() =>
-                window.confirm(`Delete the giveaway for "${g.prize}"?`) &&
+              onClick={async () =>
+                (await confirmDialog({ title: `Delete the giveaway for "${g.prize}"?`, confirmLabel: "Delete", tone: "danger" })) &&
                 run(() => actions.remove(g.id), "Deleted.")
               }
             >
@@ -264,6 +330,7 @@ export function GiveawaysManager({
           </>
         )}
       </Section>
+      </CollapsibleCard>
     </div>
   );
 }
@@ -292,17 +359,19 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">
-        {title}
-      </h2>
+      {title && (
+        <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">
+          {title}
+        </h2>
+      )}
       {items.length === 0 ? (
         <p className="rounded-xl border border-dashed border-surface-border p-6 text-center text-sm text-muted">
           {empty}
         </p>
       ) : (
-        <ul className="grid gap-3 xl:grid-cols-2">
+        <PanelGrid min="22rem" gap="gap-3">
           {items.map((g) => (
-            <li
+            <div
               key={g.id}
               className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5"
             >
@@ -322,14 +391,17 @@ function Section({
                 {g.requiredRoleId && (
                   <StatusBadge tone="warn">Role only</StatusBadge>
                 )}
+                {g.winnerRoleId && <StatusBadge tone="muted">Winner role</StatusBadge>}
+                {g.dmWinners && <StatusBadge tone="muted">DMs winners</StatusBadge>}
+                {g.reactionEntry && <StatusBadge tone="muted">🎉 reaction</StatusBadge>}
                 {g.status === "ENDED" && g.winners.length === 0 && (
                   <StatusBadge tone="muted">No winner</StatusBadge>
                 )}
               </div>
               <div className="mt-auto flex flex-wrap gap-2">{children(g)}</div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </PanelGrid>
       )}
     </section>
   );

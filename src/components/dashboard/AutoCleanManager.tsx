@@ -5,6 +5,7 @@ import { ChannelSelect } from "@/components/admin/pickers";
 import {
   dangerButton,
   FormField,
+  ghostButton,
   inputClass,
   Notice,
   primaryButton,
@@ -14,10 +15,15 @@ import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
+  type AutoCleanFilters,
   type AutoCleanList,
+  type AutoCleanPreview,
   type GuildStructure,
   type WelcomeActionResult,
 } from "@/lib/jonnybot-admin";
@@ -25,9 +31,27 @@ import {
 type Result = Promise<WelcomeActionResult<AutoCleanList>>;
 
 export interface AutoCleanActions {
-  save: (channelId: string, maxAgeMinutes: number, keepPinned: boolean) => Result;
+  save: (channelId: string, maxAgeMinutes: number, keepPinned: boolean, filters: AutoCleanFilters) => Result;
+  /** The dry run: counts what the rule would delete now and deletes nothing. */
+  preview: (channelId: string, maxAgeMinutes: number, keepPinned: boolean, filters: AutoCleanFilters) => Promise<WelcomeActionResult<AutoCleanPreview>>;
   remove: (channelId: string) => Result;
 }
+
+const NO_FILTERS: AutoCleanFilters = { authors: "ALL", onlyWithAttachments: false, containsText: null };
+const AUTHORS = [
+  { key: "ALL", label: "Everyone's messages" },
+  { key: "ONLY_BOTS", label: "Only bots' messages" },
+  { key: "ONLY_HUMANS", label: "Only people's messages" },
+] as const;
+
+/** Which messages a rule is limited to, in words. */
+export function describeFilters(f: AutoCleanFilters): string {
+  const parts = [f.authors === "ONLY_BOTS" ? "from bots" : f.authors === "ONLY_HUMANS" ? "from people" : null, f.onlyWithAttachments ? "with attachments" : null, f.containsText ? `containing "${f.containsText}"` : null].filter(Boolean);
+  return parts.length === 0 ? "every message" : `only messages ${parts.join(", ")}`;
+}
+
+const isFiltered = (f: AutoCleanFilters) => f.authors !== "ALL" || f.onlyWithAttachments || (f.containsText ?? "").trim() !== "";
+const keyOf = (channelId: string | null, minutes: number, keepPinned: boolean, f: AutoCleanFilters) => JSON.stringify([channelId, minutes, keepPinned, f.authors, f.onlyWithAttachments, (f.containsText ?? "").trim()]);
 
 type Problem = { title: string; items: string[] } | null;
 
@@ -52,7 +76,11 @@ export function describeAge(minutes: number): string {
   return `${minutes} minutes`;
 }
 
-/** Channels that delete their own old messages: the rules in force, and a form to add or change one. */
+/**
+ * Channels that delete their own old messages: the rules in force, and a form to add or change one. Basic is a channel and how long messages stay (the usual
+ * lengths); Advanced adds a length of your own in minutes and deleting pinned messages too. A length that isn't one of the usual ones and a rule that deletes pins
+ * stay visible while you change them.
+ */
 export function AutoCleanManager({
   initial,
   structure,
@@ -66,9 +94,20 @@ export function AutoCleanManager({
   const [channelId, setChannelId] = useState<string | null>(null);
   const [minutes, setMinutes] = useState(1440);
   const [keepPinned, setKeepPinned] = useState(true);
+  const [filters, setFilters] = useState<AutoCleanFilters>(NO_FILTERS);
+  // the dry run for exactly this form: what it said, and which form it was for
+  const [checked, setChecked] = useState<{ key: string; result: AutoCleanPreview } | null>(null);
   const [problem, setProblem] = useState<Problem>(null);
   const [note, setNote] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
+  const showOwnLength = advanced || !AGES.some((a) => a.minutes === minutes);
+  const showPins = advanced || !keepPinned;
+  const showFilters = advanced || isFiltered(filters) || list.rules.some((r) => isFiltered(r));
+  const hidden = [!showOwnLength && "a length of your own in minutes", !showPins && "deleting pinned messages too", !showFilters && "limiting it to bots, attachments or some text"].filter(
+    (name): name is string => typeof name === "string",
+  );
 
   function run(work: () => Result, done: string, after?: () => void) {
     setProblem(null);
@@ -83,10 +122,28 @@ export function AutoCleanManager({
     });
   }
 
+  const formKey = keyOf(channelId, minutes, keepPinned, filters);
+  const filtered = isFiltered(filters);
+  // a rule with a filter can only be saved after its dry run, and only while the form still matches that dry run
+  const checkedNow = checked !== null && checked.key === formKey;
+  const needsCheck = filtered && !checkedNow;
+
+  function check() {
+    setProblem(null);
+    setNote(null);
+    start(async () => {
+      const result = await actions.preview(channelId!, minutes, keepPinned, filters);
+      if (!result.ok) return setProblem({ title: result.error, items: result.problems });
+      setChecked({ key: formKey, result: result.data });
+    });
+  }
+
   function edit(rule: AutoCleanList["rules"][number]) {
     setChannelId(rule.channelId);
     setMinutes(rule.maxAgeMinutes);
     setKeepPinned(rule.keepPinned);
+    setFilters({ authors: rule.authors, onlyWithAttachments: rule.onlyWithAttachments, containsText: rule.containsText });
+    setChecked(null);
     setNote(null);
     setProblem(null);
   }
@@ -94,7 +151,7 @@ export function AutoCleanManager({
   const changing = list.rules.some((r) => r.channelId === channelId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <CollapsibleCard
         id="ac-rule"
         title={changing ? "Change a channel's rule" : "Clean a channel"}
@@ -107,7 +164,7 @@ export function AutoCleanManager({
         }
         info="Messages older than the age you choose are deleted for good, checked every ten minutes. Pinned messages are kept unless you turn that off. JonnyBot needs View Channel, Read Message History and Manage Messages in the channel."
       >
-        <FormField label="Channel" as="group">
+        <FormField label="Channel" size="md" as="group">
           <ChannelSelect
             {...choicesOf(structure)}
             onlyPostable={false}
@@ -117,7 +174,7 @@ export function AutoCleanManager({
             none="Choose a channel…"
           />
         </FormField>
-        <FormField label="Delete messages older than" as="group">
+        <FormField label="Delete messages older than" as="group" size="lg">
           <div className="flex flex-wrap items-center gap-2">
             {AGES.map((a) => (
               <button
@@ -130,43 +187,104 @@ export function AutoCleanManager({
                 {a.label}
               </button>
             ))}
-            <span className="flex items-center gap-1.5 text-xs text-muted">
-              or
-              <input
-                type="number"
-                min={list.minAge}
-                max={list.maxAge}
-                value={minutes}
-                aria-label="Minutes"
-                onChange={(e) => setMinutes(Math.trunc(Number(e.target.value) || list.minAge))}
-                className={`${inputClass} w-24!`}
-              />
-              minutes
-            </span>
+            {showOwnLength && (
+              <span className="flex items-center gap-1.5 text-xs text-muted">
+                or
+                <span className="w-24">
+                  <input
+                    type="number"
+                    min={list.minAge}
+                    max={list.maxAge}
+                    value={minutes}
+                    aria-label="Minutes"
+                    onChange={(e) => setMinutes(Math.trunc(Number(e.target.value) || list.minAge))}
+                    className={inputClass}
+                  />
+                </span>
+                minutes
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-muted">
             Between {describeAge(list.minAge)} and {describeAge(list.maxAge)}.
           </p>
         </FormField>
-        <Toggle
-          checked={keepPinned}
-          onChange={setKeepPinned}
-          label="Keep pinned messages"
-          detail="Pinned messages are never deleted."
-        />
-        <button
-          type="button"
-          className={primaryButton}
-          disabled={pending || !channelId}
-          onClick={() =>
-            run(
-              () => actions.save(channelId!, minutes, keepPinned),
-              "Saved. The next sweep applies it.",
-            )
-          }
-        >
-          {pending ? "Saving…" : changing ? "Save changes" : "Start cleaning"}
-        </button>
+        {showPins && (
+          <Toggle
+            checked={keepPinned}
+            onChange={setKeepPinned}
+            label="Keep pinned messages"
+            detail="Pinned messages are never deleted."
+          />
+        )}
+        {showFilters && (
+          <div className="space-y-3 border-t border-surface-border pt-4">
+            <p className="text-sm font-medium">Only delete</p>
+            <FormField label="Whose messages" as="group" size="lg">
+              <div className="flex flex-wrap gap-2">
+                {AUTHORS.map((a) => (
+                  <button
+                    key={a.key}
+                    type="button"
+                    aria-pressed={filters.authors === a.key}
+                    onClick={() => setFilters({ ...filters, authors: a.key })}
+                    className={`rounded-full border px-3 py-1 text-xs transition ${filters.authors === a.key ? "border-gold bg-gold/15 text-foreground" : "border-surface-border text-muted hover:text-foreground"}`}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            </FormField>
+            <Toggle
+              checked={filters.onlyWithAttachments}
+              onChange={(on) => setFilters({ ...filters, onlyWithAttachments: on })}
+              label="Only messages with an attachment"
+              detail="Pictures, files and videos. Plain text is kept."
+            />
+            <FormField label="Only messages containing" size="md" hint="Any capitals. Leave empty for any text.">
+              <input
+                className={inputClass}
+                value={filters.containsText ?? ""}
+                maxLength={list.maxTextLength}
+                onChange={(e) => setFilters({ ...filters, containsText: e.target.value })}
+                placeholder="e.g. free nitro"
+              />
+            </FormField>
+            <p className="text-xs text-muted">A message has to match everything you set here to be deleted. Everything else is kept. With nothing set, every old message goes.</p>
+          </div>
+        )}
+        {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
+        {checkedNow && checked && (
+          <div className="rounded-md border border-surface-border bg-background/40 p-3 text-sm" role="status">
+            <p className="font-medium">
+              {checked.result.matched === 0
+                ? `Nothing in #${checked.result.channelName} would be deleted right now.`
+                : `${checked.result.matched}${checked.result.mayHaveMore ? " or more" : ""} message${checked.result.matched === 1 ? "" : "s"} in #${checked.result.channelName} would be deleted right now.`}
+            </p>
+            <p className="mt-0.5 text-xs text-muted">
+              Checked {checked.result.scanned} older message{checked.result.scanned === 1 ? "" : "s"}{checked.result.mayHaveMore ? ` (the check looks at up to ${checked.result.scanLimit}; a sweep keeps going the next time)` : ""}. Nothing was deleted.
+            </p>
+          </div>
+        )}
+        {needsCheck && <p className="text-xs text-amber-300">Check what it would delete before you save a rule with a filter.</p>}
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className={ghostButton} disabled={pending || !channelId} onClick={check}>
+            {pending ? "Checking…" : "Check what it would delete"}
+          </button>
+          <button
+            type="button"
+            className={primaryButton}
+            disabled={pending || !channelId || needsCheck}
+            onClick={() =>
+              run(
+                () => actions.save(channelId!, minutes, keepPinned, filters),
+                "Saved. The next sweep applies it.",
+              )
+            }
+          >
+            {pending ? "Saving…" : changing ? "Save changes" : "Start cleaning"}
+          </button>
+        </div>
       </CollapsibleCard>
 
       {problem && (
@@ -183,9 +301,9 @@ export function AutoCleanManager({
             No channel is being cleaned.
           </p>
         ) : (
-          <ul className="grid gap-3 xl:grid-cols-2">
+          <PanelGrid min="22rem" gap="gap-3">
             {list.rules.map((r) => (
-              <li
+              <div
                 key={r.channelId}
                 className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5"
               >
@@ -194,7 +312,7 @@ export function AutoCleanManager({
                     #{r.channelName ?? "deleted channel"}
                   </p>
                   <p className="mt-0.5 text-sm text-muted">
-                    Deletes messages older than {describeAge(r.maxAgeMinutes)}
+                    Deletes {describeFilters(r)} older than {describeAge(r.maxAgeMinutes)}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -227,9 +345,9 @@ export function AutoCleanManager({
                     Stop cleaning
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </PanelGrid>
         )}
       </section>
     </div>

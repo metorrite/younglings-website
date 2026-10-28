@@ -7,6 +7,8 @@ import { TrackingEditor } from "@/components/admin/AdminExtras";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
 import { Card, ghostButton, primaryButton } from "@/components/admin/ui";
 import { HubEditor } from "@/components/dashboard/HubEditor";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { PermissionGroupsEditor } from "@/components/dashboard/PermissionGroupsEditor";
 import { ServerSetupForm } from "@/components/dashboard/ServerSetupForm";
 import { choicesOf } from "@/lib/jonnybot-admin";
@@ -43,6 +45,9 @@ const PATHS: { id: Path; title: string; time: string; blurb: string }[] = [
  * Walks a server's owner through installing JonnyBot: quick (yes/no questions and the required details), full (every option) or custom
  * (pick the parts first). Every step saves as it goes and starts from the server's current settings, so it can be left and picked up
  * again, run a second time, or used to change one part. A step can always be skipped.
+ * <p>
+ * Basic offers the quick setup; Advanced adds the full and the custom one. The full setup goes through every option, so a step of it says where the rest is
+ * when the dashboard is in the Basic view.
  */
 export function SetupWizard({ guildId, guildName, data, quick, full, initialPath = null }: { guildId: string; guildName: string; data: WizardData; quick: QuickActions; full: FullActions; initialPath?: Path | null }) {
   const router = useRouter();
@@ -53,6 +58,7 @@ export function SetupWizard({ guildId, guildName, data, quick, full, initialPath
   const [started, setStarted] = useState(initialPath === "quick" || initialPath === "full");
   const [index, setIndex] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [view] = useViewMode();
 
   const steps = path === "custom" ? FEATURES.filter((f) => picked.has(f.id)) : FEATURES;
   const stepDepth: Depth = path === "custom" ? depth : (path ?? "quick");
@@ -125,15 +131,16 @@ export function SetupWizard({ guildId, guildName, data, quick, full, initialPath
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted">Choose how you want to set up JonnyBot in {guildName}. You can skip any step, stop whenever you like, and come back: it picks up from what&apos;s already set.</p>
-        <div className="grid gap-4 md:grid-cols-3">
-          {PATHS.map((p) => (
+        <PanelGrid min="18rem" max="26rem">
+          {(view === "advanced" ? PATHS : PATHS.filter((p) => p.id === "quick")).map((p) => (
             <button key={p.id} type="button" onClick={() => { setPath(p.id); setStarted(p.id !== "custom"); setIndex(0); }} className="rounded-lg border border-surface-border bg-surface p-5 text-left transition hover:border-gold">
               <span className="block font-semibold text-gold">{p.title}</span>
               <span className="mt-0.5 block text-xs text-muted">{p.time}</span>
               <span className="mt-3 block text-sm">{p.blurb}</span>
             </button>
           ))}
-        </div>
+        </PanelGrid>
+        <MoreInAdvanced>the full setup (every option of every part) and a custom setup (pick the parts you want).</MoreInAdvanced>
       </div>
     );
   }
@@ -202,12 +209,14 @@ export function SetupWizard({ guildId, guildName, data, quick, full, initialPath
         <p className="text-xs uppercase tracking-wide text-muted">
           Step {index + 1} of {steps.length} · {path === "custom" ? `Custom, ${stepDepth}` : `${stepDepth === "quick" ? "Quick" : "Full"} setup`}
         </p>
-        <div className="h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={index}>
+        <div className="h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Setup steps done" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={index}>
           <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${(index / steps.length) * 100}%` }} />
         </div>
         <h2 className="text-xl font-semibold">{step.title}</h2>
         <p className="text-sm text-muted">{step.blurb}</p>
       </div>
+
+      {stepDepth === "full" && <MoreInAdvanced>every option of this part, which the full setup is meant to go through.</MoreInAdvanced>}
 
       <div key={`${step.id}-${stepDepth}`}>{stepDepth === "quick" ? step.quick(quickProps) : fullBody[step.id]}</div>
 

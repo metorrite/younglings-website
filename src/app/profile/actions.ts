@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import { setColorRole, setNickname } from "@/lib/jonnybot";
-import { memberApi, type Goal, type MemberSettings, type SelfRole } from "@/lib/member";
+import { memberApi, type Goal, type MemberSettings, type MyEvents, type MyHighlights, type SelfRole } from "@/lib/member";
 import { throttle } from "@/lib/ratelimit";
 
 /**
@@ -45,6 +45,33 @@ export async function updateColorRoleAction(formData: FormData) {
 
   await setColorRole(userId, color);
   revalidatePath("/profile");
+}
+
+// ---------- events ----------
+
+/** Joins an event as the signed-in member. The bot applies every rule (in the server, signups open, team policy, waitlist) and answers in words. */
+export async function joinEventAction(eventId: string): Promise<ActionResult<MyEvents>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  if (!/^\d{1,18}$/.test(eventId)) return { ok: false, error: "That isn't a valid event." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.joinEvent(userId, eventId);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
+}
+
+export async function leaveEventAction(eventId: string): Promise<ActionResult<MyEvents>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  if (!/^\d{1,18}$/.test(eventId)) return { ok: false, error: "That isn't a valid event." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.leaveEvent(userId, eventId);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
 }
 
 // ---------- public profile, privacy and notifications ----------
@@ -115,4 +142,42 @@ export async function toggleRoleAction(roleId: string, on: boolean): Promise<Act
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/profile");
   return { ok: true, data: result.data.roles };
+}
+
+// ---------- highlights (words that send me a direct message) ----------
+
+export async function addHighlightAction(word: string, wholeWord: boolean): Promise<ActionResult<MyHighlights>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  if (typeof word !== "string" || word.length > 200) return { ok: false, error: "That word couldn't be read." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.addHighlight(userId, word, wholeWord !== false);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
+}
+
+export async function removeHighlightAction(id: string): Promise<ActionResult<MyHighlights>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  if (!/^\d{1,18}$/.test(id)) return { ok: false, error: "That isn't a valid word." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.removeHighlight(userId, id);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
+}
+
+export async function ignoreHighlightChannelAction(channelId: string, ignored: boolean): Promise<ActionResult<MyHighlights>> {
+  const userId = await currentUserId();
+  if (!userId) return signedOut;
+  if (!/^\d{1,20}$/.test(channelId)) return { ok: false, error: "That isn't a valid channel." };
+  const slow = throttle(userId, "profile");
+  if (slow) return { ok: false, error: slow };
+  const result = await memberApi.ignoreHighlightChannel(userId, channelId, ignored === true);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/profile");
+  return { ok: true, data: result.data };
 }

@@ -5,14 +5,16 @@ import { NewsBlock } from "@/components/site/NewsBlock";
 import { OnlineRail } from "@/components/site/OnlineRail";
 import { Panel, StatTile, Unavailable } from "@/components/site/blocks";
 import { Tabbed } from "@/components/site/Tabbed";
-import { compact, getFeed, getOverview, shortDay } from "@/lib/site";
+import { compact, getFeed, getOnline, getOverview, shortDay } from "@/lib/site";
 
 // Rendered per request: the data comes from the bot over a private network that doesn't exist at build time,
 // so prerendering would bake in an empty "unavailable" page. The fetches themselves are still cached briefly.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [overview, feed, milestoneFeed] = await Promise.all([getOverview(), getFeed(10), getFeed(60, "XP_MILESTONE")]);
+  const [overview, feed, milestoneFeed, online] = await Promise.all([getOverview(), getFeed(10), getFeed(60, "XP_MILESTONE"), getOnline()]);
+  // Without Discord's Presence intent nobody can be known to be online, so the rail is left out instead of claiming the clan is empty.
+  const showOnline = !online?.unavailable;
   // Big XP milestones only — 100 million and up.
   const milestones = (milestoneFeed ?? []).filter((m) => Number(m.text.match(/^(\d+)XP/)?.[1] ?? 0) >= 100_000_000).slice(0, 5);
   const clan = overview?.clan;
@@ -23,7 +25,7 @@ export default async function Home() {
       <div className="relative mx-auto max-w-[96rem] px-4 pt-8 pb-10 sm:px-6">
 
         {/* Three columns: stats and leaderboards on the left, Discord news in the middle, who's online on the right. */}
-        <div className="grid gap-6 lg:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-cols-[21rem_minmax(0,1fr)_21rem]">
+        <div className={`grid gap-6 ${showOnline ? "lg:grid-cols-[19rem_minmax(0,1fr)_19rem] xl:grid-cols-[21rem_minmax(0,1fr)_21rem]" : "lg:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[21rem_minmax(0,1fr)]"}`}>
           <div className="order-2 min-w-0 space-y-6 lg:order-none">
             {overview ? (
               <>
@@ -92,9 +94,11 @@ export default async function Home() {
             <NewsBlock />
           </div>
 
-          <div className="order-3 min-w-0 lg:order-none">
-            <OnlineRail />
-          </div>
+          {showOnline && (
+            <div className="order-3 min-w-0 lg:order-none">
+              <OnlineRail />
+            </div>
+          )}
         </div>
       </div>
     </div>

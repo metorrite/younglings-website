@@ -1,16 +1,20 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   dangerButton,
   formatUtc,
+  FormField,
   ghostButton,
   inputClass,
   Notice,
   primaryButton,
   StatusBadge,
 } from "@/components/admin/ui";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { FieldGrid, PanelGrid } from "@/components/dashboard/ui/Layout";
 import type {
   PointsRedemptions,
   PointsReward,
@@ -89,13 +93,18 @@ export function PointsRewardsManager({
   }
 
   return (
-    <section className="space-y-5 rounded-xl border border-surface-border bg-surface p-5">
-      <div>
-        <h2 className="font-semibold text-gold">Rewards</h2>
-        <p className="mt-1 text-xs text-muted">
-          Things members can spend {unit} on with /points redeem. Staff hand the reward over, then mark it done here. Cancelling refunds the member.
-        </p>
-      </div>
+    <CollapsibleCard
+      id="points-rewards"
+      title="Rewards"
+      hint={`Things members can spend ${unit} on with /points redeem. Staff hand the reward over, then mark it done here. Cancelling refunds the member.`}
+      defaultOpen={queue.pending.length > 0 || list.rewards.length === 0}
+      summary={
+        <>
+          <Chip tone={queue.pending.length > 0 ? "warn" : "plain"}>{queue.pending.length > 0 ? `${queue.pending.length} to hand over` : "Nothing to hand over"}</Chip>
+          <Chip>{list.rewards.length} reward{list.rewards.length === 1 ? "" : "s"}</Chip>
+        </>
+      }
+    >
       {problem && <Notice tone="error" title={problem.title} items={problem.items} />}
       {note && <Notice tone="success" title={note} />}
 
@@ -121,7 +130,7 @@ export function PointsRewardsManager({
                     type="button"
                     className={dangerButton}
                     disabled={pending}
-                    onClick={() => window.confirm("Cancel this and refund the member?") && act(r.id, false)}
+                    onClick={async () => (await confirmDialog({ title: "Cancel this and refund the member?", confirmLabel: "Cancel and refund", tone: "danger" })) && act(r.id, false)}
                   >
                     Cancel and refund
                   </button>
@@ -156,9 +165,9 @@ export function PointsRewardsManager({
         {list.rewards.length === 0 ? (
           <p className="mt-2 text-sm text-muted">No rewards yet. Add the first one below.</p>
         ) : (
-          <ul className="mt-2 grid gap-3 xl:grid-cols-2">
+          <PanelGrid min="20rem" gap="gap-3" className="mt-2">
             {list.rewards.map((r) => (
-              <li key={r.id} className={`flex flex-col gap-1 rounded-lg border border-surface-border p-3 text-sm ${r.active ? "" : "opacity-60"}`}>
+              <div key={r.id} className={`flex flex-col gap-1 rounded-lg border p-3 text-sm ${r.active ? "border-surface-border" : "border-dashed border-control-border"}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-semibold">{r.name}</span>
                   <span className="tabular-nums">
@@ -188,21 +197,29 @@ export function PointsRewardsManager({
                     {r.active ? "Archive" : "Restore"}
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </PanelGrid>
         )}
       </div>
 
       <div className="rounded-lg border border-surface-border p-4">
         <h3 className="text-sm font-medium">{draft.id ? "Edit reward" : "Add a reward"}</h3>
-        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_8rem_8rem]">
-          <input className={inputClass} placeholder="Name, e.g. Custom role colour" aria-label="Reward name" maxLength={60} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
-          <input className={inputClass} placeholder={`Cost in ${unit}`} aria-label="Cost" inputMode="numeric" value={draft.cost} onChange={(e) => setDraft({ ...draft, cost: e.target.value })} />
-          <input className={inputClass} placeholder="Stock (empty = unlimited)" aria-label="Stock" inputMode="numeric" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} />
-          <div className="md:col-span-3">
-            <input className={inputClass} placeholder="Short description (optional)" aria-label="Description" maxLength={200} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
-          </div>
+        <div className="mt-3 space-y-3">
+          <FieldGrid>
+            <FormField label="Name" size="md">
+              <input className={inputClass} placeholder="e.g. Custom role colour" maxLength={60} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            </FormField>
+            <FormField label={`Cost in ${unit}`} size="sm">
+              <input className={inputClass} inputMode="numeric" value={draft.cost} onChange={(e) => setDraft({ ...draft, cost: e.target.value })} />
+            </FormField>
+            <FormField label="Stock" size="sm" hint="Empty means unlimited.">
+              <input className={inputClass} inputMode="numeric" value={draft.stock} onChange={(e) => setDraft({ ...draft, stock: e.target.value })} />
+            </FormField>
+          </FieldGrid>
+          <FormField label="Short description (optional)" size="lg">
+            <input className={inputClass} maxLength={200} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} />
+          </FormField>
         </div>
         <div className="mt-3 flex gap-2">
           <button type="button" className={primaryButton} disabled={pending || !draft.name.trim() || !draft.cost.trim()} onClick={() => submit(draft, draft.id ? "Reward saved." : "Reward added.")}>
@@ -215,6 +232,6 @@ export function PointsRewardsManager({
           )}
         </div>
       </div>
-    </section>
+    </CollapsibleCard>
   );
 }

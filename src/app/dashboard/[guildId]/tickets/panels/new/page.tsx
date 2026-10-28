@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PanelEditor, type PanelEditorWhere } from "@/components/admin/PanelEditor";
+import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
 import { blankPanel } from "@/lib/panel-defaults";
@@ -20,20 +21,20 @@ export default async function NewPanelPage({ params }: { params: Promise<{ guild
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link href={base} className="text-sm text-muted hover:text-foreground">
-          ← Ticket panels
-        </Link>
-        <h2 className="mt-2 text-xl font-semibold">New panel</h2>
-        <p className="mt-1 text-sm text-muted">
-          Starts with your{" "}
-          <Link href={`${base}/defaults`} className="text-gold hover:underline">
-            panel defaults
-          </Link>
-          ; change anything below for just this panel.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="New panel"
+        description={
+          <>
+            Starts with your{" "}
+            <Link href={`${base}/defaults`} className="text-gold hover:underline">
+              panel defaults
+            </Link>
+            ; change anything below for just this panel.
+          </>
+        }
+        back={{ href: base, label: "Ticket panels" }}
+      />
       <PanelEditor initial={blankPanel(defaults)} structure={structure} where={where} />
     </div>
   );

@@ -1,9 +1,11 @@
+import Link from "next/link";
+import { EventJoinButton } from "@/components/profile/EventJoinButton";
 import { Panel, ProgressBar, StatTile } from "@/components/site/blocks";
 import type { MyEvent, MyEvents } from "@/lib/member";
 import { compact, shortDate } from "@/lib/site";
 
 const STAGE: Record<MyEvent["status"], string> = { SIGNUPS: "Signups open", RUNNING: "Running", SCORING: "Scoring", DONE: "Finished", CANCELLED: "Cancelled" };
-const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", custom: "Event" };
+const TEMPLATE: Record<string, string> = { bingo: "Bingo", "scavenger-hunt": "Scavenger hunt", competition: "Competition", "boss-night": "Boss night", "clan-vs-clan": "Clan vs clan", custom: "Event" };
 const AWARD: Record<MyEvent["awards"][number]["status"], string> = { PENDING: "Not paid yet", PAID: "Paid", REVOKED: "Revoked", REFUNDED: "Refunded" };
 const BUY_IN: Record<MyEvent["buyIn"]["status"], string> = { NONE: "Not required", DUE: "Due: pay the host", PAID: "Paid", REFUNDED: "Refunded" };
 
@@ -19,7 +21,11 @@ function EventCard({ e }: { e: MyEvent }) {
     <li className="space-y-4 rounded-xl border border-surface-border bg-surface p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-semibold break-words">{e.name}</h3>
+          <h3 className="font-semibold break-words">
+            <Link href={`/clan-events/${e.id}`} className="hover:text-gold">
+              {e.name}
+            </Link>
+          </h3>
           <p className="text-xs text-muted">
             {TEMPLATE[e.template] ?? "Event"} · {e.scoringMode === "TEAM" ? (e.team ? `Team ${e.team}` : "Teams") : "Solo"}
           </p>
@@ -29,6 +35,23 @@ function EventCard({ e }: { e: MyEvent }) {
 
       {e.waiting && <p className="text-sm text-gold">You are on the waitlist. You will be let in if a place opens up.</p>}
 
+      {e.verification.required && !e.waiting && e.verification.state !== "NOT_REQUIRED" && (
+        <div className="space-y-1 text-sm">
+          {e.verification.state === "VERIFIED" && <p>{chip("Verified", "good")}</p>}
+          {e.verification.state === "WAIVED" && <p>{chip("Let through without verification", "good")}</p>}
+          {e.verification.state === "PENDING" && (
+            <p className="text-gold">
+              Waiting for verification. {e.verification.instructions}
+            </p>
+          )}
+          {e.verification.state === "REJECTED" && (
+            <p className="text-red-300">
+              Your verification was turned down{e.verification.note ? `: ${e.verification.note}` : "."} {e.verification.instructions}
+            </p>
+          )}
+        </div>
+      )}
+
       {showStanding && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatTile label="Your place" value={e.rank > 0 ? `${e.rank}` : "Not yet"} sub={e.rank > 0 ? `of ${e.of} ${e.scoringMode === "TEAM" ? "teams" : "players"}` : "No points scored yet"} />
@@ -36,7 +59,7 @@ function EventCard({ e }: { e: MyEvent }) {
           {e.objectives.length > 0 && <StatTile label="Done" value={`${completed} / ${e.objectives.length}`} sub="objectives" />}
         </div>
       )}
-      {showStanding && e.objectives.length > 0 && <ProgressBar value={completed} max={e.objectives.length} />}
+      {showStanding && e.objectives.length > 0 && <ProgressBar value={completed} max={e.objectives.length} label={`Objectives done in ${e.name}`} />}
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {e.buyIn.enabled && (
@@ -47,6 +70,8 @@ function EventCard({ e }: { e: MyEvent }) {
         )}
         {e.pendingProof > 0 && chip(`${e.pendingProof} proof waiting for review`, "warn")}
       </div>
+
+      {e.status === "SIGNUPS" && <EventJoinButton eventId={e.id} mode="leave" />}
 
       {e.awards.length > 0 && (
         <div className="space-y-1">
@@ -98,20 +123,24 @@ export function MyEventsPanel({ data }: { data: MyEvents }) {
         )}
       </Panel>
       {data.open.length > 0 && (
-        <Panel title="Open for signup" hint="Join from the signup message in Discord.">
+        <Panel title="Open for signup" hint="Join here or from the signup message in Discord. You need to be in the server's Discord to take part.">
           <ul className="divide-y divide-surface-border/60 text-sm">
             {data.open.map((o) => (
-              <li key={o.id} className="space-y-0.5 py-3">
-                <p className="font-medium">
-                  {o.name}{" "}
-                  <span className="text-xs text-muted">
-                    · {TEMPLATE[o.template] ?? "Event"} · {o.scoringMode === "TEAM" ? "Teams" : "Solo"}
-                  </span>
-                </p>
-                <p className="text-xs text-muted">
-                  {o.signupClosesAt ? `Signups close ${shortDate(o.signupClosesAt)}` : "No signup deadline"}
-                  {o.buyIn > 0 ? ` · Buy-in ${compact(o.buyIn)} gp` : ""}
-                </p>
+              <li key={o.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <div className="min-w-0 space-y-0.5">
+                  <p className="font-medium">
+                    {o.name}{" "}
+                    <span className="text-xs text-muted">
+                      · {TEMPLATE[o.template] ?? "Event"} · {o.scoringMode === "TEAM" ? "Teams" : "Solo"}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    {o.closed ? "Signups are closed" : o.signupClosesAt ? `Signups close ${shortDate(o.signupClosesAt)}` : "No signup deadline"}
+                    {o.buyIn > 0 ? ` · Buy-in ${compact(o.buyIn)} gp` : ""}
+                    {o.verification ? " · Needs verification" : ""}
+                  </p>
+                </div>
+                {!o.closed && <EventJoinButton eventId={o.id} mode="join" />}
               </li>
             ))}
           </ul>

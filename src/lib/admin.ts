@@ -1,7 +1,11 @@
 import { getServerSession } from "next-auth";
-import { notFound, redirect } from "next/navigation";
+import { forbidden, notFound, redirect } from "next/navigation";
+import { AdminUnavailableError } from "@/lib/botUnreachable";
+import { ownerAllowed } from "@/lib/ownerGate";
 import { authOptions } from "@/lib/auth";
 import { AdminContext, ApiResult, createAdminContext, whoAmI } from "@/lib/jonnybot-admin";
+
+export { AdminUnavailableError };
 
 /**
  * The one gate in front of everything under /admin. Call it at the top of every admin page AND every admin
@@ -18,13 +22,28 @@ import { AdminContext, ApiResult, createAdminContext, whoAmI } from "@/lib/jonny
  *  - the check can't run (JonnyBot down, wrong secret) → throws, which the /admin error boundary shows as "can't reach JonnyBot"
  *    (access fails closed; it is never granted because the check couldn't run)
  */
-export class AdminUnavailableError extends Error {
-  constructor() {
-    super("JonnyBot is unreachable, so admin access can't be verified.");
-  }
+export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
+  return (await resolveAdmin(returnTo)).admin;
 }
 
-export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
+/**
+ * {@link requireAdmin} that also lets only the bot's owner through (Discord application owner / OWNER_IDS, as the bot itself decides). For the Super admin
+ * area: premium servers, beta servers, platform health, site-access switches and the restricted-content list. Anyone else, however high their role in a
+ * server, gets a 403. Call it at the top of every Super admin page AND Server Action; the bot re-checks the owner on its own routes too.
+ */
+export async function requireOwner(returnTo = "/admin"): Promise<AdminContext> {
+  const { admin, isOwner } = await resolveAdmin(returnTo);
+  if (!ownerAllowed(isOwner)) forbidden();
+  return admin;
+}
+
+/** The admin and whether they are the bot's owner, for the admin header (it shows the Super admin group to owners only). */
+export async function requireAdminWithOwner(returnTo = "/admin"): Promise<{ admin: AdminContext; isOwner: boolean }> {
+  const { admin, isOwner } = await resolveAdmin(returnTo);
+  return { admin, isOwner: ownerAllowed(isOwner) };
+}
+
+async function resolveAdmin(returnTo: string): Promise<{ admin: AdminContext; isOwner: boolean | undefined }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(returnTo)}`);
@@ -35,12 +54,13 @@ export async function requireAdmin(returnTo = "/admin"): Promise<AdminContext> {
   if (!result.ok) throw new AdminUnavailableError();
   if (!result.data.allowed || result.data.tier === "NONE") redirect("/admin/no-access");
 
-  return createAdminContext({
+  const admin = createAdminContext({
     actorId: session.user.id,
     displayName: result.data.displayName ?? session.user.name ?? "Admin",
     avatarUrl: result.data.avatarUrl ?? session.user.image ?? null,
     tier: result.data.tier,
   });
+  return { admin, isOwner: result.data.isOwner };
 }
 
 /**

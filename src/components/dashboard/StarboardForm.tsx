@@ -2,13 +2,18 @@
 
 import { useState, useTransition } from "react";
 import { ChannelSelect } from "@/components/admin/pickers";
+import { ChannelListPicker } from "@/components/dashboard/pickers";
 import { FormField, inputClass } from "@/components/admin/ui";
 import {
   Chip,
   CollapsibleCard,
 } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { SettingRow } from "@/components/dashboard/ui/SettingRow";
 import { Toggle } from "@/components/dashboard/ui/Toggle";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import {
   choicesOf,
   type GuildStructure,
@@ -23,14 +28,18 @@ type Outcome = {
 } | null;
 type Draft = Pick<
   Starboard,
-  "enabled" | "channelId" | "emoji" | "threshold" | "selfStar"
+  "enabled" | "channelId" | "emoji" | "threshold" | "selfStar" | "channelThresholds" | "skipHiddenChannels" | "onlyChannels"
 >;
 
 const EMOJI = ["⭐", "🌟", "🔥", "👍", "❤️", "🏆"];
 const shape = (s: Draft) =>
-  JSON.stringify([s.enabled, s.channelId, s.emoji, s.threshold, s.selfStar]);
+  JSON.stringify([s.enabled, s.channelId, s.emoji, s.threshold, s.selfStar, s.channelThresholds, s.skipHiddenChannels, s.onlyChannels]);
 
-/** A showcase channel: messages that collect enough of a reaction are copied there. */
+/**
+ * A showcase channel: messages that collect enough of a reaction are copied there. The switch owns the channel (it only matters while it is on); the preview sits
+ * under the rules it shows. Basic is the switch, the channel, one of the usual reactions and how many are needed; Advanced adds any other emoji (a server emoji
+ * works too) and letting authors star their own messages, and whatever is already saved there stays visible in Basic.
+ */
 export function StarboardForm({
   initial,
   structure,
@@ -44,10 +53,19 @@ export function StarboardForm({
   const [draft, setDraft] = useState(initial);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
   const dirty = shape(draft) !== shape(saved);
   const channelName = structure.channels.find(
     (c) => c.id === draft.channelId,
   )?.name;
+  const showOwnEmoji = advanced || !EMOJI.includes(saved.emoji);
+  const showSelfStar = advanced || saved.selfStar;
+  // rules that are already saved stay visible in Basic
+  const showChannelRules = advanced || saved.channelThresholds.length > 0 || saved.skipHiddenChannels || saved.onlyChannels.length > 0;
+  const hidden = [!showChannelRules && "numbers of reactions for single channels, and which channels are copied from", !showOwnEmoji && "any other emoji (a server emoji works too)", !showSelfStar && "letting people star their own messages"].filter(
+    (name): name is string => typeof name === "string",
+  );
 
   const change = (patch: Partial<Starboard>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -63,6 +81,9 @@ export function StarboardForm({
         emoji: draft.emoji,
         threshold: draft.threshold,
         selfStar: draft.selfStar,
+        channelThresholds: draft.channelThresholds,
+        skipHiddenChannels: draft.skipHiddenChannels,
+        onlyChannels: draft.onlyChannels,
       });
       if (!result.ok)
         return setOutcome({
@@ -82,8 +103,8 @@ export function StarboardForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
-      <div className="min-w-0 space-y-4">
+    <div className="space-y-4">
+      <PanelGrid min="22rem">
         <CollapsibleCard
           id="starboard-where"
           title="Where and when"
@@ -101,28 +122,30 @@ export function StarboardForm({
               </Chip>
             </>
           }
-          info="Messages that collect enough of the reaction below are copied into this channel, with their author, text, first picture and a link back. It is a good home for the best drops and achievements."
+          info="Messages that collect enough of the reaction are copied into this channel, with their author, text, first picture and a link back. It is a good home for the best drops and achievements."
         >
-          <Toggle
-            checked={draft.enabled}
-            onChange={(on) => change({ enabled: on })}
-            label="Run the starboard"
-            detail={
+          <SettingRow
+            title="Run the starboard"
+            hint={
               draft.enabled
                 ? "Messages that reach the target are copied."
                 : "Nothing is copied."
             }
-          />
-          <FormField label="Starboard channel" as="group">
-            <ChannelSelect
-              {...choicesOf(structure)}
-              onlyPostable
-              allowForums={false}
-              value={draft.channelId}
-              onChange={(id) => change({ channelId: id })}
-              none="Choose a channel…"
-            />
-          </FormField>
+            checked={draft.enabled}
+            onChange={(on) => change({ enabled: on })}
+            offHint="Off: nothing is copied. Your channel and rules are kept."
+          >
+            <FormField label="Starboard channel" size="md" as="group">
+              <ChannelSelect
+                {...choicesOf(structure)}
+                onlyPostable
+                allowForums={false}
+                value={draft.channelId}
+                onChange={(id) => change({ channelId: id })}
+                none="Choose a channel…"
+              />
+            </FormField>
+          </SettingRow>
         </CollapsibleCard>
 
         <CollapsibleCard
@@ -141,7 +164,8 @@ export function StarboardForm({
           <FormField
             label="Reaction"
             as="group"
-            info="Click one, or type or paste any emoji (a custom server emoji works too)."
+            size="lg"
+            info={showOwnEmoji ? "Click one, or type or paste any emoji (a custom server emoji works too)." : "Click one of the usual reactions."}
           >
             <div className="flex flex-wrap items-center gap-2">
               {EMOJI.map((e) => (
@@ -155,16 +179,20 @@ export function StarboardForm({
                   {e}
                 </button>
               ))}
-              <input
-                className={`${inputClass} w-40`}
-                value={draft.emoji}
-                maxLength={64}
-                aria-label="Emoji"
-                onChange={(e) => change({ emoji: e.target.value })}
-              />
+              {showOwnEmoji && (
+                <span className="w-40">
+                  <input
+                    className={inputClass}
+                    value={draft.emoji}
+                    maxLength={64}
+                    aria-label="Emoji"
+                    onChange={(e) => change({ emoji: e.target.value })}
+                  />
+                </span>
+              )}
             </div>
           </FormField>
-          <FormField label="Reactions needed" as="group">
+          <FormField label="Reactions needed" as="group" size="md">
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -173,42 +201,31 @@ export function StarboardForm({
                 value={draft.threshold}
                 aria-label="Reactions needed"
                 onChange={(e) => change({ threshold: Number(e.target.value) })}
-                className="w-56 accent-[var(--color-gold)]"
+                className="min-w-0 flex-1 accent-[var(--color-gold)]"
               />
               <span className="w-8 text-center font-semibold tabular-nums">
                 {draft.threshold}
               </span>
             </div>
           </FormField>
-          <Toggle
-            checked={draft.selfStar}
-            onChange={(on) => change({ selfStar: on })}
-            label="Let people star their own messages"
-            detail={
-              draft.selfStar
-                ? "An author's own reaction counts."
-                : "An author's own reaction is ignored."
-            }
-          />
-        </CollapsibleCard>
-
-        <SaveBar
-          pending={pending}
-          onSave={submit}
-          outcome={outcome}
-          dirty={dirty}
-          onDiscard={() => {
-            setDraft(saved);
-            setOutcome(null);
-          }}
-        />
-      </div>
-
-      <div className="min-w-0">
-        <div className="xl:sticky xl:top-4">
-          <section className="rounded-xl border border-surface-border bg-surface p-5">
-            <h2 className="font-semibold text-gold">Preview</h2>
-            <p className="mt-1 text-xs text-muted">
+          {showSelfStar && (
+            <Toggle
+              checked={draft.selfStar}
+              onChange={(on) => change({ selfStar: on })}
+              label="Let people star their own messages"
+              detail={
+                draft.selfStar
+                  ? "An author's own reaction counts."
+                  : "An author's own reaction is ignored."
+              }
+            />
+          )}
+          <section
+            aria-label="Preview"
+            className="max-w-xl rounded-lg border border-surface-border bg-background/40 p-4"
+          >
+            <h3 className="text-sm font-semibold">Preview</h3>
+            <p className="mt-0.5 text-xs text-muted">
               How a message looks once it is on the starboard.
             </p>
             <div className="mt-3 rounded bg-[#313338] p-3 text-sm text-[#dbdee1]">
@@ -230,8 +247,104 @@ export function StarboardForm({
               </div>
             </div>
           </section>
-        </div>
-      </div>
+        </CollapsibleCard>
+        {showChannelRules && (
+          <CollapsibleCard
+            id="starboard-channels"
+            title="Channel rules"
+            hint="A different number for some channels, and which channels are copied from."
+            summary={
+              <>
+                <Chip>{draft.channelThresholds.length} with their own number</Chip>
+                {draft.onlyChannels.length > 0 && <Chip tone="warn">Only {draft.onlyChannels.length} channel{draft.onlyChannels.length === 1 ? "" : "s"}</Chip>}
+                {draft.skipHiddenChannels && <Chip>Hidden channels skipped</Chip>}
+              </>
+            }
+            info="A message in a channel with its own number needs that many reactions instead of the usual one (a thread follows its channel). Age-restricted channels are never copied from."
+          >
+            <FormField label="Channels with their own number" as="group" size="lg">
+              <div className="space-y-2">
+                {draft.channelThresholds.map((rule, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-2">
+                    <span className="min-w-48 flex-1">
+                      <ChannelSelect
+                        {...choicesOf(structure)}
+                        allowForums={false}
+                        value={rule.channelId}
+                        onChange={(id) => change({ channelThresholds: draft.channelThresholds.map((r, j) => (j === i ? { ...r, channelId: id ?? r.channelId } : r)) })}
+                        none="Choose a channel…"
+                      />
+                    </span>
+                    <span className="w-20">
+                      <input
+                        type="number"
+                        min={1}
+                        max={draft.maxThreshold}
+                        className={inputClass}
+                        aria-label="Reactions needed in this channel"
+                        value={rule.threshold}
+                        onChange={(e) =>
+                          change({
+                            channelThresholds: draft.channelThresholds.map((r, j) =>
+                              j === i ? { ...r, threshold: Math.max(1, Math.min(draft.maxThreshold, Math.trunc(Number(e.target.value) || 1))) } : r,
+                            ),
+                          })
+                        }
+                      />
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-full border border-surface-border px-3 py-1 text-xs text-muted transition hover:text-foreground"
+                      onClick={() => change({ channelThresholds: draft.channelThresholds.filter((_, j) => j !== i) })}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                {draft.channelThresholds.length === 0 && <p className="text-xs text-muted">Every channel uses {draft.threshold}.</p>}
+                {draft.channelThresholds.length < draft.maxChannelRules && (
+                  <button
+                    type="button"
+                    className="rounded-full border border-surface-border px-3 py-1 text-xs text-muted transition hover:text-foreground"
+                    onClick={() => change({ channelThresholds: [...draft.channelThresholds, { channelId: "", threshold: draft.threshold }] })}
+                  >
+                    Add a channel
+                  </button>
+                )}
+              </div>
+            </FormField>
+            <FormField label="Only copy from these channels" as="group" size="lg" info="Leave empty to copy from every channel. A thread counts as its channel.">
+              <ChannelListPicker
+                channels={structure.channels}
+                allowForums={false}
+                value={draft.onlyChannels}
+                max={draft.maxChannelRules}
+                empty="Every channel."
+                onChange={(ids) => change({ onlyChannels: ids })}
+              />
+            </FormField>
+            <Toggle
+              checked={draft.skipHiddenChannels}
+              onChange={(on) => change({ skipHiddenChannels: on })}
+              label="Never copy from channels everyone can't see"
+              detail={draft.skipHiddenChannels ? "Staff-only and other private channels are left off the starboard." : "Messages from private channels can be copied to the starboard."}
+            />
+          </CollapsibleCard>
+        )}
+      </PanelGrid>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
+
+      <SaveBar
+        pending={pending}
+        onSave={submit}
+        outcome={outcome}
+        dirty={dirty}
+        onDiscard={() => {
+          setDraft(saved);
+          setOutcome(null);
+        }}
+      />
     </div>
   );
 }

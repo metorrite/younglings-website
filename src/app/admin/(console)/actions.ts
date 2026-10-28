@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/admin";
+import { requireAdmin, requireOwner } from "@/lib/admin";
+import { forgetSwitches } from "@/lib/siteSwitches";
 import { throttle } from "@/lib/ratelimit";
-import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PremiumGuilds, type PromotionDue, type ScheduledPost, type SelfRoleConfig } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type BetaGuilds, type ClanPoints, type MemberNote, type NewsChannelConfig, type PromotionDue, type ScheduledPost, type SelfRoleConfig, type SiteSwitchInfo, type AccessGrantList } from "@/lib/jonnybot-admin";
 
 /**
  * Server Actions for the admin settings that aren't tickets. Like every admin action, each begins with
@@ -151,7 +152,7 @@ export async function saveSiteOptionsAction(navEventBubble: boolean): Promise<Ac
 // ---------- JonnyBot beta access ----------
 
 export async function saveBetaGuildAction(guildId: string, label: string): Promise<ActionResult<BetaGuilds>> {
-  const ctx = await requireAdmin("/admin/beta-access");
+  const ctx = await requireOwner("/admin/beta-access");
   const slow = throttle(ctx.actorId, "admin");
   if (slow) return { ok: false, error: slow };
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "A Discord server ID is 17 to 20 digits." };
@@ -161,34 +162,12 @@ export async function saveBetaGuildAction(guildId: string, label: string): Promi
 }
 
 export async function removeBetaGuildAction(guildId: string): Promise<ActionResult<BetaGuilds>> {
-  const ctx = await requireAdmin("/admin/beta-access");
+  const ctx = await requireOwner("/admin/beta-access");
   const slow = throttle(ctx.actorId, "admin");
   if (slow) return { ok: false, error: slow };
   if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };
   const result = await adminApi.removeBetaGuild(ctx, guildId.trim());
   if (result.ok) revalidatePath("/admin/beta-access");
-  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
-}
-
-// ---------- premium polling plan ----------
-
-export async function savePremiumGuildAction(guildId: string, label: string): Promise<ActionResult<PremiumGuilds>> {
-  const ctx = await requireAdmin("/admin/polling-plan");
-  const slow = throttle(ctx.actorId, "admin");
-  if (slow) return { ok: false, error: slow };
-  if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "A Discord server ID is 17 to 20 digits." };
-  const result = await adminApi.savePremiumGuild(ctx, guildId.trim(), label.trim().slice(0, 60));
-  if (result.ok) revalidatePath("/admin/polling-plan");
-  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
-}
-
-export async function removePremiumGuildAction(guildId: string): Promise<ActionResult<PremiumGuilds>> {
-  const ctx = await requireAdmin("/admin/polling-plan");
-  const slow = throttle(ctx.actorId, "admin");
-  if (slow) return { ok: false, error: slow };
-  if (!/^\d{15,20}$/.test(guildId.trim())) return { ok: false, error: "That isn't a server ID." };
-  const result = await adminApi.removePremiumGuild(ctx, guildId.trim());
-  if (result.ok) revalidatePath("/admin/polling-plan");
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
 }
 
@@ -248,4 +227,46 @@ export async function cancelScheduledAction(id: number): Promise<ActionResult<Sc
   const result = await adminApi.cancelScheduled(ctx, id);
   if (result.ok) revalidatePath("/admin/scheduled");
   return result.ok ? { ok: true, data: result.data.posts } : { ok: false, error: result.error };
+}
+
+// ---------- site access switches (owner only) ----------
+
+export async function saveSiteSwitchAction(key: string, enabled: boolean): Promise<ActionResult<SiteSwitchInfo[]>> {
+  const ctx = await requireOwner("/admin/site-access");
+  const slow = throttle(ctx.actorId, "admin");
+  if (slow) return { ok: false, error: slow };
+  if (key !== "jonnybot" && key !== "hub" && key !== "dashboard") return { ok: false, error: "That isn't a switch." };
+  const result = await adminApi.saveSiteSwitch(ctx, key, enabled === true);
+  if (result.ok) {
+    forgetSwitches(); // this server notices straight away; others within about 15 seconds
+    revalidatePath("/admin/site-access");
+  }
+  return result.ok ? { ok: true, data: result.data.switches } : { ok: false, error: result.error };
+}
+
+// ---------- restricted-content access list (owner only) ----------
+
+export async function addAccessGrantAction(input: unknown): Promise<ActionResult<AccessGrantList>> {
+  const ctx = await requireOwner("/admin/access");
+  if (typeof input !== "object" || input === null) return { ok: false, error: "That entry could not be read." };
+  const g = input as Record<string, unknown>;
+  const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const subject = g.subject === "server" ? "server" : "user";
+  const result = await adminApi.addAccessGrant(ctx, {
+    area: str(g.area, 40),
+    subject,
+    ...(subject === "user" ? { userId: str(g.userId, 25) } : { guildId: str(g.guildId, 25), level: str(g.level, 40) }),
+    note: str(g.note, 120),
+    expiresOn: str(g.expiresOn, 10),
+  });
+  if (result.ok) revalidatePath("/admin/access");
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
+}
+
+export async function removeAccessGrantAction(id: string): Promise<ActionResult<AccessGrantList>> {
+  const ctx = await requireOwner("/admin/access");
+  if (!/^\d{1,18}$/.test(id)) return { ok: false, error: "That is not an entry." };
+  const result = await adminApi.removeAccessGrant(ctx, id);
+  if (result.ok) revalidatePath("/admin/access");
+  return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error };
 }

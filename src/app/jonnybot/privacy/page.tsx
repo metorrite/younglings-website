@@ -1,12 +1,17 @@
 import { gateJonnyBot } from "@/components/jonnybot/gate";
 import type { Metadata } from "next";
 import { Page, Section } from "@/components/jonnybot/Prose";
+import { supportUrl } from "@/lib/support";
+import { jonnybotHref } from "@/lib/siteHosts";
+import { currentSite } from "@/lib/siteHostsServer";
 
 export const metadata: Metadata = { title: "Privacy", description: "What JonnyBot stores, why, and how to have it removed." };
 
 export default async function PrivacyPage() {
   const gated = await gateJonnyBot();
   if (gated) return gated;
+  const support = supportUrl();
+  const site = await currentSite();
   return (
     <Page title="Privacy" intro="What JonnyBot and this website keep, why, and how to have it removed. Last updated October 2026.">
       <Section title="What JonnyBot stores">
@@ -22,6 +27,14 @@ export default async function PrivacyPage() {
           </li>
           <li>
             <strong>Tickets, polls and signups:</strong> what members submit through them, including ticket messages and transcripts, kept for the retention the server chooses.
+          </li>
+          <li>
+            <strong>The RuneSync plugin (only if you install it and switch kinds on):</strong> your own skill XP, drops, boss kill counts and clue completions from the game,
+            kept 180 days. See the{" "}
+            <a href={jonnybotHref(site, "/runesync/privacy")} className="text-gold underline-offset-2 hover:underline">
+              RuneSync privacy notice
+            </a>
+            .
           </li>
           <li>
             <strong>Admin activity:</strong> a log of changes made from the dashboard (who changed what, and when), kept so a server&apos;s admins can see it.
@@ -55,7 +68,18 @@ export default async function PrivacyPage() {
             <strong>A server removes JonnyBot:</strong> its settings stop being used and its stored data is deleted automatically 30 days later, unless JonnyBot is added back first. The owner can also ask for it to be deleted sooner.
           </li>
           <li>
-            <strong>Anything else:</strong> ask in the Younglings Discord server (linked from the clan site) and your data will be removed or you will be told why it can&apos;t be.
+            <strong>Anything else:</strong>{" "}
+            {support ? (
+              <>
+                ask in{" "}
+                <a href={support} className="text-gold underline-offset-2 hover:underline">
+                  JonnyBot&apos;s support server
+                </a>
+              </>
+            ) : (
+              "ask in the Younglings Discord server (linked from the clan site)"
+            )}{" "}
+            and your data will be removed or you will be told why it can&apos;t be.
           </li>
         </ul>
       </Section>

@@ -79,6 +79,8 @@ export interface CofferHolderInfo {
 export interface WheelSettings {
   /** Announce a winner automatically when the weekly Citadel list is made. */
   autoPost: boolean;
+  /** Post the spin as an MP4 video instead of a GIF. Off by default: Discord doesn't play a video on its own or loop it. */
+  video: boolean;
   /** The channel announcements go to (null until one is chosen). */
   channelId: string | null;
   /** The message template: {winner} (or {winners}), {mention}, {week} and {entries} are filled in; {wheel} marks where the GIF address goes in a copy. */

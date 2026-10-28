@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { requireGuild } from "@/lib/dashboard";
 import { adminApi, type CheckupFinding } from "@/lib/jonnybot-admin";
@@ -28,7 +29,7 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
     );
   }
 
-  const { findings, errors, warnings } = result.data;
+  const { findings, errors, warnings, intents } = result.data;
   const problems = findings.filter((f) => f.level !== "OK");
   const fine = findings.filter((f) => f.level === "OK");
   const headline =
@@ -84,10 +85,40 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
         </section>
       )}
 
+      {intents && (
+        <CollapsibleCard
+          id="checkup-intents"
+          title="Discord permissions the bot runs with"
+          hint="The three privileged switches in Discord's developer portal."
+          summary={<Chip tone={intents.members && intents.presence && intents.messageContent ? "good" : "warn"}>{[intents.members, intents.presence, intents.messageContent].filter(Boolean).length} of 3 on</Chip>}
+        >
+          <ul className="space-y-2 text-sm">
+            {[
+              { on: intents.members, name: "Server Members", off: "Joins, leaves, autoroles and member tracking don't work." },
+              { on: intents.messageContent, name: "Message Content", off: "Message logs, Highlights, automatic replies and word filters can't read messages." },
+              { on: intents.presence, name: "Presence", off: "The clan website hides its Who's Online list." },
+            ].map((i) => (
+              <li key={i.name} className="flex items-start gap-3">
+                <Chip tone={i.on ? "good" : "warn"}>{i.on ? "On" : "Off"}</Chip>
+                <span>
+                  {i.name}
+                  {!i.on && <span className="block text-xs text-muted">{i.off}</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </CollapsibleCard>
+      )}
+
       {fine.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold tracking-wider text-muted uppercase">Looking good</h2>
-          <ul className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
+        <CollapsibleCard
+          id="checkup-fine"
+          title="Looking good"
+          hint="What was checked and found fine."
+          defaultOpen={problems.length === 0}
+          summary={<Chip tone="good">{fine.length} fine</Chip>}
+        >
+          <ul className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 20rem), 1fr))" }}>
             {fine.map((f, i) => (
               <li key={`${f.title}-${i}`} className="flex items-start gap-3 rounded-lg border border-surface-border bg-surface/60 px-4 py-3 text-sm">
                 <span aria-hidden="true" className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${LOOK.OK.ring}`}>
@@ -100,7 +131,7 @@ export default async function CheckupPage({ params }: { params: Promise<{ guildI
               </li>
             ))}
           </ul>
-        </section>
+        </CollapsibleCard>
       )}
     </div>
   );

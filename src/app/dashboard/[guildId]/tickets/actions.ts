@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireGuild } from "@/lib/dashboard";
-import { adminApi, type ApiResult, type PanelDefaults, type PanelDefinition, type TicketSettings } from "@/lib/jonnybot-admin";
+import { adminApi, type ApiResult, type HelpExtras, type PanelDefaults, type PanelDefinition, type TicketSettings } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 import { cleanDefaults, cleanPanel, idOrNull, intOrNull } from "@/lib/ticketInput";
 
@@ -78,5 +78,29 @@ export async function saveGuildPanelDefaultsAction(guildId: string, input: unkno
 
   const result = await adminApi.savePanelDefaults(guild, defaults);
   revalidatePath(`/dashboard/${guildId}/tickets/defaults`);
+  return outcome(result);
+}
+
+/** Saves the optional extras of the help tickets. The bot validates the numbers. */
+export async function saveGuildHelpExtrasAction(guildId: string, input: unknown): Promise<ActionResult<HelpExtras>> {
+  const guild = await requireGuild(guildId);
+  const slow = throttle(guild.actorId, "admin");
+  if (slow) return invalid(slow);
+  if (typeof input !== "object" || input === null) return invalid("Those settings couldn't be read.");
+  const s = input as Record<string, unknown>;
+
+  const result = await adminApi.saveHelpExtras(guild, {
+    eventButton: s.eventButton === true,
+    eventStartHours: intOrNull(s.eventStartHours) ?? 24,
+    eventDays: intOrNull(s.eventDays) ?? 1,
+    relatedTickets: s.relatedTickets === true,
+    groupBosses: typeof s.groupBosses === "string" ? s.groupBosses.slice(0, 400) : "",
+    priorityTiers: s.priorityTiers === true,
+    longtimeGuestDays: intOrNull(s.longtimeGuestDays) ?? 30,
+    longtimeGuestPings: s.longtimeGuestPings !== false,
+    longtimeGuestEscalationHours: intOrNull(s.longtimeGuestEscalationHours) ?? 120,
+    kcRequirements: typeof s.kcRequirements === "string" ? s.kcRequirements.slice(0, 300) : "",
+  });
+  revalidatePath(`/dashboard/${guildId}/tickets/help-extras`);
   return outcome(result);
 }

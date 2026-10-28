@@ -12,6 +12,11 @@ const TRY_AGAIN = "Press the sign-in button again; a second try often works.";
 const CLEAR = "Open the site in a private/incognito window, or clear this site's cookies, and try once more.";
 
 const ERRORS: Record<string, AuthErrorInfo> = {
+  Handoff: {
+    title: "Signed in, but not on this address yet",
+    what: "You signed in with Discord, but passing the sign-in on to this part of the site took too long or the link was already used.",
+    tips: [TRY_AGAIN, "Finish the sign-in within a minute, in the same tab."],
+  },
   OAuthCallback: {
     title: "Discord sign-in didn't finish",
     what: "Discord let you through, but the last step of signing you in on our side failed.",

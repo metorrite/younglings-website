@@ -7,6 +7,8 @@
  * friendly "can't reach JonnyBot" state instead of an error.
  */
 
+import { siteTag } from "@/lib/cacheTags";
+
 // ---------- shapes ----------
 
 export interface OnlineMember {
@@ -30,6 +32,8 @@ export interface OnlineGroup {
 export interface OnlineData {
   total: number;
   groups: OnlineGroup[];
+  /** True when the bot can't see who is online (Discord's Presence intent is off): the list is hidden rather than shown empty. */
+  unavailable?: boolean;
 }
 
 export interface SiteEvent {
@@ -317,7 +321,7 @@ async function getSite<T>(path: string, revalidateSeconds: number): Promise<T | 
   try {
     const response = await fetch(`${baseUrl}/internal/site/${path}`, {
       headers: { "X-Internal-Secret": secret },
-      next: { revalidate: revalidateSeconds },
+      next: { revalidate: revalidateSeconds, tags: [siteTag(path)] },
       signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) return null;

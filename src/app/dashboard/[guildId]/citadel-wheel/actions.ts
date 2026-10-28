@@ -28,18 +28,19 @@ export async function saveCitadelWheelAction(
   autoPost: boolean,
   channelId: string | null,
   message: string,
+  video: boolean,
 ): Promise<{ ok: true; data: WheelSettings } | Failure> {
   const guild = await requireGuild(guildId);
   const slow = throttle(guild.actorId, "admin");
   if (slow) return fail(slow);
-  if (typeof autoPost !== "boolean" || typeof message !== "string" || message.length > 5000) return fail("Those settings aren't valid.");
+  if (typeof autoPost !== "boolean" || typeof video !== "boolean" || typeof message !== "string" || message.length > 5000) return fail("Those settings aren't valid.");
   if (channelId !== null && !/^\d+$/.test(channelId)) return fail("Choose a channel from the list.");
   // Discord draws the wheel under the whole message wherever {wheel} is, so keeping the tag last matches what is shown
   const text = message.trim();
   if (text.includes("{wheel}") && (!text.endsWith("{wheel}") || text.indexOf("{wheel}") !== text.lastIndexOf("{wheel}"))) {
     return fail("Put {wheel} once, as the very last thing in the message. Everything above it is one message and the wheel goes in a second message.");
   }
-  const result = await adminApi.saveCitadelWheel(guild, { autoPost, channelId, message });
+  const result = await adminApi.saveCitadelWheel(guild, { autoPost, channelId, message, video });
   return result.ok ? { ok: true, data: result.data } : fail(result.error, result.problems);
 }
 

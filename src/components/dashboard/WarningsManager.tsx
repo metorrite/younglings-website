@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/ui/Dialogs";
 import { useMemo, useState, useTransition } from "react";
 import {
   dangerButton,
@@ -7,6 +8,7 @@ import {
   inputClass,
   Notice,
 } from "@/components/admin/ui";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import type { WarningList, WelcomeActionResult } from "@/lib/jonnybot-admin";
 
 export interface WarningActions {
@@ -72,9 +74,9 @@ export function WarningsManager({
             : "No warning matches that search."}
         </p>
       ) : (
-        <ul className="grid gap-3 xl:grid-cols-2">
+        <PanelGrid min="22rem" gap="gap-3">
           {shown.map((w) => (
-            <li
+            <div
               key={w.id}
               className="flex flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5"
             >
@@ -98,16 +100,16 @@ export function WarningsManager({
                   type="button"
                   className={dangerButton}
                   disabled={pending}
-                  onClick={() =>
-                    window.confirm("Take back this warning?") && remove(w.id)
+                  onClick={async () =>
+                    (await confirmDialog({ title: "Take back this warning?", confirmLabel: "Take back", tone: "danger" })) && remove(w.id)
                   }
                 >
                   Take back
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </PanelGrid>
       )}
       {list.warnings.length >= list.limit && (
         <p className="text-xs text-muted">

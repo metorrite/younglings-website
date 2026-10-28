@@ -5,6 +5,10 @@ import { redirect } from "next/navigation";
 import { LinkRsn } from "@/components/link/LinkRsn";
 import { MyEventsPanel } from "@/components/profile/MyEventsPanel";
 import { PluginPanel } from "@/components/profile/PluginPanel";
+import { RuneSyncActivity } from "@/components/profile/RuneSyncActivity";
+import { ShowToClanSwitch } from "@/components/profile/ShowToClanSwitch";
+import { ChatLevelPanel } from "@/components/profile/ChatLevelPanel";
+import { HighlightsPanel } from "@/components/profile/HighlightsPanel";
 import { GoalsManager, NotificationsForm, PublicProfileForm, SelfRoles } from "@/components/profile/SettingsPanels";
 import { Panel, ProgressBar, RankBadge, StatTile, Unavailable } from "@/components/site/blocks";
 import { SkillIcon } from "@/components/site/SkillIcon";
@@ -30,6 +34,8 @@ const TABS = [
   { id: "activity", label: "My activity", icon: "📋" },
   { id: "events", label: "My events", icon: "🏆" },
   { id: "coffer", label: "Coffer", icon: "💰" },
+  { id: "level", label: "Chat level", icon: "💬" },
+  { id: "highlights", label: "Highlights", icon: "✨" },
   { id: "notifications", label: "Notifications", icon: "🔔" },
   { id: "plugin", label: "Plugin", icon: "🔌" },
 ] as const;
@@ -69,7 +75,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const mySheets = sheets && mySignups?.ok ? sheets.filter((s) => mySignups.data.joined.includes(s.id)) : [];
   const myEvents = tab === "events" ? await memberApi.myEvents(user.id) : null;
   const coffer = tab === "coffer" ? await memberApi.myCoffer(user.id) : null;
-  const plugin = tab === "plugin" ? await pluginApi.view(user.id) : null;
+  const chatLevel = tab === "level" ? await memberApi.chatLevel(user.id) : null;
+  const highlights = tab === "highlights" ? await memberApi.highlights(user.id) : null;
+  const [plugin, runeSync, visibility] =
+    tab === "plugin" ? await Promise.all([pluginApi.view(user.id), pluginApi.runeSync(user.id), pluginApi.visibility(user.id)]) : [null, null, null];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -279,6 +288,18 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           )
         )}
 
+        {tab === "level" && (
+          <Panel title="Chat level" hint="XP you earn for chatting in the Discord server, if the server has chat levels on. Separate from clan points.">
+            {chatLevel?.ok ? <ChatLevelPanel level={chatLevel.data} /> : <Unavailable what="Your chat level" />}
+          </Panel>
+        )}
+
+        {tab === "highlights" && (
+          <Panel title="Highlights" hint="Get a direct message when someone says a word you care about, such as a boss or an event. It works for channels you can see, and your own words are ignored.">
+            {highlights?.ok ? <HighlightsPanel initial={highlights.data} /> : <Unavailable what="Your highlights" />}
+          </Panel>
+        )}
+
         {tab === "activity" && (
           <>
             <Panel title="Polls you've voted in" action={<Link href="/polls" className="text-xs text-muted hover:text-gold">All polls →</Link>}>
@@ -375,6 +396,16 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         {tab === "plugin" && (
           <Panel title="Clan plugin" hint="Connect the in-game plugin and choose what it may report.">
             {plugin?.ok ? <PluginPanel initial={plugin.data} /> : <Unavailable what="Your plugin settings" />}
+          </Panel>
+        )}
+        {tab === "plugin" && (
+          <Panel title="RuneSync" hint="What the RuneSync plugin has sent from your game, and your bug-report ids.">
+            {runeSync?.ok ? <RuneSyncActivity view={runeSync.data} /> : <Unavailable what="Your RuneSync activity" />}
+          </Panel>
+        )}
+        {tab === "plugin" && (
+          <Panel title="Your clan" hint="Whether your clan's staff may see that you use RuneSync.">
+            {visibility?.ok ? <ShowToClanSwitch initial={visibility.data.showToClan} /> : <Unavailable what="This setting" />}
           </Panel>
         )}
       </div>

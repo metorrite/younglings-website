@@ -1,13 +1,14 @@
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { WelcomeEditor } from "@/components/admin/WelcomeEditor";
+import { WelcomeCardPanel } from "@/components/dashboard/WelcomeCardPanel";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
-import { choicesOf, dashboardApi } from "@/lib/jonnybot-admin";
-import { removeGuildWelcomeImageAction, saveGuildWelcomeAction, testGuildWelcomeAction } from "./actions";
+import { adminApi, choicesOf, dashboardApi } from "@/lib/jonnybot-admin";
+import { removeGuildWelcomeImageAction, saveGuildWelcomeAction, saveGuildWelcomeCardAction, testGuildWelcomeAction } from "./actions";
 
 export default async function GuildWelcomePage({ params }: { params: Promise<{ guildId: string }> }) {
   const { guildId } = await params;
   const guild = await requireGuild(guildId);
-  const [welcome, structure] = await Promise.all([dashboardApi.welcome(guild).then(dashboardData), dashboardApi.structure(guild).then(dashboardData)]);
+  const [welcome, structure, card] = await Promise.all([dashboardApi.welcome(guild).then(dashboardData), dashboardApi.structure(guild).then(dashboardData), adminApi.welcomeCard(guild).then(dashboardData)]);
 
   return (
     <div className="space-y-6">
@@ -21,6 +22,11 @@ export default async function GuildWelcomePage({ params }: { params: Promise<{ g
           imageUploadUrl: `/api/guild-images/${guildId}/welcome`,
           removeImage: removeGuildWelcomeImageAction.bind(null, guildId),
         }}
+      />
+      <WelcomeCardPanel
+        initial={card}
+        save={saveGuildWelcomeCardAction.bind(null, guildId)}
+        uploads={{ url: `/api/guild-images/${guildId}/welcome`, remove: removeGuildWelcomeImageAction.bind(null, guildId) }}
       />
     </div>
   );

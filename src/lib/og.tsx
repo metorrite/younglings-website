@@ -1,10 +1,11 @@
 import { ImageResponse } from "next/og";
 import type { ReactNode } from "react";
 
-/** Shared 1200×630 card used for link previews (Discord, social). Satori only understands flexbox and inline styles. */
+/** Shared 1200×630 card used for link previews (Discord, social). Satori only understands flexbox and inline styles. `brand` is the small
+ * label at the top (the clan site's own name by default; the Clans Hub passes its own). */
 export const OG_SIZE = { width: 1200, height: 630 };
 
-export function ogCard(title: string, subtitle: string, stats: { label: string; value: string }[], accent = "#d4af37", extra?: ReactNode) {
+export function ogCard(title: string, subtitle: string, stats: { label: string; value: string }[], accent = "#d4af37", extra?: ReactNode, brand = "YOUNGLINGS") {
   return new ImageResponse(
     (
       <div
@@ -22,7 +23,7 @@ export function ogCard(title: string, subtitle: string, stats: { label: string; 
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 28, letterSpacing: 6, color: "#9ca3af" }}>
           <div style={{ width: 18, height: 18, borderRadius: 9, background: accent }} />
-          YOUNGLINGS
+          {brand}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

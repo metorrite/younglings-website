@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin";
+import { requireOwner } from "@/lib/admin";
 import { adminApi } from "@/lib/jonnybot-admin";
 
 export const metadata = { title: "Bot health — Admin — Younglings" };
@@ -24,7 +24,7 @@ function Check({ ok, label, detail }: { ok: boolean; label: string; detail?: str
 }
 
 export default async function HealthPage() {
-  const admin = await requireAdmin("/admin/health");
+  const admin = await requireOwner("/admin/health");
   const result = await adminApi.health(admin);
 
   if (!result.ok) {

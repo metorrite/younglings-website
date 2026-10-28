@@ -23,15 +23,15 @@ export default async function WarningsPage({
     <div className="space-y-6">
       <PageHeader
         title="Warnings"
-        description="The record of warnings given with /warn. Take one back if it was a mistake."
-      />
-      <AutopunishEditor
-        initial={autopunish}
-        actions={{ save: saveAutopunishAction.bind(null, guildId) }}
+        description="The record of warnings given with /warn. Take one back if it was a mistake. The Advanced view adds Autopunish."
       />
       <WarningsManager
         initial={list}
         actions={{ remove: deleteWarningAction.bind(null, guildId) }}
+      />
+      <AutopunishEditor
+        initial={autopunish}
+        actions={{ save: saveAutopunishAction.bind(null, guildId) }}
       />
     </div>
   );

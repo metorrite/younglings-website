@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { AdminUnavailableError } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { currentSite } from "@/lib/siteHostsServer";
+import { switchOpen } from "@/lib/siteSwitches";
+import { areaAllowed } from "@/lib/restrictedRule";
 import { createGuildContext, whoAmI, type ApiResult, type GuildContext } from "@/lib/jonnybot-admin";
 
 /**
@@ -25,11 +27,11 @@ export interface DashboardUser {
 
 /** The beta check. Fails closed: if the bot can't be asked, access is refused rather than guessed. */
 async function betaAllows(userId: string): Promise<boolean> {
-  if (process.env.DASHBOARD_PUBLIC === "true") return true;
+  if (await switchOpen("dashboard")) return true;
   const result = await whoAmI(userId);
   if (!result.ok) throw new AdminUnavailableError();
   // `beta` also lets in the admins of the trusted beta servers; an older bot without it falls back to the clan's own admins.
-  return result.data.beta ?? (result.data.allowed && result.data.tier !== "NONE");
+  return areaAllowed(result.data, "dashboard");
 }
 
 /** A signed-in user who may see the dashboard at all. Not signed in goes to sign-in; no beta access is a 404. */
@@ -58,6 +60,20 @@ const whoAmIOncePerRequest = cache((actorId: string, guildId: string) => whoAmI(
  * dashboard never confirms a server exists to a person with no business in it.
  */
 export async function requireGuild(guildId: string, returnTo?: string): Promise<GuildContext & { guildName: string; guildIconUrl: string | null }> {
+  const guild = await resolveGuild(guildId, returnTo, false);
+  return guild;
+}
+
+/**
+ * {@link requireGuild} that also lets an Event coordinator in. Only the event manager's pages, its actions and the dashboard shell call this; every
+ * other page keeps using requireGuild, which refuses a coordinator with a 404, and the bot refuses a coordinator on every route but the event ones, so
+ * a coordinator can never reach more than the events however they get there. The context's `tier` says COORDINATOR for them.
+ */
+export async function requireEventAccess(guildId: string, returnTo?: string): Promise<GuildContext & { guildName: string; guildIconUrl: string | null }> {
+  return resolveGuild(guildId, returnTo, true);
+}
+
+async function resolveGuild(guildId: string, returnTo: string | undefined, allowCoordinator: boolean): Promise<GuildContext & { guildName: string; guildIconUrl: string | null }> {
   if (!/^\d{1,20}$/.test(guildId)) notFound();
   const user = await requireDashboardUser(returnTo ?? `/dashboard/${guildId}`);
 
@@ -66,14 +82,15 @@ export async function requireGuild(guildId: string, returnTo?: string): Promise<
     if (result.status === 404) notFound();
     throw new AdminUnavailableError();
   }
-  if (!result.data.allowed || result.data.tier === "NONE") notFound();
+  const coordinator = allowCoordinator && result.data.coordinator === true && !result.data.allowed;
+  if (!coordinator && (!result.data.allowed || result.data.tier === "NONE")) notFound();
 
   const context = createGuildContext({
     actorId: user.id,
     guildId,
     displayName: result.data.displayName ?? user.displayName,
     avatarUrl: result.data.avatarUrl ?? user.avatarUrl,
-    tier: result.data.tier,
+    tier: coordinator ? "COORDINATOR" : result.data.tier === "NONE" ? "ADMIN" : result.data.tier,
   });
   return Object.assign(context, { guildName: result.data.guildName ?? "this server", guildIconUrl: result.data.guildIconUrl ?? null });
 }
@@ -99,6 +116,7 @@ const BOT_PERMISSION_BITS = [
   16, // Read Message History
   17, // Mention @everyone, @here and All Roles (ticket role pings)
   18, // Use External Emojis
+  26, // Change Nickname (the server can give JonnyBot its own nickname)
   28, // Manage Roles (verification, helper and self-assigned roles)
   34, // Manage Threads
   35, // Create Public Threads
@@ -106,10 +124,30 @@ const BOT_PERMISSION_BITS = [
   38, // Send Messages in Threads
 ];
 
-/** The link that asks Discord to add JonnyBot to a server the person picks, or null if the bot's application id isn't configured. */
+/**
+ * Permissions a server can add on top of the minimal set, each only for features it switches on. They are left off the default link so a server
+ * that never uses them never grants them; the install page offers them as checkboxes.
+ */
+export const OPTIONAL_PERMISSIONS = [
+  { id: "moderation", label: "Moderation actions", detail: "Kick, Ban and Timeout. Needed for warning punishments (timeout, kick, ban after enough warnings) and for kicking brand-new accounts.", bits: [1, 2, 40] },
+] as const;
+
+const permissionsOf = (bits: readonly number[]) => bits.reduce((sum, bit) => sum + 2 ** bit, 0);
+const BASE_PERMISSIONS = permissionsOf(BOT_PERMISSION_BITS);
+
+function inviteLink(clientId: string, permissions: number): string {
+  return `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=${permissions}&scope=${encodeURIComponent("bot applications.commands")}`;
+}
+
+/** The link that asks Discord to add JonnyBot to a server the person picks, or null if the bot's application id isn't configured. Minimal permissions only. */
 export function installUrl(): string | null {
   const clientId = process.env.DISCORD_BOT_CLIENT_ID ?? process.env.DISCORD_CLIENT_ID;
+  return clientId ? inviteLink(clientId, BASE_PERMISSIONS) : null;
+}
+
+/** What the install page needs to build a link with the optional extras the person ticks: the app id, the minimal permissions and each extra's value. */
+export function installOptions(): { clientId: string; base: number; extras: { id: string; label: string; detail: string; value: number }[] } | null {
+  const clientId = process.env.DISCORD_BOT_CLIENT_ID ?? process.env.DISCORD_CLIENT_ID;
   if (!clientId) return null;
-  const permissions = BOT_PERMISSION_BITS.reduce((sum, bit) => sum + 2 ** bit, 0);
-  return `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(clientId)}&permissions=${permissions}&scope=${encodeURIComponent("bot applications.commands")}`;
+  return { clientId, base: BASE_PERMISSIONS, extras: OPTIONAL_PERMISSIONS.map((e) => ({ id: e.id, label: e.label, detail: e.detail, value: permissionsOf(e.bits) })) };
 }

@@ -1,5 +1,7 @@
 import type { CookiesOptions, NextAuthOptions } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
+import { allowedRedirect, authHost, cookieDomainFor, cookieDomains, multiDomain, needsHandoff } from "@/lib/authDomains";
+import { hostConfig } from "@/lib/siteHosts";
 
 /**
  * Auth.js (NextAuth) configuration for "Login with Discord".
@@ -47,6 +49,25 @@ export function onSiteDomain(url: string, cookieDomain: string | undefined): boo
 }
 
 const cookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim() || undefined;
+const secureCookies = (process.env.NEXTAUTH_URL ?? "").startsWith("https://");
+
+/** A host named in SITE_HOSTS or SITE_HOST_ALIASES (always one of ours). */
+export const mappedHost = (host: string): boolean => hostConfig().faceOfHost.has(host) || hostConfig().aliases.has(host);
+
+/**
+ * The cookie domain for a request to `host`. One domain (today's `AUTH_COOKIE_DOMAIN`) or none: that one, whatever the host, exactly as
+ * before. Several (`AUTH_COOKIE_DOMAINS`, design A3): the domain of the host in use, so the cookie lands on the apex the visitor is on.
+ */
+export function cookieDomainForRequest(host: string | null | undefined): string | undefined {
+  const domains = cookieDomains();
+  if (!multiDomain(domains)) return cookieDomain;
+  return cookieDomainFor(host, domains) ?? cookieDomainFor(authHost(), domains);
+}
+
+/** The options for a request to `host`: only the cookie domain differs between hosts, so every host reads the same session cookie name. */
+export function authOptionsFor(host: string | null | undefined): NextAuthOptions {
+  return { ...authOptions, cookies: authCookies(cookieDomainForRequest(host), secureCookies) };
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -61,13 +82,22 @@ export const authOptions: NextAuthOptions = {
   ],
   // Our own page, inside the site, for signing in and for when it goes wrong (next-auth would otherwise show its bare default).
   pages: { signIn: "/auth/signin", error: "/auth/signin" },
-  cookies: authCookies(cookieDomain, (process.env.NEXTAUTH_URL ?? "").startsWith("https://")),
+  cookies: authCookies(cookieDomainForRequest(authHost()), secureCookies),
   callbacks: {
-    // After signing in or out a person may be sent back to either of the site's faces, not just the host that finished the sign-in.
+    // After signing in or out a person may be sent back to any of the site's faces, not just the host that finished the sign-in. One on
+    // the other apex (two cookie domains) goes through the one-time handoff, which signs them in there too. Anywhere else: home.
     async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl || onSiteDomain(url, cookieDomain)) return url;
-      return baseUrl;
+      if (url.startsWith("/") && !url.startsWith("//")) return `${baseUrl}${url}`;
+      let origin: string;
+      try {
+        origin = new URL(url).origin;
+      } catch {
+        return baseUrl;
+      }
+      if (origin === baseUrl) return url;
+      if (!(onSiteDomain(url, cookieDomain) || allowedRedirect(url, cookieDomains(), mappedHost))) return baseUrl;
+      if (needsHandoff(url, new URL(baseUrl).host)) return `${baseUrl}/auth/handoff/start?to=${encodeURIComponent(url)}`;
+      return url;
     },
     // The Discord provider already puts a display name/avatar URL on the default session; we
     // only need to additionally carry the raw Discord user ID through the JWT to expose it.

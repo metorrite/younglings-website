@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { StatusBadge } from "@/components/admin/ui";
+import { RolePanelCards } from "@/components/dashboard/RolePanelCards";
 import { PageHeader } from "@/components/dashboard/ui/PageHeader";
 import { dashboardData, requireGuild } from "@/lib/dashboard";
 import { adminApi } from "@/lib/jonnybot-admin";
@@ -35,25 +35,7 @@ export default async function RolePanelsPage({ params }: { params: Promise<{ gui
           </Link>
         </div>
       ) : (
-        <ul className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
-          {panels.map((panel) => (
-            <li key={panel.id}>
-              <Link href={`${base}/${panel.id}`} className="flex h-full flex-col gap-3 rounded-xl border border-surface-border bg-surface p-5 transition hover:border-gold/50">
-                <div>
-                  <p className="font-semibold">{panel.name}</p>
-                  <p className="mt-0.5 text-sm text-muted">{panel.title || "No title"}</p>
-                </div>
-                <div className="mt-auto flex flex-wrap items-center gap-2">
-                  <StatusBadge tone="muted">
-                    {panel.buttonCount} button{panel.buttonCount === 1 ? "" : "s"}
-                  </StatusBadge>
-                  <StatusBadge tone="muted">{panel.mode === "UNIQUE" ? "Only one" : "Any number"}</StatusBadge>
-                  {panel.posted ? <StatusBadge tone="good">Posted in #{panel.channelName ?? "deleted channel"}</StatusBadge> : <StatusBadge tone="warn">Not posted</StatusBadge>}
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <RolePanelCards panels={panels} base={base} />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 "use server";
 
-import { requireGuild } from "@/lib/dashboard";
-import { adminApi, type WelcomeActionResult } from "@/lib/jonnybot-admin";
+import { requireEventAccess } from "@/lib/dashboard";
+import { adminApi, type TileHint, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 import { throttle } from "@/lib/ratelimit";
 
 /**
@@ -14,12 +14,42 @@ const ALLOWED = [
   /^events\/templates$/,
   /^events\/(bingo-catalog|archive-finished)$/,
   /^events\/\d{1,18}$/,
-  /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board|organisers|archive)$/,
-  /^events\/\d{1,18}\/signup\/sync$/,
+  /^events\/\d{1,18}\/(status|objectives|teams|participants|progress|standings|claims|prizes|awards|signup|bingo|board|organisers|archive|look)$/,
+  /^events\/\d{1,18}\/signup\/(sync|close|reopen)$/,
+  /^events\/\d{1,18}\/roster\/confirm$/,
+  // barring a player from the event (removes them too) and lifting it
+  /^events\/\d{1,18}\/bans$/,
+  /^events\/\d{1,18}\/bans\/\d{1,20}$/,
+  /^events\/\d{1,18}\/participants\/\d{1,20}\/(verification|rating)$/,
+  /^events\/\d{1,18}\/teams\/(assign|suggest|finalise|reopen)$/,
   /^events\/\d{1,18}\/(teams|participants)\/\d{1,20}$/,
+  // the event's roles and channels: where they stand, the choices, a preview of choices not yet saved, and setting them up, putting role holders right and removing them
+  /^events\/\d{1,18}\/space$/,
+  /^events\/\d{1,18}\/space\/(settings|preview|apply|remove|sync)$/,
+  // wrapping an event up once it is over: where it stands, the settings, locking, taking the roles back, archiving, compressing, exporting and deleting
+  /^events\/\d{1,18}\/wrapup$/,
+  /^events\/\d{1,18}\/wrapup\/(settings|lock|unlock|roles|archive|compress|export|delete)$/,
+  /^events\/\d{1,18}\/wrapup\/export\/file$/,
   /^events\/\d{1,18}\/participants\/\d{1,20}\/buyin$/,
   /^events\/\d{1,18}\/claims\/\d{1,20}\/(approve|deny)$/,
   /^events\/\d{1,18}\/awards\/\d{1,20}\/status$/,
+  // setting an event up: the options of a kind, the standard and full creates, unfinished setups, and saved templates
+  /^events\/setup\/schema\/[a-z][a-z-]{0,40}$/,
+  /^events\/setup\/(standard|create)$/,
+  /^events\/drafts$/,
+  /^events\/drafts\/\d{1,18}$/,
+  /^events\/drafts\/\d{1,18}\/create$/,
+  /^events\/saved-templates$/,
+  /^events\/saved-templates\/\d{1,18}$/,
+  /^events\/saved-templates\/\d{1,18}\/create$/,
+  // the server's own defaults for new events (names, look, verification, setup steps)
+  /^events\/defaults$/,
+  // co-hosted events (T-219): the host's co-hosts, and this server's invitations and the events it co-hosts
+  /^events\/\d{1,18}\/cohosts$/,
+  /^events\/\d{1,18}\/cohosts\/\d{1,20}$/,
+  /^cohost-events$/,
+  /^cohost-events\/\d{1,18}\/(accept|decline)$/,
+  /^cohost-events\/\d{1,18}\/players\/\d{1,20}$/,
 ];
 
 export async function eventApiAction(
@@ -28,7 +58,7 @@ export async function eventApiAction(
   path: string,
   body?: unknown,
 ): Promise<WelcomeActionResult<unknown>> {
-  const guild = await requireGuild(guildId);
+  const guild = await requireEventAccess(guildId);
   if (!["GET", "POST", "PUT", "DELETE"].includes(method) || typeof path !== "string" || !ALLOWED.some((re) => re.test(path)))
     return { ok: false, error: "That isn't something the event manager can do.", problems: [] };
   if (method !== "GET") {
@@ -37,4 +67,17 @@ export async function eventApiAction(
   }
   const result = await adminApi.eventsCall(guild, method, path, body && typeof body === "object" ? body : undefined);
   return result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error, problems: result.problems };
+}
+
+/**
+ * The objectives editor's "auto with RuneSync" hints (T-141): for the tile labels being typed, whether RuneSync can tick each one by itself.
+ * Read-only on the bot (nothing is saved), so it isn't throttled like a change; labels are trimmed, de-duplicated and capped at 100 here and
+ * checked again by the bot.
+ */
+export async function tileHintsAction(guildId: string, template: string, labels: string[]): Promise<{ ok: true; data: TileHint[] } | { ok: false; error: string }> {
+  const guild = await requireEventAccess(guildId);
+  const clean = Array.isArray(labels) ? [...new Set(labels.filter((l): l is string => typeof l === "string").map((l) => l.trim().slice(0, 200)).filter(Boolean))].slice(0, 100) : [];
+  if (clean.length === 0) return { ok: true, data: [] };
+  const result = await adminApi.pluginTileHints(guild, typeof template === "string" ? template.slice(0, 40) : "", clean);
+  return result.ok ? { ok: true, data: result.data.hints } : { ok: false, error: result.error };
 }

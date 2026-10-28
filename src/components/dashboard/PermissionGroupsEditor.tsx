@@ -3,7 +3,10 @@
 import { useState, useTransition } from "react";
 import { dangerButton, FormField, ghostButton, inputClass, Notice } from "@/components/admin/ui";
 import { Chip, CollapsibleCard } from "@/components/dashboard/ui/CollapsibleCard";
+import { andList } from "@/components/dashboard/ui/andList";
+import { PanelGrid } from "@/components/dashboard/ui/Layout";
 import { SaveBar } from "@/components/dashboard/ui/SaveBar";
+import { MoreInAdvanced, useViewMode } from "@/components/dashboard/ui/ViewMode";
 import { RolePicker } from "@/components/dashboard/pickers";
 import { type GuildRole, type PermissionGroupConfig, type PermissionGroupDraft, type PermissionGroups, type WelcomeActionResult } from "@/lib/jonnybot-admin";
 
@@ -51,6 +54,9 @@ function toRows(groups: PermissionGroupConfig[]): Row[] {
  * A server's permission levels. Admin, Support and Developer are always there; "Web Dev", "Discord Dev" and so on can be added, each
  * holding as many server roles as it needs. A group of your own has no powers by itself: it shows up as a choice wherever a setting asks
  * "who can do this?".
+ * <p>
+ * Basic shows the three levels, which is what every server needs. Advanced adds groups of your own, the "also include higher roles" rule and rearranging the
+ * levels. Groups of your own and a rule that is already saved stay visible in Basic.
  */
 export function PermissionGroupsEditor({
   initial,
@@ -70,11 +76,17 @@ export function PermissionGroupsEditor({
   const [limits, setLimits] = useState(initial);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [pending, start] = useTransition();
+  const [mode] = useViewMode();
+  const advanced = mode === "advanced";
 
   const [armed, setArmed] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const custom = rows.filter((r) => !r.builtin);
+  // what is already saved stays on screen in Basic
+  const showCustom = advanced || baseline.some((g) => !g.builtin) || custom.length > 0;
+  const showRule = (row: Row) => advanced || baseline.find((g) => g.key === row.key)?.includeHigher === true || (row.key === "" && row.includeHigher);
+  const hidden = [!showCustom && "groups of your own", !advanced && "the \"also include higher roles\" rule", !advanced && "rearranging the levels"].filter((name): name is string => typeof name === "string");
   const move = (from: string, to: string) => setRows((all) => reordered(all, from, to));
   /** What makes a card a drag source and a drop target. The order is for the person's own reference: it is kept on this page and not saved. */
   const dragProps = (row: Row) => ({
@@ -107,7 +119,7 @@ export function PermissionGroupsEditor({
   const cardClass = (row: Row) =>
     `flex gap-3 rounded-md border bg-background/40 p-4 transition ${over === row.local ? "border-gold" : "border-surface-border"} ${dragging === row.local ? "opacity-50" : ""}`;
   const handle = (row: Row) =>
-    canEdit ? (
+    canEdit && advanced ? (
       <button
         type="button"
         aria-label={`Move ${row.name || "this group"}. Drag it, or press the up and down arrow keys.`}
@@ -152,18 +164,19 @@ export function PermissionGroupsEditor({
     setOutcome(null);
   }
 
-  const includeHigher = (row: Row) => (
-    <label className="flex items-center gap-2 text-xs text-muted">
-      <input type="checkbox" disabled={!canEdit} checked={row.includeHigher} onChange={(e) => patch(row.local, { includeHigher: e.target.checked })} />
-      Also include anyone with a role ranked above the lowest of these
-    </label>
-  );
+  const includeHigher = (row: Row) =>
+    showRule(row) ? (
+      <label className="flex items-center gap-2 text-xs text-muted">
+        <input type="checkbox" disabled={!canEdit} checked={row.includeHigher} onChange={(e) => patch(row.local, { includeHigher: e.target.checked })} />
+        Also include anyone with a role ranked above the lowest of these
+      </label>
+    ) : null;
 
   return (
     <div className="space-y-6">
       {!canEdit && <Notice tone="error" title="Only an Admin can change the permission groups. You can see them here." />}
 
-      <div className="grid items-start gap-6 xl:grid-cols-2">
+      <PanelGrid min="24rem" gap="gap-6">
       <CollapsibleCard
         id="perm-levels"
         title="Bot levels"
@@ -197,6 +210,7 @@ export function PermissionGroupsEditor({
         </div>
       </CollapsibleCard>
 
+      {showCustom && (
       <CollapsibleCard
         id="perm-groups"
         defaultOpen
@@ -213,7 +227,7 @@ export function PermissionGroupsEditor({
               <div className="min-w-0 flex-1 space-y-3">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <FormField label="Group name">
+                    <FormField label="Group name" size="md">
                       <input
                         className={inputClass}
                         value={row.name}
@@ -242,8 +256,11 @@ export function PermissionGroupsEditor({
           )}
         </div>
       </CollapsibleCard>
+      )}
 
-      </div>
+      </PanelGrid>
+
+      {hidden.length > 0 && <MoreInAdvanced>{andList(hidden)}.</MoreInAdvanced>}
 
       {canEdit && (
         <SaveBar

@@ -19,7 +19,14 @@ const COMMANDS: { name: string; who: string; what: string }[] = [
   { name: "/split", who: "Everyone (changeable)", what: "Split a drop between a group (1.5b, 250m, 12,500k), with an optional fee off the top and any left-over coins shown." },
   { name: "/suggest", who: "Everyone (changeable)", what: "Post an idea in the suggestions channel for everyone to vote on with the up and down buttons." },
   { name: "/warn", who: "Admins (changeable)", what: "Warn a member and keep a record: add, list and remove. The member is told by DM when their DMs are open." },
+  { name: "/announce", who: "Admins (changeable)", what: "Post an announcement in a channel, optionally pinging one role, @everyone or @here. @everyone and @here only work for people who may mention everyone there. The dashboard's Announcements page does the same." },
   { name: "/events", who: "Everyone (changeable)", what: "Your events (place, points, buy-in, prizes), the ones open for signup, and join or leave. Events themselves are made and run from the dashboard." },
+  { name: "/price", who: "Everyone (changeable)", what: "A RuneScape 3 item's Grand Exchange price with its 7 and 30 day change and a link to the wiki. Pick the item from the suggestions." },
+  { name: "/worldevents", who: "Everyone (changeable)", what: "The Voice of Seren right now and the events that come round by themselves with how often, from the RuneScape Wiki. Hourly Voice of Seren reminders can be switched on from the RuneScape timers page." },
+  { name: "/reset", who: "Everyone (changeable)", what: "Countdowns to the daily, weekly and monthly RuneScape resets. Reminders at each reset can be switched on from the RuneScape timers page." },
+  { name: "/dnd", who: "Everyone (changeable)", what: "The Distractions and Diversions grouped by how often they can be played (daily, weekly, monthly, when available), read from the RuneScape Wiki." },
+  { name: "/boss", who: "Everyone (changeable)", what: "A short RuneScape Wiki summary of a boss with its combat level, life points and weakness, and a link to its strategy page." },
+  { name: "/quest", who: "Everyone (changeable)", what: "A short RuneScape Wiki summary of a quest with its difficulty and area, and a link to its quick guide." },
 ];
 
 const DASHBOARD: [string, string][] = [
@@ -41,7 +48,7 @@ const DASHBOARD: [string, string][] = [
   ["Moderation log", "A channel where bans, unbans and timeouts are recorded, with who did it and why when JonnyBot can read the audit log."],
   ["New accounts", "Be told when a Discord account younger than a number of days joins, or keep them out until they are old enough. Off by default."],
   ["Auto-delete", "Keep a channel free of Discord invites, links or files: a matching message is deleted at once and the person is told why. Moderators are never affected."],
-  ["Event manager", "Run bingos, scavenger hunts, XP competitions, boss nights or your own custom events: objectives, teams and players, proof to approve, standings, buy-ins, prizes and payouts. Each event can post its own signup, and members see their own place and prizes on their profile."],
+  ["Event manager", "Run bingos, scavenger hunts, XP competitions, boss nights or your own custom events: objectives, teams and players, proof to approve, standings, buy-ins, prizes and payouts. Start one with the standard options in a click, a few quick questions, or a guided setup of every option that keeps a draft as you go; save an event's setup as a template to make similar ones fast. For team events, a team builder lets you drag players onto teams with star ratings drawn from their linked RuneScape accounts, see how level the teams are, and call them final (or use /events team in Discord). Once signups are closed and the roster is confirmed, an event can have its own Discord roles and channels made for it: a role for the players and the organisers (and each team), and a category with private channels only the right people can see, kept in step as players join, leave or change team. Each event can post its own signup, and members see their own place and prizes on their profile."],
   ["Points", "Switch on a points ledger for your server, name the points, give or take them with a reason, and see the leaderboard and full history."],
   ["Automod", "Deletes invites, links, blocked words, shouting, spam and emoji floods automatically, and can give the writer a warning that counts toward Autopunish."],
   ["Warnings", "The record of warnings given with /warn. Search by member and take one back."],
